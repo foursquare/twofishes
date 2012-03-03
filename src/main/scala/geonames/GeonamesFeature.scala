@@ -69,6 +69,7 @@ class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[Str
   def isCity = featureCode.exists(_.contains("PPL"))
   def isCountry = featureCode.exists(_.contains("PCL"))
   def isAdmin = adminLevel != OTHER
+  def isAirport = featureCode.exists(_ == "AIRP")
 
   def woeType: Int = {
     if (isCountry) {
@@ -77,6 +78,8 @@ class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[Str
       YahooWoeTypes.POSTAL_CODE
     } else if (isCity) {
       YahooWoeTypes.TOWN
+    } else if (isAirport) {
+      YahooWoeTypes.AIRPORT
     } else {
       featureCode.map(_ match {
         case "ADM1" => YahooWoeTypes.ADMIN1
@@ -104,8 +107,11 @@ class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[Str
 
 class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) extends Helpers {
   def isValid = {
-    values.contains(NAME)
+    values.contains(NAME) &&
+    values.contains(LATITUDE) && 
+    values.contains(LONGITUDE)
   }
+  
   val featureClass = new GeonamesFeatureClass(values.get(FEATURE_CLASS), values.get(FEATURE_CODE))
 
   def adminCode(level: AdminLevel.Value): Option[String] = {
@@ -129,6 +135,14 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) extends
     }
   }
 
+  def adminId: Option[String] = {
+    if (featureClass.isAdmin) {
+      makeAdminId(featureClass.adminLevel)
+    } else {
+        None
+    }
+  }
+
   def parents: List[String] = {
     AdminLevel.values.filter(_ < featureClass.adminLevel).flatMap(l =>
       makeAdminId(l)
@@ -136,10 +150,11 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) extends
   }
 
   def population: Option[Int] = flattryo {values.get(POPULATION).map(_.toInt)}
-  def latitude: Option[Double] = flattryo {values.get(LATITUDE).map(_.toDouble)}
-  def longitude: Option[Double] = flattryo {values.get(LONGITUDE).map(_.toDouble)}
+  def latitude: Double = values.get(LATITUDE).map(_.toDouble).get
+  def longitude: Double = values.get(LONGITUDE).map(_.toDouble).get
   def countryCode: String = values.get(COUNTRY_CODE).getOrElse("XX")
   def name: String = values.getOrElse(NAME, "no name")
+  def geonameid: Option[String] = values.get(GEONAMEID)
 
   def alternateNames: List[String] =
     values.get(ALTERNATENAMES).toList.flatMap(_.split(",").toList)

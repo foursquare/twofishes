@@ -22,9 +22,13 @@ trait Helpers {
   }
 }
 
-class NameNormalizer {
+object NameNormalizer {
+  def tokenize(s: String): List[String] = {
+    s.split(" ").toList
+  }
+
   def normalize(s: String): String = {
-    var n = s
+    var n = s.toLowerCase
     // remove periods and quotes
     n = n.replaceAll("['\u2018\u2019\\.]", "")
     // change all other punctuation to spaces
@@ -36,5 +40,22 @@ class NameNormalizer {
     val temp = Normalizer.normalize(s, Normalizer.Form.NFD);
     val pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
     pattern.matcher(temp).replaceAll("");
+  }
+}
+
+object GeoTools {
+  val MetersPerMile: Double = 1609.344
+  val RadiusInMeters: Int = 6378100 // Approximately a little less than the Earth's polar radius
+  val MetersPerDegreeLatitude: Double = 111111.0
+  val MetersPerDegreeLongitude: Double = 110540.0 // I'm assuming this as at the Equator
+
+  /**
+   * @return distance in meters
+   */
+  def getDistance(geolat1: Double, geolong1: Double, geolat2: Double, geolong2: Double): Int = {
+    val theta = geolong1 - geolong2
+    val dist = math.sin(math.toRadians(geolat1)) * math.sin(math.toRadians(geolat2)) +
+               math.cos(math.toRadians(geolat1)) * math.cos(math.toRadians(geolat2)) * math.cos(math.toRadians(theta))
+    (RadiusInMeters * math.acos(dist)).toInt
   }
 }
