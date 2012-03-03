@@ -1,7 +1,7 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.geocoder.geonames
 
-import com.foursquare.geocoder.{Helpers, LogHelper}
+import com.foursquare.geocoder.{Helpers, LogHelper, YahooWoeTypes}
 
 object GeonamesFeatureColumns extends Enumeration {
    type GeonamesFeatureColumns = Value
@@ -62,10 +62,30 @@ object AdminLevel extends Enumeration {
 import AdminLevel._
 
 // http://www.geonames.org/export/codes.html
+// I added Z for zipcodes. It's missing from the geonames hierarchy.
 class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[String]) {
   def isBuilding = featureClass.exists(_ == "S")
+  def isPostalCode = featureClass.exists(_ == "Z")
+  def isCity = featureCode.exists(_.contains("PPL"))
   def isCountry = featureCode.exists(_.contains("PCL"))
   def isAdmin = adminLevel != OTHER
+
+  def woeType: Int = {
+    if (isCountry) {
+      YahooWoeTypes.COUNTRY
+    } else if (isPostalCode) {
+      YahooWoeTypes.POSTAL_CODE
+    } else if (isCity) {
+      YahooWoeTypes.TOWN
+    } else {
+      featureCode.map(_ match {
+        case "ADM1" => YahooWoeTypes.ADMIN1
+        case "ADM2" => YahooWoeTypes.ADMIN2
+        case "ADM3" => YahooWoeTypes.ADMIN3
+        case _ => 0
+      }).getOrElse(0)
+    }
+  }
 
   def adminLevel: AdminLevel.Value = {
     if (isCountry) {
