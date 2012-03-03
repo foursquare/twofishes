@@ -5,10 +5,6 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
 
 // TODO
-// check if the algorithm works
-// DONE? be able to return something
-// DONE? implement a feature sorter
-// DONE? implement an is valid method
 // implement a parse sorted
 // construct a complete response
 // zipcode hack
@@ -85,15 +81,16 @@ class GeocoderImpl(store: GeocodeStorageService) extends LogHelper {
 
     val cache = new HashMap[Int, List[List[GeocodeRecord]]]()
     generateParses(tokens, cache)
-    println(cache.keys.max)
-    val longest = cache.keys.max
+    val longest = cache.keys.filter(k => cache(k).nonEmpty).max
     val longestParses = cache(longest)
     val sortedParses = longestParses
 
+    println(longest)
+
     // SORTING PARSES GOES HERE
 
-    val what = tokens.drop(longest).mkString(" ")
-    val where = tokens.take(longest).mkString(" ")
+    val what = tokens.take(tokens.size - longest).mkString(" ")
+    val where = tokens.drop(tokens.size - longest).mkString(" ")
     println("%d sorted parses".format(sortedParses.size))
     new GeocodeResponse(sortedParses.map(p => {
       new GeocodeInterpretation(what, where, p(0).toGeocodeFeature)
