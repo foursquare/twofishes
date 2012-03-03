@@ -12,6 +12,8 @@ resolvers += "repo.novus rels" at "http://repo.novus.com/releases/"
 
 resolvers += "repo.novus snaps" at "http://repo.novus.com/snapshots/"
 
+resolvers += "Java.net Maven 2 Repo" at "http://download.java.net/maven/2"
+
 libraryDependencies ++= Seq(
   "org.geotools" % "gt-geojson" % "2.7.4",
   "thrift" % "libthrift" % "0.5.0"  from  "http://maven.twttr.com/thrift/libthrift/0.5.0/libthrift-0.5.0.jar", 
