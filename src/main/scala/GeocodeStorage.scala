@@ -26,6 +26,7 @@ object Implicits {
 }
 
 case class GeocodeRecord(
+  _id: ObjectId = new ObjectId,
   ids: List[String],
   names: List[String],
   cc: String,
@@ -36,7 +37,14 @@ case class GeocodeRecord(
   @Key("p") parents: List[String],
   population: Option[Int],
   boost: Option[Int] = None
-)
+) {
+  def toGeocodeFeature: GeocodeFeature = {
+    new GeocodeFeature(
+      new GeocodePoint(lat, lng)
+    )
+
+  }
+}
 
 trait GeocodeStorageService {
   def getByName(name: String): Iterator[GeocodeRecord]

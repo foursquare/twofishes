@@ -11,6 +11,7 @@ import java.io.File
 // boosts
 // aliases
 // prefnames
+// zipcode parser
 
 object GeonamesParser {
   def run() {

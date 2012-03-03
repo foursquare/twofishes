@@ -31,11 +31,19 @@ import org.apache.thrift.protocol.*;
 public class GeocodeInterpretation implements TBase<GeocodeInterpretation, GeocodeInterpretation._Fields>, java.io.Serializable, Cloneable {
   private static final TStruct STRUCT_DESC = new TStruct("GeocodeInterpretation");
 
+  private static final TField WHAT_FIELD_DESC = new TField("what", TType.STRING, (short)1);
+  private static final TField WHERE_FIELD_DESC = new TField("where", TType.STRING, (short)2);
+  private static final TField FEATURE_FIELD_DESC = new TField("feature", TType.STRUCT, (short)3);
 
+  public String what;
+  public String where;
+  public GeocodeFeature feature;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
-;
+    WHAT((short)1, "what"),
+    WHERE((short)2, "where"),
+    FEATURE((short)3, "feature");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -50,6 +58,12 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
      */
     public static _Fields findByThriftId(int fieldId) {
       switch(fieldId) {
+        case 1: // WHAT
+          return WHAT;
+        case 2: // WHERE
+          return WHERE;
+        case 3: // FEATURE
+          return FEATURE;
         default:
           return null;
       }
@@ -88,9 +102,18 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
       return _fieldName;
     }
   }
+
+  // isset id assignments
+
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
     Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
+    tmpMap.put(_Fields.WHAT, new FieldMetaData("what", TFieldRequirementType.DEFAULT, 
+        new FieldValueMetaData(TType.STRING)));
+    tmpMap.put(_Fields.WHERE, new FieldMetaData("where", TFieldRequirementType.DEFAULT, 
+        new FieldValueMetaData(TType.STRING)));
+    tmpMap.put(_Fields.FEATURE, new FieldMetaData("feature", TFieldRequirementType.DEFAULT, 
+        new StructMetaData(TType.STRUCT, GeocodeFeature.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeInterpretation.class, metaDataMap);
   }
@@ -98,10 +121,30 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
   public GeocodeInterpretation() {
   }
 
+  public GeocodeInterpretation(
+    String what,
+    String where,
+    GeocodeFeature feature)
+  {
+    this();
+    this.what = what;
+    this.where = where;
+    this.feature = feature;
+  }
+
   /**
    * Performs a deep copy on <i>other</i>.
    */
   public GeocodeInterpretation(GeocodeInterpretation other) {
+    if (other.isSetWhat()) {
+      this.what = other.what;
+    }
+    if (other.isSetWhere()) {
+      this.where = other.where;
+    }
+    if (other.isSetFeature()) {
+      this.feature = new GeocodeFeature(other.feature);
+    }
   }
 
   public GeocodeInterpretation deepCopy() {
@@ -110,15 +153,123 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
 
   @Override
   public void clear() {
+    this.what = null;
+    this.where = null;
+    this.feature = null;
+  }
+
+  public String getWhat() {
+    return this.what;
+  }
+
+  public GeocodeInterpretation setWhat(String what) {
+    this.what = what;
+    return this;
+  }
+
+  public void unsetWhat() {
+    this.what = null;
+  }
+
+  /** Returns true if field what is set (has been asigned a value) and false otherwise */
+  public boolean isSetWhat() {
+    return this.what != null;
+  }
+
+  public void setWhatIsSet(boolean value) {
+    if (!value) {
+      this.what = null;
+    }
+  }
+
+  public String getWhere() {
+    return this.where;
+  }
+
+  public GeocodeInterpretation setWhere(String where) {
+    this.where = where;
+    return this;
+  }
+
+  public void unsetWhere() {
+    this.where = null;
+  }
+
+  /** Returns true if field where is set (has been asigned a value) and false otherwise */
+  public boolean isSetWhere() {
+    return this.where != null;
+  }
+
+  public void setWhereIsSet(boolean value) {
+    if (!value) {
+      this.where = null;
+    }
+  }
+
+  public GeocodeFeature getFeature() {
+    return this.feature;
+  }
+
+  public GeocodeInterpretation setFeature(GeocodeFeature feature) {
+    this.feature = feature;
+    return this;
+  }
+
+  public void unsetFeature() {
+    this.feature = null;
+  }
+
+  /** Returns true if field feature is set (has been asigned a value) and false otherwise */
+  public boolean isSetFeature() {
+    return this.feature != null;
+  }
+
+  public void setFeatureIsSet(boolean value) {
+    if (!value) {
+      this.feature = null;
+    }
   }
 
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
+    case WHAT:
+      if (value == null) {
+        unsetWhat();
+      } else {
+        setWhat((String)value);
+      }
+      break;
+
+    case WHERE:
+      if (value == null) {
+        unsetWhere();
+      } else {
+        setWhere((String)value);
+      }
+      break;
+
+    case FEATURE:
+      if (value == null) {
+        unsetFeature();
+      } else {
+        setFeature((GeocodeFeature)value);
+      }
+      break;
+
     }
   }
 
   public Object getFieldValue(_Fields field) {
     switch (field) {
+    case WHAT:
+      return getWhat();
+
+    case WHERE:
+      return getWhere();
+
+    case FEATURE:
+      return getFeature();
+
     }
     throw new IllegalStateException();
   }
@@ -130,6 +281,12 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
     }
 
     switch (field) {
+    case WHAT:
+      return isSetWhat();
+    case WHERE:
+      return isSetWhere();
+    case FEATURE:
+      return isSetFeature();
     }
     throw new IllegalStateException();
   }
@@ -147,6 +304,33 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
     if (that == null)
       return false;
 
+    boolean this_present_what = true && this.isSetWhat();
+    boolean that_present_what = true && that.isSetWhat();
+    if (this_present_what || that_present_what) {
+      if (!(this_present_what && that_present_what))
+        return false;
+      if (!this.what.equals(that.what))
+        return false;
+    }
+
+    boolean this_present_where = true && this.isSetWhere();
+    boolean that_present_where = true && that.isSetWhere();
+    if (this_present_where || that_present_where) {
+      if (!(this_present_where && that_present_where))
+        return false;
+      if (!this.where.equals(that.where))
+        return false;
+    }
+
+    boolean this_present_feature = true && this.isSetFeature();
+    boolean that_present_feature = true && that.isSetFeature();
+    if (this_present_feature || that_present_feature) {
+      if (!(this_present_feature && that_present_feature))
+        return false;
+      if (!this.feature.equals(that.feature))
+        return false;
+    }
+
     return true;
   }
 
@@ -163,6 +347,36 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
     int lastComparison = 0;
     GeocodeInterpretation typedOther = (GeocodeInterpretation)other;
 
+    lastComparison = Boolean.valueOf(isSetWhat()).compareTo(typedOther.isSetWhat());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetWhat()) {
+      lastComparison = TBaseHelper.compareTo(this.what, typedOther.what);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetWhere()).compareTo(typedOther.isSetWhere());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetWhere()) {
+      lastComparison = TBaseHelper.compareTo(this.where, typedOther.where);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetFeature()).compareTo(typedOther.isSetFeature());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetFeature()) {
+      lastComparison = TBaseHelper.compareTo(this.feature, typedOther.feature);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -180,6 +394,28 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
         break;
       }
       switch (field.id) {
+        case 1: // WHAT
+          if (field.type == TType.STRING) {
+            this.what = iprot.readString();
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 2: // WHERE
+          if (field.type == TType.STRING) {
+            this.where = iprot.readString();
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 3: // FEATURE
+          if (field.type == TType.STRUCT) {
+            this.feature = new GeocodeFeature();
+            this.feature.read(iprot);
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -195,6 +431,21 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
     validate();
 
     oprot.writeStructBegin(STRUCT_DESC);
+    if (this.what != null) {
+      oprot.writeFieldBegin(WHAT_FIELD_DESC);
+      oprot.writeString(this.what);
+      oprot.writeFieldEnd();
+    }
+    if (this.where != null) {
+      oprot.writeFieldBegin(WHERE_FIELD_DESC);
+      oprot.writeString(this.where);
+      oprot.writeFieldEnd();
+    }
+    if (this.feature != null) {
+      oprot.writeFieldBegin(FEATURE_FIELD_DESC);
+      this.feature.write(oprot);
+      oprot.writeFieldEnd();
+    }
     oprot.writeFieldStop();
     oprot.writeStructEnd();
   }
@@ -204,6 +455,29 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
     StringBuilder sb = new StringBuilder("GeocodeInterpretation(");
     boolean first = true;
 
+    sb.append("what:");
+    if (this.what == null) {
+      sb.append("null");
+    } else {
+      sb.append(this.what);
+    }
+    first = false;
+    if (!first) sb.append(", ");
+    sb.append("where:");
+    if (this.where == null) {
+      sb.append("null");
+    } else {
+      sb.append(this.where);
+    }
+    first = false;
+    if (!first) sb.append(", ");
+    sb.append("feature:");
+    if (this.feature == null) {
+      sb.append("null");
+    } else {
+      sb.append(this.feature);
+    }
+    first = false;
     sb.append(")");
     return sb.toString();
   }

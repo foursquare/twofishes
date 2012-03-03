@@ -1,6 +1,18 @@
 namespace java com.foursquare.geocoder
 
+struct GeocodePoint {
+  1: double lat,
+  2: double lng
+}
+
+struct GeocodeFeature {
+  1: GeocodePoint center
+}
+
 struct GeocodeInterpretation {
+  1: string what,
+  2: string where,
+  3: GeocodeFeature feature
 }
 
 struct GeocodeResponse {
