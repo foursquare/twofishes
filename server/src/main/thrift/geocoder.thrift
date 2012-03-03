@@ -1,4 +1,4 @@
-namespace java geocoder
+namespace java com.foursquare.geocoder
 
 struct GeocodeInterpretation {
 }
