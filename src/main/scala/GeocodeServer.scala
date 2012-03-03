@@ -1,7 +1,7 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.geocoder
 
-import collection.JavaConversions._
+import collection.JavaConverters._
 import com.twitter.finagle.builder.{ServerBuilder, Server}
 import com.twitter.finagle.http.Http
 import com.twitter.finagle.thrift.ThriftServerFramedCodec
@@ -23,24 +23,34 @@ class GeocodeServerImpl extends Geocoder.ServiceIface  {
 }
 
 class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
-  def apply(request: HttpRequest) = {
+  def handleQuery(query: String) = {
     val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
-    // This is how you parse request parameters
-    val params = new QueryStringDecoder(request.getUri()).getParameters()
-    val responseContent = params.toString()
 
-    println(params)
-    println(params("query"))
-    println(params("query")(0))
-    // This is how you write to response
     val geocode = new GeocoderImpl(new MongoGeocodeStorageService()).geocode(
-      new GeocodeRequest(params("query")(0)))
+      new GeocodeRequest(query))
 
     val serializer = new TSerializer(new TSimpleJSONProtocol.Factory());
     val json = serializer.toString(geocode);
 
     response.setContent(ChannelBuffers.copiedBuffer(json, CharsetUtil.UTF_8))
     Future.value(response)
+  }
+
+  def apply(request: HttpRequest) = {
+    // This is how you parse request parameters
+    val params = new QueryStringDecoder(request.getUri()).getParameters().asScala
+    val responseContent = params.toString()
+
+    (for {
+      queries <- params.get("query")
+      query <- queries.asScala.lift(0)
+    } yield { handleQuery(query) }).getOrElse({
+      val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
+      Future.value(response)
+    })
+
+
+
   }
 }
 
