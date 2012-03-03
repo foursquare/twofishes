@@ -28,4 +28,12 @@ object YahooWoeTypes {
   // Place type names associated with this place type include:
   // Commune, Municipality, District, Ward.
   val ADMIN3 = 10
+
+  val AIRPORT = 14
+
+  val order = List(POSTAL_CODE, AIRPORT,  TOWN, SUBURB, ADMIN3, ADMIN2, ADMIN1, COUNTRY)
+
+  def getOrdering(woetype: Option[Int]): Int = {
+    woetype.map(t => order.indexOf(t)).getOrElse(-10)
+  }
 }

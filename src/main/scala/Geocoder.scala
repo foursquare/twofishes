@@ -6,9 +6,9 @@ import scala.collection.mutable.HashMap
 
 // TODO
 // check if the algorithm works
-// be able to return something
-// implement a feature sorted
-// implement an is valid method
+// DONE? be able to return something
+// DONE? implement a feature sorter
+// DONE? implement an is valid method
 // implement a parse sorted
 // construct a complete response
 // zipcode hack
@@ -29,29 +29,33 @@ class GeocoderImpl(store: GeocodeStorageService) extends LogHelper {
       List(Nil)
     } else {
       if (!cache.contains(cacheKey)) {
-        for (i <- 1.to(tokens.size)) {
-          val searchStr = tokens.take(i).mkString(" ")
-          logger.info("trying: %d to %d: %s".format(0, i, searchStr))
-          val features = store.getByName(searchStr).toList
-          logger.info("have %d matches".format(features.size))
+        val validParses = 
+          (for (i <- 1.to(tokens.size)) yield {
+            val searchStr = tokens.take(i).mkString(" ")
+            logger.info("trying: %d to %d: %s".format(0, i, searchStr))
+            val features = store.getByName(searchStr).toList
+            logger.info("have %d matches".format(features.size))
 
-          val subParses = generateParses(tokens.drop(i), cache)
+            val subParses = generateParses(tokens.drop(i), cache)
 
-          val validParses = features.flatMap(f => {
-            logger.info("looking at %s".format(f))
-            subParses.flatMap(p => {
-              logger.info("sub_parse: %s".format(p))
-              val parse = f :: p
-              if (isValidParse(parse)) {
-                Some(parse)
-              } else {
-                None
-              }
+            features.flatMap(f => {
+              logger.info("looking at %s".format(f))
+              subParses.flatMap(p => {
+                logger.info("sub_parse: %s".format(p))
+                val parse = f :: p
+                if (isValidParse(parse)) {
+                  logger.info("VALID -- adding to %d".format(cacheKey))
+                  println(parse.sorted)
+                  Some(parse.sorted)
+                } else {
+                  logger.info("INVALID")
+                  None
+                }
+              })
             })
-          })
-
-          cache(cacheKey) = validParses
-        }
+          }).flatMap(a=>a).toList
+        println("setting %d to %s".format(cacheKey, validParses))
+        cache(cacheKey) = validParses
       }
       cache(cacheKey)
     }
@@ -81,15 +85,16 @@ class GeocoderImpl(store: GeocodeStorageService) extends LogHelper {
 
     val cache = new HashMap[Int, List[List[GeocodeRecord]]]()
     generateParses(tokens, cache)
-    println(cache.keys.min)
-    val longest = cache.keys.min
+    println(cache.keys.max)
+    val longest = cache.keys.max
     val longestParses = cache(longest)
     val sortedParses = longestParses
 
     // SORTING PARSES GOES HERE
 
-    val what = tokens.take(longest - 1).mkString(" ")
-    val where = tokens.drop(longest - 1).mkString(" ")
+    val what = tokens.drop(longest).mkString(" ")
+    val where = tokens.take(longest).mkString(" ")
+    println("%d sorted parses".format(sortedParses.size))
     new GeocodeResponse(sortedParses.map(p => {
       new GeocodeInterpretation(what, where, p(0).toGeocodeFeature)
     }))

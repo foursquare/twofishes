@@ -48,9 +48,6 @@ class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
       val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
       Future.value(response)
     })
-
-
-
   }
 }
 

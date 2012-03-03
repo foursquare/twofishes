@@ -37,7 +37,11 @@ case class GeocodeRecord(
   @Key("p") parents: List[String],
   population: Option[Int],
   boost: Option[Int] = None
-) {
+) extends Ordered[GeocodeRecord] {
+  def compare(that: GeocodeRecord): Int = {
+    YahooWoeTypes.getOrdering(this.woeType) - YahooWoeTypes.getOrdering(that.woeType)
+  }
+
   def toGeocodeFeature: GeocodeFeature = {
     new GeocodeFeature(
       new GeocodePoint(lat, lng)
