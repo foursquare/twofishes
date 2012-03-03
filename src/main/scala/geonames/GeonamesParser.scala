@@ -3,7 +3,6 @@ package com.foursquare.geocoder.geonames
 
 import com.foursquare.geocoder.{Helpers, LogHelper}
 import java.io.File
-//import org.slf4j._
 
 class GeonamesParser extends LogHelper {
   def parseFeature(feature: GeonamesFeature) {
