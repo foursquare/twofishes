@@ -2,15 +2,11 @@
 
 package com.foursquare.geocoder
 
-import com.twitter.util.Future
-import java.net.URI
-import java.nio.ByteBuffer
-
-import com.twitter.finagle.thrift.ThriftServerFramedCodec
-import org.apache.thrift.protocol.TBinaryProtocol
 import com.twitter.finagle.builder.{ServerBuilder, Server}
-import java.net.InetSocketAddress
+import com.twitter.finagle.thrift.ThriftServerFramedCodec
 import com.twitter.util.Future
+import java.net.InetSocketAddress
+import org.apache.thrift.protocol.TBinaryProtocol
 
 class GeocodeServerImpl extends Geocoder.ServiceIface  {
   def geocode(r: GeocodeRequest): Future[GeocodeResponse] = {
