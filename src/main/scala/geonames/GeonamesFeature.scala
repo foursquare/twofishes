@@ -1,23 +1,9 @@
-import java.io.File
-//import org.slf4j._
+// Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
+package com.foursquare.geocoder.geonames
 
-object GeonamesImporterConfig {
-  val shouldParseBuildings = false
+import com.foursquare.geocoder.{Helpers, LogHelper}
 
-}
-
-trait LogHelper {
-//  val logger = LoggerFactory.getLogger(classOf[this])
-  class FakeLogger {
-    def debug(s: String) { println(s) }
-    def error(s: String) { println(s) }
-    def info(s: String)  { println(s) }
-  }
-
-  val logger = new FakeLogger()
-}
-
- object GeonamesFeatureColumns extends Enumeration {
+object GeonamesFeatureColumns extends Enumeration {
    type GeonamesFeatureColumns = Value
    val GEONAMEID, PLACE_NAME, NAME, ASCIINAME, ALTERNATENAMES, LATITUDE, LONGITUDE,
       FEATURE_CLASS, FEATURE_CODE, COUNTRY_CODE, CC2, ADMIN1_CODE, ADMIN2_CODE, ADMIN3_CODE,
@@ -27,10 +13,7 @@ trait LogHelper {
 
 import GeonamesFeatureColumns._
 
-object GeonamesFeature extends LogHelper {
-  // fake column names
-
-
+object GeonamesFeature extends LogHelper with Helpers {
   val adminColumns = List(
     GEONAMEID,
     NAME,
@@ -61,7 +44,12 @@ object GeonamesFeature extends LogHelper {
       None
     } else {
       val colMap = adminColumns.zip(parts).toMap
-      Some(new GeonamesFeature(colMap))
+      val feature = new GeonamesFeature(colMap)
+      if (feature.isValid) {
+        Some(feature)
+      } else {
+        None
+      }
     }
   }
 }
@@ -94,7 +82,10 @@ class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[Str
   }
 }
 
-class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) {
+class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) extends Helpers {
+  def isValid = {
+    values.contains(NAME)
+  }
   val featureClass = new GeonamesFeatureClass(values.get(FEATURE_CLASS), values.get(FEATURE_CODE))
 
   def adminCode(level: AdminLevel.Value): Option[String] = {
@@ -108,32 +99,38 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) {
     }
   }
 
-  def makeAdminId(level: AdminLevel.Value): String = {
-    AdminLevel.values.filter(_ <= level).flatMap(l =>
-      adminCode(l)).mkString("-")
+  def makeAdminId(level: AdminLevel.Value): Option[String] = {
+    if (adminCode(level).exists(_.nonEmpty)) {
+      Some(
+        AdminLevel.values.filter(_ <= level).flatMap(l => adminCode(l)).mkString("-")
+      )
+    } else {
+      None
+    }
   }
 
-  def parents = {
-  }
-}
-
-class GeonamesParser extends LogHelper {
-  def parseFeature(feature: GeonamesFeature) {
-
+  def parents: List[String] = {
+    AdminLevel.values.filter(_ < featureClass.adminLevel).flatMap(l =>
+      makeAdminId(l)
+    ).toList
   }
 
-  def parseFromFile(filename: String) {
-    val lines = scala.io.Source.fromFile(new File(filename)).getLines
-    lines.zipWithIndex.foreach({case (line, index) => {
-      if (index % 1000 == 0) {
-        logger.info("imported %d features so far".format(index))
-      }
-      val feature = GeonamesFeature.parseFromAdminLine(index, line)
-      feature.foreach(f => {
-        if (!f.featureClass.isBuilding || GeonamesImporterConfig.shouldParseBuildings) {
-          parseFeature(f)
-        }
-      })
-    }})
+  def population: Option[Int] = flattryo {values.get(POPULATION).map(_.toInt)}
+  def latitude: Option[Double] = flattryo {values.get(LATITUDE).map(_.toDouble)}
+  def longitude: Option[Double] = flattryo {values.get(LONGITUDE).map(_.toDouble)}
+  def countryCode: String = values.get(COUNTRY_CODE).getOrElse("XX")
+  def name: String = values.getOrElse(NAME, "no name")
+
+  def alternateNames: List[String] =
+    values.get(ALTERNATENAMES).toList.flatMap(_.split(",").toList)
+
+  def allNames: List[String] = {
+    var names = List(name)
+    if (featureClass.isCountry) {
+      names ::= countryCode
+    }
+
+    names ++= alternateNames
+    names
   }
 }
