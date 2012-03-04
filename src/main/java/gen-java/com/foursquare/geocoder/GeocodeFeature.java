@@ -32,12 +32,15 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
   private static final TStruct STRUCT_DESC = new TStruct("GeocodeFeature");
 
   private static final TField CENTER_FIELD_DESC = new TField("center", TType.STRUCT, (short)1);
+  private static final TField CC_FIELD_DESC = new TField("cc", TType.STRING, (short)2);
 
   public GeocodePoint center;
+  public String cc;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
-    CENTER((short)1, "center");
+    CENTER((short)1, "center"),
+    CC((short)2, "cc");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -54,6 +57,8 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       switch(fieldId) {
         case 1: // CENTER
           return CENTER;
+        case 2: // CC
+          return CC;
         default:
           return null;
       }
@@ -100,6 +105,8 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
     tmpMap.put(_Fields.CENTER, new FieldMetaData("center", TFieldRequirementType.DEFAULT, 
         new StructMetaData(TType.STRUCT, GeocodePoint.class)));
+    tmpMap.put(_Fields.CC, new FieldMetaData("cc", TFieldRequirementType.DEFAULT, 
+        new FieldValueMetaData(TType.STRING)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeFeature.class, metaDataMap);
   }
@@ -108,10 +115,12 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
   }
 
   public GeocodeFeature(
-    GeocodePoint center)
+    GeocodePoint center,
+    String cc)
   {
     this();
     this.center = center;
+    this.cc = cc;
   }
 
   /**
@@ -120,6 +129,9 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
   public GeocodeFeature(GeocodeFeature other) {
     if (other.isSetCenter()) {
       this.center = new GeocodePoint(other.center);
+    }
+    if (other.isSetCc()) {
+      this.cc = other.cc;
     }
   }
 
@@ -130,6 +142,7 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
   @Override
   public void clear() {
     this.center = null;
+    this.cc = null;
   }
 
   public GeocodePoint getCenter() {
@@ -156,6 +169,30 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     }
   }
 
+  public String getCc() {
+    return this.cc;
+  }
+
+  public GeocodeFeature setCc(String cc) {
+    this.cc = cc;
+    return this;
+  }
+
+  public void unsetCc() {
+    this.cc = null;
+  }
+
+  /** Returns true if field cc is set (has been asigned a value) and false otherwise */
+  public boolean isSetCc() {
+    return this.cc != null;
+  }
+
+  public void setCcIsSet(boolean value) {
+    if (!value) {
+      this.cc = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case CENTER:
@@ -166,6 +203,14 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       }
       break;
 
+    case CC:
+      if (value == null) {
+        unsetCc();
+      } else {
+        setCc((String)value);
+      }
+      break;
+
     }
   }
 
@@ -173,6 +218,9 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     switch (field) {
     case CENTER:
       return getCenter();
+
+    case CC:
+      return getCc();
 
     }
     throw new IllegalStateException();
@@ -187,6 +235,8 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     switch (field) {
     case CENTER:
       return isSetCenter();
+    case CC:
+      return isSetCc();
     }
     throw new IllegalStateException();
   }
@@ -210,6 +260,15 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       if (!(this_present_center && that_present_center))
         return false;
       if (!this.center.equals(that.center))
+        return false;
+    }
+
+    boolean this_present_cc = true && this.isSetCc();
+    boolean that_present_cc = true && that.isSetCc();
+    if (this_present_cc || that_present_cc) {
+      if (!(this_present_cc && that_present_cc))
+        return false;
+      if (!this.cc.equals(that.cc))
         return false;
     }
 
@@ -239,6 +298,16 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetCc()).compareTo(typedOther.isSetCc());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetCc()) {
+      lastComparison = TBaseHelper.compareTo(this.cc, typedOther.cc);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -264,6 +333,13 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
+        case 2: // CC
+          if (field.type == TType.STRING) {
+            this.cc = iprot.readString();
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -284,6 +360,11 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       this.center.write(oprot);
       oprot.writeFieldEnd();
     }
+    if (this.cc != null) {
+      oprot.writeFieldBegin(CC_FIELD_DESC);
+      oprot.writeString(this.cc);
+      oprot.writeFieldEnd();
+    }
     oprot.writeFieldStop();
     oprot.writeStructEnd();
   }
@@ -298,6 +379,14 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       sb.append("null");
     } else {
       sb.append(this.center);
+    }
+    first = false;
+    if (!first) sb.append(", ");
+    sb.append("cc:");
+    if (this.cc == null) {
+      sb.append("null");
+    } else {
+      sb.append(this.cc);
     }
     first = false;
     sb.append(")");

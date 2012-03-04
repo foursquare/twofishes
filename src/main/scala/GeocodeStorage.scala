@@ -44,7 +44,8 @@ case class GeocodeRecord(
 
   def toGeocodeFeature: GeocodeFeature = {
     new GeocodeFeature(
-      new GeocodePoint(lat, lng)
+      new GeocodePoint(lat, lng),
+      cc
     )
 
   }

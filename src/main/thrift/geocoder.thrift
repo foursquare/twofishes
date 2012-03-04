@@ -7,6 +7,7 @@ struct GeocodePoint {
 
 struct GeocodeFeature {
   1: GeocodePoint center
+  2: string cc
 }
 
 struct GeocodeInterpretation {

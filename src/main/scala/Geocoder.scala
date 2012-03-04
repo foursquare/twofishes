@@ -5,7 +5,6 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
 
 // TODO
-// implement a parse sorted
 // construct a complete response
 // zipcode hack
 // import timezone code
@@ -74,6 +73,44 @@ class GeocoderImpl(store: GeocodeStorageService) extends LogHelper {
     }
   }
 
+  // Higher is better
+  def scoreParse(parse: Parse): Int = {
+    parse match {
+      case primaryFeature :: rest => {
+        var signal = primaryFeature.population.getOrElse(0)
+
+        // if we have a repeated feature, downweight this like crazy
+        // so st petersburg, st petersburg works, but doesn't break new york, ny
+        if (rest.contains(primaryFeature)) {
+          signal -= 100000000
+        }
+
+        // prefer a more aggressive parse ... bleh
+        // this prefers "mt laurel" over the town of "laurel" in "mt" (montana)
+        signal -= 20000 * parse.length
+
+        // TODO: ccHint
+        // TODO: llHint
+        signal += primaryFeature.boost.getOrElse(0)
+
+        // as a terrible tie break, things in the US > zipcodes elsewhere
+        // meant primarily for zipcodes
+        if (primaryFeature.cc == "US") {
+          signal += 1
+        }
+        
+        signal
+      }
+      case Nil => 0
+    }
+  }
+
+  object ParseOrdering extends Ordering[Parse] {
+    def compare(a: Parse, b: Parse) = {
+      scoreParse(b) - scoreParse(a)
+    }
+  }
+
   def geocode(req: GeocodeRequest): GeocodeResponse = {
     val query = req.query
     val tokens = NameNormalizer.tokenize(NameNormalizer.normalize(query))
@@ -83,11 +120,9 @@ class GeocoderImpl(store: GeocodeStorageService) extends LogHelper {
     generateParses(tokens, cache)
     val longest = cache.keys.filter(k => cache(k).nonEmpty).max
     val longestParses = cache(longest)
-    val sortedParses = longestParses
+    val sortedParses = longestParses.sorted(ParseOrdering)
 
     println(longest)
-
-    // SORTING PARSES GOES HERE
 
     val what = tokens.take(tokens.size - longest).mkString(" ")
     val where = tokens.drop(tokens.size - longest).mkString(" ")
