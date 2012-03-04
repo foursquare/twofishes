@@ -7,7 +7,8 @@ import java.io.File
 
 // TODO
 // displayNames
-// rewrites (n/s/e/w)
+// rewrites
+// (n/s/e/w)
 // boosts
 // aliases
 // prefnames

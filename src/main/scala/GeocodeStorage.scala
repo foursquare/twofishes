@@ -42,17 +42,29 @@ case class GeocodeRecord(
     YahooWoeTypes.getOrdering(this.woeType) - YahooWoeTypes.getOrdering(that.woeType)
   }
 
-  def toGeocodeFeature: GeocodeFeature = {
-    new GeocodeFeature(
+  lazy val bestName = names.lift(0).getOrElse("")
+
+
+  def toGeocodeFeature(parentMap: Map[String, GeocodeRecord]): GeocodeFeature = {
+    println(parents)
+    println(parentMap.keys)
+    val parentFeatures = parents.flatMap(pid => parentMap.get(pid)).sorted
+
+    val displayName = (List(bestName) ++ parentFeatures.map(_.bestName)).mkString(", ")
+
+    val feature = new GeocodeFeature(
       new GeocodePoint(lat, lng),
       cc
     )
 
+    feature.setName(bestName)
+    feature.setDisplayName(displayName)
   }
 }
 
 trait GeocodeStorageService {
   def getByName(name: String): Iterator[GeocodeRecord]
+  def getByIds(ids: Seq[String]): Iterator[GeocodeRecord]
   def insert(record: GeocodeRecord): Unit
 }
 
@@ -62,6 +74,10 @@ object MongoGeocodeDAO extends SalatDAO[GeocodeRecord, ObjectId](
 class MongoGeocodeStorageService extends GeocodeStorageService {
   override def getByName(name: String): Iterator[GeocodeRecord] = {
     MongoGeocodeDAO.find(MongoDBObject("names" -> name))
+  }
+
+  def getByIds(ids: Seq[String]): Iterator[GeocodeRecord] = {
+    MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> ids)))
   }
 
   def insert(record: GeocodeRecord) {

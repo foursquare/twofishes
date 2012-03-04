@@ -6,8 +6,11 @@ import scala.collection.mutable.HashMap
 
 // TODO
 // construct a complete response
+// put woetype in the thrift definition?
 // zipcode hack
+// lang
 // import timezone code
+// think about moving to sbt-scrooge
 
 class GeocoderImpl(store: GeocodeStorageService) extends LogHelper {
   type Parse = List[GeocodeRecord]
@@ -40,7 +43,6 @@ class GeocoderImpl(store: GeocodeStorageService) extends LogHelper {
                 val parse = f :: p
                 if (isValidParse(parse)) {
                   logger.info("VALID -- adding to %d".format(cacheKey))
-                  println(parse.sorted)
                   Some(parse.sorted)
                 } else {
                   logger.info("INVALID")
@@ -120,15 +122,23 @@ class GeocoderImpl(store: GeocodeStorageService) extends LogHelper {
     generateParses(tokens, cache)
     val longest = cache.keys.filter(k => cache(k).nonEmpty).max
     val longestParses = cache(longest)
-    val sortedParses = longestParses.sorted(ParseOrdering)
 
-    println(longest)
+    // TODO: make this configurable
+    val sortedParses = longestParses.sorted(ParseOrdering).take(3)
+
+    val parentIds = sortedParses.flatMap(_.headOption.toList.flatMap(_.parents))
+    println("parent ids: " + parentIds)
+    val parents = store.getByIds(parentIds).toList
+    println(parents.toList)
+    val parentMap = parentIds.flatMap(pid => {
+      parents.find(_.ids.contains(pid)).map(p => (pid -> p))
+    }).toMap
 
     val what = tokens.take(tokens.size - longest).mkString(" ")
     val where = tokens.drop(tokens.size - longest).mkString(" ")
     println("%d sorted parses".format(sortedParses.size))
     new GeocodeResponse(sortedParses.map(p => {
-      new GeocodeInterpretation(what, where, p(0).toGeocodeFeature)
+      new GeocodeInterpretation(what, where, p(0).toGeocodeFeature(parentMap))
     }))
   }
 }
