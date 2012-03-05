@@ -4,7 +4,7 @@ package com.foursquare.geocoder.geonames
 import com.foursquare.geocoder.LogHelper
 import java.io.File
 
-class BasicGidTableParser(filename: String) extends LogHelper {
+class TsvHelperFileParser(filename: String) extends LogHelper {
   class TableEntry(val values: List[String]) {
     var used = false
     def markUsed { used = true}
@@ -21,9 +21,16 @@ class BasicGidTableParser(filename: String) extends LogHelper {
     }
   }).toMap
 
+  def logUnused {
+    gidMap.foreach({case (k, v) => {
+      if (!v.used) {
+        logger.error("%s:%s in %s went unused".format(k, v, filename))
+      }
+    }})
+  }
 
-  def getGid(gid: String): List[String] = {
-    gidMap.get(gid) match {
+  def get(key: String): List[String] = {
+    gidMap.get(key) match {
       case Some(v) => {
         v.markUsed
         v.values
@@ -32,10 +39,3 @@ class BasicGidTableParser(filename: String) extends LogHelper {
     }
   }
 }
-
-class RewritesParser(filename: String) {
-  val lines = scala.io.Source.fromFile(new File(filename)).getLines
-}
-
-
-

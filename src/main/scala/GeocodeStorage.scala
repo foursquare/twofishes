@@ -16,9 +16,6 @@ case class DisplayName(
 
 class DisplayNameOrdering(lang: Option[String], preferAbbrev: Boolean) extends Ordering[DisplayName] {
   def compare(a: DisplayName, b: DisplayName) = {
-    println("%s %d".format(a, scoreName(a)))
-        println("%s %d".format(b, scoreName(b)))
-
     scoreName(b) - scoreName(a)
   }
 
@@ -48,6 +45,11 @@ object Implicits {
   implicit def fidListToString(fids: List[FeatureId]): List[String] = fids.map(_.toString)
 }
 
+case class GeocodeBoundingBox(
+  nw: (Double, Double),
+  se: (Double, Double)
+)
+
 case class GeocodeRecord(
   _id: ObjectId = new ObjectId,
   ids: List[String],
@@ -59,7 +61,8 @@ case class GeocodeRecord(
   @Key("dns") displayNames: List[DisplayName],
   @Key("p") parents: List[String],
   population: Option[Int],
-  boost: Option[Int] = None
+  boost: Option[Int] = None,
+  @Key("bb") boundingbox: Option[GeocodeBoundingBox] = None
 ) extends Ordered[GeocodeRecord] {
   def compare(that: GeocodeRecord): Int = {
     YahooWoeTypes.getOrdering(this.woeType) - YahooWoeTypes.getOrdering(that.woeType)
@@ -96,7 +99,9 @@ trait GeocodeStorageService {
   def getByName(name: String): Iterator[GeocodeRecord]
   def getByIds(ids: Seq[String]): Iterator[GeocodeRecord]
   def insert(record: GeocodeRecord): Unit
+  def setRecordNames(id: FeatureId, names: List[DisplayName])
   def addNameToRecord(name: DisplayName, id: FeatureId)
+  def getById(id: FeatureId): Iterator[GeocodeRecord]
 }
 
 object MongoGeocodeDAO extends SalatDAO[GeocodeRecord, ObjectId](
@@ -105,6 +110,10 @@ object MongoGeocodeDAO extends SalatDAO[GeocodeRecord, ObjectId](
 class MongoGeocodeStorageService extends GeocodeStorageService {
   override def getByName(name: String): Iterator[GeocodeRecord] = {
     MongoGeocodeDAO.find(MongoDBObject("names" -> name))
+  }
+
+  def getById(id: FeatureId): Iterator[GeocodeRecord] = {
+    MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))))
   }
 
   def getByIds(ids: Seq[String]): Iterator[GeocodeRecord] = {
@@ -118,6 +127,13 @@ class MongoGeocodeStorageService extends GeocodeStorageService {
   def addNameToRecord(name: DisplayName, id: FeatureId) {
     MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))),
       MongoDBObject("$addToSet" -> MongoDBObject("dns" -> grater[DisplayName].asDBObject(name))),
+      false, false)
+  }
+
+  def setRecordNames(id: FeatureId, names: List[DisplayName]) {
+    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))),
+      MongoDBObject("$set" -> MongoDBObject(
+        "dns" -> names.map(n => grater[DisplayName].asDBObject(n)))),
       false, false)
   }
 }

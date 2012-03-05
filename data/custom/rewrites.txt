@@ -1,5 +1,9 @@
 Saint	St,Ste
 Mountain	Mount,Mt,Mtn
 Mount	Mt,Mountain,Mtn
-Township Of	
+Township	Of
 Air Force Base	AFB
+North	  N
+South	  S
+East 	  E
+West 	  W

@@ -4,7 +4,7 @@ package com.foursquare.geocoder
 import java.text.Normalizer
 import java.util.regex.Pattern
 
-trait Helpers {
+object Helpers {
   def tryo[T](f: => T): Option[T] = {
     try {
       Some(f)

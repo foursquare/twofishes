@@ -1,6 +1,7 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.geocoder.geonames
 
+import com.foursquare.geocoder.Helpers._
 import com.foursquare.geocoder.{Helpers, LogHelper, YahooWoeTypes}
 
 object GeonamesFeatureColumns extends Enumeration {
@@ -13,7 +14,7 @@ object GeonamesFeatureColumns extends Enumeration {
 
 import GeonamesFeatureColumns._
 
-object GeonamesFeature extends LogHelper with Helpers {
+object GeonamesFeature extends LogHelper {
   val adminColumns = List(
     GEONAMEID,
     NAME,
@@ -36,14 +37,44 @@ object GeonamesFeature extends LogHelper with Helpers {
     MODIFICATION_DATE
   )
 
+  val postalCodeColumns = List(
+    COUNTRY_CODE,
+    NAME, // really, postal code
+    PLACE_NAME,
+    ADMIN1_NAME,
+    ADMIN1_CODE,
+    ADMIN2_NAME,
+    ADMIN2_CODE,
+    ADMIN3_NAME,
+    ADMIN3_CODE,
+    LATITUDE,
+    LONGITUDE,
+    ACCURACY
+  )
+
+  def parseFromPostalCodeLine(index: Int, line: String): Option[GeonamesFeature] = {
+    // HACK
+    val newLine = if (line.split("\t").size == 11) {
+      (line.split("\t").toList ++ List("n/a")).mkString("\t")
+    } else {
+      line
+    }
+
+    parseLine(index, newLine, postalCodeColumns)
+  }
+
   def parseFromAdminLine(index: Int, line: String): Option[GeonamesFeature] = {
+    parseLine(index, line, adminColumns)
+  }
+
+  def parseLine(index: Int, line: String, columns: List[GeonamesFeatureColumns.Value]): Option[GeonamesFeature] = {
     val parts = line.split("\t")
-    if (parts.size != adminColumns.size) {
+    if (parts.size != columns.size) {
       logger.error("line %d has the wrong number of columns. Has %d, needs %d".format(
-        index, parts.size, adminColumns.size))
+        index, parts.size, columns.size))
       None
     } else {
-      val colMap = adminColumns.zip(parts).toMap
+      val colMap = columns.zip(parts).toMap
       val feature = new GeonamesFeature(colMap)
       if (feature.isValid) {
         Some(feature)
@@ -105,7 +136,7 @@ class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[Str
   }
 }
 
-class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) extends Helpers {
+class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) {
   def isValid = {
     values.contains(NAME) &&
     values.contains(LATITUDE) && 
@@ -154,6 +185,8 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) extends
   def longitude: Double = values.get(LONGITUDE).map(_.toDouble).get
   def countryCode: String = values.get(COUNTRY_CODE).getOrElse("XX")
   def name: String = values.getOrElse(NAME, "no name")
+  def place: String = values.getOrElse(PLACE_NAME, "no name")
+
   def geonameid: Option[String] = values.get(GEONAMEID)
 
   def alternateNames: List[String] =

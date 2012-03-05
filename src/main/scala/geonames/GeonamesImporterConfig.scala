@@ -6,4 +6,5 @@ object GeonamesImporterConfig {
   val parseWorld = false
   val parseCountry = "US"
   val importAlternateNames = true
+  val importPostalCodes = true
 }
