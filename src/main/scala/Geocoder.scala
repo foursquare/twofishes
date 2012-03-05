@@ -5,12 +5,14 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
 
 // TODO
-// construct a complete response
-// put woetype in the thrift definition?
+// construct a complete response (woetype, parents? names?)
+// put woetype enum in the thrift definition?
 // zipcode hack
-// lang
+// llHint
+// ccHint
 // import timezone code
-// think about moving to sbt-scrooge
+// bounding boxes
+// think about moving to sbt-scrooge?
 
 class GeocoderImpl(store: GeocodeStorageService) extends LogHelper {
   type Parse = List[GeocodeRecord]
@@ -138,7 +140,7 @@ class GeocoderImpl(store: GeocodeStorageService) extends LogHelper {
     val where = tokens.drop(tokens.size - longest).mkString(" ")
     println("%d sorted parses".format(sortedParses.size))
     new GeocodeResponse(sortedParses.map(p => {
-      new GeocodeInterpretation(what, where, p(0).toGeocodeFeature(parentMap))
+      new GeocodeInterpretation(what, where, p(0).toGeocodeFeature(parentMap, Option(req.lang)))
     }))
   }
 }

@@ -23,11 +23,12 @@ class GeocodeServerImpl extends Geocoder.ServiceIface  {
 }
 
 class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
-  def handleQuery(query: String) = {
+  def handleQuery(query: String, lang: Option[String]) = {
     val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
 
-    val geocode = new GeocoderImpl(new MongoGeocodeStorageService()).geocode(
-      new GeocodeRequest(query))
+    val request = new GeocodeRequest(query)
+    lang.map(l => request.setLang(l))
+    val geocode = new GeocoderImpl(new MongoGeocodeStorageService()).geocode(request)
 
     val serializer = new TSerializer(new TSimpleJSONProtocol.Factory());
     val json = serializer.toString(geocode);
@@ -44,7 +45,10 @@ class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
     (for {
       queries <- params.get("query")
       query <- queries.asScala.lift(0)
-    } yield { handleQuery(query) }).getOrElse({
+    } yield { 
+      val lang = params.get("lang").flatMap(_.asScala.lift(0))
+      handleQuery(query, lang)
+    }).getOrElse({
       val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
       Future.value(response)
     })

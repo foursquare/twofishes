@@ -9,10 +9,33 @@ import com.mongodb.casbah.Imports._
 import com.mongodb.casbah.MongoConnection
 
 case class DisplayName(
-  @Key("l") langugage: String,
+  @Key("l") lang: String,
   @Key("n") name: String,
   @Key("p") preferred: Boolean
 )
+
+class DisplayNameOrdering(lang: Option[String], preferAbbrev: Boolean) extends Ordering[DisplayName] {
+  def compare(a: DisplayName, b: DisplayName) = {
+    println("%s %d".format(a, scoreName(a)))
+        println("%s %d".format(b, scoreName(b)))
+
+    scoreName(b) - scoreName(a)
+  }
+
+  def scoreName(name: DisplayName): Int = {
+    var score = 0
+    if (name.preferred) {
+      score += 1
+    }
+    if (lang.exists(_ == name.lang)) {
+      score += 2
+    }
+    if (name.lang == "abbr" && preferAbbrev) {
+      score += 4
+    }
+    score
+  }
+}
 
 case class FeatureId(
   @Key("n") namespace: String,
@@ -42,30 +65,38 @@ case class GeocodeRecord(
     YahooWoeTypes.getOrdering(this.woeType) - YahooWoeTypes.getOrdering(that.woeType)
   }
 
-  lazy val bestName = names.lift(0).getOrElse("")
+  def bestName(lang: Option[String], preferAbbrev: Boolean): Option[DisplayName] = {
+    displayNames.sorted(new DisplayNameOrdering(lang, preferAbbrev)).headOption
+  }
 
+  def toGeocodeFeature(parentMap: Map[String, GeocodeRecord],
+      lang: Option[String] = None): GeocodeFeature = {
+    val myBestName = bestName(lang, false)
 
-  def toGeocodeFeature(parentMap: Map[String, GeocodeRecord]): GeocodeFeature = {
     println(parents)
     println(parentMap.keys)
-    val parentFeatures = parents.flatMap(pid => parentMap.get(pid)).sorted
+    val parentFeatures = parents.flatMap(pid => parentMap.get(pid)).filterNot(_.isCountry).sorted
 
-    val displayName = (List(bestName) ++ parentFeatures.map(_.bestName)).mkString(", ")
+    val displayName = (List(myBestName) ++ parentFeatures.map(_.bestName(lang, true)))
+      .flatMap(_.map(_.name)).mkString(", ")
 
     val feature = new GeocodeFeature(
       new GeocodePoint(lat, lng),
       cc
     )
 
-    feature.setName(bestName)
+    feature.setName(myBestName.map(_.name).getOrElse(""))
     feature.setDisplayName(displayName)
   }
+
+  def isCountry = woeType.exists(_ == YahooWoeTypes.COUNTRY)
 }
 
 trait GeocodeStorageService {
   def getByName(name: String): Iterator[GeocodeRecord]
   def getByIds(ids: Seq[String]): Iterator[GeocodeRecord]
   def insert(record: GeocodeRecord): Unit
+  def addNameToRecord(name: DisplayName, id: FeatureId)
 }
 
 object MongoGeocodeDAO extends SalatDAO[GeocodeRecord, ObjectId](
@@ -82,5 +113,11 @@ class MongoGeocodeStorageService extends GeocodeStorageService {
 
   def insert(record: GeocodeRecord) {
     MongoGeocodeDAO.insert(record)
+  }
+
+  def addNameToRecord(name: DisplayName, id: FeatureId) {
+    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))),
+      MongoDBObject("$addToSet" -> MongoDBObject("dns" -> grater[DisplayName].asDBObject(name))),
+      false, false)
   }
 }

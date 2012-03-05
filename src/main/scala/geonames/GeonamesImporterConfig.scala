@@ -5,4 +5,5 @@ object GeonamesImporterConfig {
   val shouldParseBuildings = false
   val parseWorld = false
   val parseCountry = "US"
+  val importAlternateNames = true
 }

@@ -28,7 +28,10 @@ struct GeocodeResponse {
 }
 
 struct GeocodeRequest {
-  1: string query
+  1: string query,
+  2: optional string cc,
+  3: optional string lang = "en",
+  4: optional GeocodePoint ll
 }
 
 service Geocoder {

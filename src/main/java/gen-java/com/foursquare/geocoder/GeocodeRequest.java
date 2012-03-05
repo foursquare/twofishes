@@ -32,12 +32,21 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   private static final TStruct STRUCT_DESC = new TStruct("GeocodeRequest");
 
   private static final TField QUERY_FIELD_DESC = new TField("query", TType.STRING, (short)1);
+  private static final TField CC_FIELD_DESC = new TField("cc", TType.STRING, (short)2);
+  private static final TField LANG_FIELD_DESC = new TField("lang", TType.STRING, (short)3);
+  private static final TField LL_FIELD_DESC = new TField("ll", TType.STRUCT, (short)4);
 
   public String query;
+  public String cc;
+  public String lang;
+  public GeocodePoint ll;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
-    QUERY((short)1, "query");
+    QUERY((short)1, "query"),
+    CC((short)2, "cc"),
+    LANG((short)3, "lang"),
+    LL((short)4, "ll");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -54,6 +63,12 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       switch(fieldId) {
         case 1: // QUERY
           return QUERY;
+        case 2: // CC
+          return CC;
+        case 3: // LANG
+          return LANG;
+        case 4: // LL
+          return LL;
         default:
           return null;
       }
@@ -100,11 +115,19 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
     tmpMap.put(_Fields.QUERY, new FieldMetaData("query", TFieldRequirementType.DEFAULT, 
         new FieldValueMetaData(TType.STRING)));
+    tmpMap.put(_Fields.CC, new FieldMetaData("cc", TFieldRequirementType.OPTIONAL, 
+        new FieldValueMetaData(TType.STRING)));
+    tmpMap.put(_Fields.LANG, new FieldMetaData("lang", TFieldRequirementType.OPTIONAL, 
+        new FieldValueMetaData(TType.STRING)));
+    tmpMap.put(_Fields.LL, new FieldMetaData("ll", TFieldRequirementType.OPTIONAL, 
+        new StructMetaData(TType.STRUCT, GeocodePoint.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeRequest.class, metaDataMap);
   }
 
   public GeocodeRequest() {
+    this.lang = "en";
+
   }
 
   public GeocodeRequest(
@@ -121,6 +144,15 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     if (other.isSetQuery()) {
       this.query = other.query;
     }
+    if (other.isSetCc()) {
+      this.cc = other.cc;
+    }
+    if (other.isSetLang()) {
+      this.lang = other.lang;
+    }
+    if (other.isSetLl()) {
+      this.ll = new GeocodePoint(other.ll);
+    }
   }
 
   public GeocodeRequest deepCopy() {
@@ -130,6 +162,10 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   @Override
   public void clear() {
     this.query = null;
+    this.cc = null;
+    this.lang = "en";
+
+    this.ll = null;
   }
 
   public String getQuery() {
@@ -156,6 +192,78 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     }
   }
 
+  public String getCc() {
+    return this.cc;
+  }
+
+  public GeocodeRequest setCc(String cc) {
+    this.cc = cc;
+    return this;
+  }
+
+  public void unsetCc() {
+    this.cc = null;
+  }
+
+  /** Returns true if field cc is set (has been asigned a value) and false otherwise */
+  public boolean isSetCc() {
+    return this.cc != null;
+  }
+
+  public void setCcIsSet(boolean value) {
+    if (!value) {
+      this.cc = null;
+    }
+  }
+
+  public String getLang() {
+    return this.lang;
+  }
+
+  public GeocodeRequest setLang(String lang) {
+    this.lang = lang;
+    return this;
+  }
+
+  public void unsetLang() {
+    this.lang = null;
+  }
+
+  /** Returns true if field lang is set (has been asigned a value) and false otherwise */
+  public boolean isSetLang() {
+    return this.lang != null;
+  }
+
+  public void setLangIsSet(boolean value) {
+    if (!value) {
+      this.lang = null;
+    }
+  }
+
+  public GeocodePoint getLl() {
+    return this.ll;
+  }
+
+  public GeocodeRequest setLl(GeocodePoint ll) {
+    this.ll = ll;
+    return this;
+  }
+
+  public void unsetLl() {
+    this.ll = null;
+  }
+
+  /** Returns true if field ll is set (has been asigned a value) and false otherwise */
+  public boolean isSetLl() {
+    return this.ll != null;
+  }
+
+  public void setLlIsSet(boolean value) {
+    if (!value) {
+      this.ll = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case QUERY:
@@ -166,6 +274,30 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       }
       break;
 
+    case CC:
+      if (value == null) {
+        unsetCc();
+      } else {
+        setCc((String)value);
+      }
+      break;
+
+    case LANG:
+      if (value == null) {
+        unsetLang();
+      } else {
+        setLang((String)value);
+      }
+      break;
+
+    case LL:
+      if (value == null) {
+        unsetLl();
+      } else {
+        setLl((GeocodePoint)value);
+      }
+      break;
+
     }
   }
 
@@ -173,6 +305,15 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     switch (field) {
     case QUERY:
       return getQuery();
+
+    case CC:
+      return getCc();
+
+    case LANG:
+      return getLang();
+
+    case LL:
+      return getLl();
 
     }
     throw new IllegalStateException();
@@ -187,6 +328,12 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     switch (field) {
     case QUERY:
       return isSetQuery();
+    case CC:
+      return isSetCc();
+    case LANG:
+      return isSetLang();
+    case LL:
+      return isSetLl();
     }
     throw new IllegalStateException();
   }
@@ -210,6 +357,33 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       if (!(this_present_query && that_present_query))
         return false;
       if (!this.query.equals(that.query))
+        return false;
+    }
+
+    boolean this_present_cc = true && this.isSetCc();
+    boolean that_present_cc = true && that.isSetCc();
+    if (this_present_cc || that_present_cc) {
+      if (!(this_present_cc && that_present_cc))
+        return false;
+      if (!this.cc.equals(that.cc))
+        return false;
+    }
+
+    boolean this_present_lang = true && this.isSetLang();
+    boolean that_present_lang = true && that.isSetLang();
+    if (this_present_lang || that_present_lang) {
+      if (!(this_present_lang && that_present_lang))
+        return false;
+      if (!this.lang.equals(that.lang))
+        return false;
+    }
+
+    boolean this_present_ll = true && this.isSetLl();
+    boolean that_present_ll = true && that.isSetLl();
+    if (this_present_ll || that_present_ll) {
+      if (!(this_present_ll && that_present_ll))
+        return false;
+      if (!this.ll.equals(that.ll))
         return false;
     }
 
@@ -239,6 +413,36 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetCc()).compareTo(typedOther.isSetCc());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetCc()) {
+      lastComparison = TBaseHelper.compareTo(this.cc, typedOther.cc);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetLang()).compareTo(typedOther.isSetLang());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetLang()) {
+      lastComparison = TBaseHelper.compareTo(this.lang, typedOther.lang);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetLl()).compareTo(typedOther.isSetLl());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetLl()) {
+      lastComparison = TBaseHelper.compareTo(this.ll, typedOther.ll);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -263,6 +467,28 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
+        case 2: // CC
+          if (field.type == TType.STRING) {
+            this.cc = iprot.readString();
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 3: // LANG
+          if (field.type == TType.STRING) {
+            this.lang = iprot.readString();
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 4: // LL
+          if (field.type == TType.STRUCT) {
+            this.ll = new GeocodePoint();
+            this.ll.read(iprot);
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -283,6 +509,27 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       oprot.writeString(this.query);
       oprot.writeFieldEnd();
     }
+    if (this.cc != null) {
+      if (isSetCc()) {
+        oprot.writeFieldBegin(CC_FIELD_DESC);
+        oprot.writeString(this.cc);
+        oprot.writeFieldEnd();
+      }
+    }
+    if (this.lang != null) {
+      if (isSetLang()) {
+        oprot.writeFieldBegin(LANG_FIELD_DESC);
+        oprot.writeString(this.lang);
+        oprot.writeFieldEnd();
+      }
+    }
+    if (this.ll != null) {
+      if (isSetLl()) {
+        oprot.writeFieldBegin(LL_FIELD_DESC);
+        this.ll.write(oprot);
+        oprot.writeFieldEnd();
+      }
+    }
     oprot.writeFieldStop();
     oprot.writeStructEnd();
   }
@@ -299,6 +546,36 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       sb.append(this.query);
     }
     first = false;
+    if (isSetCc()) {
+      if (!first) sb.append(", ");
+      sb.append("cc:");
+      if (this.cc == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.cc);
+      }
+      first = false;
+    }
+    if (isSetLang()) {
+      if (!first) sb.append(", ");
+      sb.append("lang:");
+      if (this.lang == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.lang);
+      }
+      first = false;
+    }
+    if (isSetLl()) {
+      if (!first) sb.append(", ");
+      sb.append("ll:");
+      if (this.ll == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ll);
+      }
+      first = false;
+    }
     sb.append(")");
     return sb.toString();
   }

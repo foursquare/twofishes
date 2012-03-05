@@ -569,8 +569,8 @@ class AlternateNamesParser:
       geonameid = row[1]
       lang = row[2]
       altName = row[3]
-      prefName = True if row[4] == '1' else False
-      shortName = True if row[5] == '1' else False
+      prefName = (row[4] == '1')
+      shortName = (row[5] == '1')
 
       if lang == 'link':
         next

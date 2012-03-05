@@ -19,6 +19,11 @@ object GeonamesParser {
     if (!GeonamesImporterConfig.parseWorld) {
       new GeonamesParser(new MongoGeocodeStorageService()).parseFromFile(
         "data/downloaded/%s.txt".format(GeonamesImporterConfig.parseCountry))
+
+      if (GeonamesImporterConfig.importAlternateNames) {
+        new GeonamesParser(new MongoGeocodeStorageService()).parseAlternateNamesFile(
+          "data/downloaded/alternateNames.txt")
+      }
     }
   }
 }
@@ -48,9 +53,9 @@ class GeonamesParser(store: GeocodeStorageService) extends LogHelper {
       woeType = Some(feature.featureClass.woeType),
       lat = feature.latitude,
       lng = feature.longitude,
-      displayNames = Nil,
       parents = parents,
-      population = feature.population
+      population = feature.population,
+      displayNames = List(DisplayName("en", feature.name, false))
     )
 
     store.insert(record)
@@ -68,6 +73,29 @@ class GeonamesParser(store: GeocodeStorageService) extends LogHelper {
           parseFeature(f)
         }
       })
+    }})
+  }
+
+  def parseAlternateNamesFile(filename: String) {
+    val lines = scala.io.Source.fromFile(new File(filename)).getLines
+    lines.zipWithIndex.foreach({case (line, index) => {
+      if (index % 1000 == 0) {
+        logger.info("imported %d alternateNames so far".format(index))
+      }
+
+      val parts = line.split("\t").toList
+      if (parts.size < 4) {
+          logger.error("line %d didn't have 5 parts: %s -- %s".format(index, line, parts.mkString(",")))
+        } else {
+          val geonameid = parts(1)
+          val lang = parts(2)
+          val altName = parts(3)
+          val isPrefName = parts.lift(4).exists(_ == "1")
+          val isShortName = parts.lift(5).exists(_ == "1")
+
+          val name = DisplayName(lang, altName, isPrefName)
+          store.addNameToRecord(name, FeatureId(geonameIdNamespace, geonameid))
+        }
     }})
   }
 }
