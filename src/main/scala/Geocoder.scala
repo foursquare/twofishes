@@ -8,11 +8,15 @@ import scala.collection.mutable.HashMap
 // construct a complete response (woetype, parents? names?)
 // put woetype enum in the thrift definition?
 // zipcode hack
-// llHint
-// ccHint
 // import timezone code
 // bounding boxes
-// think about moving to sbt-scrooge?
+// --flickr importer
+// --in code
+// import timezone server
+// break out uses of MongoStorageService
+// make server more configurable
+// add a webui
+// tests
 
 class GeocoderImpl(store: GeocodeStorageService) extends LogHelper {
   type Parse = List[GeocodeRecord]
@@ -76,40 +80,48 @@ class GeocoderImpl(store: GeocodeStorageService) extends LogHelper {
       }
     }
   }
+ 
+  class ParseOrdering(llHint: GeocodePoint, ccHint: String) extends Ordering[Parse] {
+    // Higher is better
+    def scoreParse(parse: Parse): Int = {
+      parse match {
+        case primaryFeature :: rest => {
+          var signal = primaryFeature.population.getOrElse(0)
 
-  // Higher is better
-  def scoreParse(parse: Parse): Int = {
-    parse match {
-      case primaryFeature :: rest => {
-        var signal = primaryFeature.population.getOrElse(0)
+          // if we have a repeated feature, downweight this like crazy
+          // so st petersburg, st petersburg works, but doesn't break new york, ny
+          if (rest.contains(primaryFeature)) {
+            signal -= 100000000
+          }
 
-        // if we have a repeated feature, downweight this like crazy
-        // so st petersburg, st petersburg works, but doesn't break new york, ny
-        if (rest.contains(primaryFeature)) {
-          signal -= 100000000
+          // prefer a more aggressive parse ... bleh
+          // this prefers "mt laurel" over the town of "laurel" in "mt" (montana)
+          signal -= 20000 * parse.length
+
+          // Matching country hint is good
+          if (Option(ccHint).exists(_ == primaryFeature.cc)) {
+            signal += 100000
+          }
+
+          Option(llHint).foreach(ll => {
+            signal -= GeoTools.getDistance(ll.lat, ll.lng,
+                primaryFeature.lat, primaryFeature.lng)
+          })
+
+          signal += primaryFeature.boost.getOrElse(0)
+
+          // as a terrible tie break, things in the US > elsewhere
+          // meant primarily for zipcodes
+          if (primaryFeature.cc == "US") {
+            signal += 1
+          }
+          
+          signal
         }
-
-        // prefer a more aggressive parse ... bleh
-        // this prefers "mt laurel" over the town of "laurel" in "mt" (montana)
-        signal -= 20000 * parse.length
-
-        // TODO: ccHint
-        // TODO: llHint
-        signal += primaryFeature.boost.getOrElse(0)
-
-        // as a terrible tie break, things in the US > zipcodes elsewhere
-        // meant primarily for zipcodes
-        if (primaryFeature.cc == "US") {
-          signal += 1
-        }
-        
-        signal
+        case Nil => 0
       }
-      case Nil => 0
     }
-  }
 
-  object ParseOrdering extends Ordering[Parse] {
     def compare(a: Parse, b: Parse) = {
       scoreParse(b) - scoreParse(a)
     }
@@ -118,7 +130,7 @@ class GeocoderImpl(store: GeocodeStorageService) extends LogHelper {
   def geocode(req: GeocodeRequest): GeocodeResponse = {
     val query = req.query
     val tokens = NameNormalizer.tokenize(NameNormalizer.normalize(query))
-    /// NEAR PARSING GOES HERE
+    /// CONNECTOR PARSING GOES HERE
 
     val cache = new HashMap[Int, List[List[GeocodeRecord]]]()
     generateParses(tokens, cache)
@@ -126,7 +138,7 @@ class GeocoderImpl(store: GeocodeStorageService) extends LogHelper {
     val longestParses = cache(longest)
 
     // TODO: make this configurable
-    val sortedParses = longestParses.sorted(ParseOrdering).take(3)
+    val sortedParses = longestParses.sorted(new ParseOrdering(req.ll, req.cc)).take(3)
 
     val parentIds = sortedParses.flatMap(_.headOption.toList.flatMap(_.parents))
     println("parent ids: " + parentIds)

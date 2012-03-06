@@ -45,9 +45,9 @@ object Implicits {
   implicit def fidListToString(fids: List[FeatureId]): List[String] = fids.map(_.toString)
 }
 
-case class GeocodeBoundingBox(
-  nw: (Double, Double),
-  se: (Double, Double)
+case class BoundingBox(
+  ne: (Double, Double),
+  sw: (Double, Double)
 )
 
 case class GeocodeRecord(
@@ -62,7 +62,7 @@ case class GeocodeRecord(
   @Key("p") parents: List[String],
   population: Option[Int],
   boost: Option[Int] = None,
-  @Key("bb") boundingbox: Option[GeocodeBoundingBox] = None
+  @Key("bb") boundingbox: Option[BoundingBox] = None
 ) extends Ordered[GeocodeRecord] {
   def compare(that: GeocodeRecord): Int = {
     YahooWoeTypes.getOrdering(this.woeType) - YahooWoeTypes.getOrdering(that.woeType)
@@ -76,8 +76,6 @@ case class GeocodeRecord(
       lang: Option[String] = None): GeocodeFeature = {
     val myBestName = bestName(lang, false)
 
-    println(parents)
-    println(parentMap.keys)
     val parentFeatures = parents.flatMap(pid => parentMap.get(pid)).filterNot(_.isCountry).sorted
 
     val displayName = (List(myBestName) ++ parentFeatures.map(_.bestName(lang, true)))
@@ -90,6 +88,15 @@ case class GeocodeRecord(
 
     feature.setName(myBestName.map(_.name).getOrElse(""))
     feature.setDisplayName(displayName)
+
+    boundingbox.foreach(bounds =>
+      feature.setBounds(new GeocodeBoundingBox(
+        new GeocodePoint(bounds.ne._1, bounds.ne._2),
+        new GeocodePoint(bounds.sw._1, bounds.sw._2)
+      ))  
+    )
+
+    feature
   }
 
   def isCountry = woeType.exists(_ == YahooWoeTypes.COUNTRY)

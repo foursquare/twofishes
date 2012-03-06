@@ -16,8 +16,7 @@ import org.jboss.netty.util.CharsetUtil
 
 class GeocodeServerImpl extends Geocoder.ServiceIface  {
   def geocode(r: GeocodeRequest): Future[GeocodeResponse] = {
-    println("Handling request")
-    val response = new GeocodeResponse()
+    val response = new GeocoderImpl(new MongoGeocodeStorageService()).geocode(r)
     Future.value(response)
   }
 }
@@ -55,7 +54,29 @@ class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
   }
 }
 
-object GeocodeServer {
+// object GeocodeThriftServer extends Application {
+//   class GeocodeServer extends Geocoder.Iface {
+//     override def geocode(r: GeocodeRequest): GeocodeResponse = {
+//       new GeocoderImpl(new MongoGeocodeStorageService()).geocode(request)
+//     }
+//   }
+
+//   def main(args: Array[String]) {
+//     try {
+//       val serverTransport = new TServerSocket(8080)
+//       val processor = new TimeServer.Processor(new GeocodeServer())
+//       val protFactory = new TBinaryProtocol.Factory(true, true)
+//       val server = new TThreadPoolServer(processor, serverTransport, protFactory)
+      
+//       println("starting server")
+//       server.serve();     
+//     } catch { 
+//       case x: Exception => x.printStackTrace();
+//     }
+//   }
+// }
+
+object GeocodeFinagleServer {
   def main(args: Array[String]) {
     // Implement the Thrift Interface
     val processor = new GeocodeServerImpl()
@@ -74,6 +95,8 @@ object GeocodeServer {
       .codec(Http())
       .name("geocoder-http")
       .build(new GeocoderHttpService())
+
+
   }
 }
 

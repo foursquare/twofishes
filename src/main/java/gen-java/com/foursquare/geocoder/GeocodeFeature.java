@@ -34,34 +34,25 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
   private static final TField CENTER_FIELD_DESC = new TField("center", TType.STRUCT, (short)1);
   private static final TField CC_FIELD_DESC = new TField("cc", TType.STRING, (short)2);
   private static final TField NAME_FIELD_DESC = new TField("name", TType.STRING, (short)3);
-  private static final TField ADMIN1_FIELD_DESC = new TField("admin1", TType.STRING, (short)4);
-  private static final TField ADMIN2_FIELD_DESC = new TField("admin2", TType.STRING, (short)5);
-  private static final TField ADMIN3_FIELD_DESC = new TField("admin3", TType.STRING, (short)6);
-  private static final TField ADMIN4_FIELD_DESC = new TField("admin4", TType.STRING, (short)7);
-  private static final TField DISPLAY_NAME_FIELD_DESC = new TField("displayName", TType.STRING, (short)8);
-  private static final TField WOE_TYPE_FIELD_DESC = new TField("woeType", TType.I32, (short)9);
+  private static final TField DISPLAY_NAME_FIELD_DESC = new TField("displayName", TType.STRING, (short)4);
+  private static final TField WOE_TYPE_FIELD_DESC = new TField("woeType", TType.I32, (short)5);
+  private static final TField BOUNDS_FIELD_DESC = new TField("bounds", TType.STRUCT, (short)6);
 
   public GeocodePoint center;
   public String cc;
   public String name;
-  public String admin1;
-  public String admin2;
-  public String admin3;
-  public String admin4;
   public String displayName;
   public int woeType;
+  public GeocodeBoundingBox bounds;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
     CENTER((short)1, "center"),
     CC((short)2, "cc"),
     NAME((short)3, "name"),
-    ADMIN1((short)4, "admin1"),
-    ADMIN2((short)5, "admin2"),
-    ADMIN3((short)6, "admin3"),
-    ADMIN4((short)7, "admin4"),
-    DISPLAY_NAME((short)8, "displayName"),
-    WOE_TYPE((short)9, "woeType");
+    DISPLAY_NAME((short)4, "displayName"),
+    WOE_TYPE((short)5, "woeType"),
+    BOUNDS((short)6, "bounds");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -82,18 +73,12 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
           return CC;
         case 3: // NAME
           return NAME;
-        case 4: // ADMIN1
-          return ADMIN1;
-        case 5: // ADMIN2
-          return ADMIN2;
-        case 6: // ADMIN3
-          return ADMIN3;
-        case 7: // ADMIN4
-          return ADMIN4;
-        case 8: // DISPLAY_NAME
+        case 4: // DISPLAY_NAME
           return DISPLAY_NAME;
-        case 9: // WOE_TYPE
+        case 5: // WOE_TYPE
           return WOE_TYPE;
+        case 6: // BOUNDS
+          return BOUNDS;
         default:
           return null;
       }
@@ -146,18 +131,12 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         new FieldValueMetaData(TType.STRING)));
     tmpMap.put(_Fields.NAME, new FieldMetaData("name", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.STRING)));
-    tmpMap.put(_Fields.ADMIN1, new FieldMetaData("admin1", TFieldRequirementType.OPTIONAL, 
-        new FieldValueMetaData(TType.STRING)));
-    tmpMap.put(_Fields.ADMIN2, new FieldMetaData("admin2", TFieldRequirementType.OPTIONAL, 
-        new FieldValueMetaData(TType.STRING)));
-    tmpMap.put(_Fields.ADMIN3, new FieldMetaData("admin3", TFieldRequirementType.OPTIONAL, 
-        new FieldValueMetaData(TType.STRING)));
-    tmpMap.put(_Fields.ADMIN4, new FieldMetaData("admin4", TFieldRequirementType.OPTIONAL, 
-        new FieldValueMetaData(TType.STRING)));
     tmpMap.put(_Fields.DISPLAY_NAME, new FieldMetaData("displayName", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.STRING)));
     tmpMap.put(_Fields.WOE_TYPE, new FieldMetaData("woeType", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.I32)));
+    tmpMap.put(_Fields.BOUNDS, new FieldMetaData("bounds", TFieldRequirementType.OPTIONAL, 
+        new StructMetaData(TType.STRUCT, GeocodeBoundingBox.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeFeature.class, metaDataMap);
   }
@@ -189,22 +168,13 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     if (other.isSetName()) {
       this.name = other.name;
     }
-    if (other.isSetAdmin1()) {
-      this.admin1 = other.admin1;
-    }
-    if (other.isSetAdmin2()) {
-      this.admin2 = other.admin2;
-    }
-    if (other.isSetAdmin3()) {
-      this.admin3 = other.admin3;
-    }
-    if (other.isSetAdmin4()) {
-      this.admin4 = other.admin4;
-    }
     if (other.isSetDisplayName()) {
       this.displayName = other.displayName;
     }
     this.woeType = other.woeType;
+    if (other.isSetBounds()) {
+      this.bounds = new GeocodeBoundingBox(other.bounds);
+    }
   }
 
   public GeocodeFeature deepCopy() {
@@ -216,13 +186,10 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     this.center = null;
     this.cc = null;
     this.name = null;
-    this.admin1 = null;
-    this.admin2 = null;
-    this.admin3 = null;
-    this.admin4 = null;
     this.displayName = null;
     setWoeTypeIsSet(false);
     this.woeType = 0;
+    this.bounds = null;
   }
 
   public GeocodePoint getCenter() {
@@ -297,102 +264,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     }
   }
 
-  public String getAdmin1() {
-    return this.admin1;
-  }
-
-  public GeocodeFeature setAdmin1(String admin1) {
-    this.admin1 = admin1;
-    return this;
-  }
-
-  public void unsetAdmin1() {
-    this.admin1 = null;
-  }
-
-  /** Returns true if field admin1 is set (has been asigned a value) and false otherwise */
-  public boolean isSetAdmin1() {
-    return this.admin1 != null;
-  }
-
-  public void setAdmin1IsSet(boolean value) {
-    if (!value) {
-      this.admin1 = null;
-    }
-  }
-
-  public String getAdmin2() {
-    return this.admin2;
-  }
-
-  public GeocodeFeature setAdmin2(String admin2) {
-    this.admin2 = admin2;
-    return this;
-  }
-
-  public void unsetAdmin2() {
-    this.admin2 = null;
-  }
-
-  /** Returns true if field admin2 is set (has been asigned a value) and false otherwise */
-  public boolean isSetAdmin2() {
-    return this.admin2 != null;
-  }
-
-  public void setAdmin2IsSet(boolean value) {
-    if (!value) {
-      this.admin2 = null;
-    }
-  }
-
-  public String getAdmin3() {
-    return this.admin3;
-  }
-
-  public GeocodeFeature setAdmin3(String admin3) {
-    this.admin3 = admin3;
-    return this;
-  }
-
-  public void unsetAdmin3() {
-    this.admin3 = null;
-  }
-
-  /** Returns true if field admin3 is set (has been asigned a value) and false otherwise */
-  public boolean isSetAdmin3() {
-    return this.admin3 != null;
-  }
-
-  public void setAdmin3IsSet(boolean value) {
-    if (!value) {
-      this.admin3 = null;
-    }
-  }
-
-  public String getAdmin4() {
-    return this.admin4;
-  }
-
-  public GeocodeFeature setAdmin4(String admin4) {
-    this.admin4 = admin4;
-    return this;
-  }
-
-  public void unsetAdmin4() {
-    this.admin4 = null;
-  }
-
-  /** Returns true if field admin4 is set (has been asigned a value) and false otherwise */
-  public boolean isSetAdmin4() {
-    return this.admin4 != null;
-  }
-
-  public void setAdmin4IsSet(boolean value) {
-    if (!value) {
-      this.admin4 = null;
-    }
-  }
-
   public String getDisplayName() {
     return this.displayName;
   }
@@ -440,6 +311,30 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     __isset_bit_vector.set(__WOETYPE_ISSET_ID, value);
   }
 
+  public GeocodeBoundingBox getBounds() {
+    return this.bounds;
+  }
+
+  public GeocodeFeature setBounds(GeocodeBoundingBox bounds) {
+    this.bounds = bounds;
+    return this;
+  }
+
+  public void unsetBounds() {
+    this.bounds = null;
+  }
+
+  /** Returns true if field bounds is set (has been asigned a value) and false otherwise */
+  public boolean isSetBounds() {
+    return this.bounds != null;
+  }
+
+  public void setBoundsIsSet(boolean value) {
+    if (!value) {
+      this.bounds = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case CENTER:
@@ -466,38 +361,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       }
       break;
 
-    case ADMIN1:
-      if (value == null) {
-        unsetAdmin1();
-      } else {
-        setAdmin1((String)value);
-      }
-      break;
-
-    case ADMIN2:
-      if (value == null) {
-        unsetAdmin2();
-      } else {
-        setAdmin2((String)value);
-      }
-      break;
-
-    case ADMIN3:
-      if (value == null) {
-        unsetAdmin3();
-      } else {
-        setAdmin3((String)value);
-      }
-      break;
-
-    case ADMIN4:
-      if (value == null) {
-        unsetAdmin4();
-      } else {
-        setAdmin4((String)value);
-      }
-      break;
-
     case DISPLAY_NAME:
       if (value == null) {
         unsetDisplayName();
@@ -511,6 +374,14 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         unsetWoeType();
       } else {
         setWoeType((Integer)value);
+      }
+      break;
+
+    case BOUNDS:
+      if (value == null) {
+        unsetBounds();
+      } else {
+        setBounds((GeocodeBoundingBox)value);
       }
       break;
 
@@ -528,23 +399,14 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     case NAME:
       return getName();
 
-    case ADMIN1:
-      return getAdmin1();
-
-    case ADMIN2:
-      return getAdmin2();
-
-    case ADMIN3:
-      return getAdmin3();
-
-    case ADMIN4:
-      return getAdmin4();
-
     case DISPLAY_NAME:
       return getDisplayName();
 
     case WOE_TYPE:
       return new Integer(getWoeType());
+
+    case BOUNDS:
+      return getBounds();
 
     }
     throw new IllegalStateException();
@@ -563,18 +425,12 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       return isSetCc();
     case NAME:
       return isSetName();
-    case ADMIN1:
-      return isSetAdmin1();
-    case ADMIN2:
-      return isSetAdmin2();
-    case ADMIN3:
-      return isSetAdmin3();
-    case ADMIN4:
-      return isSetAdmin4();
     case DISPLAY_NAME:
       return isSetDisplayName();
     case WOE_TYPE:
       return isSetWoeType();
+    case BOUNDS:
+      return isSetBounds();
     }
     throw new IllegalStateException();
   }
@@ -619,42 +475,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         return false;
     }
 
-    boolean this_present_admin1 = true && this.isSetAdmin1();
-    boolean that_present_admin1 = true && that.isSetAdmin1();
-    if (this_present_admin1 || that_present_admin1) {
-      if (!(this_present_admin1 && that_present_admin1))
-        return false;
-      if (!this.admin1.equals(that.admin1))
-        return false;
-    }
-
-    boolean this_present_admin2 = true && this.isSetAdmin2();
-    boolean that_present_admin2 = true && that.isSetAdmin2();
-    if (this_present_admin2 || that_present_admin2) {
-      if (!(this_present_admin2 && that_present_admin2))
-        return false;
-      if (!this.admin2.equals(that.admin2))
-        return false;
-    }
-
-    boolean this_present_admin3 = true && this.isSetAdmin3();
-    boolean that_present_admin3 = true && that.isSetAdmin3();
-    if (this_present_admin3 || that_present_admin3) {
-      if (!(this_present_admin3 && that_present_admin3))
-        return false;
-      if (!this.admin3.equals(that.admin3))
-        return false;
-    }
-
-    boolean this_present_admin4 = true && this.isSetAdmin4();
-    boolean that_present_admin4 = true && that.isSetAdmin4();
-    if (this_present_admin4 || that_present_admin4) {
-      if (!(this_present_admin4 && that_present_admin4))
-        return false;
-      if (!this.admin4.equals(that.admin4))
-        return false;
-    }
-
     boolean this_present_displayName = true && this.isSetDisplayName();
     boolean that_present_displayName = true && that.isSetDisplayName();
     if (this_present_displayName || that_present_displayName) {
@@ -670,6 +490,15 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       if (!(this_present_woeType && that_present_woeType))
         return false;
       if (this.woeType != that.woeType)
+        return false;
+    }
+
+    boolean this_present_bounds = true && this.isSetBounds();
+    boolean that_present_bounds = true && that.isSetBounds();
+    if (this_present_bounds || that_present_bounds) {
+      if (!(this_present_bounds && that_present_bounds))
+        return false;
+      if (!this.bounds.equals(that.bounds))
         return false;
     }
 
@@ -719,46 +548,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetAdmin1()).compareTo(typedOther.isSetAdmin1());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetAdmin1()) {
-      lastComparison = TBaseHelper.compareTo(this.admin1, typedOther.admin1);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
-    lastComparison = Boolean.valueOf(isSetAdmin2()).compareTo(typedOther.isSetAdmin2());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetAdmin2()) {
-      lastComparison = TBaseHelper.compareTo(this.admin2, typedOther.admin2);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
-    lastComparison = Boolean.valueOf(isSetAdmin3()).compareTo(typedOther.isSetAdmin3());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetAdmin3()) {
-      lastComparison = TBaseHelper.compareTo(this.admin3, typedOther.admin3);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
-    lastComparison = Boolean.valueOf(isSetAdmin4()).compareTo(typedOther.isSetAdmin4());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetAdmin4()) {
-      lastComparison = TBaseHelper.compareTo(this.admin4, typedOther.admin4);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
     lastComparison = Boolean.valueOf(isSetDisplayName()).compareTo(typedOther.isSetDisplayName());
     if (lastComparison != 0) {
       return lastComparison;
@@ -775,6 +564,16 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     }
     if (isSetWoeType()) {
       lastComparison = TBaseHelper.compareTo(this.woeType, typedOther.woeType);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetBounds()).compareTo(typedOther.isSetBounds());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetBounds()) {
+      lastComparison = TBaseHelper.compareTo(this.bounds, typedOther.bounds);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -818,45 +617,25 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
-        case 4: // ADMIN1
-          if (field.type == TType.STRING) {
-            this.admin1 = iprot.readString();
-          } else { 
-            TProtocolUtil.skip(iprot, field.type);
-          }
-          break;
-        case 5: // ADMIN2
-          if (field.type == TType.STRING) {
-            this.admin2 = iprot.readString();
-          } else { 
-            TProtocolUtil.skip(iprot, field.type);
-          }
-          break;
-        case 6: // ADMIN3
-          if (field.type == TType.STRING) {
-            this.admin3 = iprot.readString();
-          } else { 
-            TProtocolUtil.skip(iprot, field.type);
-          }
-          break;
-        case 7: // ADMIN4
-          if (field.type == TType.STRING) {
-            this.admin4 = iprot.readString();
-          } else { 
-            TProtocolUtil.skip(iprot, field.type);
-          }
-          break;
-        case 8: // DISPLAY_NAME
+        case 4: // DISPLAY_NAME
           if (field.type == TType.STRING) {
             this.displayName = iprot.readString();
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
-        case 9: // WOE_TYPE
+        case 5: // WOE_TYPE
           if (field.type == TType.I32) {
             this.woeType = iprot.readI32();
             setWoeTypeIsSet(true);
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 6: // BOUNDS
+          if (field.type == TType.STRUCT) {
+            this.bounds = new GeocodeBoundingBox();
+            this.bounds.read(iprot);
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -893,34 +672,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         oprot.writeFieldEnd();
       }
     }
-    if (this.admin1 != null) {
-      if (isSetAdmin1()) {
-        oprot.writeFieldBegin(ADMIN1_FIELD_DESC);
-        oprot.writeString(this.admin1);
-        oprot.writeFieldEnd();
-      }
-    }
-    if (this.admin2 != null) {
-      if (isSetAdmin2()) {
-        oprot.writeFieldBegin(ADMIN2_FIELD_DESC);
-        oprot.writeString(this.admin2);
-        oprot.writeFieldEnd();
-      }
-    }
-    if (this.admin3 != null) {
-      if (isSetAdmin3()) {
-        oprot.writeFieldBegin(ADMIN3_FIELD_DESC);
-        oprot.writeString(this.admin3);
-        oprot.writeFieldEnd();
-      }
-    }
-    if (this.admin4 != null) {
-      if (isSetAdmin4()) {
-        oprot.writeFieldBegin(ADMIN4_FIELD_DESC);
-        oprot.writeString(this.admin4);
-        oprot.writeFieldEnd();
-      }
-    }
     if (this.displayName != null) {
       if (isSetDisplayName()) {
         oprot.writeFieldBegin(DISPLAY_NAME_FIELD_DESC);
@@ -932,6 +683,13 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       oprot.writeFieldBegin(WOE_TYPE_FIELD_DESC);
       oprot.writeI32(this.woeType);
       oprot.writeFieldEnd();
+    }
+    if (this.bounds != null) {
+      if (isSetBounds()) {
+        oprot.writeFieldBegin(BOUNDS_FIELD_DESC);
+        this.bounds.write(oprot);
+        oprot.writeFieldEnd();
+      }
     }
     oprot.writeFieldStop();
     oprot.writeStructEnd();
@@ -967,46 +725,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       }
       first = false;
     }
-    if (isSetAdmin1()) {
-      if (!first) sb.append(", ");
-      sb.append("admin1:");
-      if (this.admin1 == null) {
-        sb.append("null");
-      } else {
-        sb.append(this.admin1);
-      }
-      first = false;
-    }
-    if (isSetAdmin2()) {
-      if (!first) sb.append(", ");
-      sb.append("admin2:");
-      if (this.admin2 == null) {
-        sb.append("null");
-      } else {
-        sb.append(this.admin2);
-      }
-      first = false;
-    }
-    if (isSetAdmin3()) {
-      if (!first) sb.append(", ");
-      sb.append("admin3:");
-      if (this.admin3 == null) {
-        sb.append("null");
-      } else {
-        sb.append(this.admin3);
-      }
-      first = false;
-    }
-    if (isSetAdmin4()) {
-      if (!first) sb.append(", ");
-      sb.append("admin4:");
-      if (this.admin4 == null) {
-        sb.append("null");
-      } else {
-        sb.append(this.admin4);
-      }
-      first = false;
-    }
     if (isSetDisplayName()) {
       if (!first) sb.append(", ");
       sb.append("displayName:");
@@ -1021,6 +739,16 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       if (!first) sb.append(", ");
       sb.append("woeType:");
       sb.append(this.woeType);
+      first = false;
+    }
+    if (isSetBounds()) {
+      if (!first) sb.append(", ");
+      sb.append("bounds:");
+      if (this.bounds == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.bounds);
+      }
       first = false;
     }
     sb.append(")");

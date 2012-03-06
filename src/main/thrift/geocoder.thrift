@@ -5,16 +5,18 @@ struct GeocodePoint {
   2: double lng
 }
 
+struct GeocodeBoundingBox {
+  1: GeocodePoint ne,
+  2: GeocodePoint sw
+}
+
 struct GeocodeFeature {
   1: GeocodePoint center
   2: string cc,
   3: optional string name,
-  4: optional string admin1,
-  5: optional string admin2,
-  6: optional string admin3,
-  7: optional string admin4,
-  8: optional string displayName,
-  9: optional i32 woeType
+  4: optional string displayName,
+  5: optional i32 woeType,
+  6: optional GeocodeBoundingBox bounds
 }
 
 struct GeocodeInterpretation {
