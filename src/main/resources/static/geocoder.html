@@ -1,0 +1,103 @@
+<html>
+<head>
+  <link rel="stylesheet" href="leaflet/leaflet.css" />
+  <script src="leaflet/leaflet.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.3.1/underscore-min.js"></script>
+<head>
+<body>
+  <div id="map" style="height: 600px; width: 600px; float: left"></div> <!-- width equals available horizontal space by default -->
+  <div id="notmap" style="width: 400px; float: left">
+    <form id="searchForm">
+      <input name="query" id="query"/><input type="button" id="search" name="Search" value="Search"/></br>
+    </form>
+    <div id="status">
+  </div>
+  <script>
+    var statusArea = $('#status');
+    var queryInput = $('#query');
+    var searchButton = $('#search');
+    var searchForm = $('#searchForm');
+    searchButton.click(function() {
+      window.location.hash = queryInput.val();
+      geocode();
+      return false;
+    })
+
+    searchForm.submit(function() {
+      window.location.hash = queryInput.val();
+      geocode();
+      return false;
+    })
+
+    
+    function geocode() {
+      var query = location.hash.substr(1);
+      $.getJSON('http://' + window.location.host + '/?query=' + query,
+        success, failure);
+
+    }
+
+    function success(data) {
+      window.console.log(data);
+      statusArea.html('<pre>' + JSON.stringify(data, undefined, 2) + '</pre>');
+      var count = 0;
+      var boundingBox = null;
+      _(data.interpretations).each(function(interp) {
+        if (interp.feature) {
+          var feature = interp.feature;
+          var center = feature.center;
+          var point = new L.LatLng(center.lat, center.lng)
+          if (!boundingBox) {
+            boundingBox = new L.LatLngBounds(point, point);
+          }
+          boundingBox.extend(point)
+
+          // add the CloudMade layer to the map set the view to a given center and zoom
+          map.setView(point, 13)
+
+          // create a marker in the given location and add it to the map
+          var marker = new L.Marker(new L.LatLng(center.lat, center.lng));
+          var str = JSON.stringify(data, undefined, 2);
+          marker.bindPopup('Interpretation ' + count + ' ' + str);
+          map.addLayer(marker);
+
+          if (feature.bounds) {
+            var bounds = feature.bounds;
+            var p1 = new L.LatLng(bounds.ne.lat, bounds.ne.lng),
+                p2 = new L.LatLng(bounds.ne.lat, bounds.sw.lng),
+                p3 = new L.LatLng(bounds.sw.lat, bounds.sw.lng),
+                p4 = new L.LatLng(bounds.sw.lat, bounds.ne.lng);
+            polygonPoints = [p1, p2, p3, p4];
+
+            var polygon = new L.Polygon(polygonPoints);
+            map.addLayer(polygon);
+            boundingBox.extend(p1);
+            boundingBox.extend(p2);
+            boundingBox.extend(p3);
+            boundingBox.extend(p4);
+          }
+        }
+        count += 1;
+      });
+      map.fitBounds(boundingBox);
+    }
+
+    function failure() {
+    }
+
+     var mapUrl = 'http://{s}.tiles.mapbox.com/v3/externals.streetlevel,mapbox.open-streets-nyc/{z}/{x}/{y}.png';
+     var subdomains = ['a','b','c','d'];
+
+     var defaults = {
+       layers: new L.TileLayer(mapUrl, {subdomains: subdomains}),
+       attributionControl: false
+     }
+     var opts = {}
+
+     var map = new L.Map('map', _.extend(defaults, opts));
+     geocode();
+  </script>
+</body>
+
+

@@ -1,4 +1,4 @@
-//  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
+ //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.geocoder
 
 import collection.JavaConverters._
@@ -23,41 +23,56 @@ class GeocodeServerImpl extends Geocoder.ServiceIface  {
 
 class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
   def handleQuery(request: GeocodeRequest) = {
-    val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
+    Future.value({
+      val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
 
-    val geocode = new GeocoderImpl(new MongoGeocodeStorageService()).geocode(request)
+      val geocode = new GeocoderImpl(new MongoGeocodeStorageService()).geocode(request)
 
-    val serializer = new TSerializer(new TSimpleJSONProtocol.Factory());
-    val json = serializer.toString(geocode);
+      val serializer = new TSerializer(new TSimpleJSONProtocol.Factory());
+      val json = serializer.toString(geocode);
 
-    response.setContent(ChannelBuffers.copiedBuffer(json, CharsetUtil.UTF_8))
-    Future.value(response)
+      response.setContent(ChannelBuffers.copiedBuffer(json, CharsetUtil.UTF_8))
+      response
+    })
   }
 
   def apply(request: HttpRequest) = {
     // This is how you parse request parameters
-    val params = new QueryStringDecoder(request.getUri()).getParameters().asScala
-    val responseContent = params.toString()
+    val queryString = new QueryStringDecoder(request.getUri())
+    val params = queryString.getParameters().asScala
+    val path = queryString.getPath()
 
-    (for {
-      queries <- params.get("query")
-      query <- queries.asScala.lift(0)
-    } yield { 
-      val request = new GeocodeRequest(query)
-      params.get("lang").foreach(_.asScala.headOption.foreach(v =>
-        request.setLang(v)))
-      params.get("cc").foreach(_.asScala.headOption.foreach(v =>
-        request.setCc(v)))
-      params.get("ll").foreach(_.asScala.headOption.foreach(v => {
-        val ll = v.split(",").toList
-        request.setLl(new GeocodePoint(ll(0).toDouble, ll(1).toDouble))
-      }))
+    if (path.startsWith("/static/")) {
+      Future.value({
+        val data = scala.io.Source.fromInputStream(getClass.getResourceAsStream(path)).mkString
+        val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
+        if (path.endsWith("png")) {
+          response.setHeader("Content-Type", "image/png")
+        }
+        response.setContent(ChannelBuffers.copiedBuffer(data.getBytes()))
+        response
+      })
+    } else {
+      (for {
+        queries <- params.get("query")
+        query <- queries.asScala.lift(0)
+      } yield { 
+        val request = new GeocodeRequest(query)
+        params.get("lang").foreach(_.asScala.headOption.foreach(v =>
+          request.setLang(v)))
+        params.get("cc").foreach(_.asScala.headOption.foreach(v =>
+          request.setCc(v)))
+        params.get("ll").foreach(_.asScala.headOption.foreach(v => {
+          val ll = v.split(",").toList
+          request.setLl(new GeocodePoint(ll(0).toDouble, ll(1).toDouble))
+        }))
 
-      handleQuery(request)
-    }).getOrElse({
-      val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
-      Future.value(response)
-    })
+        handleQuery(request)
+      }).getOrElse({
+        val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
+        Future.value(response)
+      })
+    }
   }
 }
 
