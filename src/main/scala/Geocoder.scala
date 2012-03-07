@@ -5,10 +5,10 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
 
 // TODO
-// fix max
 // construct a complete response (woetype, parents? names?)
 // put woetype enum in the thrift definition?
 // zipcode hack
+// oh, hi, um, make me actually event driven. great.
 // import timezone server
 // break out uses of MongoStorageService
 // make server more configurable
@@ -25,7 +25,7 @@ class GeocoderImpl(store: GeocodeStorageService) extends LogHelper {
   // 4) just want to get it working for now
   def generateParses(tokens: List[String], cache: HashMap[Int, ParseList]): ParseList = {
     val cacheKey = tokens.size
-    if (tokens.size <= 1) {
+    if (tokens.size == 0) {
       List(Nil)
     } else {
       if (!cache.contains(cacheKey)) {
@@ -149,25 +149,32 @@ class GeocoderImpl(store: GeocodeStorageService) extends LogHelper {
 
     val cache = new HashMap[Int, List[List[GeocodeRecord]]]()
     generateParses(tokens, cache)
-    val longest = cache.keys.filter(k => cache(k).nonEmpty).max
-    val longestParses = cache(longest)
 
-    // TODO: make this configurable
-    val sortedParses = longestParses.sorted(new ParseOrdering(req.ll, req.cc)).take(3)
+    val parseSizes = cache.keys.filter(k => cache(k).nonEmpty)
 
-    val parentIds = sortedParses.flatMap(_.headOption.toList.flatMap(_.parents))
-    println("parent ids: " + parentIds)
-    val parents = store.getByIds(parentIds).toList
-    println(parents.toList)
-    val parentMap = parentIds.flatMap(pid => {
-      parents.find(_.ids.contains(pid)).map(p => (pid -> p))
-    }).toMap
+    if (parseSizes.size > 0) {
+      val longest = parseSizes.max
+      val longestParses = cache(longest)
 
-    val what = tokens.take(tokens.size - longest).mkString(" ")
-    val where = tokens.drop(tokens.size - longest).mkString(" ")
-    println("%d sorted parses".format(sortedParses.size))
-    new GeocodeResponse(sortedParses.map(p => {
-      new GeocodeInterpretation(what, where, p(0).toGeocodeFeature(parentMap, Option(req.lang)))
-    }))
+      // TODO: make this configurable
+      val sortedParses = longestParses.sorted(new ParseOrdering(req.ll, req.cc)).take(3)
+
+      val parentIds = sortedParses.flatMap(_.headOption.toList.flatMap(_.parents))
+      println("parent ids: " + parentIds)
+      val parents = store.getByIds(parentIds).toList
+      println(parents.toList)
+      val parentMap = parentIds.flatMap(pid => {
+        parents.find(_.ids.contains(pid)).map(p => (pid -> p))
+      }).toMap
+
+      val what = tokens.take(tokens.size - longest).mkString(" ")
+      val where = tokens.drop(tokens.size - longest).mkString(" ")
+      println("%d sorted parses".format(sortedParses.size))
+      new GeocodeResponse(sortedParses.map(p => {
+        new GeocodeInterpretation(what, where, p(0).toGeocodeFeature(parentMap, Option(req.lang)))
+      }))
+    } else {
+    new GeocodeResponse()
+    }
   }
 }

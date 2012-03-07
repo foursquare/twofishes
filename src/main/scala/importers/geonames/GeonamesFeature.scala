@@ -60,21 +60,30 @@ object GeonamesFeature extends LogHelper {
       line
     }
 
-    parseLine(index, newLine, postalCodeColumns)
+    def cb(in: Map[GeonamesFeatureColumns.Value, String]) = {
+      in ++ List((GeonamesFeatureColumns.FEATURE_CLASS -> "Z"))
+    }
+
+    parseLine(index, newLine, postalCodeColumns, cb)
   }
 
   def parseFromAdminLine(index: Int, line: String): Option[GeonamesFeature] = {
-    parseLine(index, line, adminColumns)
+    def cb(in: Map[GeonamesFeatureColumns.Value, String]) = in
+    parseLine(index, line, adminColumns, cb)
   }
 
-  def parseLine(index: Int, line: String, columns: List[GeonamesFeatureColumns.Value]): Option[GeonamesFeature] = {
+  def parseLine(index: Int, line: String,
+      columns: List[GeonamesFeatureColumns.Value],
+      modifyCallback: Map[GeonamesFeatureColumns.Value, String] => Map[GeonamesFeatureColumns.Value, String]
+      ): Option[GeonamesFeature] = {
     val parts = line.split("\t")
     if (parts.size != columns.size) {
       logger.error("line %d has the wrong number of columns. Has %d, needs %d (%s)".format(
         index, parts.size, columns.size, parts.mkString(",")))
       None
     } else {
-      val colMap = columns.zip(parts).toMap
+      val colMap = modifyCallback(columns.zip(parts).toMap)
+
       val feature = new GeonamesFeature(colMap)
       if (feature.isValid) {
         Some(feature)

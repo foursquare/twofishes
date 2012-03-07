@@ -93,6 +93,7 @@ class GeonamesParser(store: GeocodeStorageService) extends LogHelper {
       boost = boost
     )
 
+    println(record)
     store.insert(record)
   }
 
