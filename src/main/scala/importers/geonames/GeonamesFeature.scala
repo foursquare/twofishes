@@ -70,8 +70,8 @@ object GeonamesFeature extends LogHelper {
   def parseLine(index: Int, line: String, columns: List[GeonamesFeatureColumns.Value]): Option[GeonamesFeature] = {
     val parts = line.split("\t")
     if (parts.size != columns.size) {
-      logger.error("line %d has the wrong number of columns. Has %d, needs %d".format(
-        index, parts.size, columns.size))
+      logger.error("line %d has the wrong number of columns. Has %d, needs %d (%s)".format(
+        index, parts.size, columns.size, parts.mkString(",")))
       None
     } else {
       val colMap = columns.zip(parts).toMap
@@ -79,6 +79,7 @@ object GeonamesFeature extends LogHelper {
       if (feature.isValid) {
         Some(feature)
       } else {
+        logger.error("INVALID: %s".format(line))
         None
       }
     }
@@ -140,7 +141,9 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) {
   def isValid = {
     values.contains(NAME) &&
     values.contains(LATITUDE) && 
-    values.contains(LONGITUDE)
+    values.contains(LONGITUDE) &&
+    tryo { values(LATITUDE).toDouble }.isDefined &&
+    tryo { values(LONGITUDE).toDouble }.isDefined
   }
   
   val featureClass = new GeonamesFeatureClass(values.get(FEATURE_CLASS), values.get(FEATURE_CODE))

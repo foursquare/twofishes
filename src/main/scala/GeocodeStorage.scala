@@ -102,6 +102,8 @@ case class GeocodeRecord(
   }
 
   def isCountry = woeType.exists(_ == YahooWoeTypes.COUNTRY)
+  def isPostalCode = woeType.exists(_ == YahooWoeTypes.POSTAL_CODE)
+
 }
 
 trait GeocodeStorageService {

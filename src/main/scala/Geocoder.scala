@@ -5,17 +5,13 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
 
 // TODO
+// fix max
 // construct a complete response (woetype, parents? names?)
 // put woetype enum in the thrift definition?
 // zipcode hack
-// import timezone code
-// bounding boxes
-// --flickr importer
-// --in code
 // import timezone server
 // break out uses of MongoStorageService
 // make server more configurable
-// add a webui
 // tests
 
 class GeocoderImpl(store: GeocodeStorageService) extends LogHelper {
@@ -29,7 +25,7 @@ class GeocoderImpl(store: GeocodeStorageService) extends LogHelper {
   // 4) just want to get it working for now
   def generateParses(tokens: List[String], cache: HashMap[Int, ParseList]): ParseList = {
     val cacheKey = tokens.size
-    if (tokens.isEmpty) {
+    if (tokens.size <= 1) {
       List(Nil)
     } else {
       if (!cache.contains(cacheKey)) {
@@ -65,7 +61,26 @@ class GeocoderImpl(store: GeocodeStorageService) extends LogHelper {
   }
 
   def isValidParse(parse: List[GeocodeRecord]): Boolean = {
-    isValidParseHelper(parse)
+    if (isValidParseHelper(parse)) {
+      true
+    } else {
+      /*
+       * zipcode hack
+       * zipcodes don't belong to the political hierarchy, so they don't
+       * have the parents you'd expect. Also, people call zipcodes a lot
+       * of things other than the official name. As a result, we're going
+       * to accept a parse that includes a zipcode if it's within 200km
+       * of the next smallest feature
+       */
+      parse.sorted match {
+        case first :: second :: rest => {
+          first.isPostalCode &&
+          isValidParseHelper(second :: rest) &&
+          GeoTools.getDistance(second.lat, second.lng, first.lat, first.lng) < 200000
+        }
+        case  _ => false
+      }
+    }
   }
 
   def isValidParseHelper(parse: List[GeocodeRecord]): Boolean = {
