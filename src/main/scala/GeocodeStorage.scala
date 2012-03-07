@@ -45,9 +45,11 @@ object Implicits {
   implicit def fidListToString(fids: List[FeatureId]): List[String] = fids.map(_.toString)
 }
 
+case class Point(lat: Double, lng: Double)
+
 case class BoundingBox(
-  ne: (Double, Double),
-  sw: (Double, Double)
+  ne: Point,
+  sw: Point
 )
 
 case class GeocodeRecord(
@@ -91,8 +93,8 @@ case class GeocodeRecord(
 
     boundingbox.foreach(bounds =>
       feature.setBounds(new GeocodeBoundingBox(
-        new GeocodePoint(bounds.ne._1, bounds.ne._2),
-        new GeocodePoint(bounds.sw._1, bounds.sw._2)
+        new GeocodePoint(bounds.ne.lat, bounds.ne.lng),
+        new GeocodePoint(bounds.sw.lat, bounds.sw.lng)
       ))  
     )
 
@@ -108,6 +110,7 @@ trait GeocodeStorageService {
   def insert(record: GeocodeRecord): Unit
   def setRecordNames(id: FeatureId, names: List[DisplayName])
   def addNameToRecord(name: DisplayName, id: FeatureId)
+  def addBoundingBoxToRecord(id: FeatureId, bbox: BoundingBox)
   def getById(id: FeatureId): Iterator[GeocodeRecord]
 }
 
@@ -134,6 +137,12 @@ class MongoGeocodeStorageService extends GeocodeStorageService {
   def addNameToRecord(name: DisplayName, id: FeatureId) {
     MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))),
       MongoDBObject("$addToSet" -> MongoDBObject("dns" -> grater[DisplayName].asDBObject(name))),
+      false, false)
+  }
+
+  def addBoundingBoxToRecord(id: FeatureId, bbox: BoundingBox) {
+    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))),
+      MongoDBObject("$set" -> MongoDBObject("bb" -> grater[BoundingBox].asDBObject(bbox))),
       false, false)
   }
 
