@@ -84,7 +84,7 @@ class GeonamesParser(store: GeocodeStorageService) extends LogHelper {
       ids = ids,
       names = names,
       cc = feature.countryCode,
-      woeType = Some(feature.featureClass.woeType),
+      _woeType = feature.featureClass.woeType.ordinal,
       lat = feature.latitude,
       lng = feature.longitude,
       parents = parents,

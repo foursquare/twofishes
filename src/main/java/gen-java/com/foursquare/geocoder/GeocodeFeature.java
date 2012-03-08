@@ -42,7 +42,11 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
   public String cc;
   public String name;
   public String displayName;
-  public int woeType;
+  /**
+   * 
+   * @see YahooWoeType
+   */
+  public YahooWoeType woeType;
   public GeocodeBoundingBox bounds;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
@@ -51,6 +55,10 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     CC((short)2, "cc"),
     NAME((short)3, "name"),
     DISPLAY_NAME((short)4, "displayName"),
+    /**
+     * 
+     * @see YahooWoeType
+     */
     WOE_TYPE((short)5, "woeType"),
     BOUNDS((short)6, "bounds");
 
@@ -119,8 +127,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
   }
 
   // isset id assignments
-  private static final int __WOETYPE_ISSET_ID = 0;
-  private BitSet __isset_bit_vector = new BitSet(1);
 
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
@@ -134,7 +140,7 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     tmpMap.put(_Fields.DISPLAY_NAME, new FieldMetaData("displayName", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.STRING)));
     tmpMap.put(_Fields.WOE_TYPE, new FieldMetaData("woeType", TFieldRequirementType.OPTIONAL, 
-        new FieldValueMetaData(TType.I32)));
+        new EnumMetaData(TType.ENUM, YahooWoeType.class)));
     tmpMap.put(_Fields.BOUNDS, new FieldMetaData("bounds", TFieldRequirementType.OPTIONAL, 
         new StructMetaData(TType.STRUCT, GeocodeBoundingBox.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
@@ -157,8 +163,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
    * Performs a deep copy on <i>other</i>.
    */
   public GeocodeFeature(GeocodeFeature other) {
-    __isset_bit_vector.clear();
-    __isset_bit_vector.or(other.__isset_bit_vector);
     if (other.isSetCenter()) {
       this.center = new GeocodePoint(other.center);
     }
@@ -171,7 +175,9 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     if (other.isSetDisplayName()) {
       this.displayName = other.displayName;
     }
-    this.woeType = other.woeType;
+    if (other.isSetWoeType()) {
+      this.woeType = other.woeType;
+    }
     if (other.isSetBounds()) {
       this.bounds = new GeocodeBoundingBox(other.bounds);
     }
@@ -187,8 +193,7 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     this.cc = null;
     this.name = null;
     this.displayName = null;
-    setWoeTypeIsSet(false);
-    this.woeType = 0;
+    this.woeType = null;
     this.bounds = null;
   }
 
@@ -288,27 +293,36 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     }
   }
 
-  public int getWoeType() {
+  /**
+   * 
+   * @see YahooWoeType
+   */
+  public YahooWoeType getWoeType() {
     return this.woeType;
   }
 
-  public GeocodeFeature setWoeType(int woeType) {
+  /**
+   * 
+   * @see YahooWoeType
+   */
+  public GeocodeFeature setWoeType(YahooWoeType woeType) {
     this.woeType = woeType;
-    setWoeTypeIsSet(true);
     return this;
   }
 
   public void unsetWoeType() {
-    __isset_bit_vector.clear(__WOETYPE_ISSET_ID);
+    this.woeType = null;
   }
 
   /** Returns true if field woeType is set (has been asigned a value) and false otherwise */
   public boolean isSetWoeType() {
-    return __isset_bit_vector.get(__WOETYPE_ISSET_ID);
+    return this.woeType != null;
   }
 
   public void setWoeTypeIsSet(boolean value) {
-    __isset_bit_vector.set(__WOETYPE_ISSET_ID, value);
+    if (!value) {
+      this.woeType = null;
+    }
   }
 
   public GeocodeBoundingBox getBounds() {
@@ -373,7 +387,7 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       if (value == null) {
         unsetWoeType();
       } else {
-        setWoeType((Integer)value);
+        setWoeType((YahooWoeType)value);
       }
       break;
 
@@ -403,7 +417,7 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       return getDisplayName();
 
     case WOE_TYPE:
-      return new Integer(getWoeType());
+      return getWoeType();
 
     case BOUNDS:
       return getBounds();
@@ -489,7 +503,7 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     if (this_present_woeType || that_present_woeType) {
       if (!(this_present_woeType && that_present_woeType))
         return false;
-      if (this.woeType != that.woeType)
+      if (!this.woeType.equals(that.woeType))
         return false;
     }
 
@@ -626,8 +640,7 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
           break;
         case 5: // WOE_TYPE
           if (field.type == TType.I32) {
-            this.woeType = iprot.readI32();
-            setWoeTypeIsSet(true);
+            this.woeType = YahooWoeType.findByValue(iprot.readI32());
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -679,10 +692,12 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         oprot.writeFieldEnd();
       }
     }
-    if (isSetWoeType()) {
-      oprot.writeFieldBegin(WOE_TYPE_FIELD_DESC);
-      oprot.writeI32(this.woeType);
-      oprot.writeFieldEnd();
+    if (this.woeType != null) {
+      if (isSetWoeType()) {
+        oprot.writeFieldBegin(WOE_TYPE_FIELD_DESC);
+        oprot.writeI32(this.woeType.getValue());
+        oprot.writeFieldEnd();
+      }
     }
     if (this.bounds != null) {
       if (isSetBounds()) {
@@ -738,7 +753,11 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     if (isSetWoeType()) {
       if (!first) sb.append(", ");
       sb.append("woeType:");
-      sb.append(this.woeType);
+      if (this.woeType == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.woeType);
+      }
       first = false;
     }
     if (isSetBounds()) {

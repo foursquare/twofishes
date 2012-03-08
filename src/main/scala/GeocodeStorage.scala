@@ -57,7 +57,7 @@ case class GeocodeRecord(
   ids: List[String],
   names: List[String],
   cc: String,
-  woeType: Option[Int],
+  @Key("wt") _woeType: Int,
   lat: Double,
   lng: Double,
   @Key("dns") displayNames: List[DisplayName],
@@ -66,6 +66,8 @@ case class GeocodeRecord(
   boost: Option[Int] = None,
   @Key("bb") boundingbox: Option[BoundingBox] = None
 ) extends Ordered[GeocodeRecord] {
+  lazy val woeType = YahooWoeType.findByValue(_woeType)
+  
   def compare(that: GeocodeRecord): Int = {
     YahooWoeTypes.getOrdering(this.woeType) - YahooWoeTypes.getOrdering(that.woeType)
   }
@@ -101,9 +103,8 @@ case class GeocodeRecord(
     feature
   }
 
-  def isCountry = woeType.exists(_ == YahooWoeTypes.COUNTRY)
-  def isPostalCode = woeType.exists(_ == YahooWoeTypes.POSTAL_CODE)
-
+  def isCountry = woeType == YahooWoeType.COUNTRY
+  def isPostalCode = woeType == YahooWoeType.POSTAL_CODE
 }
 
 trait GeocodeStorageService {

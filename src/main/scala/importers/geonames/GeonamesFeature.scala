@@ -2,7 +2,7 @@
 package com.foursquare.geocoder.importers.geonames
 
 import com.foursquare.geocoder.Helpers._
-import com.foursquare.geocoder.{Helpers, LogHelper, YahooWoeTypes}
+import com.foursquare.geocoder.{Helpers, LogHelper, YahooWoeType}
 
 object GeonamesFeatureColumns extends Enumeration {
    type GeonamesFeatureColumns = Value
@@ -112,22 +112,22 @@ class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[Str
   def isAdmin = adminLevel != OTHER
   def isAirport = featureCode.exists(_ == "AIRP")
 
-  def woeType: Int = {
+  def woeType: YahooWoeType = {
     if (isCountry) {
-      YahooWoeTypes.COUNTRY
+      YahooWoeType.COUNTRY
     } else if (isPostalCode) {
-      YahooWoeTypes.POSTAL_CODE
+      YahooWoeType.POSTAL_CODE
     } else if (isCity) {
-      YahooWoeTypes.TOWN
+      YahooWoeType.TOWN
     } else if (isAirport) {
-      YahooWoeTypes.AIRPORT
+      YahooWoeType.AIRPORT
     } else {
       featureCode.map(_ match {
-        case "ADM1" => YahooWoeTypes.ADMIN1
-        case "ADM2" => YahooWoeTypes.ADMIN2
-        case "ADM3" => YahooWoeTypes.ADMIN3
-        case _ => 0
-      }).getOrElse(0)
+        case "ADM1" => YahooWoeType.ADMIN1
+        case "ADM2" => YahooWoeType.ADMIN2
+        case "ADM3" => YahooWoeType.ADMIN3
+        case _ => YahooWoeType.UNKNOWN
+      }).getOrElse(YahooWoeType.UNKNOWN)
     }
   }
 

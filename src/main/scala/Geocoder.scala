@@ -6,8 +6,6 @@ import scala.collection.mutable.HashMap
 
 // TODO
 // construct a complete response (woetype, parents? names?)
-// put woetype enum in the thrift definition?
-// zipcode hack
 // oh, hi, um, make me actually event driven. great.
 // import timezone server
 // break out uses of MongoStorageService
