@@ -6,15 +6,18 @@ import com.twitter.finagle.builder.{ServerBuilder, Server}
 import com.twitter.finagle.http.Http
 import com.twitter.finagle.thrift.ThriftServerFramedCodec
 import com.twitter.finagle.Service
-import com.twitter.util.Future
+import com.twitter.util.{Future, FuturePool}
 import java.net.InetSocketAddress
+import java.util.concurrent.Executors
 import org.apache.thrift.protocol.{TBinaryProtocol, TSimpleJSONProtocol}
 import org.apache.thrift.TSerializer
 import org.jboss.netty.buffer.ChannelBuffers
 import org.jboss.netty.handler.codec.http._
 import org.jboss.netty.util.CharsetUtil
 
-class GeocodeServerImpl extends Geocoder.ServiceIface  {
+class GeocodeServerImpl extends Geocoder.ServiceIface {
+  val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(8))
+
   def geocode(r: GeocodeRequest): Future[GeocodeResponse] = {
     val response = new GeocoderImpl(new MongoGeocodeStorageService()).geocode(r)
     Future.value(response)
@@ -22,6 +25,8 @@ class GeocodeServerImpl extends Geocoder.ServiceIface  {
 }
 
 class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
+  val diskIoFuturePool = FuturePool(Executors.newFixedThreadPool(4))
+
   def handleQuery(request: GeocodeRequest) = {
     Future.value({
       val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
@@ -43,8 +48,9 @@ class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
     val path = queryString.getPath()
 
     if (path.startsWith("/static/")) {
-      Future.value({
-        val data = scala.io.Source.fromInputStream(getClass.getResourceAsStream(path)).mkString
+      val dataRead = { scala.io.Source.fromInputStream(getClass.getResourceAsStream(path)).mkString }
+
+      diskIoFuturePool(dataRead).map(data => {
         val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
         if (path.endsWith("png")) {
           response.setHeader("Content-Type", "image/png")
