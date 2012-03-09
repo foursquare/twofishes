@@ -149,7 +149,12 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageService) extends LogHe
 
   def geocode(req: GeocodeRequest): Future[GeocodeResponse] = {
     val query = req.query
+
+    logger.trace("%s --> %s".format(query, NameNormalizer.normalize(query)))
+
     val tokens = NameNormalizer.tokenize(NameNormalizer.normalize(query))
+    logger.trace("--> %s".format(tokens.mkString("_|_")))
+
     /// CONNECTOR PARSING GOES HERE
 
     pool(generateParses(tokens)).flatMap( cache => {

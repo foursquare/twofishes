@@ -76,6 +76,7 @@ class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
         queries <- params.get("query")
         query <- queries.asScala.lift(0)
       } yield { 
+        println(query)
         val request = new GeocodeRequest(query)
         params.get("lang").foreach(_.asScala.headOption.foreach(v =>
           request.setLang(v)))

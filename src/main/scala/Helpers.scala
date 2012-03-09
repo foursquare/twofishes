@@ -24,7 +24,7 @@ object Helpers {
 
 object NameNormalizer {
   def tokenize(s: String): List[String] = {
-    s.split(" ").toList
+    s.split(" ").filterNot(_.isEmpty).toList
   }
 
   def normalize(s: String): String = {
