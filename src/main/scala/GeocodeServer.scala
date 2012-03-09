@@ -11,6 +11,8 @@ import java.io.InputStream
 import java.net.InetSocketAddress
 import java.util.concurrent.Executors
 import org.apache.thrift.protocol.{TBinaryProtocol, TSimpleJSONProtocol}
+import org.apache.thrift.server.TThreadPoolServer
+import org.apache.thrift.transport.TServerSocket
 import org.apache.thrift.TSerializer
 import org.jboss.netty.buffer.ChannelBuffers
 import org.jboss.netty.handler.codec.http._
@@ -93,28 +95,29 @@ class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
   }
 }
 
-// object GeocodeThriftServer extends Application {
-//   class GeocodeServer extends Geocoder.Iface {
-//     override def geocode(r: GeocodeRequest): GeocodeResponse = {
-//       new GeocoderImpl(new MongoGeocodeStorageService()).geocode(request)
-//     }
-//   }
+object GeocodeThriftServer extends Application {
+  class GeocodeServer extends Geocoder.Iface {
+    val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(1))
 
-//   def main(args: Array[String]) {
-//     try {
-//       val serverTransport = new TServerSocket(8080)
-//       val processor = new TimeServer.Processor(new GeocodeServer())
-//       val protFactory = new TBinaryProtocol.Factory(true, true)
-//       val server = new TThreadPoolServer(processor, serverTransport, protFactory)
+    override def geocode(request: GeocodeRequest): GeocodeResponse = {
+      new GeocoderImpl(mongoFuturePool, new MongoGeocodeStorageService()).geocode(request).get
+    }
+  }
+
+  override def main(args: Array[String]) {
+    try {
+      val serverTransport = new TServerSocket(8080)
+      val processor = new Geocoder.Processor(new GeocodeServer())
+      val protFactory = new TBinaryProtocol.Factory(true, true)
+      val server = new TThreadPoolServer(processor, serverTransport, protFactory)
       
-//       println("starting server")
-//       server.serve();     
-//     } catch { 
-//       case x: Exception => x.printStackTrace();
-//     }
-//   }
-// }
-
+      println("starting server")
+      server.serve();     
+    } catch { 
+      case x: Exception => x.printStackTrace();
+    }
+  }
+}
 
 object GeocodeFinagleServer {
   def main(args: Array[String]) {
