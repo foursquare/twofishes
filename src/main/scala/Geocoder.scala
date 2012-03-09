@@ -1,6 +1,7 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.geocoder
 
+import com.twitter.util.{Future, FuturePool}
 import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
 
@@ -12,16 +13,22 @@ import scala.collection.mutable.HashMap
 // make server more configurable
 // tests
 
-class GeocoderImpl(store: GeocodeStorageService) extends LogHelper {
+class GeocoderImpl(pool: FuturePool, store: GeocodeStorageService) extends LogHelper {
   type Parse = List[GeocodeRecord]
   type ParseList = List[Parse]
+
+  def generateParses(tokens: List[String]): HashMap[Int, List[List[GeocodeRecord]]] = {
+    val cache = new HashMap[Int, List[List[GeocodeRecord]]]()
+    generateParsesHelper(tokens, cache)
+    cache
+  }
 
   // 1) straight port of the python logic, I realize this could be more idiomatic (cc: jliszka)
   // 2) I plan to rewrite it
   // 3) I bet that if I start from the other end of the string, on the theory that 
   //    westerners generally write [small -> big], I can prune faster
   // 4) just want to get it working for now
-  def generateParses(tokens: List[String], cache: HashMap[Int, ParseList]): ParseList = {
+  def generateParsesHelper(tokens: List[String], cache: HashMap[Int, ParseList]): ParseList = {
     val cacheKey = tokens.size
     if (tokens.size == 0) {
       List(Nil)
@@ -34,7 +41,7 @@ class GeocoderImpl(store: GeocodeStorageService) extends LogHelper {
             val features = store.getByName(searchStr).toList
             logger.info("have %d matches".format(features.size))
 
-            val subParses = generateParses(tokens.drop(i), cache)
+            val subParses = generateParsesHelper(tokens.drop(i), cache)
 
             features.flatMap(f => {
               logger.info("looking at %s".format(f))
@@ -140,39 +147,41 @@ class GeocoderImpl(store: GeocodeStorageService) extends LogHelper {
     }
   }
 
-  def geocode(req: GeocodeRequest): GeocodeResponse = {
+  def geocode(req: GeocodeRequest): Future[GeocodeResponse] = {
     val query = req.query
     val tokens = NameNormalizer.tokenize(NameNormalizer.normalize(query))
     /// CONNECTOR PARSING GOES HERE
 
-    val cache = new HashMap[Int, List[List[GeocodeRecord]]]()
-    generateParses(tokens, cache)
+    pool(generateParses(tokens)).flatMap( cache => {
+      val parseSizes = cache.keys.filter(k => cache(k).nonEmpty)
 
-    val parseSizes = cache.keys.filter(k => cache(k).nonEmpty)
+      if (parseSizes.size > 0) {
+        val longest = parseSizes.max
+        val longestParses = cache(longest)
 
-    if (parseSizes.size > 0) {
-      val longest = parseSizes.max
-      val longestParses = cache(longest)
+        // TODO: make this configurable
+        val sortedParses = longestParses.sorted(new ParseOrdering(req.ll, req.cc)).take(3)
 
-      // TODO: make this configurable
-      val sortedParses = longestParses.sorted(new ParseOrdering(req.ll, req.cc)).take(3)
+        val parentIds = sortedParses.flatMap(_.headOption.toList.flatMap(_.parents))
+        println("parent ids: " + parentIds)
+        val parents = store.getByIds(parentIds).toList
+        println(parents.toList)
+        val parentMap = parentIds.flatMap(pid => {
+          parents.find(_.ids.contains(pid)).map(p => (pid -> p))
+        }).toMap
 
-      val parentIds = sortedParses.flatMap(_.headOption.toList.flatMap(_.parents))
-      println("parent ids: " + parentIds)
-      val parents = store.getByIds(parentIds).toList
-      println(parents.toList)
-      val parentMap = parentIds.flatMap(pid => {
-        parents.find(_.ids.contains(pid)).map(p => (pid -> p))
-      }).toMap
+        val what = tokens.take(tokens.size - longest).mkString(" ")
+        val where = tokens.drop(tokens.size - longest).mkString(" ")
+        println("%d sorted parses".format(sortedParses.size))
 
-      val what = tokens.take(tokens.size - longest).mkString(" ")
-      val where = tokens.drop(tokens.size - longest).mkString(" ")
-      println("%d sorted parses".format(sortedParses.size))
-      new GeocodeResponse(sortedParses.map(p => {
-        new GeocodeInterpretation(what, where, p(0).toGeocodeFeature(parentMap, Option(req.lang)))
-      }))
-    } else {
-    new GeocodeResponse()
-    }
+        pool(
+          new GeocodeResponse(sortedParses.map(p => {
+            new GeocodeInterpretation(what, where, p(0).toGeocodeFeature(parentMap, Option(req.lang)))
+          }))
+        )
+      } else {
+        Future.value(new GeocodeResponse())
+      }
+    })
   }
 }

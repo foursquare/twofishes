@@ -6,7 +6,7 @@ import com.twitter.finagle.builder.{ServerBuilder, Server}
 import com.twitter.finagle.http.Http
 import com.twitter.finagle.thrift.ThriftServerFramedCodec
 import com.twitter.finagle.Service
-import com.twitter.util.{Future, FuturePool}
+import com.twitter.util.{Future, FuturePool, Throw}
 import java.net.InetSocketAddress
 import java.util.concurrent.Executors
 import org.apache.thrift.protocol.{TBinaryProtocol, TSimpleJSONProtocol}
@@ -19,20 +19,17 @@ class GeocodeServerImpl extends Geocoder.ServiceIface {
   val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(8))
 
   def geocode(r: GeocodeRequest): Future[GeocodeResponse] = {
-    val response = new GeocoderImpl(new MongoGeocodeStorageService()).geocode(r)
-    Future.value(response)
+    new GeocoderImpl(mongoFuturePool, new MongoGeocodeStorageService()).geocode(r)
   }
 }
 
 class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
   val diskIoFuturePool = FuturePool(Executors.newFixedThreadPool(4))
 
-  def handleQuery(request: GeocodeRequest) = {
-    Future.value({
-      val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
+  def handleQuery(request: GeocodeRequest): Future[DefaultHttpResponse] = {
+    val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
 
-      val geocode = new GeocoderImpl(new MongoGeocodeStorageService()).geocode(request)
-
+    new GeocoderImpl(diskIoFuturePool, new MongoGeocodeStorageService()).geocode(request).map(geocode => {
       val serializer = new TSerializer(new TSimpleJSONProtocol.Factory());
       val json = serializer.toString(geocode);
 
