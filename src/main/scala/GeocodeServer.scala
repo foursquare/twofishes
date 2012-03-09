@@ -106,7 +106,7 @@ object GeocodeThriftServer extends Application {
 
   override def main(args: Array[String]) {
     try {
-      val serverTransport = new TServerSocket(8080)
+      val serverTransport = new TServerSocket(GeocodeServerConfig.thriftServerPort)
       val processor = new Geocoder.Processor(new GeocodeServer())
       val protFactory = new TBinaryProtocol.Factory(true, true)
       val server = new TThreadPoolServer(processor, serverTransport, protFactory)
@@ -131,16 +131,18 @@ object GeocodeFinagleServer {
     val service = new Geocoder.Service(processor, new TBinaryProtocol.Factory())
 
     val server: Server = ServerBuilder()
-      .bindTo(new InetSocketAddress(8080))
+      .bindTo(new InetSocketAddress(GeocodeServerConfig.thriftServerPort))
       .codec(ThriftServerFramedCodec())
       .name("geocoder")
       .build(service)
 
-    val server2: Server = ServerBuilder()
-      .bindTo(new InetSocketAddress(8081))
-      .codec(Http())
-      .name("geocoder-http")
-      .build(new GeocoderHttpService())
+    if (GeocodeServerConfig.runHttpServer) {
+      ServerBuilder()
+        .bindTo(new InetSocketAddress(GeocodeServerConfig.thriftServerPort + 1))
+        .codec(Http())
+        .name("geocoder-http")
+        .build(new GeocoderHttpService())
+    }
   }
 }
 
