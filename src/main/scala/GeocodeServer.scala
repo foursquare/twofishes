@@ -7,6 +7,7 @@ import com.twitter.finagle.http.Http
 import com.twitter.finagle.thrift.ThriftServerFramedCodec
 import com.twitter.finagle.Service
 import com.twitter.util.{Future, FuturePool, Throw}
+import java.io.InputStream
 import java.net.InetSocketAddress
 import java.util.concurrent.Executors
 import org.apache.thrift.protocol.{TBinaryProtocol, TSimpleJSONProtocol}
@@ -14,6 +15,7 @@ import org.apache.thrift.TSerializer
 import org.jboss.netty.buffer.ChannelBuffers
 import org.jboss.netty.handler.codec.http._
 import org.jboss.netty.util.CharsetUtil
+import scala.collection.mutable.ListBuffer
 
 class GeocodeServerImpl extends Geocoder.ServiceIface {
   val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(8))
@@ -38,6 +40,16 @@ class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
     })
   }
 
+  def inputStreamToByteArray(is: InputStream): Array[Byte] = {
+    val buf = ListBuffer[Byte]()
+    var b = is.read()
+    while (b != -1) {
+        buf.append(b.byteValue)
+        b = is.read()
+    }
+    buf.toArray
+  }
+
   def apply(request: HttpRequest) = {
     // This is how you parse request parameters
     val queryString = new QueryStringDecoder(request.getUri())
@@ -45,14 +57,16 @@ class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
     val path = queryString.getPath()
 
     if (path.startsWith("/static/")) {
-      val dataRead = { scala.io.Source.fromInputStream(getClass.getResourceAsStream(path)).mkString }
+      val dataRead = {
+        inputStreamToByteArray(getClass.getResourceAsStream(path))
+      }
 
       diskIoFuturePool(dataRead).map(data => {
         val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
         if (path.endsWith("png")) {
           response.setHeader("Content-Type", "image/png")
         }
-        response.setContent(ChannelBuffers.copiedBuffer(data.getBytes()))
+        response.setContent(ChannelBuffers.copiedBuffer(data))
         response
       })
     } else {
