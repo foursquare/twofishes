@@ -37,28 +37,28 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageService) extends LogHe
         val validParses = 
           (for (i <- 1.to(tokens.size)) yield {
             val searchStr = tokens.take(i).mkString(" ")
-            logger.info("trying: %d to %d: %s".format(0, i, searchStr))
+            logger.trace("trying: %d to %d: %s".format(0, i, searchStr))
             val features = store.getByName(searchStr).toList
-            logger.info("have %d matches".format(features.size))
+            logger.trace("have %d matches".format(features.size))
 
             val subParses = generateParsesHelper(tokens.drop(i), cache)
 
             features.flatMap(f => {
-              logger.info("looking at %s".format(f))
+              logger.trace("looking at %s".format(f))
               subParses.flatMap(p => {
-                logger.info("sub_parse: %s".format(p))
+                logger.trace("sub_parse: %s".format(p))
                 val parse = f :: p
                 if (isValidParse(parse)) {
-                  logger.info("VALID -- adding to %d".format(cacheKey))
+                  logger.trace("VALID -- adding to %d".format(cacheKey))
                   Some(parse.sorted)
                 } else {
-                  logger.info("INVALID")
+                  logger.trace("INVALID")
                   None
                 }
               })
             })
           }).flatMap(a=>a).toList
-        println("setting %d to %s".format(cacheKey, validParses))
+        logger.trace("setting %d to %s".format(cacheKey, validParses))
         cache(cacheKey) = validParses
       }
       cache(cacheKey)
@@ -163,16 +163,16 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageService) extends LogHe
         val sortedParses = longestParses.sorted(new ParseOrdering(req.ll, req.cc)).take(3)
 
         val parentIds = sortedParses.flatMap(_.headOption.toList.flatMap(_.parents))
-        println("parent ids: " + parentIds)
+        logger.trace("parent ids: " + parentIds)
         val parents = store.getByIds(parentIds).toList
-        println(parents.toList)
+        logger.trace(parents.toList.toString)
         val parentMap = parentIds.flatMap(pid => {
           parents.find(_.ids.contains(pid)).map(p => (pid -> p))
         }).toMap
 
         val what = tokens.take(tokens.size - longest).mkString(" ")
         val where = tokens.drop(tokens.size - longest).mkString(" ")
-        println("%d sorted parses".format(sortedParses.size))
+        logger.trace("%d sorted parses".format(sortedParses.size))
 
         pool(
           new GeocodeResponse(sortedParses.map(p => {

@@ -115,8 +115,12 @@ class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
 //   }
 // }
 
+
 object GeocodeFinagleServer {
   def main(args: Array[String]) {
+
+    LogHelper.init
+
     // Implement the Thrift Interface
     val processor = new GeocodeServerImpl()
 

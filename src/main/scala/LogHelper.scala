@@ -1,13 +1,25 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.geocoder
 
-trait LogHelper {
-//  val logger = LoggerFactory.getLogger(classOf[this])
-  class FakeLogger {
-    def debug(s: String) { println(s) }
-    def error(s: String) { println(s) }
-    def info(s: String)  { println(s) }
-  }
+import com.twitter.logging.Logger
+import com.twitter.logging.config._
+import com.twitter.logging.config.ConsoleHandlerConfig
 
-  val logger = new FakeLogger()
+object LogHelper {
+  def init() {
+    val config = new LoggerConfig {
+      node = ""
+      level = Level.INFO
+      handlers = new ConsoleHandlerConfig {}
+      // handlers = new FileHandlerConfig {
+      //   filename = "/var/log/example/example.log"
+      //   roll = Policy.SigHup
+      // }
+    }
+    config()
+  }
+}
+
+trait LogHelper {
+  val logger = Logger.get(getClass)
 }
