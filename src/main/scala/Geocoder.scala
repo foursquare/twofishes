@@ -185,7 +185,7 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
           }))
         )
       } else {
-        Future.value(new GeocodeResponse())
+        Future.value(new GeocodeResponse(Nil))
       }
     })
   }

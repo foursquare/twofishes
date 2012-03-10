@@ -59,14 +59,26 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
 }
 
 class GeocoderSpec extends Specification {
-
-  def buildRegoPark(): GeocodeStorageReadService = {
-    val store = new MockGeocodeStorageReadService()
+  def addRegoPark(store: MockGeocodeStorageReadService) = {
     val usRecord = store.addGeocode("US", Nil, 1, 2)
     val nyRecord = store.addGeocode("New York", List(usRecord), 3, 4)
     val regoParkRecord = store.addGeocode("Rego Park", List(nyRecord, usRecord), 5, 6)
-
     store
+  }
+
+  def buildRegoPark(): MockGeocodeStorageReadService = {
+    addRegoPark(new MockGeocodeStorageReadService())
+  }
+
+  def addLosAngeles(store: MockGeocodeStorageReadService) = {
+    val usRecord = store.addGeocode("US", Nil, 1, 2)
+    val caRecord = store.addGeocode("California", List(usRecord), 10, 11)
+    val losAngelesRecord = store.addGeocode("Los Angeles", List(caRecord, usRecord), 12, 13)
+    store
+  }
+
+  def buildLostAngeles(): MockGeocodeStorageReadService = {
+    addLosAngeles(new MockGeocodeStorageReadService())
   }
 
   "one feature geocodes succeeds with matching data" in {
@@ -113,7 +125,21 @@ class GeocoderSpec extends Specification {
 
     val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(1))
     val r = new GeocoderImpl(mongoFuturePool, store).geocode(new GeocodeRequest("Berlin, Germany")).apply()
-    r.interpretations must_== null
+    r.interpretations.size must_== 0
+  }
+
+  "geocode interpretations don't cross parent hierarchies" in {
+    val store = buildRegoPark()
+    addLosAngeles(store)
+
+    val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(1))
+    val r = new GeocoderImpl(mongoFuturePool, store).geocode(new GeocodeRequest("Rego Park, California")).apply()
+    r.interpretations.size must_== 1
+    val interp = r.interpretations.asScala(0)
+    interp.what must_== "rego park"
+    interp.feature.center.lat must_== 10
+    interp.feature.center.lng must_== 11
+    interp.where must_== "california"
   }
 
   // add a basic ranking test
