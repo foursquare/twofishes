@@ -17,17 +17,33 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
   type Parse = List[GeocodeRecord]
   type ParseList = List[Parse]
 
+  /*
+    The basic algorithm works like this
+    - roughly a depth-first recursive descent parser
+    - for every set of tokens from size 1->n, attempt to find a feature with a matching name in our datastore
+      (at the first level, for "rego park ny", we'd try rego, rego park, rego park ny)
+    - for every feature found matching one of our token sets, recursively try to geocode the remaining tokens
+    - return early from a branch of our parse tree if the parse becomes invalid/inconsistent, that is,
+      if the feature found does not occur in the parents of the smaller feature found 
+      (we would about the parse of "los angeles, new york, united states" when we'd consumed "los angeles"
+       its parents were CA & US, and then consumed "new york" because NY is not in the parents of LA)
+    - save our work in a map[int -> parses], where the int is the total number of tokens those parses consume.
+       we do this because:
+       if two separate parses made it to the same point in the input, we don't need to redo the work
+         (contrived example: Laurel Mt United States, can both be parsed as "Laurel" in "Mt" (Montana), 
+          and "Laurel Mt" (Mountain), both consistent & valid parses. One of those parses would have already
+         completely explored "united states" before the second one gets to it)
+    - we return the entire cache, which is a little silly. The caller knows to look for the cache for the 
+      largest key (the longest parse), and to take all the tokens before that and make the "what" (the
+      non-geocoded tokens) in the final interpretation.
+   */
+
   def generateParses(tokens: List[String]): HashMap[Int, List[List[GeocodeRecord]]] = {
     val cache = new HashMap[Int, List[List[GeocodeRecord]]]()
     generateParsesHelper(tokens, cache)
     cache
   }
 
-  // 1) straight port of the python logic, I realize this could be more idiomatic (cc: jliszka)
-  // 2) I plan to rewrite it
-  // 3) I bet that if I start from the other end of the string, on the theory that 
-  //    westerners generally write [small -> big], I can prune faster
-  // 4) just want to get it working for now
   def generateParsesHelper(tokens: List[String], cache: HashMap[Int, ParseList]): ParseList = {
     val cacheKey = tokens.size
     if (tokens.size == 0) {

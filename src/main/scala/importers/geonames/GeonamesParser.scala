@@ -10,7 +10,7 @@ object GeonamesParser {
   val geonameIdNamespace = "geonameid"
   val geonameAdminIdNamespace = "gadminid"
 
-  def run() {
+  def main(args: Array[String]) {
     val store = new MongoGeocodeStorageService()
     val parser = new GeonamesParser(store)
     if (!GeonamesImporterConfig.parseWorld) {
@@ -37,6 +37,10 @@ object GeonamesParser {
     }
 
     parser.parsePreferredNames()
+
+    if (GeonamesImporterConfig.importBoundingBoxes) {
+      new BoundingBoxTsvImporter(store).parse(GeonamesImporterConfig.boundingBoxFilename)
+    }
   }
 }
 

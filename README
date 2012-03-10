@@ -1,6 +1,0 @@
-requirements:
-thrift
-
-
-os x:
-brew install thrift
