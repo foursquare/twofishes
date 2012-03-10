@@ -9,7 +9,7 @@ import java.io.File
 //
 // Please fix at some point.
 
-class BoundingBoxTsvImporter(store: GeocodeStorageService) extends LogHelper {
+class BoundingBoxTsvImporter(store: GeocodeStorageWriteService) extends LogHelper {
   def parse(filename: String) {
     val lines = scala.io.Source.fromFile(new File(filename)).getLines
     lines.foreach(line => {

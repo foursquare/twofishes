@@ -42,7 +42,7 @@ object GeonamesParser {
 
 import GeonamesParser._
 
-class GeonamesParser(store: GeocodeStorageService) extends LogHelper {
+class GeonamesParser(store: GeocodeStorageReadWriteService) extends LogHelper {
   // token -> alt tokens
   val rewriteTable = new TsvHelperFileParser("data/custom/rewrites.txt")
   // geonameid -> boost value

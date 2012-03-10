@@ -42,7 +42,6 @@ struct GeocodeBoundingBox {
   2: GeocodePoint sw
 }
 
-
 struct GeocodeFeature {
   1: GeocodePoint center
   2: string cc,

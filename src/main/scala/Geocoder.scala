@@ -13,7 +13,7 @@ import scala.collection.mutable.HashMap
 // make server more configurable
 // tests
 
-class GeocoderImpl(pool: FuturePool, store: GeocodeStorageService) extends LogHelper {
+class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends LogHelper {
   type Parse = List[GeocodeRecord]
   type ParseList = List[Parse]
 

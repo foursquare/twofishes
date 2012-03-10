@@ -107,20 +107,25 @@ case class GeocodeRecord(
   def isPostalCode = woeType == YahooWoeType.POSTAL_CODE
 }
 
-trait GeocodeStorageService {
+trait GeocodeStorageReadService {
   def getByName(name: String): Iterator[GeocodeRecord]
   def getByIds(ids: Seq[String]): Iterator[GeocodeRecord]
+  def getById(id: FeatureId): Iterator[GeocodeRecord]
+}
+
+trait GeocodeStorageWriteService {
   def insert(record: GeocodeRecord): Unit
   def setRecordNames(id: FeatureId, names: List[DisplayName])
   def addNameToRecord(name: DisplayName, id: FeatureId)
   def addBoundingBoxToRecord(id: FeatureId, bbox: BoundingBox)
-  def getById(id: FeatureId): Iterator[GeocodeRecord]
 }
+
+trait GeocodeStorageReadWriteService extends GeocodeStorageWriteService with GeocodeStorageReadService
 
 object MongoGeocodeDAO extends SalatDAO[GeocodeRecord, ObjectId](
   collection = MongoConnection()("geocoder")("features"))
 
-class MongoGeocodeStorageService extends GeocodeStorageService {
+class MongoGeocodeStorageService extends GeocodeStorageReadWriteService {
   override def getByName(name: String): Iterator[GeocodeRecord] = {
     MongoGeocodeDAO.find(MongoDBObject("names" -> name))
   }
