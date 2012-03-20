@@ -67,9 +67,10 @@ object GeocoderBuild extends Build {
   lazy val core = Project(id = "core",
       base = file("core"),
       settings = defaultSettings ++ Seq(
+        publishArtifact := true,
         libraryDependencies ++= Seq(
-          "com.twitter" % "util-core_2.9.1" % "2.0.0",
-          "com.twitter" % "util-logging_2.9.1" % "2.0.0",
+          "com.twitter" % "util-core_2.9.1" % "1.12.8",
+          "com.twitter" % "util-logging_2.9.1" % "1.12.8",
           "org.slf4j" % "slf4j-api" % "1.6.1",
           "com.novus" % "salat-core_2.9.1" % "0.0.8-SNAPSHOT"
         )
@@ -78,8 +79,10 @@ object GeocoderBuild extends Build {
 
   lazy val interface = Project(id = "interface",
       settings = defaultSettings ++ Seq(
+        publishArtifact := true,
         libraryDependencies ++= Seq(
-          "com.twitter" % "finagle-thrift_2.9.1" % "2.0.1",
+          "thrift" % "libthrift" % "0.5.0" from "http://maven.twttr.com/org/apache/thrift/libthrift/0.5.0/libthrift-0.5.0.jar",
+          "com.twitter" % "finagle-thrift_2.9.1" % "1.9.12",
           "org.slf4j" % "slf4j-api" % "1.6.1"
         )
       ),
@@ -87,8 +90,9 @@ object GeocoderBuild extends Build {
 
   lazy val server = Project(id = "server",
       settings = defaultSettings ++ Seq(
+        publishArtifact := true,
         libraryDependencies ++= Seq(
-          "com.twitter" % "finagle-http_2.9.1" % "2.0.1",
+          "com.twitter" % "finagle-http_2.9.1" % "1.9.12",
           "org.specs2" %% "specs2" % "1.8.2" % "test",
           "org.scala-tools.testing" %% "specs" % "1.6.9" % "test"
         )
@@ -98,9 +102,10 @@ object GeocoderBuild extends Build {
   lazy val indexer = Project(id = "indexer",
       base = file("indexer"),
       settings = defaultSettings ++ Seq(
+        publishArtifact := false,
         libraryDependencies ++= Seq(
-          "com.twitter" % "util-core_2.9.1" % "2.0.0",
-          "com.twitter" % "util-logging_2.9.1" % "2.0.0",
+          "com.twitter" % "util-core_2.9.1" % "1.12.8",
+          "com.twitter" % "util-logging_2.9.1" % "1.12.8",
           "com.novus" % "salat-core_2.9.1" % "0.0.8-SNAPSHOT"
         )
       )

@@ -25,12 +25,13 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
     parents: List[GeocodeRecord],
     lat: Double,
     lng: Double,
+    woeType: YahooWoeType,
     population: Option[Int] = None
   ): GeocodeRecord = {
     val record = GeocodeRecord(
       ids = List(id.toString),
       cc = "US",
-      _woeType = 1,
+      _woeType = woeType.getValue,
       lat = lat,
       lng = lng,
       displayNames = List(DisplayName("en", name, true)),
@@ -60,9 +61,9 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
 
 class GeocoderSpec extends Specification {
   def addRegoPark(store: MockGeocodeStorageReadService) = {
-    val usRecord = store.addGeocode("US", Nil, 1, 2)
-    val nyRecord = store.addGeocode("New York", List(usRecord), 3, 4)
-    val regoParkRecord = store.addGeocode("Rego Park", List(nyRecord, usRecord), 5, 6)
+    val usRecord = store.addGeocode("US", Nil, 1, 2, YahooWoeType.COUNTRY)
+    val nyRecord = store.addGeocode("New York", List(usRecord), 3, 4, YahooWoeType.ADMIN1)
+    val regoParkRecord = store.addGeocode("Rego Park", List(nyRecord, usRecord), 5, 6, YahooWoeType.TOWN)
     store
   }
 
@@ -71,9 +72,9 @@ class GeocoderSpec extends Specification {
   }
 
   def addLosAngeles(store: MockGeocodeStorageReadService) = {
-    val usRecord = store.addGeocode("US", Nil, 1, 2)
-    val caRecord = store.addGeocode("California", List(usRecord), 10, 11)
-    val losAngelesRecord = store.addGeocode("Los Angeles", List(caRecord, usRecord), 12, 13)
+    val usRecord = store.addGeocode("US", Nil, 1, 2, YahooWoeType.COUNTRY)
+    val caRecord = store.addGeocode("California", List(usRecord), 10, 11, YahooWoeType.ADMIN1)
+    val losAngelesRecord = store.addGeocode("Los Angeles", List(caRecord, usRecord), 12, 13, YahooWoeType.TOWN)
     store
   }
 
@@ -91,6 +92,8 @@ class GeocoderSpec extends Specification {
     interp.what must_== ""
     interp.feature.center.lat must_== 5
     interp.feature.center.lng must_== 6
+    interp.feature.displayName must_== "Rego Park, New York"
+    interp.feature.woeType must_== YahooWoeType.TOWN
     interp.where must_== "rego park"
   }
 
@@ -143,4 +146,5 @@ class GeocoderSpec extends Specification {
   }
 
   // add a basic ranking test
+  // add a preferred name test
 }

@@ -92,6 +92,7 @@ case class GeocodeRecord(
 
     feature.setName(myBestName.map(_.name).getOrElse(""))
     feature.setDisplayName(displayName)
+    feature.setWoeType(this.woeType)
 
     boundingbox.foreach(bounds =>
       feature.setBounds(new GeocodeBoundingBox(
