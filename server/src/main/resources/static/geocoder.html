@@ -14,6 +14,8 @@
     <div id="status">
   </div>
   <script>
+    var previousLayers = [];
+
     var statusArea = $('#status');
     var queryInput = $('#query');
     var searchButton = $('#search');
@@ -40,6 +42,10 @@
 
     function success(data) {
       window.console.log(data);
+      _(previousLayers).each(function(l) {
+        map.removeLayer(l);
+      });
+
       statusArea.html('<pre>' + JSON.stringify(data, undefined, 2) + '</pre>');
       var count = 0;
       var boundingBox = null;
@@ -61,6 +67,7 @@
           var str = JSON.stringify(data, undefined, 2);
           marker.bindPopup('Interpretation ' + count + ' ' + str);
           map.addLayer(marker);
+          previousLayers.push(marker);
 
           if (feature.bounds) {
             var bounds = feature.bounds;
@@ -72,6 +79,7 @@
 
             var polygon = new L.Polygon(polygonPoints);
             map.addLayer(polygon);
+            previousLayers.push(polygon);
             boundingBox.extend(p1);
             boundingBox.extend(p2);
             boundingBox.extend(p3);

@@ -2,15 +2,11 @@ namespace java com.foursquare.geocoder
 
 // comments from http://developer.yahoo.com/geo/geoplanet/guide/concepts.html
 enum YahooWoeType {
-  COUNTRY = 12,
-  POSTAL_CODE = 11,
+  UNKNOWN = 0
 
   // One of the major populated places within a country.
   // This category includes incorporated cities and towns, major unincorporated towns and villages.
   TOWN = 7,
-
-  // One of the subdivisions within a town. This category includes suburbs, neighborhoods, wards.
-  SUBURB = 22,
 
   // One of the primary administrative areas within a country.
   // Place type names associated with this place type include:
@@ -27,9 +23,16 @@ enum YahooWoeType {
   // Commune, Municipality, District, Ward.
   ADMIN3 = 10,
 
+  POSTAL_CODE = 11,
+  COUNTRY = 12,
+
   AIRPORT = 14,
 
-  UNKNOWN = 0
+  // One of the subdivisions within a town. This category includes suburbs, neighborhoods, wards.
+  SUBURB = 22,
+
+  // UNOFFICIAL
+  STREET = 100
 }
 
 struct GeocodePoint {
@@ -48,13 +51,14 @@ struct GeocodeFeature {
   3: optional string name,
   4: optional string displayName,
   5: optional YahooWoeType woeType,
-  6: optional GeocodeBoundingBox bounds
+  6: optional GeocodeBoundingBox bounds,
 }
 
 struct GeocodeInterpretation {
   1: string what,
   2: string where,
   3: GeocodeFeature feature
+  4: optional list<GeocodeFeature> parents
 }
 
 struct GeocodeResponse {

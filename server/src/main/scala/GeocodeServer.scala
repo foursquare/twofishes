@@ -20,7 +20,7 @@ import org.jboss.netty.util.CharsetUtil
 import scala.collection.mutable.ListBuffer
 
 class GeocodeServerImpl extends Geocoder.ServiceIface {
-  val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(8))
+  val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(24))
 
   def geocode(r: GeocodeRequest): Future[GeocodeResponse] = {
     new GeocoderImpl(mongoFuturePool, new MongoGeocodeStorageService()).geocode(r)
