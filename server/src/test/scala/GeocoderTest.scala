@@ -55,7 +55,7 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
   def getByIds(ids: Seq[String]): Iterator[GeocodeRecord] =
     ids.flatMap(id => idMap.getOrElse(id.toString, Nil)).iterator
 
-  def getById(id: FeatureId): Iterator[GeocodeRecord] = 
+  def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = 
     idMap.getOrElse(id.toString, Nil).iterator
 }
 

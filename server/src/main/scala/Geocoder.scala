@@ -197,7 +197,13 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
 
         pool(
           new GeocodeResponse(sortedParses.map(p => {
-            new GeocodeInterpretation(what, where, p(0).toGeocodeFeature(parentMap, Option(req.lang)))
+            val interp = new GeocodeInterpretation(what, where, p(0).toGeocodeFeature(parentMap, req.full, Option(req.lang)))
+            if (req.full) {
+              interp.setParents(p.drop(1).map(parentFeature => {
+                parentFeature.toGeocodeFeature(parentMap, req.full, Option(req.lang))
+              }))
+            }
+            interp
           }))
         )
       } else {

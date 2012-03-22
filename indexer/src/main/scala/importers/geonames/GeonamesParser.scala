@@ -62,9 +62,9 @@ class GeonamesParser(store: GeocodeStorageReadWriteService) extends LogHelper {
 
   def parseFeature(feature: GeonamesFeature) {
     // Build ids
-    val adminId = feature.adminId.map(id => FeatureId(geonameAdminIdNamespace, id))
-    val geonameId = feature.geonameid.map(id => FeatureId(geonameIdNamespace, id))
-    val ids: List[FeatureId] = List(adminId, geonameId).flatMap(a => a)
+    val adminId = feature.adminId.map(id => StoredFeatureId(geonameAdminIdNamespace, id))
+    val geonameId = feature.geonameid.map(id => StoredFeatureId(geonameIdNamespace, id))
+    val ids: List[StoredFeatureId] = List(adminId, geonameId).flatMap(a => a)
 
     // Build names
     val aliases: List[String] = feature.geonameid.toList.flatMap(gid => {
@@ -76,7 +76,7 @@ class GeonamesParser(store: GeocodeStorageReadWriteService) extends LogHelper {
     val names = normalizedNames ++ deaccentedNames.toSet.toList
 
     // Build parents
-    val parents = feature.parents.map(p => FeatureId(geonameAdminIdNamespace, p))
+    val parents = feature.parents.map(p => StoredFeatureId(geonameAdminIdNamespace, p))
 
     val boost: Option[Int] = feature.geonameid.flatMap(gid => {
       boostTable.get(gid).headOption.flatMap(boost =>
@@ -144,7 +144,7 @@ class GeonamesParser(store: GeocodeStorageReadWriteService) extends LogHelper {
           val isShortName = parts.lift(5).exists(_ == "1")
 
           val name = DisplayName(lang, altName, isPrefName)
-          store.addNameToRecord(name, FeatureId(geonameIdNamespace, geonameid))
+          store.addNameToRecord(name, StoredFeatureId(geonameIdNamespace, geonameid))
         }
     }})
   }
@@ -161,7 +161,7 @@ class GeonamesParser(store: GeocodeStorageReadWriteService) extends LogHelper {
         lang <- parts.lift(1).flatMap(_.split("\\|").lift(0))
         name <- parts.lift(1).flatMap(_.split("\\|").lift(1))
       } {
-        val records = store.getById(FeatureId(geonameIdNamespace, gid)).toList
+        val records = store.getById(StoredFeatureId(geonameIdNamespace, gid)).toList
         records match {
           case Nil => logger.error("no match for id %s".format(gid))
           case record :: Nil => {
@@ -183,7 +183,7 @@ class GeonamesParser(store: GeocodeStorageReadWriteService) extends LogHelper {
               if (foundName) { Nil } else { List(DisplayName(lang, name, true)) }
             )            
 
-            store.setRecordNames(FeatureId(geonameIdNamespace, gid), newNames)
+            store.setRecordNames(StoredFeatureId(geonameIdNamespace, gid), newNames)
           }
         }
       }

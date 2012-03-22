@@ -3,7 +3,7 @@
  *
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
-package com.foursquare.geocoder;
+package com.foursquare.twofish;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -35,21 +35,18 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   private static final TField CC_FIELD_DESC = new TField("cc", TType.STRING, (short)2);
   private static final TField LANG_FIELD_DESC = new TField("lang", TType.STRING, (short)3);
   private static final TField LL_FIELD_DESC = new TField("ll", TType.STRUCT, (short)4);
-  private static final TField FULL_FIELD_DESC = new TField("full", TType.BOOL, (short)5);
 
   public String query;
   public String cc;
   public String lang;
   public GeocodePoint ll;
-  public boolean full;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
     QUERY((short)1, "query"),
     CC((short)2, "cc"),
     LANG((short)3, "lang"),
-    LL((short)4, "ll"),
-    FULL((short)5, "full");
+    LL((short)4, "ll");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -72,8 +69,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
           return LANG;
         case 4: // LL
           return LL;
-        case 5: // FULL
-          return FULL;
         default:
           return null;
       }
@@ -114,8 +109,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   }
 
   // isset id assignments
-  private static final int __FULL_ISSET_ID = 0;
-  private BitSet __isset_bit_vector = new BitSet(1);
 
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
@@ -128,16 +121,12 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         new FieldValueMetaData(TType.STRING)));
     tmpMap.put(_Fields.LL, new FieldMetaData("ll", TFieldRequirementType.OPTIONAL, 
         new StructMetaData(TType.STRUCT, GeocodePoint.class)));
-    tmpMap.put(_Fields.FULL, new FieldMetaData("full", TFieldRequirementType.OPTIONAL, 
-        new FieldValueMetaData(TType.BOOL)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeRequest.class, metaDataMap);
   }
 
   public GeocodeRequest() {
     this.lang = "en";
-
-    this.full = false;
 
   }
 
@@ -152,8 +141,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
    * Performs a deep copy on <i>other</i>.
    */
   public GeocodeRequest(GeocodeRequest other) {
-    __isset_bit_vector.clear();
-    __isset_bit_vector.or(other.__isset_bit_vector);
     if (other.isSetQuery()) {
       this.query = other.query;
     }
@@ -166,7 +153,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     if (other.isSetLl()) {
       this.ll = new GeocodePoint(other.ll);
     }
-    this.full = other.full;
   }
 
   public GeocodeRequest deepCopy() {
@@ -180,8 +166,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     this.lang = "en";
 
     this.ll = null;
-    this.full = false;
-
   }
 
   public String getQuery() {
@@ -280,29 +264,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     }
   }
 
-  public boolean isFull() {
-    return this.full;
-  }
-
-  public GeocodeRequest setFull(boolean full) {
-    this.full = full;
-    setFullIsSet(true);
-    return this;
-  }
-
-  public void unsetFull() {
-    __isset_bit_vector.clear(__FULL_ISSET_ID);
-  }
-
-  /** Returns true if field full is set (has been asigned a value) and false otherwise */
-  public boolean isSetFull() {
-    return __isset_bit_vector.get(__FULL_ISSET_ID);
-  }
-
-  public void setFullIsSet(boolean value) {
-    __isset_bit_vector.set(__FULL_ISSET_ID, value);
-  }
-
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case QUERY:
@@ -337,14 +298,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       }
       break;
 
-    case FULL:
-      if (value == null) {
-        unsetFull();
-      } else {
-        setFull((Boolean)value);
-      }
-      break;
-
     }
   }
 
@@ -361,9 +314,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
 
     case LL:
       return getLl();
-
-    case FULL:
-      return new Boolean(isFull());
 
     }
     throw new IllegalStateException();
@@ -384,8 +334,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       return isSetLang();
     case LL:
       return isSetLl();
-    case FULL:
-      return isSetFull();
     }
     throw new IllegalStateException();
   }
@@ -436,15 +384,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       if (!(this_present_ll && that_present_ll))
         return false;
       if (!this.ll.equals(that.ll))
-        return false;
-    }
-
-    boolean this_present_full = true && this.isSetFull();
-    boolean that_present_full = true && that.isSetFull();
-    if (this_present_full || that_present_full) {
-      if (!(this_present_full && that_present_full))
-        return false;
-      if (this.full != that.full)
         return false;
     }
 
@@ -504,16 +443,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetFull()).compareTo(typedOther.isSetFull());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetFull()) {
-      lastComparison = TBaseHelper.compareTo(this.full, typedOther.full);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
     return 0;
   }
 
@@ -560,14 +489,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
-        case 5: // FULL
-          if (field.type == TType.BOOL) {
-            this.full = iprot.readBool();
-            setFullIsSet(true);
-          } else { 
-            TProtocolUtil.skip(iprot, field.type);
-          }
-          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -608,11 +529,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         this.ll.write(oprot);
         oprot.writeFieldEnd();
       }
-    }
-    if (isSetFull()) {
-      oprot.writeFieldBegin(FULL_FIELD_DESC);
-      oprot.writeBool(this.full);
-      oprot.writeFieldEnd();
     }
     oprot.writeFieldStop();
     oprot.writeStructEnd();
@@ -658,12 +574,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       } else {
         sb.append(this.ll);
       }
-      first = false;
-    }
-    if (isSetFull()) {
-      if (!first) sb.append(", ");
-      sb.append("full:");
-      sb.append(this.full);
       first = false;
     }
     sb.append(")");

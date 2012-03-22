@@ -3,7 +3,7 @@
  *
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
-package com.foursquare.geocoder;
+package com.foursquare.twofish;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -506,14 +506,14 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
         case 4: // PARENTS
           if (field.type == TType.LIST) {
             {
-              TList _list16 = iprot.readListBegin();
-              this.parents = new ArrayList<GeocodeFeature>(_list16.size);
-              for (int _i17 = 0; _i17 < _list16.size; ++_i17)
+              TList _list0 = iprot.readListBegin();
+              this.parents = new ArrayList<GeocodeFeature>(_list0.size);
+              for (int _i1 = 0; _i1 < _list0.size; ++_i1)
               {
-                GeocodeFeature _elem18;
-                _elem18 = new GeocodeFeature();
-                _elem18.read(iprot);
-                this.parents.add(_elem18);
+                GeocodeFeature _elem2;
+                _elem2 = new GeocodeFeature();
+                _elem2.read(iprot);
+                this.parents.add(_elem2);
               }
               iprot.readListEnd();
             }
@@ -556,9 +556,9 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
         oprot.writeFieldBegin(PARENTS_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.STRUCT, this.parents.size()));
-          for (GeocodeFeature _iter19 : this.parents)
+          for (GeocodeFeature _iter3 : this.parents)
           {
-            _iter19.write(oprot);
+            _iter3.write(oprot);
           }
           oprot.writeListEnd();
         }

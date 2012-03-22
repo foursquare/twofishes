@@ -45,6 +45,22 @@ struct GeocodeBoundingBox {
   2: GeocodePoint sw
 }
 
+struct FeatureId {
+  1: string source,
+  2: string id
+}
+
+enum FeatureNameFlags {
+  PREFERRED = 0x1,
+  ABBREVIATION = 0x2
+}
+
+struct FeatureName {
+  1: string name,
+  2: string lang,
+  3: optional list<FeatureNameFlags> flags,
+}
+
 struct GeocodeFeature {
   1: GeocodePoint center
   2: string cc,
@@ -52,6 +68,9 @@ struct GeocodeFeature {
   4: optional string displayName,
   5: optional YahooWoeType woeType,
   6: optional GeocodeBoundingBox bounds,
+  7: optional list<FeatureId> ids,
+  8: optional list<FeatureName> names,
+  9: optional list<string> attribution
 }
 
 struct GeocodeInterpretation {
@@ -69,7 +88,8 @@ struct GeocodeRequest {
   1: string query,
   2: optional string cc,
   3: optional string lang = "en",
-  4: optional GeocodePoint ll
+  4: optional GeocodePoint ll,
+  5: optional bool full = 0,
 }
 
 service Geocoder {

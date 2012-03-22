@@ -26,7 +26,7 @@ class BoundingBoxTsvImporter(store: GeocodeStorageWriteService) extends LogHelpe
         val bbox = bboxString.replace("[", "").replace("]", "").split(",").toList.map(_.toDouble)
         // println("%s --> %s".format(geonameid, bbox))
         store.addBoundingBoxToRecord(
-          FeatureId(GeonamesParser.geonameIdNamespace, geonameid),
+          StoredFeatureId(GeonamesParser.geonameIdNamespace, geonameid),
           BoundingBox(Point(bbox(0), bbox(1)), Point(bbox(2), bbox(3)))
         )
       }

@@ -7,6 +7,7 @@ import com.novus.salat.annotations._
 import com.novus.salat.dao._
 import com.mongodb.casbah.Imports._
 import com.mongodb.casbah.MongoConnection
+import scala.collection.JavaConversions._
 
 case class DisplayName(
   @Key("l") lang: String,
@@ -34,15 +35,15 @@ class DisplayNameOrdering(lang: Option[String], preferAbbrev: Boolean) extends O
   }
 }
 
-case class FeatureId(
+case class StoredFeatureId(
   @Key("n") namespace: String,
   id: String) {
   override def toString = "%s:%s".format(namespace, id)
 }
 
 object Implicits {
-  implicit def fidToString(fid: FeatureId): String = fid.toString
-  implicit def fidListToString(fids: List[FeatureId]): List[String] = fids.map(_.toString)
+  implicit def fidToString(fid: StoredFeatureId): String = fid.toString
+  implicit def fidListToString(fids: List[StoredFeatureId]): List[String] = fids.map(_.toString)
 }
 
 case class Point(lat: Double, lng: Double)
@@ -66,6 +67,11 @@ case class GeocodeRecord(
   boost: Option[Int] = None,
   @Key("bb") boundingbox: Option[BoundingBox] = None
 ) extends Ordered[GeocodeRecord] {
+  def featureIds = ids.map(id => {
+    val parts = id.split(":")
+    StoredFeatureId(parts(0), parts(1))
+  })
+
   lazy val woeType = YahooWoeType.findByValue(_woeType)
   
   def compare(that: GeocodeRecord): Int = {
@@ -77,6 +83,7 @@ case class GeocodeRecord(
   }
 
   def toGeocodeFeature(parentMap: Map[String, GeocodeRecord],
+      full: Boolean = false,
       lang: Option[String] = None): GeocodeFeature = {
     val myBestName = bestName(lang, false)
 
@@ -101,6 +108,30 @@ case class GeocodeRecord(
       ))  
     )
 
+    feature.setIds(featureIds.map(i => {
+      new FeatureId(i.namespace, i.id)
+    }))
+
+    if (full) {
+      val filteredNames = displayNames.filterNot(n => List("post", "link").contains(n.lang))
+
+      feature.setNames(filteredNames.map(name => {
+        var flags: List[FeatureNameFlags] = Nil
+        if (name.lang == "abbr") {
+          flags ::= FeatureNameFlags.ABBREVIATION
+        }
+        if (name.preferred) {
+          flags ::= FeatureNameFlags.PREFERRED
+        }
+
+        val fname = new FeatureName(name.name, name.lang)
+        if (flags.nonEmpty) {
+          fname.setFlags(flags)
+        }
+        fname
+      }))
+    }
+
     feature
   }
 
@@ -111,14 +142,14 @@ case class GeocodeRecord(
 trait GeocodeStorageReadService {
   def getByName(name: String): Iterator[GeocodeRecord]
   def getByIds(ids: Seq[String]): Iterator[GeocodeRecord]
-  def getById(id: FeatureId): Iterator[GeocodeRecord]
+  def getById(id: StoredFeatureId): Iterator[GeocodeRecord]
 }
 
 trait GeocodeStorageWriteService {
   def insert(record: GeocodeRecord): Unit
-  def setRecordNames(id: FeatureId, names: List[DisplayName])
-  def addNameToRecord(name: DisplayName, id: FeatureId)
-  def addBoundingBoxToRecord(id: FeatureId, bbox: BoundingBox)
+  def setRecordNames(id: StoredFeatureId, names: List[DisplayName])
+  def addNameToRecord(name: DisplayName, id: StoredFeatureId)
+  def addBoundingBoxToRecord(id: StoredFeatureId, bbox: BoundingBox)
 }
 
 trait GeocodeStorageReadWriteService extends GeocodeStorageWriteService with GeocodeStorageReadService
@@ -131,7 +162,7 @@ class MongoGeocodeStorageService extends GeocodeStorageReadWriteService {
     MongoGeocodeDAO.find(MongoDBObject("names" -> name))
   }
 
-  def getById(id: FeatureId): Iterator[GeocodeRecord] = {
+  def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = {
     MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))))
   }
 
@@ -143,19 +174,19 @@ class MongoGeocodeStorageService extends GeocodeStorageReadWriteService {
     MongoGeocodeDAO.insert(record)
   }
 
-  def addNameToRecord(name: DisplayName, id: FeatureId) {
+  def addNameToRecord(name: DisplayName, id: StoredFeatureId) {
     MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))),
       MongoDBObject("$addToSet" -> MongoDBObject("dns" -> grater[DisplayName].asDBObject(name))),
       false, false)
   }
 
-  def addBoundingBoxToRecord(id: FeatureId, bbox: BoundingBox) {
+  def addBoundingBoxToRecord(id: StoredFeatureId, bbox: BoundingBox) {
     MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))),
       MongoDBObject("$set" -> MongoDBObject("bb" -> grater[BoundingBox].asDBObject(bbox))),
       false, false)
   }
 
-  def setRecordNames(id: FeatureId, names: List[DisplayName]) {
+  def setRecordNames(id: StoredFeatureId, names: List[DisplayName]) {
     MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))),
       MongoDBObject("$set" -> MongoDBObject(
         "dns" -> names.map(n => grater[DisplayName].asDBObject(n)))),

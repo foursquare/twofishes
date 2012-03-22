@@ -64,6 +64,9 @@ object GeocoderBuild extends Build {
     }
   )
 
+  lazy val all = Project(id = "all",
+                          base = file(".")) aggregate(core, interface, server, indexer)
+
   lazy val core = Project(id = "core",
       base = file("core"),
       settings = defaultSettings ++ Seq(

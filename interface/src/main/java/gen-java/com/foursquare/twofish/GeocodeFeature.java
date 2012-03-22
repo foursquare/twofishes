@@ -3,7 +3,7 @@
  *
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
-package com.foursquare.geocoder;
+package com.foursquare.twofish;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -37,9 +37,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
   private static final TField DISPLAY_NAME_FIELD_DESC = new TField("displayName", TType.STRING, (short)4);
   private static final TField WOE_TYPE_FIELD_DESC = new TField("woeType", TType.I32, (short)5);
   private static final TField BOUNDS_FIELD_DESC = new TField("bounds", TType.STRUCT, (short)6);
-  private static final TField IDS_FIELD_DESC = new TField("ids", TType.LIST, (short)7);
-  private static final TField NAMES_FIELD_DESC = new TField("names", TType.LIST, (short)8);
-  private static final TField ATTRIBUTION_FIELD_DESC = new TField("attribution", TType.LIST, (short)9);
 
   public GeocodePoint center;
   public String cc;
@@ -51,9 +48,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
    */
   public YahooWoeType woeType;
   public GeocodeBoundingBox bounds;
-  public List<FeatureId> ids;
-  public List<FeatureName> names;
-  public List<String> attribution;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
@@ -66,10 +60,7 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
      * @see YahooWoeType
      */
     WOE_TYPE((short)5, "woeType"),
-    BOUNDS((short)6, "bounds"),
-    IDS((short)7, "ids"),
-    NAMES((short)8, "names"),
-    ATTRIBUTION((short)9, "attribution");
+    BOUNDS((short)6, "bounds");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -96,12 +87,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
           return WOE_TYPE;
         case 6: // BOUNDS
           return BOUNDS;
-        case 7: // IDS
-          return IDS;
-        case 8: // NAMES
-          return NAMES;
-        case 9: // ATTRIBUTION
-          return ATTRIBUTION;
         default:
           return null;
       }
@@ -158,15 +143,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         new EnumMetaData(TType.ENUM, YahooWoeType.class)));
     tmpMap.put(_Fields.BOUNDS, new FieldMetaData("bounds", TFieldRequirementType.OPTIONAL, 
         new StructMetaData(TType.STRUCT, GeocodeBoundingBox.class)));
-    tmpMap.put(_Fields.IDS, new FieldMetaData("ids", TFieldRequirementType.OPTIONAL, 
-        new ListMetaData(TType.LIST, 
-            new StructMetaData(TType.STRUCT, FeatureId.class))));
-    tmpMap.put(_Fields.NAMES, new FieldMetaData("names", TFieldRequirementType.OPTIONAL, 
-        new ListMetaData(TType.LIST, 
-            new StructMetaData(TType.STRUCT, FeatureName.class))));
-    tmpMap.put(_Fields.ATTRIBUTION, new FieldMetaData("attribution", TFieldRequirementType.OPTIONAL, 
-        new ListMetaData(TType.LIST, 
-            new FieldValueMetaData(TType.STRING))));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeFeature.class, metaDataMap);
   }
@@ -205,27 +181,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     if (other.isSetBounds()) {
       this.bounds = new GeocodeBoundingBox(other.bounds);
     }
-    if (other.isSetIds()) {
-      List<FeatureId> __this__ids = new ArrayList<FeatureId>();
-      for (FeatureId other_element : other.ids) {
-        __this__ids.add(new FeatureId(other_element));
-      }
-      this.ids = __this__ids;
-    }
-    if (other.isSetNames()) {
-      List<FeatureName> __this__names = new ArrayList<FeatureName>();
-      for (FeatureName other_element : other.names) {
-        __this__names.add(new FeatureName(other_element));
-      }
-      this.names = __this__names;
-    }
-    if (other.isSetAttribution()) {
-      List<String> __this__attribution = new ArrayList<String>();
-      for (String other_element : other.attribution) {
-        __this__attribution.add(other_element);
-      }
-      this.attribution = __this__attribution;
-    }
   }
 
   public GeocodeFeature deepCopy() {
@@ -240,9 +195,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     this.displayName = null;
     this.woeType = null;
     this.bounds = null;
-    this.ids = null;
-    this.names = null;
-    this.attribution = null;
   }
 
   public GeocodePoint getCenter() {
@@ -397,123 +349,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     }
   }
 
-  public int getIdsSize() {
-    return (this.ids == null) ? 0 : this.ids.size();
-  }
-
-  public java.util.Iterator<FeatureId> getIdsIterator() {
-    return (this.ids == null) ? null : this.ids.iterator();
-  }
-
-  public void addToIds(FeatureId elem) {
-    if (this.ids == null) {
-      this.ids = new ArrayList<FeatureId>();
-    }
-    this.ids.add(elem);
-  }
-
-  public List<FeatureId> getIds() {
-    return this.ids;
-  }
-
-  public GeocodeFeature setIds(List<FeatureId> ids) {
-    this.ids = ids;
-    return this;
-  }
-
-  public void unsetIds() {
-    this.ids = null;
-  }
-
-  /** Returns true if field ids is set (has been asigned a value) and false otherwise */
-  public boolean isSetIds() {
-    return this.ids != null;
-  }
-
-  public void setIdsIsSet(boolean value) {
-    if (!value) {
-      this.ids = null;
-    }
-  }
-
-  public int getNamesSize() {
-    return (this.names == null) ? 0 : this.names.size();
-  }
-
-  public java.util.Iterator<FeatureName> getNamesIterator() {
-    return (this.names == null) ? null : this.names.iterator();
-  }
-
-  public void addToNames(FeatureName elem) {
-    if (this.names == null) {
-      this.names = new ArrayList<FeatureName>();
-    }
-    this.names.add(elem);
-  }
-
-  public List<FeatureName> getNames() {
-    return this.names;
-  }
-
-  public GeocodeFeature setNames(List<FeatureName> names) {
-    this.names = names;
-    return this;
-  }
-
-  public void unsetNames() {
-    this.names = null;
-  }
-
-  /** Returns true if field names is set (has been asigned a value) and false otherwise */
-  public boolean isSetNames() {
-    return this.names != null;
-  }
-
-  public void setNamesIsSet(boolean value) {
-    if (!value) {
-      this.names = null;
-    }
-  }
-
-  public int getAttributionSize() {
-    return (this.attribution == null) ? 0 : this.attribution.size();
-  }
-
-  public java.util.Iterator<String> getAttributionIterator() {
-    return (this.attribution == null) ? null : this.attribution.iterator();
-  }
-
-  public void addToAttribution(String elem) {
-    if (this.attribution == null) {
-      this.attribution = new ArrayList<String>();
-    }
-    this.attribution.add(elem);
-  }
-
-  public List<String> getAttribution() {
-    return this.attribution;
-  }
-
-  public GeocodeFeature setAttribution(List<String> attribution) {
-    this.attribution = attribution;
-    return this;
-  }
-
-  public void unsetAttribution() {
-    this.attribution = null;
-  }
-
-  /** Returns true if field attribution is set (has been asigned a value) and false otherwise */
-  public boolean isSetAttribution() {
-    return this.attribution != null;
-  }
-
-  public void setAttributionIsSet(boolean value) {
-    if (!value) {
-      this.attribution = null;
-    }
-  }
-
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case CENTER:
@@ -564,30 +399,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       }
       break;
 
-    case IDS:
-      if (value == null) {
-        unsetIds();
-      } else {
-        setIds((List<FeatureId>)value);
-      }
-      break;
-
-    case NAMES:
-      if (value == null) {
-        unsetNames();
-      } else {
-        setNames((List<FeatureName>)value);
-      }
-      break;
-
-    case ATTRIBUTION:
-      if (value == null) {
-        unsetAttribution();
-      } else {
-        setAttribution((List<String>)value);
-      }
-      break;
-
     }
   }
 
@@ -610,15 +421,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
 
     case BOUNDS:
       return getBounds();
-
-    case IDS:
-      return getIds();
-
-    case NAMES:
-      return getNames();
-
-    case ATTRIBUTION:
-      return getAttribution();
 
     }
     throw new IllegalStateException();
@@ -643,12 +445,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       return isSetWoeType();
     case BOUNDS:
       return isSetBounds();
-    case IDS:
-      return isSetIds();
-    case NAMES:
-      return isSetNames();
-    case ATTRIBUTION:
-      return isSetAttribution();
     }
     throw new IllegalStateException();
   }
@@ -717,33 +513,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       if (!(this_present_bounds && that_present_bounds))
         return false;
       if (!this.bounds.equals(that.bounds))
-        return false;
-    }
-
-    boolean this_present_ids = true && this.isSetIds();
-    boolean that_present_ids = true && that.isSetIds();
-    if (this_present_ids || that_present_ids) {
-      if (!(this_present_ids && that_present_ids))
-        return false;
-      if (!this.ids.equals(that.ids))
-        return false;
-    }
-
-    boolean this_present_names = true && this.isSetNames();
-    boolean that_present_names = true && that.isSetNames();
-    if (this_present_names || that_present_names) {
-      if (!(this_present_names && that_present_names))
-        return false;
-      if (!this.names.equals(that.names))
-        return false;
-    }
-
-    boolean this_present_attribution = true && this.isSetAttribution();
-    boolean that_present_attribution = true && that.isSetAttribution();
-    if (this_present_attribution || that_present_attribution) {
-      if (!(this_present_attribution && that_present_attribution))
-        return false;
-      if (!this.attribution.equals(that.attribution))
         return false;
     }
 
@@ -823,36 +592,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetIds()).compareTo(typedOther.isSetIds());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetIds()) {
-      lastComparison = TBaseHelper.compareTo(this.ids, typedOther.ids);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
-    lastComparison = Boolean.valueOf(isSetNames()).compareTo(typedOther.isSetNames());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetNames()) {
-      lastComparison = TBaseHelper.compareTo(this.names, typedOther.names);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
-    lastComparison = Boolean.valueOf(isSetAttribution()).compareTo(typedOther.isSetAttribution());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetAttribution()) {
-      lastComparison = TBaseHelper.compareTo(this.attribution, typedOther.attribution);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
     return 0;
   }
 
@@ -914,59 +653,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
-        case 7: // IDS
-          if (field.type == TType.LIST) {
-            {
-              TList _list4 = iprot.readListBegin();
-              this.ids = new ArrayList<FeatureId>(_list4.size);
-              for (int _i5 = 0; _i5 < _list4.size; ++_i5)
-              {
-                FeatureId _elem6;
-                _elem6 = new FeatureId();
-                _elem6.read(iprot);
-                this.ids.add(_elem6);
-              }
-              iprot.readListEnd();
-            }
-          } else { 
-            TProtocolUtil.skip(iprot, field.type);
-          }
-          break;
-        case 8: // NAMES
-          if (field.type == TType.LIST) {
-            {
-              TList _list7 = iprot.readListBegin();
-              this.names = new ArrayList<FeatureName>(_list7.size);
-              for (int _i8 = 0; _i8 < _list7.size; ++_i8)
-              {
-                FeatureName _elem9;
-                _elem9 = new FeatureName();
-                _elem9.read(iprot);
-                this.names.add(_elem9);
-              }
-              iprot.readListEnd();
-            }
-          } else { 
-            TProtocolUtil.skip(iprot, field.type);
-          }
-          break;
-        case 9: // ATTRIBUTION
-          if (field.type == TType.LIST) {
-            {
-              TList _list10 = iprot.readListBegin();
-              this.attribution = new ArrayList<String>(_list10.size);
-              for (int _i11 = 0; _i11 < _list10.size; ++_i11)
-              {
-                String _elem12;
-                _elem12 = iprot.readString();
-                this.attribution.add(_elem12);
-              }
-              iprot.readListEnd();
-            }
-          } else { 
-            TProtocolUtil.skip(iprot, field.type);
-          }
-          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -1017,48 +703,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       if (isSetBounds()) {
         oprot.writeFieldBegin(BOUNDS_FIELD_DESC);
         this.bounds.write(oprot);
-        oprot.writeFieldEnd();
-      }
-    }
-    if (this.ids != null) {
-      if (isSetIds()) {
-        oprot.writeFieldBegin(IDS_FIELD_DESC);
-        {
-          oprot.writeListBegin(new TList(TType.STRUCT, this.ids.size()));
-          for (FeatureId _iter13 : this.ids)
-          {
-            _iter13.write(oprot);
-          }
-          oprot.writeListEnd();
-        }
-        oprot.writeFieldEnd();
-      }
-    }
-    if (this.names != null) {
-      if (isSetNames()) {
-        oprot.writeFieldBegin(NAMES_FIELD_DESC);
-        {
-          oprot.writeListBegin(new TList(TType.STRUCT, this.names.size()));
-          for (FeatureName _iter14 : this.names)
-          {
-            _iter14.write(oprot);
-          }
-          oprot.writeListEnd();
-        }
-        oprot.writeFieldEnd();
-      }
-    }
-    if (this.attribution != null) {
-      if (isSetAttribution()) {
-        oprot.writeFieldBegin(ATTRIBUTION_FIELD_DESC);
-        {
-          oprot.writeListBegin(new TList(TType.STRING, this.attribution.size()));
-          for (String _iter15 : this.attribution)
-          {
-            oprot.writeString(_iter15);
-          }
-          oprot.writeListEnd();
-        }
         oprot.writeFieldEnd();
       }
     }
@@ -1123,36 +767,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         sb.append("null");
       } else {
         sb.append(this.bounds);
-      }
-      first = false;
-    }
-    if (isSetIds()) {
-      if (!first) sb.append(", ");
-      sb.append("ids:");
-      if (this.ids == null) {
-        sb.append("null");
-      } else {
-        sb.append(this.ids);
-      }
-      first = false;
-    }
-    if (isSetNames()) {
-      if (!first) sb.append(", ");
-      sb.append("names:");
-      if (this.names == null) {
-        sb.append("null");
-      } else {
-        sb.append(this.names);
-      }
-      first = false;
-    }
-    if (isSetAttribution()) {
-      if (!first) sb.append(", ");
-      sb.append("attribution:");
-      if (this.attribution == null) {
-        sb.append("null");
-      } else {
-        sb.append(this.attribution);
       }
       first = false;
     }

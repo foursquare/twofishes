@@ -81,6 +81,8 @@ class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
           request.setLang(v)))
         params.get("cc").foreach(_.asScala.headOption.foreach(v =>
           request.setCc(v)))
+        params.get("full").foreach(_.asScala.headOption.foreach(v =>
+          request.setFull(v.toBoolean)))
         params.get("ll").foreach(_.asScala.headOption.foreach(v => {
           val ll = v.split(",").toList
           request.setLl(new GeocodePoint(ll(0).toDouble, ll(1).toDouble))

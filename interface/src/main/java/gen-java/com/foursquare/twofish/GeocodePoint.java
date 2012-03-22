@@ -3,7 +3,7 @@
  *
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
-package com.foursquare.geocoder;
+package com.foursquare.twofish;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -28,16 +28,19 @@ import org.apache.thrift.protocol.*;
 
 // No additional import required for struct/union.
 
-public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._Fields>, java.io.Serializable, Cloneable {
-  private static final TStruct STRUCT_DESC = new TStruct("GeocodeResponse");
+public class GeocodePoint implements TBase<GeocodePoint, GeocodePoint._Fields>, java.io.Serializable, Cloneable {
+  private static final TStruct STRUCT_DESC = new TStruct("GeocodePoint");
 
-  private static final TField INTERPRETATIONS_FIELD_DESC = new TField("interpretations", TType.LIST, (short)1);
+  private static final TField LAT_FIELD_DESC = new TField("lat", TType.DOUBLE, (short)1);
+  private static final TField LNG_FIELD_DESC = new TField("lng", TType.DOUBLE, (short)2);
 
-  public List<GeocodeInterpretation> interpretations;
+  public double lat;
+  public double lng;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
-    INTERPRETATIONS((short)1, "interpretations");
+    LAT((short)1, "lat"),
+    LNG((short)2, "lng");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -52,8 +55,10 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
      */
     public static _Fields findByThriftId(int fieldId) {
       switch(fieldId) {
-        case 1: // INTERPRETATIONS
-          return INTERPRETATIONS;
+        case 1: // LAT
+          return LAT;
+        case 2: // LNG
+          return LNG;
         default:
           return null;
       }
@@ -94,95 +99,118 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
   }
 
   // isset id assignments
+  private static final int __LAT_ISSET_ID = 0;
+  private static final int __LNG_ISSET_ID = 1;
+  private BitSet __isset_bit_vector = new BitSet(2);
 
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
     Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.INTERPRETATIONS, new FieldMetaData("interpretations", TFieldRequirementType.DEFAULT, 
-        new ListMetaData(TType.LIST, 
-            new StructMetaData(TType.STRUCT, GeocodeInterpretation.class))));
+    tmpMap.put(_Fields.LAT, new FieldMetaData("lat", TFieldRequirementType.DEFAULT, 
+        new FieldValueMetaData(TType.DOUBLE)));
+    tmpMap.put(_Fields.LNG, new FieldMetaData("lng", TFieldRequirementType.DEFAULT, 
+        new FieldValueMetaData(TType.DOUBLE)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
-    FieldMetaData.addStructMetaDataMap(GeocodeResponse.class, metaDataMap);
+    FieldMetaData.addStructMetaDataMap(GeocodePoint.class, metaDataMap);
   }
 
-  public GeocodeResponse() {
+  public GeocodePoint() {
   }
 
-  public GeocodeResponse(
-    List<GeocodeInterpretation> interpretations)
+  public GeocodePoint(
+    double lat,
+    double lng)
   {
     this();
-    this.interpretations = interpretations;
+    this.lat = lat;
+    setLatIsSet(true);
+    this.lng = lng;
+    setLngIsSet(true);
   }
 
   /**
    * Performs a deep copy on <i>other</i>.
    */
-  public GeocodeResponse(GeocodeResponse other) {
-    if (other.isSetInterpretations()) {
-      List<GeocodeInterpretation> __this__interpretations = new ArrayList<GeocodeInterpretation>();
-      for (GeocodeInterpretation other_element : other.interpretations) {
-        __this__interpretations.add(new GeocodeInterpretation(other_element));
-      }
-      this.interpretations = __this__interpretations;
-    }
+  public GeocodePoint(GeocodePoint other) {
+    __isset_bit_vector.clear();
+    __isset_bit_vector.or(other.__isset_bit_vector);
+    this.lat = other.lat;
+    this.lng = other.lng;
   }
 
-  public GeocodeResponse deepCopy() {
-    return new GeocodeResponse(this);
+  public GeocodePoint deepCopy() {
+    return new GeocodePoint(this);
   }
 
   @Override
   public void clear() {
-    this.interpretations = null;
+    setLatIsSet(false);
+    this.lat = 0.0;
+    setLngIsSet(false);
+    this.lng = 0.0;
   }
 
-  public int getInterpretationsSize() {
-    return (this.interpretations == null) ? 0 : this.interpretations.size();
+  public double getLat() {
+    return this.lat;
   }
 
-  public java.util.Iterator<GeocodeInterpretation> getInterpretationsIterator() {
-    return (this.interpretations == null) ? null : this.interpretations.iterator();
-  }
-
-  public void addToInterpretations(GeocodeInterpretation elem) {
-    if (this.interpretations == null) {
-      this.interpretations = new ArrayList<GeocodeInterpretation>();
-    }
-    this.interpretations.add(elem);
-  }
-
-  public List<GeocodeInterpretation> getInterpretations() {
-    return this.interpretations;
-  }
-
-  public GeocodeResponse setInterpretations(List<GeocodeInterpretation> interpretations) {
-    this.interpretations = interpretations;
+  public GeocodePoint setLat(double lat) {
+    this.lat = lat;
+    setLatIsSet(true);
     return this;
   }
 
-  public void unsetInterpretations() {
-    this.interpretations = null;
+  public void unsetLat() {
+    __isset_bit_vector.clear(__LAT_ISSET_ID);
   }
 
-  /** Returns true if field interpretations is set (has been asigned a value) and false otherwise */
-  public boolean isSetInterpretations() {
-    return this.interpretations != null;
+  /** Returns true if field lat is set (has been asigned a value) and false otherwise */
+  public boolean isSetLat() {
+    return __isset_bit_vector.get(__LAT_ISSET_ID);
   }
 
-  public void setInterpretationsIsSet(boolean value) {
-    if (!value) {
-      this.interpretations = null;
-    }
+  public void setLatIsSet(boolean value) {
+    __isset_bit_vector.set(__LAT_ISSET_ID, value);
+  }
+
+  public double getLng() {
+    return this.lng;
+  }
+
+  public GeocodePoint setLng(double lng) {
+    this.lng = lng;
+    setLngIsSet(true);
+    return this;
+  }
+
+  public void unsetLng() {
+    __isset_bit_vector.clear(__LNG_ISSET_ID);
+  }
+
+  /** Returns true if field lng is set (has been asigned a value) and false otherwise */
+  public boolean isSetLng() {
+    return __isset_bit_vector.get(__LNG_ISSET_ID);
+  }
+
+  public void setLngIsSet(boolean value) {
+    __isset_bit_vector.set(__LNG_ISSET_ID, value);
   }
 
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
-    case INTERPRETATIONS:
+    case LAT:
       if (value == null) {
-        unsetInterpretations();
+        unsetLat();
       } else {
-        setInterpretations((List<GeocodeInterpretation>)value);
+        setLat((Double)value);
+      }
+      break;
+
+    case LNG:
+      if (value == null) {
+        unsetLng();
+      } else {
+        setLng((Double)value);
       }
       break;
 
@@ -191,8 +219,11 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
 
   public Object getFieldValue(_Fields field) {
     switch (field) {
-    case INTERPRETATIONS:
-      return getInterpretations();
+    case LAT:
+      return new Double(getLat());
+
+    case LNG:
+      return new Double(getLng());
 
     }
     throw new IllegalStateException();
@@ -205,8 +236,10 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
     }
 
     switch (field) {
-    case INTERPRETATIONS:
-      return isSetInterpretations();
+    case LAT:
+      return isSetLat();
+    case LNG:
+      return isSetLng();
     }
     throw new IllegalStateException();
   }
@@ -215,21 +248,30 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
   public boolean equals(Object that) {
     if (that == null)
       return false;
-    if (that instanceof GeocodeResponse)
-      return this.equals((GeocodeResponse)that);
+    if (that instanceof GeocodePoint)
+      return this.equals((GeocodePoint)that);
     return false;
   }
 
-  public boolean equals(GeocodeResponse that) {
+  public boolean equals(GeocodePoint that) {
     if (that == null)
       return false;
 
-    boolean this_present_interpretations = true && this.isSetInterpretations();
-    boolean that_present_interpretations = true && that.isSetInterpretations();
-    if (this_present_interpretations || that_present_interpretations) {
-      if (!(this_present_interpretations && that_present_interpretations))
+    boolean this_present_lat = true;
+    boolean that_present_lat = true;
+    if (this_present_lat || that_present_lat) {
+      if (!(this_present_lat && that_present_lat))
         return false;
-      if (!this.interpretations.equals(that.interpretations))
+      if (this.lat != that.lat)
+        return false;
+    }
+
+    boolean this_present_lng = true;
+    boolean that_present_lng = true;
+    if (this_present_lng || that_present_lng) {
+      if (!(this_present_lng && that_present_lng))
+        return false;
+      if (this.lng != that.lng)
         return false;
     }
 
@@ -241,20 +283,30 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
     return 0;
   }
 
-  public int compareTo(GeocodeResponse other) {
+  public int compareTo(GeocodePoint other) {
     if (!getClass().equals(other.getClass())) {
       return getClass().getName().compareTo(other.getClass().getName());
     }
 
     int lastComparison = 0;
-    GeocodeResponse typedOther = (GeocodeResponse)other;
+    GeocodePoint typedOther = (GeocodePoint)other;
 
-    lastComparison = Boolean.valueOf(isSetInterpretations()).compareTo(typedOther.isSetInterpretations());
+    lastComparison = Boolean.valueOf(isSetLat()).compareTo(typedOther.isSetLat());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetInterpretations()) {
-      lastComparison = TBaseHelper.compareTo(this.interpretations, typedOther.interpretations);
+    if (isSetLat()) {
+      lastComparison = TBaseHelper.compareTo(this.lat, typedOther.lat);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetLng()).compareTo(typedOther.isSetLng());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetLng()) {
+      lastComparison = TBaseHelper.compareTo(this.lng, typedOther.lng);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -276,20 +328,18 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
         break;
       }
       switch (field.id) {
-        case 1: // INTERPRETATIONS
-          if (field.type == TType.LIST) {
-            {
-              TList _list20 = iprot.readListBegin();
-              this.interpretations = new ArrayList<GeocodeInterpretation>(_list20.size);
-              for (int _i21 = 0; _i21 < _list20.size; ++_i21)
-              {
-                GeocodeInterpretation _elem22;
-                _elem22 = new GeocodeInterpretation();
-                _elem22.read(iprot);
-                this.interpretations.add(_elem22);
-              }
-              iprot.readListEnd();
-            }
+        case 1: // LAT
+          if (field.type == TType.DOUBLE) {
+            this.lat = iprot.readDouble();
+            setLatIsSet(true);
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 2: // LNG
+          if (field.type == TType.DOUBLE) {
+            this.lng = iprot.readDouble();
+            setLngIsSet(true);
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -309,33 +359,27 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
     validate();
 
     oprot.writeStructBegin(STRUCT_DESC);
-    if (this.interpretations != null) {
-      oprot.writeFieldBegin(INTERPRETATIONS_FIELD_DESC);
-      {
-        oprot.writeListBegin(new TList(TType.STRUCT, this.interpretations.size()));
-        for (GeocodeInterpretation _iter23 : this.interpretations)
-        {
-          _iter23.write(oprot);
-        }
-        oprot.writeListEnd();
-      }
-      oprot.writeFieldEnd();
-    }
+    oprot.writeFieldBegin(LAT_FIELD_DESC);
+    oprot.writeDouble(this.lat);
+    oprot.writeFieldEnd();
+    oprot.writeFieldBegin(LNG_FIELD_DESC);
+    oprot.writeDouble(this.lng);
+    oprot.writeFieldEnd();
     oprot.writeFieldStop();
     oprot.writeStructEnd();
   }
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("GeocodeResponse(");
+    StringBuilder sb = new StringBuilder("GeocodePoint(");
     boolean first = true;
 
-    sb.append("interpretations:");
-    if (this.interpretations == null) {
-      sb.append("null");
-    } else {
-      sb.append(this.interpretations);
-    }
+    sb.append("lat:");
+    sb.append(this.lat);
+    first = false;
+    if (!first) sb.append(", ");
+    sb.append("lng:");
+    sb.append(this.lng);
     first = false;
     sb.append(")");
     return sb.toString();

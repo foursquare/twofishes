@@ -3,7 +3,7 @@
  *
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
-package com.foursquare.geocoder;
+package com.foursquare.twofish;
 
 
 import java.util.Map;
@@ -11,16 +11,15 @@ import java.util.HashMap;
 import org.apache.thrift.TEnum;
 
 public enum YahooWoeType implements TEnum {
-  UNKNOWN(0),
+  COUNTRY(12),
+  POSTAL_CODE(11),
   TOWN(7),
+  SUBURB(22),
   ADMIN1(8),
   ADMIN2(9),
   ADMIN3(10),
-  POSTAL_CODE(11),
-  COUNTRY(12),
   AIRPORT(14),
-  SUBURB(22),
-  STREET(100);
+  UNKNOWN(0);
 
   private final int value;
 
@@ -41,26 +40,24 @@ public enum YahooWoeType implements TEnum {
    */
   public static YahooWoeType findByValue(int value) { 
     switch (value) {
-      case 0:
-        return UNKNOWN;
+      case 12:
+        return COUNTRY;
+      case 11:
+        return POSTAL_CODE;
       case 7:
         return TOWN;
+      case 22:
+        return SUBURB;
       case 8:
         return ADMIN1;
       case 9:
         return ADMIN2;
       case 10:
         return ADMIN3;
-      case 11:
-        return POSTAL_CODE;
-      case 12:
-        return COUNTRY;
       case 14:
         return AIRPORT;
-      case 22:
-        return SUBURB;
-      case 100:
-        return STREET;
+      case 0:
+        return UNKNOWN;
       default:
         return null;
     }
