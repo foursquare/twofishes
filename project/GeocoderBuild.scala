@@ -3,7 +3,7 @@ import Keys._
 
 object GeocoderBuild extends Build {
   lazy val buildSettings = Seq(
-    organization := "com.foursquare.geocoder",
+    organization := "com.foursquare.twofish",
     name := "twofish",
     version      := "0.1",
     scalaVersion := "2.9.1"

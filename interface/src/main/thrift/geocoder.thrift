@@ -1,4 +1,4 @@
-namespace java com.foursquare.geocoder
+namespace java com.foursquare.twofish
 
 // comments from http://developer.yahoo.com/geo/geoplanet/guide/concepts.html
 enum YahooWoeType {
@@ -61,16 +61,20 @@ struct FeatureName {
   3: optional list<FeatureNameFlags> flags,
 }
 
+struct FeatureGeometry {
+  1: GeocodePoint center,
+  2: optional GeocodeBoundingBox bounds
+}
+
 struct GeocodeFeature {
-  1: GeocodePoint center
-  2: string cc,
+  1: string cc,
+  2: FeatureGeometry geometry,
   3: optional string name,
   4: optional string displayName,
   5: optional YahooWoeType woeType,
-  6: optional GeocodeBoundingBox bounds,
-  7: optional list<FeatureId> ids,
-  8: optional list<FeatureName> names,
-  9: optional list<string> attribution
+  6: optional list<FeatureId> ids,
+  7: optional list<FeatureName> names,
+  8: optional list<string> attribution
 }
 
 struct GeocodeInterpretation {

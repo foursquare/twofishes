@@ -1,5 +1,5 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
-package com.foursquare.geocoder
+package com.foursquare.twofish
 
 import com.twitter.logging.Logger
 import com.twitter.logging.config._

@@ -3,7 +3,7 @@
  *
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
-package com.foursquare.geocoder;
+package com.foursquare.twofish;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -28,19 +28,16 @@ import org.apache.thrift.protocol.*;
 
 // No additional import required for struct/union.
 
-public class FeatureId implements TBase<FeatureId, FeatureId._Fields>, java.io.Serializable, Cloneable {
-  private static final TStruct STRUCT_DESC = new TStruct("FeatureId");
+public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._Fields>, java.io.Serializable, Cloneable {
+  private static final TStruct STRUCT_DESC = new TStruct("GeocodeResponse");
 
-  private static final TField SOURCE_FIELD_DESC = new TField("source", TType.STRING, (short)1);
-  private static final TField ID_FIELD_DESC = new TField("id", TType.STRING, (short)2);
+  private static final TField INTERPRETATIONS_FIELD_DESC = new TField("interpretations", TType.LIST, (short)1);
 
-  public String source;
-  public String id;
+  public List<GeocodeInterpretation> interpretations;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
-    SOURCE((short)1, "source"),
-    ID((short)2, "id");
+    INTERPRETATIONS((short)1, "interpretations");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -55,10 +52,8 @@ public class FeatureId implements TBase<FeatureId, FeatureId._Fields>, java.io.S
      */
     public static _Fields findByThriftId(int fieldId) {
       switch(fieldId) {
-        case 1: // SOURCE
-          return SOURCE;
-        case 2: // ID
-          return ID;
+        case 1: // INTERPRETATIONS
+          return INTERPRETATIONS;
         default:
           return null;
       }
@@ -103,111 +98,91 @@ public class FeatureId implements TBase<FeatureId, FeatureId._Fields>, java.io.S
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
     Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.SOURCE, new FieldMetaData("source", TFieldRequirementType.DEFAULT, 
-        new FieldValueMetaData(TType.STRING)));
-    tmpMap.put(_Fields.ID, new FieldMetaData("id", TFieldRequirementType.DEFAULT, 
-        new FieldValueMetaData(TType.STRING)));
+    tmpMap.put(_Fields.INTERPRETATIONS, new FieldMetaData("interpretations", TFieldRequirementType.DEFAULT, 
+        new ListMetaData(TType.LIST, 
+            new StructMetaData(TType.STRUCT, GeocodeInterpretation.class))));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
-    FieldMetaData.addStructMetaDataMap(FeatureId.class, metaDataMap);
+    FieldMetaData.addStructMetaDataMap(GeocodeResponse.class, metaDataMap);
   }
 
-  public FeatureId() {
+  public GeocodeResponse() {
   }
 
-  public FeatureId(
-    String source,
-    String id)
+  public GeocodeResponse(
+    List<GeocodeInterpretation> interpretations)
   {
     this();
-    this.source = source;
-    this.id = id;
+    this.interpretations = interpretations;
   }
 
   /**
    * Performs a deep copy on <i>other</i>.
    */
-  public FeatureId(FeatureId other) {
-    if (other.isSetSource()) {
-      this.source = other.source;
-    }
-    if (other.isSetId()) {
-      this.id = other.id;
+  public GeocodeResponse(GeocodeResponse other) {
+    if (other.isSetInterpretations()) {
+      List<GeocodeInterpretation> __this__interpretations = new ArrayList<GeocodeInterpretation>();
+      for (GeocodeInterpretation other_element : other.interpretations) {
+        __this__interpretations.add(new GeocodeInterpretation(other_element));
+      }
+      this.interpretations = __this__interpretations;
     }
   }
 
-  public FeatureId deepCopy() {
-    return new FeatureId(this);
+  public GeocodeResponse deepCopy() {
+    return new GeocodeResponse(this);
   }
 
   @Override
   public void clear() {
-    this.source = null;
-    this.id = null;
+    this.interpretations = null;
   }
 
-  public String getSource() {
-    return this.source;
+  public int getInterpretationsSize() {
+    return (this.interpretations == null) ? 0 : this.interpretations.size();
   }
 
-  public FeatureId setSource(String source) {
-    this.source = source;
-    return this;
+  public java.util.Iterator<GeocodeInterpretation> getInterpretationsIterator() {
+    return (this.interpretations == null) ? null : this.interpretations.iterator();
   }
 
-  public void unsetSource() {
-    this.source = null;
-  }
-
-  /** Returns true if field source is set (has been asigned a value) and false otherwise */
-  public boolean isSetSource() {
-    return this.source != null;
-  }
-
-  public void setSourceIsSet(boolean value) {
-    if (!value) {
-      this.source = null;
+  public void addToInterpretations(GeocodeInterpretation elem) {
+    if (this.interpretations == null) {
+      this.interpretations = new ArrayList<GeocodeInterpretation>();
     }
+    this.interpretations.add(elem);
   }
 
-  public String getId() {
-    return this.id;
+  public List<GeocodeInterpretation> getInterpretations() {
+    return this.interpretations;
   }
 
-  public FeatureId setId(String id) {
-    this.id = id;
+  public GeocodeResponse setInterpretations(List<GeocodeInterpretation> interpretations) {
+    this.interpretations = interpretations;
     return this;
   }
 
-  public void unsetId() {
-    this.id = null;
+  public void unsetInterpretations() {
+    this.interpretations = null;
   }
 
-  /** Returns true if field id is set (has been asigned a value) and false otherwise */
-  public boolean isSetId() {
-    return this.id != null;
+  /** Returns true if field interpretations is set (has been asigned a value) and false otherwise */
+  public boolean isSetInterpretations() {
+    return this.interpretations != null;
   }
 
-  public void setIdIsSet(boolean value) {
+  public void setInterpretationsIsSet(boolean value) {
     if (!value) {
-      this.id = null;
+      this.interpretations = null;
     }
   }
 
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
-    case SOURCE:
+    case INTERPRETATIONS:
       if (value == null) {
-        unsetSource();
+        unsetInterpretations();
       } else {
-        setSource((String)value);
-      }
-      break;
-
-    case ID:
-      if (value == null) {
-        unsetId();
-      } else {
-        setId((String)value);
+        setInterpretations((List<GeocodeInterpretation>)value);
       }
       break;
 
@@ -216,11 +191,8 @@ public class FeatureId implements TBase<FeatureId, FeatureId._Fields>, java.io.S
 
   public Object getFieldValue(_Fields field) {
     switch (field) {
-    case SOURCE:
-      return getSource();
-
-    case ID:
-      return getId();
+    case INTERPRETATIONS:
+      return getInterpretations();
 
     }
     throw new IllegalStateException();
@@ -233,10 +205,8 @@ public class FeatureId implements TBase<FeatureId, FeatureId._Fields>, java.io.S
     }
 
     switch (field) {
-    case SOURCE:
-      return isSetSource();
-    case ID:
-      return isSetId();
+    case INTERPRETATIONS:
+      return isSetInterpretations();
     }
     throw new IllegalStateException();
   }
@@ -245,30 +215,21 @@ public class FeatureId implements TBase<FeatureId, FeatureId._Fields>, java.io.S
   public boolean equals(Object that) {
     if (that == null)
       return false;
-    if (that instanceof FeatureId)
-      return this.equals((FeatureId)that);
+    if (that instanceof GeocodeResponse)
+      return this.equals((GeocodeResponse)that);
     return false;
   }
 
-  public boolean equals(FeatureId that) {
+  public boolean equals(GeocodeResponse that) {
     if (that == null)
       return false;
 
-    boolean this_present_source = true && this.isSetSource();
-    boolean that_present_source = true && that.isSetSource();
-    if (this_present_source || that_present_source) {
-      if (!(this_present_source && that_present_source))
+    boolean this_present_interpretations = true && this.isSetInterpretations();
+    boolean that_present_interpretations = true && that.isSetInterpretations();
+    if (this_present_interpretations || that_present_interpretations) {
+      if (!(this_present_interpretations && that_present_interpretations))
         return false;
-      if (!this.source.equals(that.source))
-        return false;
-    }
-
-    boolean this_present_id = true && this.isSetId();
-    boolean that_present_id = true && that.isSetId();
-    if (this_present_id || that_present_id) {
-      if (!(this_present_id && that_present_id))
-        return false;
-      if (!this.id.equals(that.id))
+      if (!this.interpretations.equals(that.interpretations))
         return false;
     }
 
@@ -280,30 +241,20 @@ public class FeatureId implements TBase<FeatureId, FeatureId._Fields>, java.io.S
     return 0;
   }
 
-  public int compareTo(FeatureId other) {
+  public int compareTo(GeocodeResponse other) {
     if (!getClass().equals(other.getClass())) {
       return getClass().getName().compareTo(other.getClass().getName());
     }
 
     int lastComparison = 0;
-    FeatureId typedOther = (FeatureId)other;
+    GeocodeResponse typedOther = (GeocodeResponse)other;
 
-    lastComparison = Boolean.valueOf(isSetSource()).compareTo(typedOther.isSetSource());
+    lastComparison = Boolean.valueOf(isSetInterpretations()).compareTo(typedOther.isSetInterpretations());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetSource()) {
-      lastComparison = TBaseHelper.compareTo(this.source, typedOther.source);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
-    lastComparison = Boolean.valueOf(isSetId()).compareTo(typedOther.isSetId());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetId()) {
-      lastComparison = TBaseHelper.compareTo(this.id, typedOther.id);
+    if (isSetInterpretations()) {
+      lastComparison = TBaseHelper.compareTo(this.interpretations, typedOther.interpretations);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -325,16 +276,20 @@ public class FeatureId implements TBase<FeatureId, FeatureId._Fields>, java.io.S
         break;
       }
       switch (field.id) {
-        case 1: // SOURCE
-          if (field.type == TType.STRING) {
-            this.source = iprot.readString();
-          } else { 
-            TProtocolUtil.skip(iprot, field.type);
-          }
-          break;
-        case 2: // ID
-          if (field.type == TType.STRING) {
-            this.id = iprot.readString();
+        case 1: // INTERPRETATIONS
+          if (field.type == TType.LIST) {
+            {
+              TList _list20 = iprot.readListBegin();
+              this.interpretations = new ArrayList<GeocodeInterpretation>(_list20.size);
+              for (int _i21 = 0; _i21 < _list20.size; ++_i21)
+              {
+                GeocodeInterpretation _elem22;
+                _elem22 = new GeocodeInterpretation();
+                _elem22.read(iprot);
+                this.interpretations.add(_elem22);
+              }
+              iprot.readListEnd();
+            }
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -354,14 +309,16 @@ public class FeatureId implements TBase<FeatureId, FeatureId._Fields>, java.io.S
     validate();
 
     oprot.writeStructBegin(STRUCT_DESC);
-    if (this.source != null) {
-      oprot.writeFieldBegin(SOURCE_FIELD_DESC);
-      oprot.writeString(this.source);
-      oprot.writeFieldEnd();
-    }
-    if (this.id != null) {
-      oprot.writeFieldBegin(ID_FIELD_DESC);
-      oprot.writeString(this.id);
+    if (this.interpretations != null) {
+      oprot.writeFieldBegin(INTERPRETATIONS_FIELD_DESC);
+      {
+        oprot.writeListBegin(new TList(TType.STRUCT, this.interpretations.size()));
+        for (GeocodeInterpretation _iter23 : this.interpretations)
+        {
+          _iter23.write(oprot);
+        }
+        oprot.writeListEnd();
+      }
       oprot.writeFieldEnd();
     }
     oprot.writeFieldStop();
@@ -370,22 +327,14 @@ public class FeatureId implements TBase<FeatureId, FeatureId._Fields>, java.io.S
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("FeatureId(");
+    StringBuilder sb = new StringBuilder("GeocodeResponse(");
     boolean first = true;
 
-    sb.append("source:");
-    if (this.source == null) {
+    sb.append("interpretations:");
+    if (this.interpretations == null) {
       sb.append("null");
     } else {
-      sb.append(this.source);
-    }
-    first = false;
-    if (!first) sb.append(", ");
-    sb.append("id:");
-    if (this.id == null) {
-      sb.append("null");
-    } else {
-      sb.append(this.id);
+      sb.append(this.interpretations);
     }
     first = false;
     sb.append(")");

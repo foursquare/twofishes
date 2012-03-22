@@ -42,13 +42,13 @@ Data import
 *   start mongod (mongod --dbpath /local/path/for/file)
 *   ./init-database.sh # drops existing table and creates indexes
 *   edit ./src/main/scala/importers/geonames/GeonamesImporterConfig.scala to toggle between parsing a specific country or the whole world. 
-*   ./sbt "run-main com.foursquare.geocoder.importers.geonames.GeonamesParser"
+*   ./sbt "run-main com.foursquare.twofish.importers.geonames.GeonamesParser"
 
 Serving
 =======
 *   start mongod, pointed at the path you used for import
 *   edit ./src/main/scala/GeocodeServerConfig.scala to change serving ports
-*   ./sbt  "run-main com.foursquare.geocoder.GeocodeFinagleServer"
+*   ./sbt  "run-main com.foursquare.twofish.GeocodeFinagleServer"
 *   server should be responding to finagle-thrift on the port specified (8080 by default), and responding to http requests at the next port up: http://localhost:8081/?query=rego+park+ny http://localhost:8081/static/geocoder.html#rego+park
 
 Future

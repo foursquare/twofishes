@@ -1,5 +1,5 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
-package com.foursquare.geocoder
+package com.foursquare.twofish
 
 import java.text.Normalizer
 import java.util.regex.Pattern

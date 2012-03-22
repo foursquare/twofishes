@@ -1,5 +1,5 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
-package com.foursquare.geocoder
+package com.foursquare.twofish
 
 import com.novus.salat._
 import com.novus.salat.global._
@@ -92,21 +92,25 @@ case class GeocodeRecord(
     val displayName = (List(myBestName) ++ parentFeatures.map(_.bestName(lang, true)))
       .flatMap(_.map(_.name)).mkString(", ")
 
+    // geom
+
+    val geometry = new FeatureGeometry(
+      new GeocodePoint(lat, lng))
+
+    boundingbox.foreach(bounds =>
+      geometry.setBounds(new GeocodeBoundingBox(
+        new GeocodePoint(bounds.ne.lat, bounds.ne.lng),
+        new GeocodePoint(bounds.sw.lat, bounds.sw.lng)
+      ))  
+    )
+    
     val feature = new GeocodeFeature(
-      new GeocodePoint(lat, lng),
-      cc
+      cc, geometry
     )
 
     feature.setName(myBestName.map(_.name).getOrElse(""))
     feature.setDisplayName(displayName)
     feature.setWoeType(this.woeType)
-
-    boundingbox.foreach(bounds =>
-      feature.setBounds(new GeocodeBoundingBox(
-        new GeocodePoint(bounds.ne.lat, bounds.ne.lng),
-        new GeocodePoint(bounds.sw.lat, bounds.sw.lng)
-      ))  
-    )
 
     feature.setIds(featureIds.map(i => {
       new FeatureId(i.namespace, i.id)

@@ -1,5 +1,5 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
-package com.foursquare.geocoder.importers.geonames
+package com.foursquare.twofish.importers.geonames
 
 object GeonamesImporterConfig {
   // Buildings are places like the eiffel tower, but also schools and federal offices.

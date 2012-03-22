@@ -3,7 +3,7 @@
  *
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
-package com.foursquare.geocoder;
+package com.foursquare.twofish;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -28,19 +28,19 @@ import org.apache.thrift.protocol.*;
 
 // No additional import required for struct/union.
 
-public class GeocodeBoundingBox implements TBase<GeocodeBoundingBox, GeocodeBoundingBox._Fields>, java.io.Serializable, Cloneable {
-  private static final TStruct STRUCT_DESC = new TStruct("GeocodeBoundingBox");
+public class FeatureId implements TBase<FeatureId, FeatureId._Fields>, java.io.Serializable, Cloneable {
+  private static final TStruct STRUCT_DESC = new TStruct("FeatureId");
 
-  private static final TField NE_FIELD_DESC = new TField("ne", TType.STRUCT, (short)1);
-  private static final TField SW_FIELD_DESC = new TField("sw", TType.STRUCT, (short)2);
+  private static final TField SOURCE_FIELD_DESC = new TField("source", TType.STRING, (short)1);
+  private static final TField ID_FIELD_DESC = new TField("id", TType.STRING, (short)2);
 
-  public GeocodePoint ne;
-  public GeocodePoint sw;
+  public String source;
+  public String id;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
-    NE((short)1, "ne"),
-    SW((short)2, "sw");
+    SOURCE((short)1, "source"),
+    ID((short)2, "id");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -55,10 +55,10 @@ public class GeocodeBoundingBox implements TBase<GeocodeBoundingBox, GeocodeBoun
      */
     public static _Fields findByThriftId(int fieldId) {
       switch(fieldId) {
-        case 1: // NE
-          return NE;
-        case 2: // SW
-          return SW;
+        case 1: // SOURCE
+          return SOURCE;
+        case 2: // ID
+          return ID;
         default:
           return null;
       }
@@ -103,111 +103,111 @@ public class GeocodeBoundingBox implements TBase<GeocodeBoundingBox, GeocodeBoun
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
     Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.NE, new FieldMetaData("ne", TFieldRequirementType.DEFAULT, 
-        new StructMetaData(TType.STRUCT, GeocodePoint.class)));
-    tmpMap.put(_Fields.SW, new FieldMetaData("sw", TFieldRequirementType.DEFAULT, 
-        new StructMetaData(TType.STRUCT, GeocodePoint.class)));
+    tmpMap.put(_Fields.SOURCE, new FieldMetaData("source", TFieldRequirementType.DEFAULT, 
+        new FieldValueMetaData(TType.STRING)));
+    tmpMap.put(_Fields.ID, new FieldMetaData("id", TFieldRequirementType.DEFAULT, 
+        new FieldValueMetaData(TType.STRING)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
-    FieldMetaData.addStructMetaDataMap(GeocodeBoundingBox.class, metaDataMap);
+    FieldMetaData.addStructMetaDataMap(FeatureId.class, metaDataMap);
   }
 
-  public GeocodeBoundingBox() {
+  public FeatureId() {
   }
 
-  public GeocodeBoundingBox(
-    GeocodePoint ne,
-    GeocodePoint sw)
+  public FeatureId(
+    String source,
+    String id)
   {
     this();
-    this.ne = ne;
-    this.sw = sw;
+    this.source = source;
+    this.id = id;
   }
 
   /**
    * Performs a deep copy on <i>other</i>.
    */
-  public GeocodeBoundingBox(GeocodeBoundingBox other) {
-    if (other.isSetNe()) {
-      this.ne = new GeocodePoint(other.ne);
+  public FeatureId(FeatureId other) {
+    if (other.isSetSource()) {
+      this.source = other.source;
     }
-    if (other.isSetSw()) {
-      this.sw = new GeocodePoint(other.sw);
+    if (other.isSetId()) {
+      this.id = other.id;
     }
   }
 
-  public GeocodeBoundingBox deepCopy() {
-    return new GeocodeBoundingBox(this);
+  public FeatureId deepCopy() {
+    return new FeatureId(this);
   }
 
   @Override
   public void clear() {
-    this.ne = null;
-    this.sw = null;
+    this.source = null;
+    this.id = null;
   }
 
-  public GeocodePoint getNe() {
-    return this.ne;
+  public String getSource() {
+    return this.source;
   }
 
-  public GeocodeBoundingBox setNe(GeocodePoint ne) {
-    this.ne = ne;
+  public FeatureId setSource(String source) {
+    this.source = source;
     return this;
   }
 
-  public void unsetNe() {
-    this.ne = null;
+  public void unsetSource() {
+    this.source = null;
   }
 
-  /** Returns true if field ne is set (has been asigned a value) and false otherwise */
-  public boolean isSetNe() {
-    return this.ne != null;
+  /** Returns true if field source is set (has been asigned a value) and false otherwise */
+  public boolean isSetSource() {
+    return this.source != null;
   }
 
-  public void setNeIsSet(boolean value) {
+  public void setSourceIsSet(boolean value) {
     if (!value) {
-      this.ne = null;
+      this.source = null;
     }
   }
 
-  public GeocodePoint getSw() {
-    return this.sw;
+  public String getId() {
+    return this.id;
   }
 
-  public GeocodeBoundingBox setSw(GeocodePoint sw) {
-    this.sw = sw;
+  public FeatureId setId(String id) {
+    this.id = id;
     return this;
   }
 
-  public void unsetSw() {
-    this.sw = null;
+  public void unsetId() {
+    this.id = null;
   }
 
-  /** Returns true if field sw is set (has been asigned a value) and false otherwise */
-  public boolean isSetSw() {
-    return this.sw != null;
+  /** Returns true if field id is set (has been asigned a value) and false otherwise */
+  public boolean isSetId() {
+    return this.id != null;
   }
 
-  public void setSwIsSet(boolean value) {
+  public void setIdIsSet(boolean value) {
     if (!value) {
-      this.sw = null;
+      this.id = null;
     }
   }
 
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
-    case NE:
+    case SOURCE:
       if (value == null) {
-        unsetNe();
+        unsetSource();
       } else {
-        setNe((GeocodePoint)value);
+        setSource((String)value);
       }
       break;
 
-    case SW:
+    case ID:
       if (value == null) {
-        unsetSw();
+        unsetId();
       } else {
-        setSw((GeocodePoint)value);
+        setId((String)value);
       }
       break;
 
@@ -216,11 +216,11 @@ public class GeocodeBoundingBox implements TBase<GeocodeBoundingBox, GeocodeBoun
 
   public Object getFieldValue(_Fields field) {
     switch (field) {
-    case NE:
-      return getNe();
+    case SOURCE:
+      return getSource();
 
-    case SW:
-      return getSw();
+    case ID:
+      return getId();
 
     }
     throw new IllegalStateException();
@@ -233,10 +233,10 @@ public class GeocodeBoundingBox implements TBase<GeocodeBoundingBox, GeocodeBoun
     }
 
     switch (field) {
-    case NE:
-      return isSetNe();
-    case SW:
-      return isSetSw();
+    case SOURCE:
+      return isSetSource();
+    case ID:
+      return isSetId();
     }
     throw new IllegalStateException();
   }
@@ -245,30 +245,30 @@ public class GeocodeBoundingBox implements TBase<GeocodeBoundingBox, GeocodeBoun
   public boolean equals(Object that) {
     if (that == null)
       return false;
-    if (that instanceof GeocodeBoundingBox)
-      return this.equals((GeocodeBoundingBox)that);
+    if (that instanceof FeatureId)
+      return this.equals((FeatureId)that);
     return false;
   }
 
-  public boolean equals(GeocodeBoundingBox that) {
+  public boolean equals(FeatureId that) {
     if (that == null)
       return false;
 
-    boolean this_present_ne = true && this.isSetNe();
-    boolean that_present_ne = true && that.isSetNe();
-    if (this_present_ne || that_present_ne) {
-      if (!(this_present_ne && that_present_ne))
+    boolean this_present_source = true && this.isSetSource();
+    boolean that_present_source = true && that.isSetSource();
+    if (this_present_source || that_present_source) {
+      if (!(this_present_source && that_present_source))
         return false;
-      if (!this.ne.equals(that.ne))
+      if (!this.source.equals(that.source))
         return false;
     }
 
-    boolean this_present_sw = true && this.isSetSw();
-    boolean that_present_sw = true && that.isSetSw();
-    if (this_present_sw || that_present_sw) {
-      if (!(this_present_sw && that_present_sw))
+    boolean this_present_id = true && this.isSetId();
+    boolean that_present_id = true && that.isSetId();
+    if (this_present_id || that_present_id) {
+      if (!(this_present_id && that_present_id))
         return false;
-      if (!this.sw.equals(that.sw))
+      if (!this.id.equals(that.id))
         return false;
     }
 
@@ -280,30 +280,30 @@ public class GeocodeBoundingBox implements TBase<GeocodeBoundingBox, GeocodeBoun
     return 0;
   }
 
-  public int compareTo(GeocodeBoundingBox other) {
+  public int compareTo(FeatureId other) {
     if (!getClass().equals(other.getClass())) {
       return getClass().getName().compareTo(other.getClass().getName());
     }
 
     int lastComparison = 0;
-    GeocodeBoundingBox typedOther = (GeocodeBoundingBox)other;
+    FeatureId typedOther = (FeatureId)other;
 
-    lastComparison = Boolean.valueOf(isSetNe()).compareTo(typedOther.isSetNe());
+    lastComparison = Boolean.valueOf(isSetSource()).compareTo(typedOther.isSetSource());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetNe()) {
-      lastComparison = TBaseHelper.compareTo(this.ne, typedOther.ne);
+    if (isSetSource()) {
+      lastComparison = TBaseHelper.compareTo(this.source, typedOther.source);
       if (lastComparison != 0) {
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetSw()).compareTo(typedOther.isSetSw());
+    lastComparison = Boolean.valueOf(isSetId()).compareTo(typedOther.isSetId());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetSw()) {
-      lastComparison = TBaseHelper.compareTo(this.sw, typedOther.sw);
+    if (isSetId()) {
+      lastComparison = TBaseHelper.compareTo(this.id, typedOther.id);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -325,18 +325,16 @@ public class GeocodeBoundingBox implements TBase<GeocodeBoundingBox, GeocodeBoun
         break;
       }
       switch (field.id) {
-        case 1: // NE
-          if (field.type == TType.STRUCT) {
-            this.ne = new GeocodePoint();
-            this.ne.read(iprot);
+        case 1: // SOURCE
+          if (field.type == TType.STRING) {
+            this.source = iprot.readString();
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
-        case 2: // SW
-          if (field.type == TType.STRUCT) {
-            this.sw = new GeocodePoint();
-            this.sw.read(iprot);
+        case 2: // ID
+          if (field.type == TType.STRING) {
+            this.id = iprot.readString();
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -356,14 +354,14 @@ public class GeocodeBoundingBox implements TBase<GeocodeBoundingBox, GeocodeBoun
     validate();
 
     oprot.writeStructBegin(STRUCT_DESC);
-    if (this.ne != null) {
-      oprot.writeFieldBegin(NE_FIELD_DESC);
-      this.ne.write(oprot);
+    if (this.source != null) {
+      oprot.writeFieldBegin(SOURCE_FIELD_DESC);
+      oprot.writeString(this.source);
       oprot.writeFieldEnd();
     }
-    if (this.sw != null) {
-      oprot.writeFieldBegin(SW_FIELD_DESC);
-      this.sw.write(oprot);
+    if (this.id != null) {
+      oprot.writeFieldBegin(ID_FIELD_DESC);
+      oprot.writeString(this.id);
       oprot.writeFieldEnd();
     }
     oprot.writeFieldStop();
@@ -372,22 +370,22 @@ public class GeocodeBoundingBox implements TBase<GeocodeBoundingBox, GeocodeBoun
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("GeocodeBoundingBox(");
+    StringBuilder sb = new StringBuilder("FeatureId(");
     boolean first = true;
 
-    sb.append("ne:");
-    if (this.ne == null) {
+    sb.append("source:");
+    if (this.source == null) {
       sb.append("null");
     } else {
-      sb.append(this.ne);
+      sb.append(this.source);
     }
     first = false;
     if (!first) sb.append(", ");
-    sb.append("sw:");
-    if (this.sw == null) {
+    sb.append("id:");
+    if (this.id == null) {
       sb.append("null");
     } else {
-      sb.append(this.sw);
+      sb.append(this.id);
     }
     first = false;
     sb.append(")");

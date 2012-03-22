@@ -1,5 +1,5 @@
  //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
-package com.foursquare.geocoder
+package com.foursquare.twofish
 
 object GeocodeServerConfig {
   // Whether or not to run the http server that lets you issue interactive GET requests

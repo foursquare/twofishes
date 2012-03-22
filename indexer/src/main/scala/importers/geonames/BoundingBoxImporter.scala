@@ -1,7 +1,7 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
-package com.foursquare.geocoder.importers.geonames
+package com.foursquare.twofish.importers.geonames
 
-import com.foursquare.geocoder._
+import com.foursquare.twofish._
 import java.io.File
 
 // I could not for the life of me get the java geojson libraries to work

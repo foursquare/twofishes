@@ -3,7 +3,7 @@
  *
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
-package com.foursquare.geocoder;
+package com.foursquare.twofish;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -31,18 +31,17 @@ import org.apache.thrift.protocol.*;
 public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fields>, java.io.Serializable, Cloneable {
   private static final TStruct STRUCT_DESC = new TStruct("GeocodeFeature");
 
-  private static final TField CENTER_FIELD_DESC = new TField("center", TType.STRUCT, (short)1);
-  private static final TField CC_FIELD_DESC = new TField("cc", TType.STRING, (short)2);
+  private static final TField CC_FIELD_DESC = new TField("cc", TType.STRING, (short)1);
+  private static final TField GEOMETRY_FIELD_DESC = new TField("geometry", TType.STRUCT, (short)2);
   private static final TField NAME_FIELD_DESC = new TField("name", TType.STRING, (short)3);
   private static final TField DISPLAY_NAME_FIELD_DESC = new TField("displayName", TType.STRING, (short)4);
   private static final TField WOE_TYPE_FIELD_DESC = new TField("woeType", TType.I32, (short)5);
-  private static final TField BOUNDS_FIELD_DESC = new TField("bounds", TType.STRUCT, (short)6);
-  private static final TField IDS_FIELD_DESC = new TField("ids", TType.LIST, (short)7);
-  private static final TField NAMES_FIELD_DESC = new TField("names", TType.LIST, (short)8);
-  private static final TField ATTRIBUTION_FIELD_DESC = new TField("attribution", TType.LIST, (short)9);
+  private static final TField IDS_FIELD_DESC = new TField("ids", TType.LIST, (short)6);
+  private static final TField NAMES_FIELD_DESC = new TField("names", TType.LIST, (short)7);
+  private static final TField ATTRIBUTION_FIELD_DESC = new TField("attribution", TType.LIST, (short)8);
 
-  public GeocodePoint center;
   public String cc;
+  public FeatureGeometry geometry;
   public String name;
   public String displayName;
   /**
@@ -50,15 +49,14 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
    * @see YahooWoeType
    */
   public YahooWoeType woeType;
-  public GeocodeBoundingBox bounds;
   public List<FeatureId> ids;
   public List<FeatureName> names;
   public List<String> attribution;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
-    CENTER((short)1, "center"),
-    CC((short)2, "cc"),
+    CC((short)1, "cc"),
+    GEOMETRY((short)2, "geometry"),
     NAME((short)3, "name"),
     DISPLAY_NAME((short)4, "displayName"),
     /**
@@ -66,10 +64,9 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
      * @see YahooWoeType
      */
     WOE_TYPE((short)5, "woeType"),
-    BOUNDS((short)6, "bounds"),
-    IDS((short)7, "ids"),
-    NAMES((short)8, "names"),
-    ATTRIBUTION((short)9, "attribution");
+    IDS((short)6, "ids"),
+    NAMES((short)7, "names"),
+    ATTRIBUTION((short)8, "attribution");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -84,23 +81,21 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
      */
     public static _Fields findByThriftId(int fieldId) {
       switch(fieldId) {
-        case 1: // CENTER
-          return CENTER;
-        case 2: // CC
+        case 1: // CC
           return CC;
+        case 2: // GEOMETRY
+          return GEOMETRY;
         case 3: // NAME
           return NAME;
         case 4: // DISPLAY_NAME
           return DISPLAY_NAME;
         case 5: // WOE_TYPE
           return WOE_TYPE;
-        case 6: // BOUNDS
-          return BOUNDS;
-        case 7: // IDS
+        case 6: // IDS
           return IDS;
-        case 8: // NAMES
+        case 7: // NAMES
           return NAMES;
-        case 9: // ATTRIBUTION
+        case 8: // ATTRIBUTION
           return ATTRIBUTION;
         default:
           return null;
@@ -146,18 +141,16 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
     Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.CENTER, new FieldMetaData("center", TFieldRequirementType.DEFAULT, 
-        new StructMetaData(TType.STRUCT, GeocodePoint.class)));
     tmpMap.put(_Fields.CC, new FieldMetaData("cc", TFieldRequirementType.DEFAULT, 
         new FieldValueMetaData(TType.STRING)));
+    tmpMap.put(_Fields.GEOMETRY, new FieldMetaData("geometry", TFieldRequirementType.DEFAULT, 
+        new StructMetaData(TType.STRUCT, FeatureGeometry.class)));
     tmpMap.put(_Fields.NAME, new FieldMetaData("name", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.STRING)));
     tmpMap.put(_Fields.DISPLAY_NAME, new FieldMetaData("displayName", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.STRING)));
     tmpMap.put(_Fields.WOE_TYPE, new FieldMetaData("woeType", TFieldRequirementType.OPTIONAL, 
         new EnumMetaData(TType.ENUM, YahooWoeType.class)));
-    tmpMap.put(_Fields.BOUNDS, new FieldMetaData("bounds", TFieldRequirementType.OPTIONAL, 
-        new StructMetaData(TType.STRUCT, GeocodeBoundingBox.class)));
     tmpMap.put(_Fields.IDS, new FieldMetaData("ids", TFieldRequirementType.OPTIONAL, 
         new ListMetaData(TType.LIST, 
             new StructMetaData(TType.STRUCT, FeatureId.class))));
@@ -175,23 +168,23 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
   }
 
   public GeocodeFeature(
-    GeocodePoint center,
-    String cc)
+    String cc,
+    FeatureGeometry geometry)
   {
     this();
-    this.center = center;
     this.cc = cc;
+    this.geometry = geometry;
   }
 
   /**
    * Performs a deep copy on <i>other</i>.
    */
   public GeocodeFeature(GeocodeFeature other) {
-    if (other.isSetCenter()) {
-      this.center = new GeocodePoint(other.center);
-    }
     if (other.isSetCc()) {
       this.cc = other.cc;
+    }
+    if (other.isSetGeometry()) {
+      this.geometry = new FeatureGeometry(other.geometry);
     }
     if (other.isSetName()) {
       this.name = other.name;
@@ -201,9 +194,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     }
     if (other.isSetWoeType()) {
       this.woeType = other.woeType;
-    }
-    if (other.isSetBounds()) {
-      this.bounds = new GeocodeBoundingBox(other.bounds);
     }
     if (other.isSetIds()) {
       List<FeatureId> __this__ids = new ArrayList<FeatureId>();
@@ -234,39 +224,14 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
 
   @Override
   public void clear() {
-    this.center = null;
     this.cc = null;
+    this.geometry = null;
     this.name = null;
     this.displayName = null;
     this.woeType = null;
-    this.bounds = null;
     this.ids = null;
     this.names = null;
     this.attribution = null;
-  }
-
-  public GeocodePoint getCenter() {
-    return this.center;
-  }
-
-  public GeocodeFeature setCenter(GeocodePoint center) {
-    this.center = center;
-    return this;
-  }
-
-  public void unsetCenter() {
-    this.center = null;
-  }
-
-  /** Returns true if field center is set (has been asigned a value) and false otherwise */
-  public boolean isSetCenter() {
-    return this.center != null;
-  }
-
-  public void setCenterIsSet(boolean value) {
-    if (!value) {
-      this.center = null;
-    }
   }
 
   public String getCc() {
@@ -290,6 +255,30 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
   public void setCcIsSet(boolean value) {
     if (!value) {
       this.cc = null;
+    }
+  }
+
+  public FeatureGeometry getGeometry() {
+    return this.geometry;
+  }
+
+  public GeocodeFeature setGeometry(FeatureGeometry geometry) {
+    this.geometry = geometry;
+    return this;
+  }
+
+  public void unsetGeometry() {
+    this.geometry = null;
+  }
+
+  /** Returns true if field geometry is set (has been asigned a value) and false otherwise */
+  public boolean isSetGeometry() {
+    return this.geometry != null;
+  }
+
+  public void setGeometryIsSet(boolean value) {
+    if (!value) {
+      this.geometry = null;
     }
   }
 
@@ -370,30 +359,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
   public void setWoeTypeIsSet(boolean value) {
     if (!value) {
       this.woeType = null;
-    }
-  }
-
-  public GeocodeBoundingBox getBounds() {
-    return this.bounds;
-  }
-
-  public GeocodeFeature setBounds(GeocodeBoundingBox bounds) {
-    this.bounds = bounds;
-    return this;
-  }
-
-  public void unsetBounds() {
-    this.bounds = null;
-  }
-
-  /** Returns true if field bounds is set (has been asigned a value) and false otherwise */
-  public boolean isSetBounds() {
-    return this.bounds != null;
-  }
-
-  public void setBoundsIsSet(boolean value) {
-    if (!value) {
-      this.bounds = null;
     }
   }
 
@@ -516,19 +481,19 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
 
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
-    case CENTER:
-      if (value == null) {
-        unsetCenter();
-      } else {
-        setCenter((GeocodePoint)value);
-      }
-      break;
-
     case CC:
       if (value == null) {
         unsetCc();
       } else {
         setCc((String)value);
+      }
+      break;
+
+    case GEOMETRY:
+      if (value == null) {
+        unsetGeometry();
+      } else {
+        setGeometry((FeatureGeometry)value);
       }
       break;
 
@@ -553,14 +518,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         unsetWoeType();
       } else {
         setWoeType((YahooWoeType)value);
-      }
-      break;
-
-    case BOUNDS:
-      if (value == null) {
-        unsetBounds();
-      } else {
-        setBounds((GeocodeBoundingBox)value);
       }
       break;
 
@@ -593,11 +550,11 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
 
   public Object getFieldValue(_Fields field) {
     switch (field) {
-    case CENTER:
-      return getCenter();
-
     case CC:
       return getCc();
+
+    case GEOMETRY:
+      return getGeometry();
 
     case NAME:
       return getName();
@@ -607,9 +564,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
 
     case WOE_TYPE:
       return getWoeType();
-
-    case BOUNDS:
-      return getBounds();
 
     case IDS:
       return getIds();
@@ -631,18 +585,16 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     }
 
     switch (field) {
-    case CENTER:
-      return isSetCenter();
     case CC:
       return isSetCc();
+    case GEOMETRY:
+      return isSetGeometry();
     case NAME:
       return isSetName();
     case DISPLAY_NAME:
       return isSetDisplayName();
     case WOE_TYPE:
       return isSetWoeType();
-    case BOUNDS:
-      return isSetBounds();
     case IDS:
       return isSetIds();
     case NAMES:
@@ -666,21 +618,21 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     if (that == null)
       return false;
 
-    boolean this_present_center = true && this.isSetCenter();
-    boolean that_present_center = true && that.isSetCenter();
-    if (this_present_center || that_present_center) {
-      if (!(this_present_center && that_present_center))
-        return false;
-      if (!this.center.equals(that.center))
-        return false;
-    }
-
     boolean this_present_cc = true && this.isSetCc();
     boolean that_present_cc = true && that.isSetCc();
     if (this_present_cc || that_present_cc) {
       if (!(this_present_cc && that_present_cc))
         return false;
       if (!this.cc.equals(that.cc))
+        return false;
+    }
+
+    boolean this_present_geometry = true && this.isSetGeometry();
+    boolean that_present_geometry = true && that.isSetGeometry();
+    if (this_present_geometry || that_present_geometry) {
+      if (!(this_present_geometry && that_present_geometry))
+        return false;
+      if (!this.geometry.equals(that.geometry))
         return false;
     }
 
@@ -708,15 +660,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       if (!(this_present_woeType && that_present_woeType))
         return false;
       if (!this.woeType.equals(that.woeType))
-        return false;
-    }
-
-    boolean this_present_bounds = true && this.isSetBounds();
-    boolean that_present_bounds = true && that.isSetBounds();
-    if (this_present_bounds || that_present_bounds) {
-      if (!(this_present_bounds && that_present_bounds))
-        return false;
-      if (!this.bounds.equals(that.bounds))
         return false;
     }
 
@@ -763,22 +706,22 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     int lastComparison = 0;
     GeocodeFeature typedOther = (GeocodeFeature)other;
 
-    lastComparison = Boolean.valueOf(isSetCenter()).compareTo(typedOther.isSetCenter());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetCenter()) {
-      lastComparison = TBaseHelper.compareTo(this.center, typedOther.center);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
     lastComparison = Boolean.valueOf(isSetCc()).compareTo(typedOther.isSetCc());
     if (lastComparison != 0) {
       return lastComparison;
     }
     if (isSetCc()) {
       lastComparison = TBaseHelper.compareTo(this.cc, typedOther.cc);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetGeometry()).compareTo(typedOther.isSetGeometry());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetGeometry()) {
+      lastComparison = TBaseHelper.compareTo(this.geometry, typedOther.geometry);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -809,16 +752,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     }
     if (isSetWoeType()) {
       lastComparison = TBaseHelper.compareTo(this.woeType, typedOther.woeType);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
-    lastComparison = Boolean.valueOf(isSetBounds()).compareTo(typedOther.isSetBounds());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetBounds()) {
-      lastComparison = TBaseHelper.compareTo(this.bounds, typedOther.bounds);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -870,17 +803,17 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         break;
       }
       switch (field.id) {
-        case 1: // CENTER
-          if (field.type == TType.STRUCT) {
-            this.center = new GeocodePoint();
-            this.center.read(iprot);
+        case 1: // CC
+          if (field.type == TType.STRING) {
+            this.cc = iprot.readString();
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
-        case 2: // CC
-          if (field.type == TType.STRING) {
-            this.cc = iprot.readString();
+        case 2: // GEOMETRY
+          if (field.type == TType.STRUCT) {
+            this.geometry = new FeatureGeometry();
+            this.geometry.read(iprot);
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -906,15 +839,7 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
-        case 6: // BOUNDS
-          if (field.type == TType.STRUCT) {
-            this.bounds = new GeocodeBoundingBox();
-            this.bounds.read(iprot);
-          } else { 
-            TProtocolUtil.skip(iprot, field.type);
-          }
-          break;
-        case 7: // IDS
+        case 6: // IDS
           if (field.type == TType.LIST) {
             {
               TList _list4 = iprot.readListBegin();
@@ -932,7 +857,7 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
-        case 8: // NAMES
+        case 7: // NAMES
           if (field.type == TType.LIST) {
             {
               TList _list7 = iprot.readListBegin();
@@ -950,7 +875,7 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
-        case 9: // ATTRIBUTION
+        case 8: // ATTRIBUTION
           if (field.type == TType.LIST) {
             {
               TList _list10 = iprot.readListBegin();
@@ -982,14 +907,14 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     validate();
 
     oprot.writeStructBegin(STRUCT_DESC);
-    if (this.center != null) {
-      oprot.writeFieldBegin(CENTER_FIELD_DESC);
-      this.center.write(oprot);
-      oprot.writeFieldEnd();
-    }
     if (this.cc != null) {
       oprot.writeFieldBegin(CC_FIELD_DESC);
       oprot.writeString(this.cc);
+      oprot.writeFieldEnd();
+    }
+    if (this.geometry != null) {
+      oprot.writeFieldBegin(GEOMETRY_FIELD_DESC);
+      this.geometry.write(oprot);
       oprot.writeFieldEnd();
     }
     if (this.name != null) {
@@ -1010,13 +935,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       if (isSetWoeType()) {
         oprot.writeFieldBegin(WOE_TYPE_FIELD_DESC);
         oprot.writeI32(this.woeType.getValue());
-        oprot.writeFieldEnd();
-      }
-    }
-    if (this.bounds != null) {
-      if (isSetBounds()) {
-        oprot.writeFieldBegin(BOUNDS_FIELD_DESC);
-        this.bounds.write(oprot);
         oprot.writeFieldEnd();
       }
     }
@@ -1071,19 +989,19 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     StringBuilder sb = new StringBuilder("GeocodeFeature(");
     boolean first = true;
 
-    sb.append("center:");
-    if (this.center == null) {
-      sb.append("null");
-    } else {
-      sb.append(this.center);
-    }
-    first = false;
-    if (!first) sb.append(", ");
     sb.append("cc:");
     if (this.cc == null) {
       sb.append("null");
     } else {
       sb.append(this.cc);
+    }
+    first = false;
+    if (!first) sb.append(", ");
+    sb.append("geometry:");
+    if (this.geometry == null) {
+      sb.append("null");
+    } else {
+      sb.append(this.geometry);
     }
     first = false;
     if (isSetName()) {
@@ -1113,16 +1031,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         sb.append("null");
       } else {
         sb.append(this.woeType);
-      }
-      first = false;
-    }
-    if (isSetBounds()) {
-      if (!first) sb.append(", ");
-      sb.append("bounds:");
-      if (this.bounds == null) {
-        sb.append("null");
-      } else {
-        sb.append(this.bounds);
       }
       first = false;
     }
