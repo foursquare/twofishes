@@ -51,28 +51,28 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
         val validParses = 
           (for (i <- 1.to(tokens.size)) yield {
             val searchStr = tokens.take(i).mkString(" ")
-            logger.trace("trying: %d to %d: %s".format(0, i, searchStr))
+            logger.ifTrace("trying: %d to %d: %s".format(0, i, searchStr))
             val features = store.getByName(searchStr).toList
-            logger.trace("have %d matches".format(features.size))
+            logger.ifTrace("have %d matches".format(features.size))
 
             val subParses = generateParsesHelper(tokens.drop(i), cache)
 
             features.flatMap(f => {
-              logger.trace("looking at %s".format(f))
+              logger.ifTrace("looking at %s".format(f))
               subParses.flatMap(p => {
-                logger.trace("sub_parse: %s".format(p))
+                logger.ifTrace("sub_parse: %s".format(p))
                 val parse = f :: p
                 if (isValidParse(parse)) {
-                  logger.trace("VALID -- adding to %d".format(cacheKey))
+                  logger.ifTrace("VALID -- adding to %d".format(cacheKey))
                   Some(parse.sorted)
                 } else {
-                  logger.trace("INVALID")
+                  logger.ifTrace("INVALID")
                   None
                 }
               })
             })
           }).flatMap(a=>a).toList
-        logger.trace("setting %d to %s".format(cacheKey, validParses))
+        logger.ifTrace("setting %d to %s".format(cacheKey, validParses))
         cache(cacheKey) = validParses
       }
       cache(cacheKey)
@@ -164,10 +164,10 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
   def geocode(req: GeocodeRequest): Future[GeocodeResponse] = {
     val query = req.query
 
-    logger.trace("%s --> %s".format(query, NameNormalizer.normalize(query)))
+    logger.ifTrace("%s --> %s".format(query, NameNormalizer.normalize(query)))
 
     val tokens = NameNormalizer.tokenize(NameNormalizer.normalize(query))
-    logger.trace("--> %s".format(tokens.mkString("_|_")))
+    logger.ifTrace("--> %s".format(tokens.mkString("_|_")))
 
     /// CONNECTOR PARSING GOES HERE
 
@@ -182,16 +182,16 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
         val sortedParses = longestParses.sorted(new ParseOrdering(req.ll, req.cc)).take(3)
 
         val parentIds = sortedParses.flatMap(_.headOption.toList.flatMap(_.parents))
-        logger.trace("parent ids: " + parentIds)
+        logger.ifTrace("parent ids: " + parentIds)
         val parents = store.getByIds(parentIds).toList
-        logger.trace(parents.toList.toString)
+        logger.ifTrace(parents.toList.toString)
         val parentMap = parentIds.flatMap(pid => {
           parents.find(_.ids.contains(pid)).map(p => (pid -> p))
         }).toMap
 
         val what = tokens.take(tokens.size - longest).mkString(" ")
         val where = tokens.drop(tokens.size - longest).mkString(" ")
-        logger.trace("%d sorted parses".format(sortedParses.size))
+        logger.ifTrace("%d sorted parses".format(sortedParses.size))
 
         pool(
           new GeocodeResponse(sortedParses.map(p => {
