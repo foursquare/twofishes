@@ -9,12 +9,8 @@ object LogHelper {
   def init() {
     val config = new LoggerConfig {
       node = ""
-      level = Level.TRACE
+      level = Level.ERROR
       handlers = new ConsoleHandlerConfig {}
-      // handlers = new FileHandlerConfig {
-      //   filename = "/var/log/example/example.log"
-      //   roll = Policy.SigHup
-      // }
     }
     config()
   }
