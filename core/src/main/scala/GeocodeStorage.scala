@@ -1,12 +1,13 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofish
 
+import com.mongodb.casbah.Imports._
+import com.mongodb.casbah.MongoConnection
 import com.novus.salat._
 import com.novus.salat.global._
 import com.novus.salat.annotations._
 import com.novus.salat.dao._
-import com.mongodb.casbah.Imports._
-import com.mongodb.casbah.MongoConnection
+import com.twitter.util.{Future, FuturePool, Throw}
 import scala.collection.JavaConversions._
 
 case class DisplayName(
@@ -141,6 +142,20 @@ case class GeocodeRecord(
 
   def isCountry = woeType == YahooWoeType.COUNTRY
   def isPostalCode = woeType == YahooWoeType.POSTAL_CODE
+} 
+
+class GeocodeStorageFutureReadService(underlying: GeocodeStorageReadService, future: FuturePool) {
+  def getByName(name: String): Future[Seq[GeocodeRecord]] = future {
+    underlying.getByName(name).toList
+  }
+
+  def getByIds(ids: Seq[String]): Future[Seq[GeocodeRecord]] = future {
+    underlying.getByIds(ids).toList
+  }
+
+  def getById(id: StoredFeatureId): Future[Seq[GeocodeRecord]] = future {
+    underlying.getById(id).toList
+  }
 }
 
 trait GeocodeStorageReadService {

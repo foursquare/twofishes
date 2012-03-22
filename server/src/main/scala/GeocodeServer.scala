@@ -22,22 +22,24 @@ import scala.collection.mutable.ListBuffer
 class GeocodeServerImpl extends Geocoder.ServiceIface {
   val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(24))
   val store = new MongoGeocodeStorageService()
+  val futureStore = new GeocodeStorageFutureReadService(store, mongoFuturePool)
 
   def geocode(r: GeocodeRequest): Future[GeocodeResponse] = {
-    new GeocoderImpl(mongoFuturePool, store).geocode(r)
+    new GeocoderImpl(futureStore).geocode(r)
   }
 }
 
 class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
   val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(24))
   val store = new MongoGeocodeStorageService()
+  val futureStore = new GeocodeStorageFutureReadService(store, mongoFuturePool)
 
   val diskIoFuturePool = FuturePool(Executors.newFixedThreadPool(8))
 
   def handleQuery(request: GeocodeRequest): Future[DefaultHttpResponse] = {
     val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
 
-    new GeocoderImpl(mongoFuturePool, store).geocode(request).map(geocode => {
+    new GeocoderImpl(futureStore).geocode(request).map(geocode => {
       val serializer = new TSerializer(new TSimpleJSONProtocol.Factory());
       val json = serializer.toString(geocode);
 
@@ -102,11 +104,15 @@ class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
 }
 
 object GeocodeThriftServer extends Application {
+  val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(24))
+  val store = new MongoGeocodeStorageService()
+  val futureStore = new GeocodeStorageFutureReadService(store, mongoFuturePool)
+
   class GeocodeServer extends Geocoder.Iface {
     val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(1))
 
     override def geocode(request: GeocodeRequest): GeocodeResponse = {
-      new GeocoderImpl(mongoFuturePool, new MongoGeocodeStorageService()).geocode(request).get
+      new GeocoderImpl(futureStore).geocode(request).get
     }
   }
 
