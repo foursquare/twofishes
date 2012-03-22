@@ -53,7 +53,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
 
         val featuresFs: List[Future[Seq[GeocodeRecord]]] =
           for ((searchStr, i) <- searchStrs.zipWithIndex) yield {
-            logger.trace("trying: %d to %d: %s".format(0, i, searchStr))
+            logger.ifTrace("trying: %d to %d: %s".format(0, i, searchStr))
             val result: Future[Seq[GeocodeRecord]] = store.getByName(searchStr)
             result
           }
@@ -72,16 +72,16 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
               featureLists.zip(subparseLists).flatMap({case(features: Seq[GeocodeRecord], subparses: Seq[Parse]) => {
                 (for {
                   f <- features.toList
-                  val _ = logger.trace("looking at %s".format(f))
+                  val _ = logger.ifTrace("looking at %s".format(f))
                   p <- subparses
-                  val _ = logger.trace("sub_parse: %s".format(p))
+                  val _ = logger.ifTrace("sub_parse: %s".format(p))
                 } yield {
                   val parse: List[GeocodeRecord] = f :: p
                   if (isValidParse(parse)) {
-                    logger.trace("VALID -- adding to %d".format(cacheKey))
+                    logger.ifTrace("VALID -- adding to %d".format(cacheKey))
                     Some(parse.sorted)
                   } else {
-                    logger.trace("INVALID")
+                    logger.ifTrace("INVALID")
                     None
                   }
                 }).flatten
@@ -92,7 +92,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
 
 
         validParsesF.onSuccess(validParses => {
-          logger.trace("setting %d to %s".format(cacheKey, validParses))
+          logger.ifTrace("setting %d to %s".format(cacheKey, validParses))
         })
         cache(cacheKey) = validParsesF
       }
@@ -208,16 +208,16 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
         val sortedParses = longestParses.sorted(new ParseOrdering(req.ll, req.cc)).take(3)
 
         val parentIds = sortedParses.flatMap(_.headOption.toList.flatMap(_.parents))
-        logger.trace("parent ids: " + parentIds)
+        logger.ifTrace("parent ids: " + parentIds)
         store.getByIds(parentIds).map(parents => {
-          logger.trace(parents.toString)
+          logger.ifTrace(parents.toString)
           val parentMap = parentIds.flatMap(pid => {
             parents.find(_.ids.contains(pid)).map(p => (pid -> p))
           }).toMap
 
           val what = tokens.take(tokens.size - longest).mkString(" ")
           val where = tokens.drop(tokens.size - longest).mkString(" ")
-          logger.trace("%d sorted parses".format(sortedParses.size))
+          logger.ifTrace("%d sorted parses".format(sortedParses.size))
 
           new GeocodeResponse(sortedParses.map(p => {
             val interp = new GeocodeInterpretation(what, where, p(0).toGeocodeFeature(parentMap, req.full, Option(req.lang)))
