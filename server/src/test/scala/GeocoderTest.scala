@@ -28,8 +28,9 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
     woeType: YahooWoeType,
     population: Option[Int] = None
   ): GeocodeRecord = {
+    val idStr = "test:%d".format(id)
     val record = GeocodeRecord(
-      ids = List(id.toString),
+      ids = List(idStr),
       cc = "US",
       _woeType = woeType.getValue,
       lat = lat,
@@ -41,7 +42,7 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
     )
 
     addName(name.toLowerCase, record)
-    addId(id.toString, record)
+    addId(idStr, record)
 
     id += 1
     record
