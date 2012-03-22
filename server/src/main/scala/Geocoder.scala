@@ -6,12 +6,10 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
 
 // TODO
-// construct a complete response (woetype, parents? names?)
 // oh, hi, um, make me actually event driven. great.
 // import timezone server
 // break out uses of MongoStorageService
 // make server more configurable
-// tests
 
 class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends LogHelper {
   type Parse = List[GeocodeRecord]

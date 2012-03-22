@@ -28,12 +28,13 @@ class GeocodeServerImpl extends Geocoder.ServiceIface {
 }
 
 class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
-  val diskIoFuturePool = FuturePool(Executors.newFixedThreadPool(4))
+  val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(24))
+  val diskIoFuturePool = FuturePool(Executors.newFixedThreadPool(8))
 
   def handleQuery(request: GeocodeRequest): Future[DefaultHttpResponse] = {
     val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
 
-    new GeocoderImpl(diskIoFuturePool, new MongoGeocodeStorageService()).geocode(request).map(geocode => {
+    new GeocoderImpl(mongoFuturePool, new MongoGeocodeStorageService()).geocode(request).map(geocode => {
       val serializer = new TSerializer(new TSimpleJSONProtocol.Factory());
       val json = serializer.toString(geocode);
 
