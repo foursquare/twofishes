@@ -91,8 +91,8 @@ class GeocoderSpec extends Specification {
     r.interpretations.size must_== 1
     val interp = r.interpretations.asScala(0)
     interp.what must_== ""
-    interp.feature.center.lat must_== 5
-    interp.feature.center.lng must_== 6
+    interp.feature.geometry.center.lat must_== 5
+    interp.feature.geometry.center.lng must_== 6
     interp.feature.displayName must_== "Rego Park, New York"
     interp.feature.woeType must_== YahooWoeType.TOWN
     interp.where must_== "rego park"
@@ -106,8 +106,8 @@ class GeocoderSpec extends Specification {
     r.interpretations.size must_== 1
     val interp = r.interpretations.asScala(0)
     interp.what must_== ""
-    interp.feature.center.lat must_== 5
-    interp.feature.center.lng must_== 6
+    interp.feature.geometry.center.lat must_== 5
+    interp.feature.geometry.center.lng must_== 6
     interp.where must_== "rego park new york"
   }
 
@@ -119,8 +119,8 @@ class GeocoderSpec extends Specification {
     r.interpretations.size must_== 1
     val interp = r.interpretations.asScala(0)
     interp.what must_== "pizza"
-    interp.feature.center.lat must_== 5
-    interp.feature.center.lng must_== 6
+    interp.feature.geometry.center.lat must_== 5
+    interp.feature.geometry.center.lng must_== 6
     interp.where must_== "rego park new york"
   }
 
@@ -141,8 +141,8 @@ class GeocoderSpec extends Specification {
     r.interpretations.size must_== 1
     val interp = r.interpretations.asScala(0)
     interp.what must_== "rego park"
-    interp.feature.center.lat must_== 10
-    interp.feature.center.lng must_== 11
+    interp.feature.geometry.center.lat must_== 10
+    interp.feature.geometry.center.lng must_== 11
     interp.where must_== "california"
   }
 
