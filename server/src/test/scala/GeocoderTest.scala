@@ -85,9 +85,11 @@ class GeocoderSpec extends Specification {
 
   "one feature geocodes succeeds with matching data" in {
     val store = buildRegoPark()
-
+    
     val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(1))
-    val r = new GeocoderImpl(mongoFuturePool, store).geocode(new GeocodeRequest("Rego Park")).apply()
+    val futureStore = new GeocodeStorageFutureReadService(new MockGeocodeStorageReadService(), mongoFuturePool)
+
+    val r = new GeocoderImpl(futureStore).geocode(new GeocodeRequest("Rego Park")).apply()
     r.interpretations.size must_== 1
     val interp = r.interpretations.asScala(0)
     interp.what must_== ""
@@ -102,7 +104,8 @@ class GeocoderSpec extends Specification {
     val store = buildRegoPark()
 
     val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(1))
-    val r = new GeocoderImpl(mongoFuturePool, store).geocode(new GeocodeRequest("Rego Park, New York")).apply()
+    val futureStore = new GeocodeStorageFutureReadService(new MockGeocodeStorageReadService(), mongoFuturePool)
+    val r = new GeocoderImpl(futureStore).geocode(new GeocodeRequest("Rego Park, New York")).apply()
     r.interpretations.size must_== 1
     val interp = r.interpretations.asScala(0)
     interp.what must_== ""
@@ -115,7 +118,8 @@ class GeocoderSpec extends Specification {
     val store = buildRegoPark()
 
     val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(1))
-    val r = new GeocoderImpl(mongoFuturePool, store).geocode(new GeocodeRequest("Pizza Rego Park, New York")).apply()
+    val futureStore = new GeocodeStorageFutureReadService(new MockGeocodeStorageReadService(), mongoFuturePool)
+    val r = new GeocoderImpl(futureStore).geocode(new GeocodeRequest("Pizza Rego Park, New York")).apply()
     r.interpretations.size must_== 1
     val interp = r.interpretations.asScala(0)
     interp.what must_== "pizza"
@@ -128,7 +132,8 @@ class GeocoderSpec extends Specification {
     val store = buildRegoPark()
 
     val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(1))
-    val r = new GeocoderImpl(mongoFuturePool, store).geocode(new GeocodeRequest("Berlin, Germany")).apply()
+    val futureStore = new GeocodeStorageFutureReadService(new MockGeocodeStorageReadService(), mongoFuturePool)
+    val r = new GeocoderImpl(futureStore).geocode(new GeocodeRequest("Berlin, Germany")).apply()
     r.interpretations.size must_== 0
   }
 
@@ -137,7 +142,8 @@ class GeocoderSpec extends Specification {
     addLosAngeles(store)
 
     val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(1))
-    val r = new GeocoderImpl(mongoFuturePool, store).geocode(new GeocodeRequest("Rego Park, California")).apply()
+    val futureStore = new GeocodeStorageFutureReadService(new MockGeocodeStorageReadService(), mongoFuturePool)
+    val r = new GeocoderImpl(futureStore).geocode(new GeocodeRequest("Rego Park, California")).apply()
     r.interpretations.size must_== 1
     val interp = r.interpretations.asScala(0)
     interp.what must_== "rego park"
