@@ -189,6 +189,8 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
           parents.find(_.ids.contains(pid)).map(p => (pid -> p))
         }).toMap
 
+        val sortedParents = parentIds.flatMap(id => parentMap.get(id)).sorted
+
         val what = tokens.take(tokens.size - longest).mkString(" ")
         val where = tokens.drop(tokens.size - longest).mkString(" ")
         logger.ifTrace("%d sorted parses".format(sortedParses.size))
@@ -197,7 +199,7 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
           new GeocodeResponse(sortedParses.map(p => {
             val interp = new GeocodeInterpretation(what, where, p(0).toGeocodeFeature(parentMap, req.full, Option(req.lang)))
             if (req.full) {
-              interp.setParents(p.drop(1).map(parentFeature => {
+              interp.setParents(sortedParents.map(parentFeature => {
                 parentFeature.toGeocodeFeature(parentMap, req.full, Option(req.lang))
               }))
             }

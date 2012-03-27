@@ -96,6 +96,7 @@ class GeocoderSpec extends Specification {
     interp.feature.displayName must_== "Rego Park, New York"
     interp.feature.woeType must_== YahooWoeType.TOWN
     interp.where must_== "rego park"
+    interp.parents must_== null
   }
 
   "hierarchical feature geocodes succeeds with matching data" in {
@@ -144,6 +145,26 @@ class GeocoderSpec extends Specification {
     interp.feature.geometry.center.lat must_== 10
     interp.feature.geometry.center.lng must_== 11
     interp.where must_== "california"
+  }
+
+  "full request fills parents" in {
+    val store = buildRegoPark()
+
+    val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(1))
+    val req = new GeocodeRequest("Rego Park, New York")
+    req.setFull(true)
+    val r = new GeocoderImpl(mongoFuturePool, store).geocode(req).apply()
+    r.interpretations.size must_== 1
+    val interp = r.interpretations.asScala(0)
+    interp.what must_== ""
+    interp.where must_== "rego park new york"
+    interp.feature.geometry.center.lat must_== 5
+    interp.feature.geometry.center.lng must_== 6
+
+    val parents = interp.parents.asScala
+    parents.size must_== 2
+    parents(0).name mustEqual "New York"
+    parents(1).name mustEqual "US"
   }
 
   // add a basic ranking test
