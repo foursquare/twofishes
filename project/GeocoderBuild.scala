@@ -100,7 +100,8 @@ object GeocoderBuild extends Build {
         libraryDependencies ++= Seq(
           "com.twitter" % "finagle-http_2.9.1" % "1.9.12",
           "org.specs2" %% "specs2" % "1.8.2" % "test",
-          "org.scala-tools.testing" %% "specs" % "1.6.9" % "test"
+          "org.scala-tools.testing" %% "specs" % "1.6.9" % "test",
+          "com.github.scopt" %% "scopt" % "2.0.0"
         )
       ),
       base = file("server")) dependsOn(core, interface)
@@ -112,7 +113,8 @@ object GeocoderBuild extends Build {
         libraryDependencies ++= Seq(
           "com.twitter" % "util-core_2.9.1" % "1.12.8",
           "com.twitter" % "util-logging_2.9.1" % "1.12.8",
-          "com.novus" % "salat-core_2.9.1" % "0.0.8-SNAPSHOT"
+          "com.novus" % "salat-core_2.9.1" % "0.0.8-SNAPSHOT",
+          "com.github.scopt" %% "scopt" % "2.0.0"
         )
       )
   ) dependsOn(core)

@@ -12,8 +12,8 @@ import scala.collection.mutable.HashMap
 // make server more configurable
 
 class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends LogHelper {
-  type Parse = List[GeocodeRecord]
-  type ParseList = List[Parse]
+  type Parse = Seq[GeocodeRecord]
+  type ParseSeq = Seq[Parse]
 
   /*
     The basic algorithm works like this
@@ -36,13 +36,13 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
       non-geocoded tokens) in the final interpretation.
    */
 
-  def generateParses(tokens: List[String]): HashMap[Int, List[List[GeocodeRecord]]] = {
-    val cache = new HashMap[Int, List[List[GeocodeRecord]]]()
+  def generateParses(tokens: List[String]): HashMap[Int, ParseSeq] = {
+    val cache = new HashMap[Int, ParseSeq]()
     generateParsesHelper(tokens, cache)
     cache
   }
 
-  def generateParsesHelper(tokens: List[String], cache: HashMap[Int, ParseList]): ParseList = {
+  def generateParsesHelper(tokens: List[String], cache: HashMap[Int, ParseSeq]): ParseSeq = {
     val cacheKey = tokens.size
     if (tokens.size == 0) {
       List(Nil)
@@ -52,7 +52,7 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
           (for (i <- 1.to(tokens.size)) yield {
             val searchStr = tokens.take(i).mkString(" ")
             logger.ifTrace("trying: %d to %d: %s".format(0, i, searchStr))
-            val features = store.getByName(searchStr).toList
+            val features = store.getByName(searchStr)
             logger.ifTrace("have %d matches".format(features.size))
 
             val subParses = generateParsesHelper(tokens.drop(i), cache)
@@ -61,7 +61,7 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
               logger.ifTrace("looking at %s".format(f))
               subParses.flatMap(p => {
                 logger.ifTrace("sub_parse: %s".format(p))
-                val parse = f :: p
+                val parse = List(f) ++ p
                 if (isValidParse(parse)) {
                   logger.ifTrace("VALID -- adding to %d".format(cacheKey))
                   Some(parse.sorted)
@@ -71,7 +71,7 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
                 }
               })
             })
-          }).flatMap(a=>a).toList
+          }).flatMap(a=>a)
         logger.ifTrace("setting %d to %s".format(cacheKey, validParses))
         cache(cacheKey) = validParses
       }
