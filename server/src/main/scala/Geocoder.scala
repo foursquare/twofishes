@@ -55,7 +55,7 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
             val searchStr = tokens.take(i).mkString(" ")
             logger.ifTrace("trying: %d to %d: %s".format(0, i, searchStr))
             val features = store.getByName(searchStr)
-            logger.ifTrace("have %d matches".format(features.size))
+            //logger.ifTrace("have %d matches".format(features.size))
 
             val subParses = generateParsesHelper(tokens.drop(i), cache)
 

@@ -3,6 +3,7 @@ package com.foursquare.twofish.importers.geonames
 
 import com.foursquare.twofish.Helpers._
 import com.foursquare.twofish.{Helpers, LogHelper, YahooWoeType}
+import org.bson.types.ObjectId
 
 object GeonamesFeatureColumns extends Enumeration {
    type GeonamesFeatureColumns = Value
@@ -61,7 +62,10 @@ object GeonamesFeature extends LogHelper {
     }
 
     def cb(in: Map[GeonamesFeatureColumns.Value, String]) = {
-      in ++ List((GeonamesFeatureColumns.FEATURE_CLASS -> "Z"))
+      in ++ List(
+        (GeonamesFeatureColumns.FEATURE_CLASS -> "Z"),
+        (GeonamesFeatureColumns.GEONAMEID -> "geonamezip:%s".format(new ObjectId()))
+      )
     }
 
     parseLine(index, newLine, postalCodeColumns, cb)

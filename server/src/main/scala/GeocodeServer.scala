@@ -19,9 +19,14 @@ import org.jboss.netty.handler.codec.http._
 import org.jboss.netty.util.CharsetUtil
 import scala.collection.mutable.ListBuffer
 
+object Store {
+  val store = new InMemoryReadService()
+  //val store = new MongoGeocodeStorageService()
+}
+
 class GeocodeServerImpl extends Geocoder.ServiceIface {
   val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(24))
-  val store = new InMemoryReadService()
+  val store = Store.store
 
   def geocode(r: GeocodeRequest): Future[GeocodeResponse] = {
     new GeocoderImpl(mongoFuturePool, store).geocode(r)
@@ -30,7 +35,7 @@ class GeocodeServerImpl extends Geocoder.ServiceIface {
 
 class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
   val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(24))
-  val store = new InMemoryReadService()
+  val store = Store.store
 
   val diskIoFuturePool = FuturePool(Executors.newFixedThreadPool(8))
 

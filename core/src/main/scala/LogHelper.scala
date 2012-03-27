@@ -9,7 +9,7 @@ object LogHelper {
   def init() {
     val config = new LoggerConfig {
       node = ""
-      level = Level.ERROR
+      level = Level.TRACE
       handlers = new ConsoleHandlerConfig {}
     }
     config()
