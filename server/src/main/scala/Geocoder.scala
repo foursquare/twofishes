@@ -4,6 +4,7 @@ package com.foursquare.twofish
 import com.twitter.util.{Future, FuturePool}
 import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
+import org.bson.types.ObjectId
 
 // TODO
 // oh, hi, um, make me actually event driven. great.
@@ -12,7 +13,8 @@ import scala.collection.mutable.HashMap
 // make server more configurable
 
 class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends LogHelper {
-  type Parse = Seq[GeocodeRecord]
+  type FullParse = Seq[GeocodeRecord]
+  type Parse = Seq[Featurelet]
   type ParseSeq = Seq[Parse]
 
   /*
@@ -79,7 +81,7 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
     }
   }
 
-  def isValidParse(parse: List[GeocodeRecord]): Boolean = {
+  def isValidParse(parse: Parse): Boolean = {
     if (isValidParseHelper(parse)) {
       true
     } else {
@@ -102,7 +104,7 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
     }
   }
 
-  def isValidParseHelper(parse: List[GeocodeRecord]): Boolean = {
+  def isValidParseHelper(parse: Parse): Boolean = {
     parse match {
       case Nil => true
       case f :: Nil => true
@@ -115,9 +117,9 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
     }
   }
  
-  class ParseOrdering(llHint: GeocodePoint, ccHint: String) extends Ordering[Parse] {
+  class ParseOrdering(llHint: GeocodePoint, ccHint: String) extends Ordering[FullParse] {
     // Higher is better
-    def scoreParse(parse: Parse): Int = {
+    def scoreParse(parse: FullParse): Int = {
       parse match {
         case primaryFeature :: rest => {
           var signal = primaryFeature.population.getOrElse(0)
@@ -156,9 +158,21 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
       }
     }
 
-    def compare(a: Parse, b: Parse) = {
+    def compare(a: FullParse, b: FullParse) = {
       scoreParse(b) - scoreParse(a)
     }
+  }
+
+  def hydrateParses(parses: Seq[Parse]): Seq[FullParse] = {
+    val oids: Seq[ObjectId] = parses.flatMap(_.map(_._id))
+    val geocodeRecordMap = store.getByObjectIds(oids).map(g => {
+      (g._id -> g)
+    }).toMap
+    parses.map(parse => {
+      parse.flatMap(featurelet => {
+        geocodeRecordMap.get(featurelet._id)
+      })
+    })
   }
 
   def geocode(req: GeocodeRequest): Future[GeocodeResponse] = {
@@ -178,8 +192,10 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
         val longest = parseSizes.max
         val longestParses = cache(longest)
 
+        val hydratedParses = hydrateParses(longestParses)
+
         // TODO: make this configurable
-        val sortedParses = longestParses.sorted(new ParseOrdering(req.ll, req.cc)).take(3)
+        val sortedParses = hydratedParses.sorted(new ParseOrdering(req.ll, req.cc)).take(3)
 
         val parentIds = sortedParses.flatMap(_.headOption.toList.flatMap(_.parents))
         logger.ifTrace("parent ids: " + parentIds)

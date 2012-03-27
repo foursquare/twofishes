@@ -144,10 +144,104 @@ case class GeocodeRecord(
 }
 
 trait GeocodeStorageReadService {
-  def getByName(name: String): Iterator[GeocodeRecord]
+  def getByName(name: String): Iterator[Featurelet]
+  def getByObjectIds(ids: Seq[ObjectId]): Iterator[GeocodeRecord]
   def getByIds(ids: Seq[String]): Iterator[GeocodeRecord]
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord]
 }
+
+import scala.collection.mutable.HashMap
+
+class InMemoryReadService extends GeocodeStorageReadService {
+
+  val nameMap = new HashMap[String, List[String]]
+  val fidMap = new HashMap[String, ObjectId]
+  val oidMap = new HashMap[ObjectId, Featurelet]
+
+  var nameCount = 0
+  val nameSize = NameIndexDAO.collection.count
+  val nameCursor = NameIndexDAO.find(MongoDBObject())
+  nameCursor.foreach(n => {
+    nameMap(n.name) = n.fids
+    nameCount += 1
+    if (nameCount % 1000 == 0) {
+      println("processed %d of %d names".format(nameCount, nameSize))
+    }
+  })
+
+  var featureletCount = 0
+  val featureletSize = FeatureletDAO.collection.count
+  val featureletCursor = FeatureletDAO.find(MongoDBObject())
+  featureletCursor.foreach(f => {
+    oidMap(f._id) = f
+    featureletCount += 1
+    if (featureletCount % 1000 == 0) {
+      println("processed %d of %d featurelets".format(featureletCount, featureletSize))
+    }
+  })
+
+  var fidCount = 0
+  val fidSize = FidIndexDAO.collection.count
+  val fidCursor = FidIndexDAO.find(MongoDBObject())
+  fidCursor.foreach(f => {
+    fidMap(f.fid) = f.oid
+    fidCount += 1
+    if (fidCount % 1000 == 0) {
+      println("processed %d of %d fids".format(fidCount, fidSize))
+    }
+  })
+
+  def getByName(name: String): Iterator[Featurelet] = {
+    val fids = nameMap.getOrElse(name, List())
+    val oids = fids.flatMap(fid => fidMap.get(fid))
+    oids.flatMap(oid => oidMap.get(oid)).iterator
+  }
+
+  def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = {
+    MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))))
+  }
+
+  def getByObjectIds(ids: Seq[ObjectId]): Iterator[GeocodeRecord] = {
+    MongoGeocodeDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> ids.toList)))
+  }
+
+  def getByIds(ids: Seq[String]): Iterator[GeocodeRecord] = {
+    MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> ids)))
+  }
+}
+
+// fix parse ordering/hydration
+// fix insert
+// fix in-memory
+// build index
+// test
+
+case class Featurelet(
+  _id: ObjectId,
+  @Key("wt") _woeType: Int,
+  lat: Double,
+  lng: Double,
+  @Key("p") parents: List[String],
+  ids: List[String]
+) extends Ordered[Featurelet] {
+  lazy val woeType = YahooWoeType.findByValue(_woeType)
+  
+  def compare(that: Featurelet): Int = {
+    YahooWoeTypes.getOrdering(this.woeType) - YahooWoeTypes.getOrdering(that.woeType)
+  }
+
+  def isPostalCode = woeType == YahooWoeType.POSTAL_CODE
+}
+
+case class NameIndex(
+  @Key("_id") name: String,
+  fids: List[String]
+)
+
+case class FidIndex(
+  @Key("_id") fid: String,
+  oid: ObjectId
+)
 
 trait GeocodeStorageWriteService {
   def insert(record: GeocodeRecord): Unit
@@ -161,13 +255,28 @@ trait GeocodeStorageReadWriteService extends GeocodeStorageWriteService with Geo
 object MongoGeocodeDAO extends SalatDAO[GeocodeRecord, ObjectId](
   collection = MongoConnection()("geocoder")("features"))
 
+object FeatureletDAO extends SalatDAO[Featurelet, ObjectId](
+  collection = MongoConnection()("geocoder")("featurelets"))
+
+object NameIndexDAO extends SalatDAO[NameIndex, String](
+  collection = MongoConnection()("geocoder")("name_index"))
+
+object FidIndexDAO extends SalatDAO[FidIndex, String](
+  collection = MongoConnection()("geocoder")("fid_index"))
+
 class MongoGeocodeStorageService extends GeocodeStorageReadWriteService {
-  override def getByName(name: String): Iterator[GeocodeRecord] = {
-    MongoGeocodeDAO.find(MongoDBObject("names" -> name))
+  override def getByName(name: String): Iterator[Featurelet] = {
+    val fids: Iterator[String] = NameIndexDAO.find(MongoDBObject("_id" -> name)).flatMap(_.fids)
+    val oids: Iterator[ObjectId] = FidIndexDAO.find(MongoDBObject("_id" -> fids)).map(_.oid)
+    FeatureletDAO.find(MongoDBObject("_id" -> oids))
   }
 
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = {
     MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))))
+  }
+
+  def getByObjectIds(ids: Seq[ObjectId]): Iterator[GeocodeRecord] = {
+    MongoGeocodeDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> ids.toList)))
   }
 
   def getByIds(ids: Seq[String]): Iterator[GeocodeRecord] = {
@@ -176,6 +285,22 @@ class MongoGeocodeStorageService extends GeocodeStorageReadWriteService {
 
   def insert(record: GeocodeRecord) {
     MongoGeocodeDAO.insert(record)
+
+    FeatureletDAO.insert(
+      Featurelet(record._id, record._woeType, record.lat, record.lng, record.parents, record.ids)
+    )
+
+    record.ids.foreach(fid => {
+      FidIndexDAO.insert(FidIndex(fid, record._id))
+    })
+
+    record.names.foreach(name => {
+      record.ids.foreach(fid => {
+        NameIndexDAO.update(MongoDBObject("_id" -> name),
+          MongoDBObject("$addToSet" -> MongoDBObject("fids" -> fid)),
+          true, false)
+      })
+    })
   }
 
   def addNameToRecord(name: DisplayName, id: StoredFeatureId) {

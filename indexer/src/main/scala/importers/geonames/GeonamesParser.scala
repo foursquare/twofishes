@@ -72,7 +72,7 @@ class GeonamesParser(store: GeocodeStorageReadWriteService) extends LogHelper {
     })
     val allNames = feature.allNames ++ aliases
     val normalizedNames = allNames.map(n => NameNormalizer.normalize(n))
-    val deaccentedNames = allNames.map(n => NameNormalizer.deaccent(n))
+    val deaccentedNames = normalizedNames.map(n => NameNormalizer.deaccent(n))
     val names = normalizedNames ++ deaccentedNames.toSet.toList
 
     // Build parents

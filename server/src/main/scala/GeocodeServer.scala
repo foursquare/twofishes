@@ -21,7 +21,7 @@ import scala.collection.mutable.ListBuffer
 
 class GeocodeServerImpl extends Geocoder.ServiceIface {
   val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(24))
-  val store = new MongoGeocodeStorageService()
+  val store = new InMemoryReadService()
 
   def geocode(r: GeocodeRequest): Future[GeocodeResponse] = {
     new GeocoderImpl(mongoFuturePool, store).geocode(r)
@@ -30,7 +30,7 @@ class GeocodeServerImpl extends Geocoder.ServiceIface {
 
 class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
   val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(24))
-  val store = new MongoGeocodeStorageService()
+  val store = new InMemoryReadService()
 
   val diskIoFuturePool = FuturePool(Executors.newFixedThreadPool(8))
 
