@@ -22,6 +22,7 @@ object NullLogger {
   def info(s: String) {}
 }
 
-trait LogHelper {
+
+ trait LogHelper {
   val logger = NullLogger
-}
+ }

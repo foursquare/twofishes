@@ -81,7 +81,13 @@ object GeocoderBuild extends Build {
           "com.twitter" % "util-logging_2.9.1" % "1.12.8",
           "org.slf4j" % "slf4j-api" % "1.6.1",
           "com.novus" % "salat-core_2.9.1" % "0.0.8-SNAPSHOT"
-        )
+        ),
+        ivyXML := (
+          <dependencies>
+           <exclude org="org.mongodb" name="mongo-java-driver"/>
+          </dependencies>
+          )
+
       )
     ) dependsOn(interface)
 

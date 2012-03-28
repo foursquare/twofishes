@@ -20,8 +20,8 @@ import org.jboss.netty.util.CharsetUtil
 import scala.collection.mutable.ListBuffer
 
 object Store {
-  //val store = new InMemoryReadService()
-  val store = new MongoGeocodeStorageService()
+  val store = new InMemoryReadService()
+ // val store = new MongoGeocodeStorageService()
 }
 
 class GeocodeServerImpl extends Geocoder.ServiceIface {
