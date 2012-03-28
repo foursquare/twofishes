@@ -10,43 +10,57 @@ object GeonamesParser {
   val geonameIdNamespace = "geonameid"
   val geonameAdminIdNamespace = "gadminid"
 
+  var config = new GeonamesImporterConfig(Array())
+
   def main(args: Array[String]) {
     val store = new MongoGeocodeStorageService()
     val parser = new GeonamesParser(store)
-    if (!GeonamesImporterConfig.parseWorld) {
-      parser.parseAdminFile(
-        "data/downloaded/%s.txt".format(GeonamesImporterConfig.parseCountry))
+    config = new GeonamesImporterConfig(args)
 
-      if (GeonamesImporterConfig.importPostalCodes) {
+    if (!config.parseWorld) {
+      parser.parseAdminFile(
+        "data/downloaded/%s.txt".format(config.parseCountry))
+
+      if (config.importPostalCodes) {
         parser.parsePostalCodeFile(
-        "data/downloaded/zip/%s.txt".format(GeonamesImporterConfig.parseCountry),
+        "data/downloaded/zip/%s.txt".format(config.parseCountry),
         true)
       }
     } else {
       parser.parseAdminFile(
         "data/downloaded/allCountries.txt")
-      if (GeonamesImporterConfig.importPostalCodes) {
+      if (config.importPostalCodes) {
         parser.parsePostalCodeFile(
         "data/downloaded/zip/allCountries.txt", false)
       }
     }
 
-    if (GeonamesImporterConfig.importAlternateNames) {
+    if (config.importAlternateNames) {
       parser.parseAlternateNamesFile(
         "data/downloaded/alternateNames.txt")
     }
 
     parser.parsePreferredNames()
 
-    if (GeonamesImporterConfig.importBoundingBoxes) {
-      new BoundingBoxTsvImporter(store).parse(GeonamesImporterConfig.boundingBoxFilename)
+    if (config.importBoundingBoxes) {
+      new BoundingBoxTsvImporter(store).parse(config.boundingBoxFilename)
     }
   }
 }
 
 import GeonamesParser._
 
+<<<<<<< HEAD
 class GeonamesParser(store: GeocodeStorageWriteService) extends LogHelper {
+=======
+class GeonamesParser(store: GeocodeStorageReadWriteService) {
+  object logger {
+    def error(s: String) { println("**ERROR** " + s)}
+    def info(s: String) { println(s)}
+
+  }
+
+>>>>>>> 4175a42... respond to mike's comments
   // token -> alt tokens
   val rewriteTable = new TsvHelperFileParser("data/custom/rewrites.txt")
   // geonameid -> boost value
@@ -119,7 +133,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) extends LogHelper {
       }
       val feature = lineProcessor(index, line)
       feature.foreach(f => {
-        if (!f.featureClass.isBuilding || GeonamesImporterConfig.shouldParseBuildings) {
+        if (!f.featureClass.isBuilding || config.shouldParseBuildings) {
           parseFeature(f)
         }
       })

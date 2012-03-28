@@ -9,9 +9,9 @@ import org.bson.types.ObjectId
 import java.util.concurrent.ConcurrentHashMap
 
 // TODO
-// if this works
-// --fix dupes
-// --fix parents
+// fix displayName!
+// fix returned name
+// document new flow
 
 class GeocoderImpl(pool: FuturePool, _store: GeocodeStorageReadService) extends LogHelper {
   val store = new GeocodeStorageFutureReadService(_store, pool)
