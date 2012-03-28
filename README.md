@@ -41,13 +41,13 @@ First time setup
 
 Data import
 ===========
-*   mongod --dbpath /local/directory/for/mongo
+*   mongod --dbpath /local/directory/for/output/
 *   ./init-database.sh # drops existing table and creates indexes
 *   ./sbt "indexer/run-main com.foursquare.twofish.importers.geonames.GeonamesParser --parse_country US" # or ./sbt "indexer/run-main com.foursquare.twofish.importers.geonames.GeonamesParser --parse_world true"
 
 Serving
 =======
-*   mongod --dbpath /local/directory/for/mongo
+*   mongod --dbpath /local/directory/for/output/
 *   ./sbt  "server/run-main com.foursquare.twofish.GeocodeFinagleServer --port 8080"
 *   server should be responding to finagle-thrift on the port specified (8080 by default), and responding to http requests at the next port up: http://localhost:8081/?query=rego+park+ny http://localhost:8081/static/geocoder.html#rego+park
 
