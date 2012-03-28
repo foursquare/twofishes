@@ -3,7 +3,7 @@ package com.foursquare.twofish
 import org.apache.hadoop.hbase.io.hfile.{Compression, HFile}
 import org.apache.hadoop.hbase.io.hfile.HFileWriterV2
 import org.apache.hadoop.hbase.util.Bytes
-import org.apache.hadoop.fs.RawLocalFileSystem
+import org.apache.hadoop.fs.LocalFileSystem
 import org.apache.hadoop.fs.Path
 
 import com.novus.salat._
@@ -15,7 +15,37 @@ import com.mongodb.casbah.MongoConnection
 
 import org.apache.hadoop.conf.Configuration 
 import org.apache.hadoop.hbase.io.hfile.CacheConfig
+
+import java.net.URI
+
 import org.apache.hadoop.fs.permission.FsPermission
+
+import java.nio.ByteBuffer
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{LocalFileSystem, Path}
+import org.apache.hadoop.hbase.io.hfile.{CacheConfig, HFile, HFileScanner}
+
+object HFileInput {
+  def read(hfile: String) = {
+    val conf = new Configuration()
+    val fs = new LocalFileSystem()
+    fs.initialize(URI.create("file:///"), conf)
+    val path = new Path(hfile)
+    val cacheConfig = new CacheConfig(conf)
+    val ret = HFile.createReader(fs, path, cacheConfig)
+    ret.loadFileInfo()
+    ret
+  }
+
+  private def lookup(hfileReader: HFile.Reader, key: ByteBuffer): Option[ByteBuffer] = {
+    val scanner: HFileScanner = hfileReader.getScanner(true, true)
+    if (scanner.reseekTo(key.array, key.position, key.remaining) == 0) {
+      Some(scanner.getValue.duplicate())
+    } else {
+      None
+    }
+  }
+}
 
 object OutputHFile {
   val blockSizeKey = "hbase.mapreduce.hfileoutputformat.blocksize"
@@ -47,8 +77,9 @@ object OutputHFile {
     callback: (T) => (Array[Byte], Array[Byte]),
     dao: SalatDAO[T, K]
   ) {
-    val fs = new RawLocalFileSystem() 
+    val fs = new LocalFileSystem() 
     val path = new Path(fpath)
+    fs.initialize(URI.create("file:///"), conf)
     println(blockSize)
     println(compressionAlgo)
     println(path)
@@ -56,7 +87,7 @@ object OutputHFile {
     println(conf)
     println(cconf)
 
-println(FsPermission.getDefault())
+    println(FsPermission.getDefault())
         println(fs.getConf().getInt("io.file.buffer.size", 4096))
         println(fs.getDefaultReplication())
         println(fs.getDefaultBlockSize())
@@ -65,6 +96,7 @@ println(FsPermission.getDefault())
     var fidCount = 0
     val fidSize = dao.collection.count
     val fidCursor = dao.find(MongoDBObject())
+      .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id desc
     fidCursor.foreach(f => {
       val (k, v) = callback(f)
       writer.append(k, v)
