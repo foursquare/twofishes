@@ -17,6 +17,7 @@ object GeocoderBuild extends Build {
     resolvers += "repo.novus rels" at "http://repo.novus.com/releases/",
     resolvers += "repo.novus snaps" at "http://repo.novus.com/snapshots/",
     resolvers += "Java.net Maven 2 Repo" at "http://download.java.net/maven/2",
+    resolvers += "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos/",
     resolvers ++= Seq("snapshots" at "http://oss.sonatype.org/content/repositories/snapshots",
                       "releases"  at "http://oss.sonatype.org/content/repositories/releases"),
 
@@ -80,14 +81,14 @@ object GeocoderBuild extends Build {
           "com.twitter" % "util-core_2.9.1" % "1.12.8",
           "com.twitter" % "util-logging_2.9.1" % "1.12.8",
           "org.slf4j" % "slf4j-api" % "1.6.1",
-          "com.novus" % "salat-core_2.9.1" % "0.0.8-SNAPSHOT"
+          "com.novus" % "salat-core_2.9.1" % "0.0.8-SNAPSHOT",
+          "org.apache.hbase" % "hbase" % "0.92.0-cdh4b1"
         ),
         ivyXML := (
           <dependencies>
            <exclude org="org.mongodb" name="mongo-java-driver"/>
           </dependencies>
-          )
-
+        )
       )
     ) dependsOn(interface)
 
@@ -125,7 +126,9 @@ object GeocoderBuild extends Build {
           "com.twitter" % "util-logging_2.9.1" % "1.12.8",
           "com.novus" % "salat-core_2.9.1" % "0.0.8-SNAPSHOT",
           "com.github.scopt" %% "scopt" % "2.0.0",
-          "com.sleepycat" % "je" % "4.0.92"
+          "com.sleepycat" % "je" % "4.0.92",
+          "org.apache.hadoop" % "hadoop-core" % "0.20.2-cdh3u3b",
+          "org.apache.hbase" % "hbase" % "0.92.0-cdh4b1"
         )
       )
   ) dependsOn(core)
