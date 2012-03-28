@@ -1,7 +1,6 @@
  //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofish
 
-
 class GeocodeServerConfig(args: Array[String]) {
   var runHttpServer: Boolean = true
   var thriftServerPort: Int = 8080

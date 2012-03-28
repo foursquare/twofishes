@@ -29,26 +29,26 @@ Flickr shapefiles are public domain
 Requirements
 ============
 *   Scala
-*   Mongo
+*   [Mongo](http://www.mongodb.org/display/DOCS/Quickstart)
 *   curl
 
 First time setup
 ================
-*   run init.sh (downloads sbt jar)
-*   run one or both of download-world.sh or download-US.sh to download and decompress the geoanmes data
+*   git clone git@github.com:foursquare/twofish.git
+*   cd twofish
+*   ./init.sh
+*   ./download-US.sh # or ./download-world.sh
 
 Data import
 ===========
-*   start mongod (mongod --dbpath /local/path/for/file)
+*   mongod --dbpath /local/directory/for/mongo
 *   ./init-database.sh # drops existing table and creates indexes
-*   edit ./src/main/scala/importers/geonames/GeonamesImporterConfig.scala to toggle between parsing a specific country or the whole world. 
-*   ./sbt "indexer/run-main com.foursquare.twofish.importers.geonames.GeonamesParser"
+*   ./sbt "indexer/run-main com.foursquare.twofish.importers.geonames.GeonamesParser --parse_country US" # or ./sbt "indexer/run-main com.foursquare.twofish.importers.geonames.GeonamesParser --parse_world true"
 
 Serving
 =======
-*   start mongod, pointed at the path you used for import
-*   edit ./src/main/scala/GeocodeServerConfig.scala to change serving ports
-*   ./sbt  "server/run-main com.foursquare.twofish.GeocodeFinagleServer"
+*   mongod --dbpath /local/directory/for/mongo
+*   ./sbt  "server/run-main com.foursquare.twofish.GeocodeFinagleServer --port 8080"
 *   server should be responding to finagle-thrift on the port specified (8080 by default), and responding to http requests at the next port up: http://localhost:8081/?query=rego+park+ny http://localhost:8081/static/geocoder.html#rego+park
 
 Future
