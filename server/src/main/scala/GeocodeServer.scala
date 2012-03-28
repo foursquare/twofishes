@@ -20,8 +20,8 @@ import org.jboss.netty.util.CharsetUtil
 import scala.collection.mutable.ListBuffer
 
 object Store {
-  val store = new InMemoryReadService()
-  //val store = new MongoGeocodeStorageService()
+  //val store = new InMemoryReadService()
+  val store = new MongoGeocodeStorageService()
 }
 
 class GeocodeServerImpl extends Geocoder.ServiceIface {
@@ -117,7 +117,9 @@ object GeocodeThriftServer extends Application {
 
   override def main(args: Array[String]) {
     try {
-      val serverTransport = new TServerSocket(GeocodeServerConfig.thriftServerPort)
+      val config = new GeocodeServerConfig(args)
+
+      val serverTransport = new TServerSocket(config.thriftServerPort)
       val processor = new Geocoder.Processor(new GeocodeServer())
       val protFactory = new TBinaryProtocol.Factory(true, true)
       val server = new TThreadPoolServer(processor, serverTransport, protFactory)
@@ -135,6 +137,8 @@ object GeocodeFinagleServer {
 
     LogHelper.init
 
+    val config = new GeocodeServerConfig(args)
+
     // Implement the Thrift Interface
     val processor = new GeocodeServerImpl()
 
@@ -142,14 +146,14 @@ object GeocodeFinagleServer {
     val service = new Geocoder.Service(processor, new TBinaryProtocol.Factory())
 
     val server: Server = ServerBuilder()
-      .bindTo(new InetSocketAddress(GeocodeServerConfig.thriftServerPort))
+      .bindTo(new InetSocketAddress(config.thriftServerPort))
       .codec(ThriftServerFramedCodec())
       .name("geocoder")
       .build(service)
 
-    if (GeocodeServerConfig.runHttpServer) {
+    if (config.runHttpServer) {
       ServerBuilder()
-        .bindTo(new InetSocketAddress(GeocodeServerConfig.thriftServerPort + 1))
+        .bindTo(new InetSocketAddress(config.thriftServerPort + 1))
         .codec(Http())
         .name("geocoder-http")
         .build(new GeocoderHttpService())
