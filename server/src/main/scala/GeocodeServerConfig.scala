@@ -3,7 +3,7 @@ package com.foursquare.twofish
 
 
 class GeocodeServerConfig(args: Array[String]) {
-  var runHttpServer: Boolean = false
+  var runHttpServer: Boolean = true
   var thriftServerPort: Int = 8080
 
   private val config = this
