@@ -9,13 +9,19 @@ object LogHelper {
   def init() {
     val config = new LoggerConfig {
       node = ""
-      level = Level.TRACE
+      level = Level.ERROR
       handlers = new ConsoleHandlerConfig {}
     }
     config()
   }
 }
 
+object NullLogger {
+  def ifTrace(msg: => String) {}
+  def error(s: String) {}
+  def info(s: String) {}
+}
+
 trait LogHelper {
-  val logger = Logger.get(getClass)
+  val logger = NullLogger
 }

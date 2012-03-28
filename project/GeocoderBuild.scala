@@ -1,5 +1,7 @@
 import sbt._
 import Keys._
+import sbtassembly.Plugin._
+import AssemblyKeys._
 
 object GeocoderBuild extends Build {
   lazy val buildSettings = Seq(
@@ -95,7 +97,8 @@ object GeocoderBuild extends Build {
       base = file("interface"))
 
   lazy val server = Project(id = "server",
-      settings = defaultSettings ++ Seq(
+      settings = defaultSettings ++ assemblySettings ++ Seq(
+        mainClass in assembly := Some("com.foursquare.twofish.GeocodeFinagleServer"),
         publishArtifact := true,
         libraryDependencies ++= Seq(
           "com.twitter" % "finagle-http_2.9.1" % "1.9.12",
@@ -108,7 +111,7 @@ object GeocoderBuild extends Build {
 
   lazy val indexer = Project(id = "indexer",
       base = file("indexer"),
-      settings = defaultSettings ++ Seq(
+      settings = defaultSettings ++ assemblySettings ++ Seq(
         publishArtifact := false,
         libraryDependencies ++= Seq(
           "com.twitter" % "util-core_2.9.1" % "1.12.8",
