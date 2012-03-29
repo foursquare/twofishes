@@ -122,7 +122,7 @@ class GeonamesParser(store: GeocodeStorageReadWriteService) {
 
   private def parseFromFile(filename: String,
     lineProcessor: (Int, String) => Option[GeonamesFeature]) {
-    val lines = scala.io.Source.fromFile(new File(filename)).getLines    
+    val lines = scala.io.Source.fromFile(new File(filename), "UTF-8").getLines    
     lines.zipWithIndex.foreach({case (line, index) => {
       if (index % 1000 == 0) {
         logger.info("imported %d features so far".format(index))
