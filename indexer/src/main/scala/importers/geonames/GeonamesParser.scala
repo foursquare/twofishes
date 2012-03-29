@@ -50,17 +50,12 @@ object GeonamesParser {
 
 import GeonamesParser._
 
-<<<<<<< HEAD
-class GeonamesParser(store: GeocodeStorageWriteService) extends LogHelper {
-=======
-class GeonamesParser(store: GeocodeStorageReadWriteService) {
+class GeonamesParser(store: GeocodeStorageWriteService) {
   object logger {
     def error(s: String) { println("**ERROR** " + s)}
     def info(s: String) { println(s)}
-
   }
-
->>>>>>> 4175a42... respond to mike's comments
+  
   // token -> alt tokens
   val rewriteTable = new TsvHelperFileParser("data/custom/rewrites.txt")
   // geonameid -> boost value

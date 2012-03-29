@@ -232,10 +232,6 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
   def insert(record: GeocodeRecord) {
     MongoGeocodeDAO.insert(record)
 
-    // FeatureletDAO.insert(
-    //   Featurelet(record._id, record._woeType, record.lat, record.lng, record.parents, record.ids)
-    // )
-
     record.ids.foreach(fid => {
       FidIndexDAO.insert(FidIndex(fid, record._id))
     })

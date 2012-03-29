@@ -13,17 +13,6 @@ class GeonamesImporterConfig(args: Array[String]) {
   // Expects data/downloaded/alternateNames.txt
   // This is an important file because it contains translated names, abbreviated names, and preferred names
   // for each feature. Without it, we can't generate pretty strings for display
-<<<<<<< HEAD
-
-  val importAlternateNames = false
-  val importPostalCodes = true
-
-  // Geonames doesn't have bounding boxes, only points. This is a precomputed mapping of geonameids to yahoo
-  // woeids to flickr bounding boxes. Precomputed because I could't get the geojson java libraries to work.
-  val importBoundingBoxes = false
-  val boundingBoxFilename = "./data/computed/flickr_bbox.tsv"
-}
-=======
   var importAlternateNames = true
   var importPostalCodes = true
 
@@ -49,4 +38,3 @@ class GeonamesImporterConfig(args: Array[String]) {
     System.exit(1)
   }
 }
->>>>>>> 4175a42... respond to mike's comments
