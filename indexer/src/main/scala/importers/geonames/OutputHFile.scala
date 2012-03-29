@@ -25,25 +25,52 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{LocalFileSystem, Path}
 import org.apache.hadoop.hbase.io.hfile.{CacheConfig, HFile, HFileScanner}
 
-object HFileInput {
-  def read(hfile: String) = {
-    val conf = new Configuration()
-    val fs = new LocalFileSystem()
-    fs.initialize(URI.create("file:///"), conf)
-    val path = new Path(hfile)
-    val cacheConfig = new CacheConfig(conf)
-    val ret = HFile.createReader(fs, path, cacheConfig)
-    ret.loadFileInfo()
-    ret
+
+abstract class HFileInput(hfile: String) {
+  val conf = new Configuration()
+  val fs = new LocalFileSystem()
+  fs.initialize(URI.create("file:///"), conf)
+  val path = new Path(hfile)
+  val cacheConfig = new CacheConfig(conf)
+  val reader = HFile.createReader(fs, path, cacheConfig)
+  reader.loadFileInfo()
+
+  def readSome(limit: Int) {
+    val scanner: HFileScanner = reader.getScanner(true, true)
+    var count = 0
+    scanner.seekTo()
+
+    0.to(limit).foreach(i => {
+      println(scanner.getKeyString())
+      val b = scanner.getValue()
+      val bytes = new Array[Byte](b.capacity())
+      b.get(bytes, 0, bytes.length);
+      println(new ObjectId(bytes))
+      scanner.next()
+    })
+
   }
 
-  private def lookup(hfileReader: HFile.Reader, key: ByteBuffer): Option[ByteBuffer] = {
-    val scanner: HFileScanner = hfileReader.getScanner(true, true)
+  def lookup(key: ByteBuffer): Option[ByteBuffer] = {
+    val scanner: HFileScanner = reader.getScanner(true, true)
     if (scanner.reseekTo(key.array, key.position, key.remaining) == 0) {
       Some(scanner.getValue.duplicate())
     } else {
       None
     }
+  }
+}
+
+class FidIndexHFileInput extends HFileInput("/tmp/fid_index.hfile") {
+  def get(fid: String): Option[ObjectId] = {
+
+    val buf = ByteBuffer.wrap(fid.getBytes())
+
+    lookup(buf).map(b => {
+      val bytes = new Array[Byte](b.capacity())
+      b.get(bytes, 0, bytes.length);
+      new ObjectId(bytes)
+    })
   }
 }
 
@@ -80,18 +107,6 @@ object OutputHFile {
     val fs = new LocalFileSystem() 
     val path = new Path(fpath)
     fs.initialize(URI.create("file:///"), conf)
-    println(blockSize)
-    println(compressionAlgo)
-    println(path)
-    println(fs)
-    println(conf)
-    println(cconf)
-
-    println(FsPermission.getDefault())
-        println(fs.getConf().getInt("io.file.buffer.size", 4096))
-        println(fs.getDefaultReplication())
-        println(fs.getDefaultBlockSize())
-
     val writer = new HFileWriterV2(conf, cconf, fs, path, blockSize, compressionAlgo, null)
     var fidCount = 0
     val fidSize = dao.collection.count
@@ -101,7 +116,7 @@ object OutputHFile {
       val (k, v) = callback(f)
       writer.append(k, v)
       fidCount += 1
-      if (fidCount % 1000 == 0) {
+      if (fidCount % 10 == 0) {
         println("processed %d of %d %s".format(fidCount, fidSize, path))
       }
     })
@@ -112,5 +127,9 @@ object OutputHFile {
     writeCollection("/tmp/fid_index.hfile",
       (f: FidIndex) => (f.fid.getBytes(), f.oid.toByteArray()),
       FidIndexDAO)
+
+    writeCollection("/tmp/name_index.hfile",
+      (n: NameIndex) => (n.name.getBytes(), n.fids.mkString(",").getBytes()),
+      NameIndexDAO)
   }
 }

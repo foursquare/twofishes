@@ -15,7 +15,7 @@ object GeonamesImporterConfig {
   // for each feature. Without it, we can't generate pretty strings for display
 
   val importAlternateNames = true
-  val importPostalCodes = true
+  val importPostalCodes = false
 
   // Geonames doesn't have bounding boxes, only points. This is a precomputed mapping of geonameids to yahoo
   // woeids to flickr bounding boxes. Precomputed because I could't get the geojson java libraries to work.
