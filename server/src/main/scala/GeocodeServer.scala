@@ -20,7 +20,7 @@ import org.jboss.netty.util.CharsetUtil
 import scala.collection.mutable.ListBuffer
 
 object Store {
-  val store = new InMemoryReadService()
+  val store = new HFileStorageService()
  // val store = new MongoGeocodeStorageService()
 }
 
@@ -144,6 +144,10 @@ object GeocodeFinagleServer {
 
     // Convert the Thrift Processor to a Finagle Service
     val service = new Geocoder.Service(processor, new TBinaryProtocol.Factory())
+
+    println("serving thrift on port %d".format(config.thriftServerPort))
+        println("serving http/json on port %d".format(config.thriftServerPort + 1))
+
 
     val server: Server = ServerBuilder()
       .bindTo(new InetSocketAddress(config.thriftServerPort))

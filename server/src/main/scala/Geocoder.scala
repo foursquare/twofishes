@@ -14,7 +14,7 @@ import org.bson.types.ObjectId
 
 class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends LogHelper {
   type FullParse = Seq[GeocodeRecord]
-  type Parse = Seq[Featurelet]
+  type Parse = Seq[GeocodeRecord]
   type ParseSeq = Seq[Parse]
 
   /*
