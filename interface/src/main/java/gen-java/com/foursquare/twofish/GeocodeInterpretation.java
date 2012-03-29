@@ -506,14 +506,14 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
         case 4: // PARENTS
           if (field.type == TType.LIST) {
             {
-              TList _list16 = iprot.readListBegin();
-              this.parents = new ArrayList<GeocodeFeature>(_list16.size);
-              for (int _i17 = 0; _i17 < _list16.size; ++_i17)
+              TList _list20 = iprot.readListBegin();
+              this.parents = new ArrayList<GeocodeFeature>(_list20.size);
+              for (int _i21 = 0; _i21 < _list20.size; ++_i21)
               {
-                GeocodeFeature _elem18;
-                _elem18 = new GeocodeFeature();
-                _elem18.read(iprot);
-                this.parents.add(_elem18);
+                GeocodeFeature _elem22;
+                _elem22 = new GeocodeFeature();
+                _elem22.read(iprot);
+                this.parents.add(_elem22);
               }
               iprot.readListEnd();
             }
@@ -556,9 +556,9 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
         oprot.writeFieldBegin(PARENTS_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.STRUCT, this.parents.size()));
-          for (GeocodeFeature _iter19 : this.parents)
+          for (GeocodeFeature _iter23 : this.parents)
           {
-            _iter19.write(oprot);
+            _iter23.write(oprot);
           }
           oprot.writeListEnd();
         }

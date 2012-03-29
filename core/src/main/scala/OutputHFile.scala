@@ -25,12 +25,20 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{LocalFileSystem, Path}
 import org.apache.hadoop.hbase.io.hfile.{CacheConfig, HFile, HFileScanner}
 
+import org.apache.thrift.TSerializer
+import org.apache.thrift.TDeserializer
+import org.apache.thrift.protocol.TBinaryProtocol
+import org.apache.thrift.protocol.TProtocol
+import org.apache.thrift.protocol.TProtocolFactory
+import org.apache.thrift.protocol.TSimpleJSONProtocol
+import org.apache.thrift.transport.TIOStreamTransport
+
 class HFileStorageService extends GeocodeStorageReadService {
   val nameMap = new NameIndexHFileInput
   val fidMap = new FidIndexHFileInput
   val oidMap = new GeocodeRecordHFileInput
 
-  def getByName(name: String): Iterator[GeocodeRecord] = {
+  def getByName(name: String): Iterator[GeocodeFeature] = {
     nameMap.get(name).toList.flatMap(fids => {
       fids.flatMap(fid => {
         fidMap.get(fid).flatMap(oid => oidMap.get(oid))
@@ -38,16 +46,16 @@ class HFileStorageService extends GeocodeStorageReadService {
     }).iterator
   }
 
-  def getByObjectIds(oids: Seq[ObjectId]): Iterator[GeocodeRecord] = {
+  def getByObjectIds(oids: Seq[ObjectId]): Iterator[GeocodeFeature] = {
     oids.flatMap(oid => oidMap.get(oid)).iterator
   }
-  def getByIds(fids: Seq[String]): Iterator[GeocodeRecord] = {
+  def getByIds(fids: Seq[String]): Iterator[GeocodeFeature] = {
     fids.flatMap(fid => {
       fidMap.get(fid).flatMap(oid => oidMap.get(oid))
     }).iterator
   }
 
-  def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = {
+  def getById(id: StoredFeatureId): Iterator[GeocodeFeature] = {
     getByIds(List(id.toString))
   }
 }
@@ -59,6 +67,7 @@ abstract class HFileInput(hfile: String) {
   fs.initialize(URI.create("file:///"), conf)
   val path = new Path(hfile)
   val cacheConfig = new CacheConfig(conf)
+  println(cacheConfig)
   val reader = HFile.createReader(fs, path, cacheConfig)
   reader.loadFileInfo()
 
@@ -88,7 +97,7 @@ abstract class HFileInput(hfile: String) {
   }
 }
 
-class NameIndexHFileInput extends HFileInput("/tmp/name_index.hfile") {
+class NameIndexHFileInput extends HFileInput("/export/hdc3/appdata/geonames-hfile/name_index.hfile") {
   def get(name: String): Option[Vector[String]] = {
     val buf = ByteBuffer.wrap(name.getBytes())
     lookup(buf).map(b => {
@@ -99,7 +108,7 @@ class NameIndexHFileInput extends HFileInput("/tmp/name_index.hfile") {
   }
 }
 
-class FidIndexHFileInput extends HFileInput("/tmp/fid_index.hfile") {
+class FidIndexHFileInput extends HFileInput("/export/hdc3/appdata/geonames-hfile/fid_index.hfile") {
   def get(fid: String): Option[ObjectId] = {
     val buf = ByteBuffer.wrap(fid.getBytes())
     lookup(buf).map(b => {
@@ -110,16 +119,16 @@ class FidIndexHFileInput extends HFileInput("/tmp/fid_index.hfile") {
   }
 }
 
-class GeocodeRecordHFileInput extends HFileInput("/tmp/features.hfile") {
+class GeocodeRecordHFileInput extends HFileInput("/export/hdc3/appdata/geonames-hfile/features.hfile") {
   import java.io._
   def deserializeBytes(bytes: Array[Byte]) = {
-    val bis = new ByteArrayInputStream(bytes);
-    val in = new ObjectInputStream(bis);
-    val dbo = in.readObject().asInstanceOf[DBObject]
-    grater[GeocodeRecord].asObject(dbo)
+    val deserializer = new TDeserializer(new TBinaryProtocol.Factory());
+    val feature = new GeocodeFeature();
+    deserializer.deserialize(feature, bytes);
+    feature
   }
 
-  def get(oid: ObjectId): Option[GeocodeRecord] = {
+  def get(oid: ObjectId): Option[GeocodeFeature] = {
     val buf = ByteBuffer.wrap(oid.toByteArray())
     lookup(buf).map(b => {
       val bytes = new Array[Byte](b.capacity())
@@ -137,7 +146,7 @@ object OutputHFile {
   val compressionAlgo = Compression.Algorithm.NONE.getName
 
   // val fs = new RawLocalFileSystem() 
-  // val path = new Path("/tmp/fid_index.hfile")
+  // val path = new Path("/export/hdc3/appdata/geonames-hfile/fid_index.hfile")
   // val writer = new HFile.Writer(fs, path, blockSize, compressionAlgo, null)
   // var fidCount = 0
   // val fidSize = FidIndexDAO.collection.count
@@ -199,7 +208,7 @@ object OutputHFile {
       }
     })
 
-    val fpath = "/tmp/name_index.hfile"
+    val fpath = "/export/hdc3/appdata/geonames-hfile/name_index.hfile"
     val fs = new LocalFileSystem() 
     val path = new Path(fpath)
     fs.initialize(URI.create("file:///"), conf)
@@ -221,28 +230,25 @@ object OutputHFile {
   }
 
   import java.io._
-  def serializeBytes(o: DBObject) = {
-    val bos = new ByteArrayOutputStream()
-    val out = new ObjectOutputStream(bos)
-    out.writeObject(o)
-    bos.toByteArray()
+  def serializeBytes(g: GeocodeRecord) = {
+    val serializer = new TSerializer(new TBinaryProtocol.Factory());
+    serializer.serialize(g.toGeocodeFeature(Map.empty, true, None))
   }
 
   def main(args: Array[String]) {
-    writeCollection("/tmp/fid_index.hfile",
+    writeCollection("/export/hdc3/appdata/geonames-hfile/fid_index.hfile",
       (f: FidIndex) => (f.fid.getBytes(), f.oid.toByteArray()),
       FidIndexDAO, "_id")
 
     writeNames()
 
-    // writeCollection("/tmp/name_index.hfile",
+    // writeCollection("/export/hdc3/appdata/geonames-hfile/name_index.hfile",
     //   (n: NameIndex) => (n.name.getBytes(), n.fids.mkString(",").getBytes()),
     //   NameIndexDAO, "nameBytes")
 
-    writeCollection("/tmp/features.hfile",
+    writeCollection("/export/hdc3/appdata/geonames-hfile/features.hfile",
       (g: GeocodeRecord) => 
-        (g._id.toByteArray(),
-          serializeBytes(grater[GeocodeRecord].asDBObject(g.copy(names = Nil)))),
+        (g._id.toByteArray(), serializeBytes(g)),
       MongoGeocodeDAO, "_id")
   }
 }

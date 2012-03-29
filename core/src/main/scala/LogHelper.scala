@@ -17,7 +17,8 @@ object LogHelper {
 }
 
 object NullLogger {
-  def ifTrace(msg: => String) { println(msg) }
+  def ifTrace(msg: => String) { 
+  }
   def error(s: String) {}
   def info(s: String) {}
 }

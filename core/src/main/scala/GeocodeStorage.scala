@@ -9,6 +9,18 @@ import com.mongodb.casbah.Imports._
 import com.mongodb.casbah.MongoConnection
 import scala.collection.JavaConversions._
 
+case class WrappedGeocodeFeature(f: GeocodeFeature) {
+  def _id: String = "%s:%s".format(f.ids(0).source, f.ids(0).id)
+}
+
+object Implicits {
+  implicit def fidToString(fid: StoredFeatureId): String = fid.toString
+  implicit def fidListToString(fids: List[StoredFeatureId]): List[String] = fids.map(_.toString)
+  implicit def wrapGeocodeFeature(f: GeocodeFeature): WrappedGeocodeFeature = {
+    WrappedGeocodeFeature(f)
+  }
+}
+
 case class DisplayName(
   @Key("l") lang: String,
   @Key("n") name: String,
@@ -39,11 +51,6 @@ case class StoredFeatureId(
   @Key("n") namespace: String,
   id: String) {
   override def toString = "%s:%s".format(namespace, id)
-}
-
-object Implicits {
-  implicit def fidToString(fid: StoredFeatureId): String = fid.toString
-  implicit def fidListToString(fids: List[StoredFeatureId]): List[String] = fids.map(_.toString)
 }
 
 case class Point(lat: Double, lng: Double)
@@ -136,6 +143,12 @@ case class GeocodeRecord(
       }))
     }
 
+    val scoring = new ScoringFeatures()
+    boost.foreach(b => scoring.setBoost(b))
+    population.foreach(p => scoring.setPopulation(p))
+    scoring.setParents(parents)
+    feature.setScoringFeatures(scoring)
+
     feature
   }
 
@@ -143,11 +156,22 @@ case class GeocodeRecord(
   def isPostalCode = woeType == YahooWoeType.POSTAL_CODE
 }
 
+class WrappedGeocodeStorageReadService(store: GeocodeStorageReadService) {
+  def getByName(name: String): Iterator[WrappedGeocodeFeature] =
+    store.getByName(name).map(f => WrappedGeocodeFeature(f))
+  def getByObjectIds(ids: Seq[ObjectId]): Iterator[WrappedGeocodeFeature] =
+    store.getByObjectIds(ids).map(f => WrappedGeocodeFeature(f))
+  def getByIds(ids: Seq[String]): Iterator[WrappedGeocodeFeature] =
+    store.getByIds(ids).map(f => WrappedGeocodeFeature(f))
+  def getById(id: StoredFeatureId): Iterator[WrappedGeocodeFeature] =
+    store.getById(id).map(f => WrappedGeocodeFeature(f))
+}
+
 trait GeocodeStorageReadService {
-  def getByName(name: String): Iterator[GeocodeRecord]
-  def getByObjectIds(ids: Seq[ObjectId]): Iterator[GeocodeRecord]
-  def getByIds(ids: Seq[String]): Iterator[GeocodeRecord]
-  def getById(id: StoredFeatureId): Iterator[GeocodeRecord]
+  def getByName(name: String): Iterator[GeocodeFeature]
+  def getByObjectIds(ids: Seq[ObjectId]): Iterator[GeocodeFeature]
+  def getByIds(ids: Seq[String]): Iterator[GeocodeFeature]
+  def getById(id: StoredFeatureId): Iterator[GeocodeFeature]
 }
 
 // fix parse ordering/hydration
@@ -172,9 +196,8 @@ trait GeocodeStorageWriteService {
   def setRecordNames(id: StoredFeatureId, names: List[DisplayName])
   def addNameToRecord(name: DisplayName, id: StoredFeatureId)
   def addBoundingBoxToRecord(id: StoredFeatureId, bbox: BoundingBox)
+  def getById(id: StoredFeatureId): Iterator[GeocodeRecord]
 }
-
-trait GeocodeStorageReadWriteService extends GeocodeStorageWriteService with GeocodeStorageReadService
 
 import com.mongodb.MongoOptions
 import com.mongodb.ServerAddress
@@ -194,8 +217,8 @@ object NameIndexDAO extends SalatDAO[NameIndex, String](
 object FidIndexDAO extends SalatDAO[FidIndex, String](
   collection = MongoConnection()("geocoder")("fid_index"))
 
-class MongoGeocodeStorageService extends GeocodeStorageReadWriteService {
-  override def getByName(name: String): Iterator[GeocodeRecord] = {
+class MongoGeocodeStorageService extends GeocodeStorageWriteService {
+  def getByName(name: String): Iterator[GeocodeRecord] = {
     val fids: List[String] = NameIndexDAO.find(MongoDBObject("_id" -> name)).flatMap(_.fids).toList
     val oids: List[ObjectId] = FidIndexDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> fids))).map(_.oid).toList
     MongoGeocodeDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> oids.toList)))

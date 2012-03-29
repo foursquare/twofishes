@@ -106,31 +106,31 @@ class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
   }
 }
 
-object GeocodeThriftServer extends Application {
-  class GeocodeServer extends Geocoder.Iface {
-    val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(1))
+// object GeocodeThriftServer extends Application {
+//   class GeocodeServer extends Geocoder.Iface {
+//     val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(1))
 
-    override def geocode(request: GeocodeRequest): GeocodeResponse = {
-      new GeocoderImpl(mongoFuturePool, new MongoGeocodeStorageService()).geocode(request).get
-    }
-  }
+//     override def geocode(request: GeocodeRequest): GeocodeResponse = {
+//       new GeocoderImpl(mongoFuturePool, new MongoGeocodeStorageService()).geocode(request).get
+//     }
+//   }
 
-  override def main(args: Array[String]) {
-    try {
-      val config = new GeocodeServerConfig(args)
+//   override def main(args: Array[String]) {
+//     try {
+//       val config = new GeocodeServerConfig(args)
 
-      val serverTransport = new TServerSocket(config.thriftServerPort)
-      val processor = new Geocoder.Processor(new GeocodeServer())
-      val protFactory = new TBinaryProtocol.Factory(true, true)
-      val server = new TThreadPoolServer(processor, serverTransport, protFactory)
+//       val serverTransport = new TServerSocket(config.thriftServerPort)
+//       val processor = new Geocoder.Processor(new GeocodeServer())
+//       val protFactory = new TBinaryProtocol.Factory(true, true)
+//       val server = new TThreadPoolServer(processor, serverTransport, protFactory)
       
-      println("starting server")
-      server.serve();     
-    } catch { 
-      case x: Exception => x.printStackTrace();
-    }
-  }
-}
+//       println("starting server")
+//       server.serve();     
+//     } catch { 
+//       case x: Exception => x.printStackTrace();
+//     }
+//   }
+// }
 
 object GeocodeFinagleServer {
   def main(args: Array[String]) {

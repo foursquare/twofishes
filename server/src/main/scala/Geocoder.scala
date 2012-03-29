@@ -3,6 +3,7 @@ package com.foursquare.twofish
 
 import com.twitter.util.{Future, FuturePool}
 import scala.collection.JavaConversions._
+import com.foursquare.twofish.Implicits._
 import scala.collection.mutable.HashMap
 import org.bson.types.ObjectId
 
@@ -13,8 +14,8 @@ import org.bson.types.ObjectId
 // make server more configurable
 
 class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends LogHelper {
-  type FullParse = Seq[GeocodeRecord]
-  type Parse = Seq[GeocodeRecord]
+  type FullParse = Seq[GeocodeFeature]
+  type Parse = Seq[GeocodeFeature]
   type ParseSeq = Seq[Parse]
 
   /*
@@ -95,9 +96,13 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
        */
       parse.sorted match {
         case first :: second :: rest => {
-          first.isPostalCode &&
+          first.woeType == YahooWoeType.POSTAL_CODE &&
           isValidParseHelper(second :: rest) &&
-          GeoTools.getDistance(second.lat, second.lng, first.lat, first.lng) < 200000
+          GeoTools.getDistance(
+            second.geometry.center.lat,
+            second.geometry.center.lng,
+            first.geometry.center.lat,
+            first.geometry.center.lng) < 200000
         }
         case  _ => false
       }
@@ -111,7 +116,7 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
       case most_specific :: rest => {
         rest.forall(f => {
           f._id == most_specific._id ||
-          f.ids.exists(id => most_specific.parents.contains(id))
+          f.ids.exists(id => most_specific.scoringFeatures.parents.contains(id))
         })
       }
     }
@@ -122,7 +127,7 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
     def scoreParse(parse: FullParse): Int = {
       parse match {
         case primaryFeature :: rest => {
-          var signal = primaryFeature.population.getOrElse(0)
+          var signal = primaryFeature.scoringFeatures.population
 
           // if we have a repeated feature, downweight this like crazy
           // so st petersburg, st petersburg works, but doesn't break new york, ny
@@ -141,10 +146,11 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
 
           Option(llHint).foreach(ll => {
             signal -= GeoTools.getDistance(ll.lat, ll.lng,
-                primaryFeature.lat, primaryFeature.lng)
+                primaryFeature.geometry.center.lat,
+                primaryFeature.geometry.center.lng)
           })
 
-          signal += primaryFeature.boost.getOrElse(0)
+          signal += primaryFeature.scoringFeatures.boost
 
           // as a terrible tie break, things in the US > elsewhere
           // meant primarily for zipcodes
@@ -164,8 +170,8 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
   }
 
   def hydrateParses(parses: Seq[Parse]): Seq[FullParse] = {
-    val oids: Seq[ObjectId] = parses.flatMap(_.map(_._id))
-    val geocodeRecordMap = store.getByObjectIds(oids).map(g => {
+    val ids: Seq[String] = parses.flatMap(_.map(_._id))
+    val geocodeRecordMap = store.getByIds(ids).map(g => {
       (g._id -> g)
     }).toMap
     parses.map(parse => {
@@ -196,7 +202,7 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
           // TODO: make this configurable
           val sortedParses = hydratedParses.sorted(new ParseOrdering(req.ll, req.cc)).take(3)
 
-          val parentIds = sortedParses.flatMap(_.headOption.toList.flatMap(_.parents))
+          val parentIds = sortedParses.flatMap(_.headOption.toList.flatMap(_.scoringFeatures.parents))
           logger.ifTrace("parent ids: " + parentIds)
           val parents = store.getByIds(parentIds).toList
           logger.ifTrace(parents.toList.toString)
@@ -210,12 +216,14 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
           val where = tokens.drop(tokens.size - longest).mkString(" ")
           logger.ifTrace("%d sorted parses".format(sortedParses.size))
 
+          // need to fix names here
           pool(
             new GeocodeResponse(sortedParses.map(p => {
-              val interp = new GeocodeInterpretation(what, where, p(0).toGeocodeFeature(parentMap, req.full, Option(req.lang)))
+              p(0).setScoringFeatures(null)
+              val interp = new GeocodeInterpretation(what, where, p(0))
               if (req.full) {
                 interp.setParents(sortedParents.map(parentFeature => {
-                  parentFeature.toGeocodeFeature(parentMap, req.full, Option(req.lang))
+                  parentFeature
                 }))
               }
               interp

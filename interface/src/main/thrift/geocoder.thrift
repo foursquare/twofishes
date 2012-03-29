@@ -66,6 +66,12 @@ struct FeatureGeometry {
   2: optional GeocodeBoundingBox bounds
 }
 
+struct ScoringFeatures {
+  1: optional i32 population = 0,
+  2: optional i32 boost = 0,
+  3: optional list<string> parents = []
+}
+
 struct GeocodeFeature {
   1: string cc,
   2: FeatureGeometry geometry,
@@ -74,7 +80,8 @@ struct GeocodeFeature {
   5: optional YahooWoeType woeType,
   6: optional list<FeatureId> ids,
   7: optional list<FeatureName> names,
-  8: optional list<string> attribution
+  8: optional list<string> attribution,
+  9: optional ScoringFeatures scoringFeatures
 }
 
 struct GeocodeInterpretation {
