@@ -82,7 +82,6 @@ object GeocoderBuild extends Build {
           "com.twitter" % "util-logging_2.9.1" % "1.12.8",
           "org.slf4j" % "slf4j-api" % "1.6.1",
           "com.novus" % "salat-core_2.9.1" % "0.0.8-SNAPSHOT",
-          "org.apache.hbase" % "hbase" % "0.92.0-cdh4b1",
           "org.apache.hadoop" % "hadoop-core" % "0.20.2-cdh3u3b"
         ),
         ivyXML := (

@@ -8,10 +8,9 @@ import scala.collection.mutable.HashMap
 import org.bson.types.ObjectId
 
 // TODO
-// oh, hi, um, make me actually event driven. great.
-// import timezone server
-// break out uses of MongoStorageService
-// make server more configurable
+// if this works
+// --fix dupes
+// --fix parents
 
 class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends LogHelper {
   type FullParse = Seq[GeocodeFeature]
@@ -204,13 +203,12 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
 
           val parentIds = sortedParses.flatMap(_.headOption.toList.flatMap(_.scoringFeatures.parents))
           logger.ifTrace("parent ids: " + parentIds)
-          val parents = store.getByIds(parentIds).toList
+          val parents = store.getByIds(parentIds).toSet.toList
           logger.ifTrace(parents.toList.toString)
           val parentMap = parentIds.flatMap(pid => {
-            parents.find(_.ids.contains(pid)).map(p => (pid -> p))
+            parents.find(_.ids.exists(fid => 
+              "%s:%s".format(fid.source, fid.id) == pid)).map(p => (pid -> p))
           }).toMap
-
-          val sortedParents = parentIds.flatMap(id => parentMap.get(id)).sorted
 
           val what = tokens.take(tokens.size - longest).mkString(" ")
           val where = tokens.drop(tokens.size - longest).mkString(" ")
@@ -219,9 +217,12 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
           // need to fix names here
           pool(
             new GeocodeResponse(sortedParses.map(p => {
-              p(0).setScoringFeatures(null)
+            //  p(0).setScoringFeatures(null)
               val interp = new GeocodeInterpretation(what, where, p(0))
               if (req.full) {
+                val sortedParents = p(0).scoringFeatures.parents.flatMap(id => parentMap.get(id)).sorted
+                println("full")
+                println(sortedParents)
                 interp.setParents(sortedParents.map(parentFeature => {
                   parentFeature
                 }))
