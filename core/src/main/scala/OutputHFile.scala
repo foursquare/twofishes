@@ -17,6 +17,7 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.io.hfile.CacheConfig
 
 import java.net.URI
+import java.util.Arrays
 
 import org.apache.hadoop.fs.permission.FsPermission
 
@@ -40,10 +41,8 @@ class HFileStorageService extends GeocodeStorageReadService {
   val oidMap = new GeocodeRecordHFileInput
 
   def getByName(name: String): Iterator[GeocodeFeature] = {
-    nameMap.get(name).toList.flatMap(fids => {
-      fids.flatMap(fid => {
-        fidMap.get(fid).flatMap(oid => oidMap.get(oid))
-      })
+    nameMap.get(name).flatMap(oid => {
+      oidMap.get(oid)
     }).iterator
   }
 
@@ -99,12 +98,15 @@ abstract class HFileInput(hfile: String) {
 }
 
 class NameIndexHFileInput extends HFileInput("/export/hdc3/appdata/geonames-hfile/name_index.hfile") {
-  def get(name: String): Option[Vector[String]] = {
+  def get(name: String): List[ObjectId] = {
     val buf = ByteBuffer.wrap(name.getBytes())
-    lookup(buf).map(b => {
+    lookup(buf).toList.flatMap(b => {
       val bytes = new Array[Byte](b.capacity())
       b.get(bytes, 0, bytes.length);
-      Vector() ++ (new String(bytes)).split(",")
+
+      0.until(bytes.length / 12).map(i => {
+        new ObjectId(Arrays.copyOfRange(bytes, i * 12, (i + 1) * 12))
+      })
     })
   }
 }
