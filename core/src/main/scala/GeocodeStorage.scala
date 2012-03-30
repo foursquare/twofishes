@@ -8,6 +8,8 @@ import com.novus.salat.dao._
 import com.mongodb.casbah.Imports._
 import com.mongodb.casbah.MongoConnection
 import scala.collection.JavaConversions._
+import com.twitter.util.{Future, FuturePool}
+
 
 case class WrappedGeocodeFeature(f: GeocodeFeature) {
   def _id: String = "%s:%s".format(f.ids(0).source, f.ids(0).id)
@@ -156,6 +158,16 @@ case class GeocodeRecord(
 
   def isCountry = woeType == YahooWoeType.COUNTRY
   def isPostalCode = woeType == YahooWoeType.POSTAL_CODE
+}
+
+class GeocodeStorageFutureReadService(underlying: GeocodeStorageReadService, future: FuturePool) {
+  def getByName(name: String): Future[Iterator[GeocodeFeature]] = future {
+    underlying.getByName(name)
+  }
+
+  def getByObjectIds(ids: Seq[ObjectId]): Future[Map[ObjectId, GeocodeFeature]] = future {
+    underlying.getByObjectIds(ids)
+  }
 }
 
 trait GeocodeStorageReadService {

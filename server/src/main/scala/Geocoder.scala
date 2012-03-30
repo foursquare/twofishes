@@ -6,16 +6,20 @@ import scala.collection.JavaConversions._
 import com.foursquare.twofish.Implicits._
 import scala.collection.mutable.HashMap
 import org.bson.types.ObjectId
+import java.util.concurrent.ConcurrentHashMap
 
 // TODO
 // if this works
 // --fix dupes
 // --fix parents
 
-class GeocoderImpl(store: GeocodeStorageReadService) extends LogHelper {
+class GeocoderImpl(pool: FuturePool, _store: GeocodeStorageReadService) extends LogHelper {
+  val store = new GeocodeStorageFutureReadService(_store, pool)
   type FullParse = Seq[GeocodeFeature]
   type Parse = Seq[GeocodeFeature]
   type ParseSeq = Seq[Parse]
+  type ParseList = List[Parse]
+  type ParseCache = ConcurrentHashMap[Int, Future[ParseList]]
 
   /*
     The basic algorithm works like this
@@ -38,44 +42,63 @@ class GeocoderImpl(store: GeocodeStorageReadService) extends LogHelper {
       non-geocoded tokens) in the final interpretation.
    */
 
-  def generateParses(tokens: List[String]): HashMap[Int, ParseSeq] = {
-    val cache = new HashMap[Int, ParseSeq]()
+  def generateParses(tokens: List[String]): ParseCache = {
+    val cache = new ParseCache
     generateParsesHelper(tokens, cache)
     cache
   }
 
-  def generateParsesHelper(tokens: List[String], cache: HashMap[Int, ParseSeq]): ParseSeq = {
+  def generateParsesHelper(tokens: List[String], cache: ParseCache): Future[ParseList] = {
     val cacheKey = tokens.size
     if (tokens.size == 0) {
-      List(Nil)
+      Future.value(List(Nil))
     } else {
       if (!cache.contains(cacheKey)) {
-        val validParses = 
-          (for (i <- 1.to(tokens.size)) yield {
-            val searchStr = tokens.take(i).mkString(" ")
-            logger.ifTrace("trying: %d to %d: %s".format(0, i, searchStr))
-            val features = store.getByName(searchStr)
-            //logger.ifTrace("have %d matches".format(features.size))
+        val searchStrs: List[String] =
+          1.to(tokens.size).map(i => tokens.take(i).mkString(" ")).toList
 
-            val subParses = generateParsesHelper(tokens.drop(i), cache)
+        val featuresFs: List[Future[Seq[GeocodeFeature]]] =
+          for ((searchStr, i) <- searchStrs.zipWithIndex) yield {
+            val result: Future[List[GeocodeFeature]] = store.getByName(searchStr).map(_.toList)
+            result
+          }
 
-            features.flatMap(f => {
-              logger.ifTrace("looking at %s".format(f))
-              subParses.flatMap(p => {
-                logger.ifTrace("sub_parse: %s".format(p))
-                val parse = List(f) ++ p
-                if (isValidParse(parse)) {
-                  logger.ifTrace("VALID -- adding to %d".format(cacheKey))
-                  Some(parse.sorted)
-                } else {
-                  logger.ifTrace("INVALID")
-                  None
-                }
-              })
-            })
-          }).flatMap(a=>a)
-        logger.ifTrace("setting %d to %s".format(cacheKey, validParses))
-        cache(cacheKey) = validParses
+         // Compute subparses in parallel (scatter)
+         val subParsesFs: List[Future[ParseList]] =
+           1.to(tokens.size).map(i => generateParsesHelper(tokens.drop(i), cache)).toList
+
+         // Collect the results of all the features and subparses (gather)
+         val featureListsF: Future[Seq[Seq[GeocodeFeature]]] = Future.collect(featuresFs)
+         val subparseListsF: Future[Seq[ParseList]] = Future.collect(subParsesFs)
+
+         val validParsesF: Future[ParseList] =
+          for((featureLists, subparseLists) <- featureListsF.join(subparseListsF)) yield {
+            val validParses: Seq[List[GeocodeFeature]] = (
+              featureLists.zip(subparseLists).flatMap({case(features: Seq[GeocodeFeature], subparses: Seq[Parse]) => {
+                (for {
+                  f <- features.toList
+                  val _ = logger.ifTrace("looking at %s".format(f))
+                  p <- subparses
+                  val _ = logger.ifTrace("sub_parse: %s".format(p))
+                } yield {
+                  val parse: List[GeocodeFeature] = f :: p.toList
+                  if (isValidParse(parse)) {
+                    logger.ifTrace("VALID -- adding to %d".format(cacheKey))
+                    Some(parse.sorted)
+                  } else {
+                    logger.ifTrace("INVALID")
+                    None
+                  }
+                }).flatten
+              }})
+            )
+            validParses.toList
+          }
+
+        validParsesF.onSuccess(validParses => {
+          logger.ifTrace("setting %d to %s".format(cacheKey, validParses))
+        })
+        cache(cacheKey) = validParsesF
       }
       cache(cacheKey)
     }
@@ -168,15 +191,16 @@ class GeocoderImpl(store: GeocodeStorageReadService) extends LogHelper {
     }
   }
 
-  def hydrateParses(parses: Seq[Parse]): Seq[FullParse] = {
+  def hydrateParses(parses: Seq[Parse]): Future[Seq[FullParse]] = {
     val ids: Seq[String] = parses.flatMap(_.map(_.id))
     val oids = ids.map(i => new ObjectId(i))
-    val geocodeRecordMap = store.getByObjectIds(oids)
-    parses.map(parse => {
-      parse.flatMap(featurelet => {
-        geocodeRecordMap.get(new ObjectId(featurelet.id))
+    store.getByObjectIds(oids).map(geocodeRecordMap =>
+      parses.map(parse => {
+        parse.flatMap(featurelet => {
+          geocodeRecordMap.get(new ObjectId(featurelet.id))
+        })
       })
-    })
+    )
   }
 
   def geocode(req: GeocodeRequest): Future[GeocodeResponse] = {
@@ -188,46 +212,51 @@ class GeocoderImpl(store: GeocodeStorageReadService) extends LogHelper {
     logger.ifTrace("--> %s".format(tokens.mkString("_|_")))
 
     /// CONNECTOR PARSING GOES HERE
-
     val cache = generateParses(tokens)
-    val parseSizes = cache.keys.filter(k => cache(k).nonEmpty)
+    val futureCache: Iterable[Future[(Int, ParseList)]] = cache.map({case (k, v) => {
+      Future.value(k).join(v)
+    }})
 
-    if (parseSizes.size > 0) {
-      val longest = parseSizes.max
-      val longestParses = cache(longest)
+    Future.collect(futureCache.toList).flatMap(cache => {
+      val validParseCaches: Iterable[(Int, ParseList)] = cache.filter(_._2.nonEmpty)
 
-      val hydratedParses = hydrateParses(longestParses)
-      // TODO: make this configurable
-      val sortedParses = hydratedParses.sorted(new ParseOrdering(req.ll, req.cc)).take(3)
+      if (validParseCaches.size > 0) {
+        val longest = validParseCaches.map(_._1).max
+        val longestParses = validParseCaches.find(_._1 == longest).get._2
 
-      val parentIds = sortedParses.flatMap(_.headOption.toList.flatMap(_.scoringFeatures.parents))
-      val parentOids = parentIds.map(i => new ObjectId(i))
-      logger.ifTrace("parent ids: " + parentOids)
-      val parentMap = store.getByObjectIds(parentOids)
-      logger.ifTrace(parentMap.toString)
+        hydrateParses(longestParses).flatMap(hydratedParses => {
+          // TODO: make this configurable
+          val sortedParses = hydratedParses.sorted(new ParseOrdering(req.ll, req.cc)).take(3)
 
-      val what = tokens.take(tokens.size - longest).mkString(" ")
-      val where = tokens.drop(tokens.size - longest).mkString(" ")
-      logger.ifTrace("%d sorted parses".format(sortedParses.size))
+          val parentIds = sortedParses.flatMap(_.headOption.toList.flatMap(_.scoringFeatures.parents))
+          val parentOids = parentIds.map(i => new ObjectId(i))
+          logger.ifTrace("parent ids: " + parentOids)
+          store.getByObjectIds(parentOids).map(parentMap => {
+            logger.ifTrace(parentMap.toString)
 
-      // need to fix names here
-      Future.value(
-        new GeocodeResponse(sortedParses.map(p => {
-        //  p(0).setScoringFeatures(null)
-          val interp = new GeocodeInterpretation(what, where, p(0))
-          if (req.full) {
-            val sortedParents = p(0).scoringFeatures.parents.flatMap(id => parentMap.get(new ObjectId(id))).sorted
-            println("full")
-            println(sortedParents)
-            interp.setParents(sortedParents.map(parentFeature => {
-              parentFeature
+            val what = tokens.take(tokens.size - longest).mkString(" ")
+            val where = tokens.drop(tokens.size - longest).mkString(" ")
+            logger.ifTrace("%d sorted parses".format(sortedParses.size))
+
+            // need to fix names here
+            new GeocodeResponse(sortedParses.map(p => {
+            //  p(0).setScoringFeatures(null)
+              val interp = new GeocodeInterpretation(what, where, p(0))
+              if (req.full) {
+                val sortedParents = p(0).scoringFeatures.parents.flatMap(id => parentMap.get(new ObjectId(id))).sorted
+                println("full")
+                println(sortedParents)
+                interp.setParents(sortedParents.map(parentFeature => {
+                  parentFeature
+                }))
+              }
+              interp
             }))
-          }
-          interp
-        }))
-      )
-    } else {
-      Future.value(new GeocodeResponse(Nil))
-    }
+          })
+        })
+      } else {
+        Future.value(new GeocodeResponse(Nil))
+      }
+    })
   }
 }

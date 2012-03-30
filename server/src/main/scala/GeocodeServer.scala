@@ -31,9 +31,10 @@ object Store {
 
 class GeocodeServerImpl extends Geocoder.ServiceIface {
   val store = Store.store
+  val ioFuturePool = FuturePool(Executors.newFixedThreadPool(24))
 
   def geocode(r: GeocodeRequest): Future[GeocodeResponse] = {
-    new GeocoderImpl(store).geocode(r)
+    new GeocoderImpl(ioFuturePool, store).geocode(r)
   }
 }
 
@@ -41,12 +42,12 @@ class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
   val store = Store.store
 
   val diskIoFuturePool = FuturePool(Executors.newFixedThreadPool(8))
- // val ioFuturePool = FuturePool(Executors.newFixedThreadPool(24))
+  val ioFuturePool = FuturePool(Executors.newFixedThreadPool(24))
 
   def handleQuery(request: GeocodeRequest): Future[DefaultHttpResponse] = {
     val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
 
-    new GeocoderImpl(store).geocode(request).map(geocode => {
+    new GeocoderImpl(ioFuturePool, store).geocode(request).map(geocode => {
       val serializer = new TSerializer(new TSimpleJSONProtocol.Factory());
       val json = serializer.toString(geocode);
 
