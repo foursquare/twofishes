@@ -21,26 +21,6 @@ case class DisplayName(
   @Key("p") preferred: Boolean
 )
 
-class DisplayNameOrdering(lang: Option[String], preferAbbrev: Boolean) extends Ordering[DisplayName] {
-  def compare(a: DisplayName, b: DisplayName) = {
-    scoreName(b) - scoreName(a)
-  }
-
-  def scoreName(name: DisplayName): Int = {
-    var score = 0
-    if (name.preferred) {
-      score += 1
-    }
-    if (lang.exists(_ == name.lang)) {
-      score += 2
-    }
-    if (name.lang == "abbr" && preferAbbrev) {
-      score += 4
-    }
-    score
-  }
-}
-
 case class StoredFeatureId(
   @Key("n") namespace: String,
   id: String) {
@@ -79,22 +59,8 @@ case class GeocodeRecord(
     YahooWoeTypes.getOrdering(this.woeType) - YahooWoeTypes.getOrdering(that.woeType)
   }
 
-  def bestName(lang: Option[String], preferAbbrev: Boolean): Option[DisplayName] = {
-    displayNames.sorted(new DisplayNameOrdering(lang, preferAbbrev)).headOption
-  }
-
-  def toGeocodeFeature(parentMap: Map[String, GeocodeRecord],
-      full: Boolean = false,
-      lang: Option[String] = None): GeocodeFeature = {
-    val myBestName = bestName(lang, false)
-
-    val parentFeatures = parents.flatMap(pid => parentMap.get(pid)).filterNot(_.isCountry).sorted
-
-    val displayName = (List(myBestName) ++ parentFeatures.map(_.bestName(lang, true)))
-      .flatMap(_.map(_.name)).mkString(", ")
-
+  def toGeocodeServingFeature(): GeocodeServingFeature = {
     // geom
-
     val geometry = new FeatureGeometry(
       new GeocodePoint(lat, lng))
 
@@ -109,43 +75,41 @@ case class GeocodeRecord(
       cc, geometry
     )
 
-    feature.setName(myBestName.map(_.name).getOrElse(""))
-    feature.setDisplayName(displayName)
     feature.setWoeType(this.woeType)
-
-    feature.setId(_id.toString)
 
     feature.setIds(featureIds.map(i => {
       new FeatureId(i.namespace, i.id)
     }))
 
-    if (full) {
-      val filteredNames = displayNames.filterNot(n => List("post", "link").contains(n.lang))
+    val filteredNames = displayNames.filterNot(n => List("post", "link").contains(n.lang))
 
-      feature.setNames(filteredNames.map(name => {
-        var flags: List[FeatureNameFlags] = Nil
-        if (name.lang == "abbr") {
-          flags ::= FeatureNameFlags.ABBREVIATION
-        }
-        if (name.preferred) {
-          flags ::= FeatureNameFlags.PREFERRED
-        }
+    feature.setNames(filteredNames.map(name => {
+      var flags: List[FeatureNameFlags] = Nil
+      if (name.lang == "abbr") {
+        flags ::= FeatureNameFlags.ABBREVIATION
+      }
+      if (name.preferred) {
+        flags ::= FeatureNameFlags.PREFERRED
+      }
 
-        val fname = new FeatureName(name.name, name.lang)
-        if (flags.nonEmpty) {
-          fname.setFlags(flags)
-        }
-        fname
-      }))
-    }
+      val fname = new FeatureName(name.name, name.lang)
+      if (flags.nonEmpty) {
+        fname.setFlags(flags)
+      }
+      fname
+    }))
 
     val scoring = new ScoringFeatures()
     boost.foreach(b => scoring.setBoost(b))
     population.foreach(p => scoring.setPopulation(p))
     scoring.setParents(parents)
-    feature.setScoringFeatures(scoring)
+    
+    val servingFeature = new GeocodeServingFeature()
+    servingFeature.setId(_id.toString)
+    servingFeature.setScoringFeatures(scoring)
+    servingFeature.setFeature(feature)
 
-    feature
+    servingFeature
   }
 
   def isCountry = woeType == YahooWoeType.COUNTRY
@@ -153,26 +117,19 @@ case class GeocodeRecord(
 }
 
 class GeocodeStorageFutureReadService(underlying: GeocodeStorageReadService, future: FuturePool) {
-  def getByName(name: String): Future[Iterator[GeocodeFeature]] = future {
+  def getByName(name: String): Future[Iterator[GeocodeServingFeature]] = future {
     underlying.getByName(name)
   }
 
-  def getByObjectIds(ids: Seq[ObjectId]): Future[Map[ObjectId, GeocodeFeature]] = future {
+  def getByObjectIds(ids: Seq[ObjectId]): Future[Map[ObjectId, GeocodeServingFeature]] = future {
     underlying.getByObjectIds(ids)
   }
 }
 
 trait GeocodeStorageReadService {
-  def getByName(name: String): Iterator[GeocodeFeature]
-  def getByObjectIds(ids: Seq[ObjectId]): Map[ObjectId, GeocodeFeature]
+  def getByName(name: String): Iterator[GeocodeServingFeature]
+  def getByObjectIds(ids: Seq[ObjectId]): Map[ObjectId, GeocodeServingFeature]
 }
-
-// fix parse ordering/hydration
-// fix insert
-// fix in-memory
-// build index
-// test
-
 
 case class NameIndex(
   @Key("_id") name: String,
@@ -192,17 +149,8 @@ trait GeocodeStorageWriteService {
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord]
 }
 
-import com.mongodb.MongoOptions
-import com.mongodb.ServerAddress
-
-object MongoOpts {
-  val mo = new MongoOptions()
-  mo.connectionsPerHost = 200000
-  mo.threadsAllowedToBlockForConnectionMultiplier = 100
-}
-
 object MongoGeocodeDAO extends SalatDAO[GeocodeRecord, ObjectId](
-  collection = MongoConnection(new ServerAddress("localhost"), MongoOpts.mo)("geocoder")("features"))
+  collection = MongoConnection()("geocoder")("features"))
 
 object NameIndexDAO extends SalatDAO[NameIndex, String](
   collection = MongoConnection()("geocoder")("name_index"))
@@ -211,22 +159,8 @@ object FidIndexDAO extends SalatDAO[FidIndex, String](
   collection = MongoConnection()("geocoder")("fid_index"))
 
 class MongoGeocodeStorageService extends GeocodeStorageWriteService {
-  def getByName(name: String): Iterator[GeocodeRecord] = {
-    val fids: List[String] = NameIndexDAO.find(MongoDBObject("_id" -> name)).flatMap(_.fids).toList
-    val oids: List[ObjectId] = FidIndexDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> fids))).map(_.oid).toList
-    MongoGeocodeDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> oids.toList)))
-  }
-
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = {
     MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))))
-  }
-
-  def getByObjectIds(ids: Seq[ObjectId]): Iterator[GeocodeRecord] = {
-    MongoGeocodeDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> ids.toList)))
-  }
-
-  def getByIds(ids: Seq[String]): Iterator[GeocodeRecord] = {
-    MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> ids.toList)))
   }
 
   def insert(record: GeocodeRecord) {

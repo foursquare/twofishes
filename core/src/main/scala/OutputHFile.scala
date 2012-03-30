@@ -41,13 +41,13 @@ class HFileStorageService extends GeocodeStorageReadService {
   val nameMap = new NameIndexHFileInput
   val oidMap = new GeocodeRecordHFileInput
 
-  def getByName(name: String): Iterator[GeocodeFeature] = {
+  def getByName(name: String): Iterator[GeocodeServingFeature] = {
     nameMap.get(name).flatMap(oid => {
       oidMap.get(oid)
     }).iterator
   }
 
-  def getByObjectIds(oids: Seq[ObjectId]): Map[ObjectId, GeocodeFeature] = {
+  def getByObjectIds(oids: Seq[ObjectId]): Map[ObjectId, GeocodeServingFeature] = {
     oids.flatMap(oid => oidMap.get(oid).map(r => (oid -> r))).toMap
   }
 }
@@ -118,12 +118,12 @@ class GeocodeRecordHFileInput extends HFileInput("/export/hdc3/appdata/geonames-
   import java.io._
   def deserializeBytes(bytes: Array[Byte]) = {
     val deserializer = new TDeserializer(new TBinaryProtocol.Factory());
-    val feature = new GeocodeFeature();
+    val feature = new GeocodeServingFeature();
     deserializer.deserialize(feature, bytes);
     feature
   }
 
-  def get(oid: ObjectId): Option[GeocodeFeature] = {
+  def get(oid: ObjectId): Option[GeocodeServingFeature] = {
     val buf = ByteBuffer.wrap(oid.toByteArray())
     lookup(buf).map(b => {
       val bytes = new Array[Byte](b.capacity())
@@ -234,7 +234,7 @@ object OutputHFile {
   import java.io._
   def serializeBytes(g: GeocodeRecord) = {
     val serializer = new TSerializer(new TBinaryProtocol.Factory());
-    val f = g.toGeocodeFeature(Map.empty, true, None)
+    val f = g.toGeocodeServingFeature()
     val parentOids = f.scoringFeatures.parents.flatMap(fid => fidMap.get(fid)).map(_.toString)
     f.scoringFeatures.setParents(parentOids)
     serializer.serialize(f)

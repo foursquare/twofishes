@@ -39,8 +39,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
   private static final TField IDS_FIELD_DESC = new TField("ids", TType.LIST, (short)6);
   private static final TField NAMES_FIELD_DESC = new TField("names", TType.LIST, (short)7);
   private static final TField ATTRIBUTION_FIELD_DESC = new TField("attribution", TType.LIST, (short)8);
-  private static final TField SCORING_FEATURES_FIELD_DESC = new TField("scoringFeatures", TType.STRUCT, (short)9);
-  private static final TField ID_FIELD_DESC = new TField("id", TType.STRING, (short)10);
 
   public String cc;
   public FeatureGeometry geometry;
@@ -54,8 +52,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
   public List<FeatureId> ids;
   public List<FeatureName> names;
   public List<String> attribution;
-  public ScoringFeatures scoringFeatures;
-  public String id;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
@@ -70,9 +66,7 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     WOE_TYPE((short)5, "woeType"),
     IDS((short)6, "ids"),
     NAMES((short)7, "names"),
-    ATTRIBUTION((short)8, "attribution"),
-    SCORING_FEATURES((short)9, "scoringFeatures"),
-    ID((short)10, "id");
+    ATTRIBUTION((short)8, "attribution");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -103,10 +97,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
           return NAMES;
         case 8: // ATTRIBUTION
           return ATTRIBUTION;
-        case 9: // SCORING_FEATURES
-          return SCORING_FEATURES;
-        case 10: // ID
-          return ID;
         default:
           return null;
       }
@@ -170,10 +160,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     tmpMap.put(_Fields.ATTRIBUTION, new FieldMetaData("attribution", TFieldRequirementType.OPTIONAL, 
         new ListMetaData(TType.LIST, 
             new FieldValueMetaData(TType.STRING))));
-    tmpMap.put(_Fields.SCORING_FEATURES, new FieldMetaData("scoringFeatures", TFieldRequirementType.OPTIONAL, 
-        new StructMetaData(TType.STRUCT, ScoringFeatures.class)));
-    tmpMap.put(_Fields.ID, new FieldMetaData("id", TFieldRequirementType.OPTIONAL, 
-        new FieldValueMetaData(TType.STRING)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeFeature.class, metaDataMap);
   }
@@ -230,12 +216,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       }
       this.attribution = __this__attribution;
     }
-    if (other.isSetScoringFeatures()) {
-      this.scoringFeatures = new ScoringFeatures(other.scoringFeatures);
-    }
-    if (other.isSetId()) {
-      this.id = other.id;
-    }
   }
 
   public GeocodeFeature deepCopy() {
@@ -252,8 +232,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     this.ids = null;
     this.names = null;
     this.attribution = null;
-    this.scoringFeatures = null;
-    this.id = null;
   }
 
   public String getCc() {
@@ -501,54 +479,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     }
   }
 
-  public ScoringFeatures getScoringFeatures() {
-    return this.scoringFeatures;
-  }
-
-  public GeocodeFeature setScoringFeatures(ScoringFeatures scoringFeatures) {
-    this.scoringFeatures = scoringFeatures;
-    return this;
-  }
-
-  public void unsetScoringFeatures() {
-    this.scoringFeatures = null;
-  }
-
-  /** Returns true if field scoringFeatures is set (has been asigned a value) and false otherwise */
-  public boolean isSetScoringFeatures() {
-    return this.scoringFeatures != null;
-  }
-
-  public void setScoringFeaturesIsSet(boolean value) {
-    if (!value) {
-      this.scoringFeatures = null;
-    }
-  }
-
-  public String getId() {
-    return this.id;
-  }
-
-  public GeocodeFeature setId(String id) {
-    this.id = id;
-    return this;
-  }
-
-  public void unsetId() {
-    this.id = null;
-  }
-
-  /** Returns true if field id is set (has been asigned a value) and false otherwise */
-  public boolean isSetId() {
-    return this.id != null;
-  }
-
-  public void setIdIsSet(boolean value) {
-    if (!value) {
-      this.id = null;
-    }
-  }
-
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case CC:
@@ -615,22 +545,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       }
       break;
 
-    case SCORING_FEATURES:
-      if (value == null) {
-        unsetScoringFeatures();
-      } else {
-        setScoringFeatures((ScoringFeatures)value);
-      }
-      break;
-
-    case ID:
-      if (value == null) {
-        unsetId();
-      } else {
-        setId((String)value);
-      }
-      break;
-
     }
   }
 
@@ -660,12 +574,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     case ATTRIBUTION:
       return getAttribution();
 
-    case SCORING_FEATURES:
-      return getScoringFeatures();
-
-    case ID:
-      return getId();
-
     }
     throw new IllegalStateException();
   }
@@ -693,10 +601,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       return isSetNames();
     case ATTRIBUTION:
       return isSetAttribution();
-    case SCORING_FEATURES:
-      return isSetScoringFeatures();
-    case ID:
-      return isSetId();
     }
     throw new IllegalStateException();
   }
@@ -783,24 +687,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       if (!(this_present_attribution && that_present_attribution))
         return false;
       if (!this.attribution.equals(that.attribution))
-        return false;
-    }
-
-    boolean this_present_scoringFeatures = true && this.isSetScoringFeatures();
-    boolean that_present_scoringFeatures = true && that.isSetScoringFeatures();
-    if (this_present_scoringFeatures || that_present_scoringFeatures) {
-      if (!(this_present_scoringFeatures && that_present_scoringFeatures))
-        return false;
-      if (!this.scoringFeatures.equals(that.scoringFeatures))
-        return false;
-    }
-
-    boolean this_present_id = true && this.isSetId();
-    boolean that_present_id = true && that.isSetId();
-    if (this_present_id || that_present_id) {
-      if (!(this_present_id && that_present_id))
-        return false;
-      if (!this.id.equals(that.id))
         return false;
     }
 
@@ -896,26 +782,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     }
     if (isSetAttribution()) {
       lastComparison = TBaseHelper.compareTo(this.attribution, typedOther.attribution);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
-    lastComparison = Boolean.valueOf(isSetScoringFeatures()).compareTo(typedOther.isSetScoringFeatures());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetScoringFeatures()) {
-      lastComparison = TBaseHelper.compareTo(this.scoringFeatures, typedOther.scoringFeatures);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
-    lastComparison = Boolean.valueOf(isSetId()).compareTo(typedOther.isSetId());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetId()) {
-      lastComparison = TBaseHelper.compareTo(this.id, typedOther.id);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -1026,21 +892,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
-        case 9: // SCORING_FEATURES
-          if (field.type == TType.STRUCT) {
-            this.scoringFeatures = new ScoringFeatures();
-            this.scoringFeatures.read(iprot);
-          } else { 
-            TProtocolUtil.skip(iprot, field.type);
-          }
-          break;
-        case 10: // ID
-          if (field.type == TType.STRING) {
-            this.id = iprot.readString();
-          } else { 
-            TProtocolUtil.skip(iprot, field.type);
-          }
-          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -1129,20 +980,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         oprot.writeFieldEnd();
       }
     }
-    if (this.scoringFeatures != null) {
-      if (isSetScoringFeatures()) {
-        oprot.writeFieldBegin(SCORING_FEATURES_FIELD_DESC);
-        this.scoringFeatures.write(oprot);
-        oprot.writeFieldEnd();
-      }
-    }
-    if (this.id != null) {
-      if (isSetId()) {
-        oprot.writeFieldBegin(ID_FIELD_DESC);
-        oprot.writeString(this.id);
-        oprot.writeFieldEnd();
-      }
-    }
     oprot.writeFieldStop();
     oprot.writeStructEnd();
   }
@@ -1224,26 +1061,6 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         sb.append("null");
       } else {
         sb.append(this.attribution);
-      }
-      first = false;
-    }
-    if (isSetScoringFeatures()) {
-      if (!first) sb.append(", ");
-      sb.append("scoringFeatures:");
-      if (this.scoringFeatures == null) {
-        sb.append("null");
-      } else {
-        sb.append(this.scoringFeatures);
-      }
-      first = false;
-    }
-    if (isSetId()) {
-      if (!first) sb.append(", ");
-      sb.append("id:");
-      if (this.id == null) {
-        sb.append("null");
-      } else {
-        sb.append(this.id);
       }
       first = false;
     }
