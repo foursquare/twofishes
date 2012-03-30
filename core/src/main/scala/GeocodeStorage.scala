@@ -10,17 +10,9 @@ import com.mongodb.casbah.MongoConnection
 import scala.collection.JavaConversions._
 import com.twitter.util.{Future, FuturePool}
 
-
-case class WrappedGeocodeFeature(f: GeocodeFeature) {
-  def _id: String = "%s:%s".format(f.ids(0).source, f.ids(0).id)
-}
-
 object Implicits {
   implicit def fidToString(fid: StoredFeatureId): String = fid.toString
   implicit def fidListToString(fids: List[StoredFeatureId]): List[String] = fids.map(_.toString)
-  implicit def wrapGeocodeFeature(f: GeocodeFeature): WrappedGeocodeFeature = {
-    WrappedGeocodeFeature(f)
-  }
 }
 
 case class DisplayName(

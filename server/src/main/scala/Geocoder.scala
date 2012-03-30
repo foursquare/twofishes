@@ -17,7 +17,6 @@ class GeocoderImpl(pool: FuturePool, _store: GeocodeStorageReadService) extends 
   val store = new GeocodeStorageFutureReadService(_store, pool)
   type FullParse = Seq[GeocodeFeature]
   type Parse = Seq[GeocodeFeature]
-  type ParseSeq = Seq[Parse]
   type ParseList = List[Parse]
   type ParseCache = ConcurrentHashMap[Int, Future[ParseList]]
 
@@ -137,8 +136,8 @@ class GeocoderImpl(pool: FuturePool, _store: GeocodeStorageReadService) extends 
       case f :: Nil => true
       case most_specific :: rest => {
         rest.forall(f => {
-          f._id == most_specific._id ||
-          f.ids.exists(id => most_specific.scoringFeatures.parents.contains(id))
+          f.id == most_specific.id ||
+          most_specific.scoringFeatures.parents.contains(f.id)
         })
       }
     }
