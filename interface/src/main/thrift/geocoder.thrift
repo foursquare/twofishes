@@ -81,7 +81,8 @@ struct GeocodeFeature {
   6: optional list<FeatureId> ids,
   7: optional list<FeatureName> names,
   8: optional list<string> attribution,
-  9: optional ScoringFeatures scoringFeatures
+  9: optional ScoringFeatures scoringFeatures,
+  10: optional string id
 }
 
 struct GeocodeInterpretation {

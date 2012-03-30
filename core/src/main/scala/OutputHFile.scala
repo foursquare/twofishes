@@ -13,6 +13,8 @@ import com.novus.salat.dao._
 import com.mongodb.casbah.Imports._
 import com.mongodb.casbah.MongoConnection
 
+import scala.collection.JavaConversions._
+
 import org.apache.hadoop.conf.Configuration 
 import org.apache.hadoop.hbase.io.hfile.CacheConfig
 
@@ -46,8 +48,8 @@ class HFileStorageService extends GeocodeStorageReadService {
     }).iterator
   }
 
-  def getByObjectIds(oids: Seq[ObjectId]): Iterator[GeocodeFeature] = {
-    oids.flatMap(oid => oidMap.get(oid)).iterator
+  def getByObjectIds(oids: Seq[ObjectId]): Map[ObjectId, GeocodeFeature] = {
+    oids.flatMap(oid => oidMap.get(oid).map(r => (oid -> r))).toMap
   }
   def getByIds(fids: Seq[String]): Iterator[GeocodeFeature] = {
     fids.flatMap(fid => {
@@ -59,7 +61,6 @@ class HFileStorageService extends GeocodeStorageReadService {
     getByIds(List(id.toString))
   }
 }
-
 
 abstract class HFileInput(hfile: String) {
   val conf = new Configuration()
@@ -242,7 +243,10 @@ object OutputHFile {
   import java.io._
   def serializeBytes(g: GeocodeRecord) = {
     val serializer = new TSerializer(new TBinaryProtocol.Factory());
-    serializer.serialize(g.toGeocodeFeature(Map.empty, true, None))
+    val f = g.toGeocodeFeature(Map.empty, true, None)
+    val parentOids = f.scoringFeatures.parents.flatMap(fid => fidMap.get(fid)).map(_.toString)
+    f.scoringFeatures.setParents(parentOids)
+    serializer.serialize(f)
   }
 
   val fidMap = new HashMap[String, ObjectId]

@@ -170,13 +170,12 @@ class GeocoderImpl(_store: () => GeocodeStorageReadService) extends LogHelper {
   }
 
   def hydrateParses(parses: Seq[Parse]): Seq[FullParse] = {
-    val ids: Seq[String] = parses.flatMap(_.map(_._id))
-    val geocodeRecordMap = store.getByIds(ids).map(g => {
-      (g._id -> g)
-    }).toMap
+    val ids: Seq[String] = parses.flatMap(_.map(_.id))
+    val oids = ids.map(i => new ObjectId(i))
+    val geocodeRecordMap = store.getByObjectIds(oids)
     parses.map(parse => {
       parse.flatMap(featurelet => {
-        geocodeRecordMap.get(featurelet._id)
+        geocodeRecordMap.get(new ObjectId(featurelet.id))
       })
     })
   }
@@ -203,13 +202,10 @@ class GeocoderImpl(_store: () => GeocodeStorageReadService) extends LogHelper {
       val sortedParses = hydratedParses.sorted(new ParseOrdering(req.ll, req.cc)).take(3)
 
       val parentIds = sortedParses.flatMap(_.headOption.toList.flatMap(_.scoringFeatures.parents))
-      logger.ifTrace("parent ids: " + parentIds)
-      val parents = store.getByIds(parentIds).toSet.toList
-      logger.ifTrace(parents.toList.toString)
-      val parentMap = parentIds.flatMap(pid => {
-        parents.find(_.ids.exists(fid => 
-          "%s:%s".format(fid.source, fid.id) == pid)).map(p => (pid -> p))
-      }).toMap
+      val parentOids = parentIds.map(i => new ObjectId(i))
+      logger.ifTrace("parent ids: " + parentOids)
+      val parentMap = store.getByObjectIds(parentOids)
+      logger.ifTrace(parentMap.toString)
 
       val what = tokens.take(tokens.size - longest).mkString(" ")
       val where = tokens.drop(tokens.size - longest).mkString(" ")
@@ -221,7 +217,7 @@ class GeocoderImpl(_store: () => GeocodeStorageReadService) extends LogHelper {
         //  p(0).setScoringFeatures(null)
           val interp = new GeocodeInterpretation(what, where, p(0))
           if (req.full) {
-            val sortedParents = p(0).scoringFeatures.parents.flatMap(id => parentMap.get(id)).sorted
+            val sortedParents = p(0).scoringFeatures.parents.flatMap(id => parentMap.get(new ObjectId(id))).sorted
             println("full")
             println(sortedParents)
             interp.setParents(sortedParents.map(parentFeature => {

@@ -119,6 +119,8 @@ case class GeocodeRecord(
     feature.setDisplayName(displayName)
     feature.setWoeType(this.woeType)
 
+    feature.setId(_id.toString)
+
     feature.setIds(featureIds.map(i => {
       new FeatureId(i.namespace, i.id)
     }))
@@ -159,8 +161,8 @@ case class GeocodeRecord(
 class WrappedGeocodeStorageReadService(store: GeocodeStorageReadService) {
   def getByName(name: String): Iterator[WrappedGeocodeFeature] =
     store.getByName(name).map(f => WrappedGeocodeFeature(f))
-  def getByObjectIds(ids: Seq[ObjectId]): Iterator[WrappedGeocodeFeature] =
-    store.getByObjectIds(ids).map(f => WrappedGeocodeFeature(f))
+  def getByObjectIds(ids: Seq[ObjectId]): Map[ObjectId, WrappedGeocodeFeature] =
+    store.getByObjectIds(ids).mapValues(f => WrappedGeocodeFeature(f))
   def getByIds(ids: Seq[String]): Iterator[WrappedGeocodeFeature] =
     store.getByIds(ids).map(f => WrappedGeocodeFeature(f))
   def getById(id: StoredFeatureId): Iterator[WrappedGeocodeFeature] =
@@ -169,7 +171,7 @@ class WrappedGeocodeStorageReadService(store: GeocodeStorageReadService) {
 
 trait GeocodeStorageReadService {
   def getByName(name: String): Iterator[GeocodeFeature]
-  def getByObjectIds(ids: Seq[ObjectId]): Iterator[GeocodeFeature]
+  def getByObjectIds(ids: Seq[ObjectId]): Map[ObjectId, GeocodeFeature]
   def getByIds(ids: Seq[String]): Iterator[GeocodeFeature]
   def getById(id: StoredFeatureId): Iterator[GeocodeFeature]
 }
