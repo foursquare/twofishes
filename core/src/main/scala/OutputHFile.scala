@@ -21,6 +21,7 @@ import java.net.URI
 import org.apache.hadoop.fs.permission.FsPermission
 
 import java.nio.ByteBuffer
+import java.io._
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{LocalFileSystem, Path}
 import org.apache.hadoop.hbase.io.hfile.{CacheConfig, HFile, HFileScanner}
@@ -223,7 +224,14 @@ object OutputHFile {
     println("sorted")
 
     sortedMap.map(n => {
-      writer.append(n, nameMap(n).mkString(",").getBytes())
+      val fids = nameMap(n)
+      val oids = fids.flatMap(fid => fidMap.get(fid)).toSet
+      val os = new ByteArrayOutputStream(12 * oids.size)
+      oids.foreach(oid =>
+        os.write(oid.toByteArray)
+      )
+
+      writer.append(n, os.toByteArray())
     })
     writer.close()
     println("done")
@@ -235,10 +243,23 @@ object OutputHFile {
     serializer.serialize(g.toGeocodeFeature(Map.empty, true, None))
   }
 
+  val fidMap = new HashMap[String, ObjectId]
+
   def main(args: Array[String]) {
     writeCollection("/export/hdc3/appdata/geonames-hfile/fid_index.hfile",
       (f: FidIndex) => (f.fid.getBytes(), f.oid.toByteArray()),
       FidIndexDAO, "_id")
+
+    var fidCount = 0
+    val fidSize = FidIndexDAO.collection.count
+    val fidCursor = FidIndexDAO.find(MongoDBObject())
+    fidCursor.foreach(f => {
+      fidMap(f.fid) = f.oid
+      fidCount += 1
+      if (fidCount % 50000 == 0) {
+        println("processed %d of %d fids in memory".format(fidCount, fidSize))
+      }
+    })
 
     writeNames()
 
