@@ -39,7 +39,6 @@ import org.apache.thrift.transport.TIOStreamTransport
 
 class HFileStorageService extends GeocodeStorageReadService {
   val nameMap = new NameIndexHFileInput
-  val fidMap = new FidIndexHFileInput
   val oidMap = new GeocodeRecordHFileInput
 
   def getByName(name: String): Iterator[GeocodeFeature] = {
@@ -50,15 +49,6 @@ class HFileStorageService extends GeocodeStorageReadService {
 
   def getByObjectIds(oids: Seq[ObjectId]): Map[ObjectId, GeocodeFeature] = {
     oids.flatMap(oid => oidMap.get(oid).map(r => (oid -> r))).toMap
-  }
-  def getByIds(fids: Seq[String]): Iterator[GeocodeFeature] = {
-    fids.flatMap(fid => {
-      fidMap.get(fid).flatMap(oid => oidMap.get(oid))
-    }).iterator
-  }
-
-  def getById(id: StoredFeatureId): Iterator[GeocodeFeature] = {
-    getByIds(List(id.toString))
   }
 }
 

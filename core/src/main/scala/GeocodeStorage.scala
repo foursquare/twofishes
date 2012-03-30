@@ -158,22 +158,9 @@ case class GeocodeRecord(
   def isPostalCode = woeType == YahooWoeType.POSTAL_CODE
 }
 
-class WrappedGeocodeStorageReadService(store: GeocodeStorageReadService) {
-  def getByName(name: String): Iterator[WrappedGeocodeFeature] =
-    store.getByName(name).map(f => WrappedGeocodeFeature(f))
-  def getByObjectIds(ids: Seq[ObjectId]): Map[ObjectId, WrappedGeocodeFeature] =
-    store.getByObjectIds(ids).mapValues(f => WrappedGeocodeFeature(f))
-  def getByIds(ids: Seq[String]): Iterator[WrappedGeocodeFeature] =
-    store.getByIds(ids).map(f => WrappedGeocodeFeature(f))
-  def getById(id: StoredFeatureId): Iterator[WrappedGeocodeFeature] =
-    store.getById(id).map(f => WrappedGeocodeFeature(f))
-}
-
 trait GeocodeStorageReadService {
   def getByName(name: String): Iterator[GeocodeFeature]
   def getByObjectIds(ids: Seq[ObjectId]): Map[ObjectId, GeocodeFeature]
-  def getByIds(ids: Seq[String]): Iterator[GeocodeFeature]
-  def getById(id: StoredFeatureId): Iterator[GeocodeFeature]
 }
 
 // fix parse ordering/hydration
