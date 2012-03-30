@@ -12,7 +12,8 @@ import org.bson.types.ObjectId
 // --fix dupes
 // --fix parents
 
-class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends LogHelper {
+class GeocoderImpl(_store: () => GeocodeStorageReadService) extends LogHelper {
+  val store: GeocodeStorageReadService = _store()
   type FullParse = Seq[GeocodeFeature]
   type Parse = Seq[GeocodeFeature]
   type ParseSeq = Seq[Parse]
@@ -190,50 +191,48 @@ class GeocoderImpl(pool: FuturePool, store: GeocodeStorageReadService) extends L
 
     /// CONNECTOR PARSING GOES HERE
 
-    pool(generateParses(tokens)).flatMap( cache => {
-      val parseSizes = cache.keys.filter(k => cache(k).nonEmpty)
+    val cache = generateParses(tokens)
+    val parseSizes = cache.keys.filter(k => cache(k).nonEmpty)
 
-      if (parseSizes.size > 0) {
-        val longest = parseSizes.max
-        val longestParses = cache(longest)
+    if (parseSizes.size > 0) {
+      val longest = parseSizes.max
+      val longestParses = cache(longest)
 
-        pool(hydrateParses(longestParses)).flatMap(hydratedParses => {
-          // TODO: make this configurable
-          val sortedParses = hydratedParses.sorted(new ParseOrdering(req.ll, req.cc)).take(3)
+      val hydratedParses = hydrateParses(longestParses)
+      // TODO: make this configurable
+      val sortedParses = hydratedParses.sorted(new ParseOrdering(req.ll, req.cc)).take(3)
 
-          val parentIds = sortedParses.flatMap(_.headOption.toList.flatMap(_.scoringFeatures.parents))
-          logger.ifTrace("parent ids: " + parentIds)
-          val parents = store.getByIds(parentIds).toSet.toList
-          logger.ifTrace(parents.toList.toString)
-          val parentMap = parentIds.flatMap(pid => {
-            parents.find(_.ids.exists(fid => 
-              "%s:%s".format(fid.source, fid.id) == pid)).map(p => (pid -> p))
-          }).toMap
+      val parentIds = sortedParses.flatMap(_.headOption.toList.flatMap(_.scoringFeatures.parents))
+      logger.ifTrace("parent ids: " + parentIds)
+      val parents = store.getByIds(parentIds).toSet.toList
+      logger.ifTrace(parents.toList.toString)
+      val parentMap = parentIds.flatMap(pid => {
+        parents.find(_.ids.exists(fid => 
+          "%s:%s".format(fid.source, fid.id) == pid)).map(p => (pid -> p))
+      }).toMap
 
-          val what = tokens.take(tokens.size - longest).mkString(" ")
-          val where = tokens.drop(tokens.size - longest).mkString(" ")
-          logger.ifTrace("%d sorted parses".format(sortedParses.size))
+      val what = tokens.take(tokens.size - longest).mkString(" ")
+      val where = tokens.drop(tokens.size - longest).mkString(" ")
+      logger.ifTrace("%d sorted parses".format(sortedParses.size))
 
-          // need to fix names here
-          pool(
-            new GeocodeResponse(sortedParses.map(p => {
-            //  p(0).setScoringFeatures(null)
-              val interp = new GeocodeInterpretation(what, where, p(0))
-              if (req.full) {
-                val sortedParents = p(0).scoringFeatures.parents.flatMap(id => parentMap.get(id)).sorted
-                println("full")
-                println(sortedParents)
-                interp.setParents(sortedParents.map(parentFeature => {
-                  parentFeature
-                }))
-              }
-              interp
+      // need to fix names here
+      Future.value(
+        new GeocodeResponse(sortedParses.map(p => {
+        //  p(0).setScoringFeatures(null)
+          val interp = new GeocodeInterpretation(what, where, p(0))
+          if (req.full) {
+            val sortedParents = p(0).scoringFeatures.parents.flatMap(id => parentMap.get(id)).sorted
+            println("full")
+            println(sortedParents)
+            interp.setParents(sortedParents.map(parentFeature => {
+              parentFeature
             }))
-          )
-        })
-      } else {
-        Future.value(new GeocodeResponse(Nil))
-      }
-    })
+          }
+          interp
+        }))
+      )
+    } else {
+      Future.value(new GeocodeResponse(Nil))
+    }
   }
 }

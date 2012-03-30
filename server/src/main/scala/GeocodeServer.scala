@@ -19,22 +19,26 @@ import org.jboss.netty.handler.codec.http._
 import org.jboss.netty.util.CharsetUtil
 import scala.collection.mutable.ListBuffer
 
+class ThreadLocal[T](init: => T) extends java.lang.ThreadLocal[T] with Function0[T] {
+  override def initialValue:T = init
+  def apply = get
+  def withValue[S](thunk:(T => S)):S = thunk(get)
+}
+
 object Store {
-  val store = new HFileStorageService()
+  val store = (new ThreadLocal({new HFileStorageService()})).get _
  // val store = new MongoGeocodeStorageService()
 }
 
 class GeocodeServerImpl extends Geocoder.ServiceIface {
-  val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(24))
   val store = Store.store
 
   def geocode(r: GeocodeRequest): Future[GeocodeResponse] = {
-    new GeocoderImpl(mongoFuturePool, store).geocode(r)
+    new GeocoderImpl(store).geocode(r)
   }
 }
 
 class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
-  val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(24))
   val store = Store.store
 
   val diskIoFuturePool = FuturePool(Executors.newFixedThreadPool(8))
@@ -42,7 +46,7 @@ class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
   def handleQuery(request: GeocodeRequest): Future[DefaultHttpResponse] = {
     val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
 
-    new GeocoderImpl(mongoFuturePool, store).geocode(request).map(geocode => {
+    new GeocoderImpl(store).geocode(request).map(geocode => {
       val serializer = new TSerializer(new TSimpleJSONProtocol.Factory());
       val json = serializer.toString(geocode);
 
