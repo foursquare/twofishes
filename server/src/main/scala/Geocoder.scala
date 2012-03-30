@@ -12,8 +12,7 @@ import org.bson.types.ObjectId
 // --fix dupes
 // --fix parents
 
-class GeocoderImpl(_store: () => GeocodeStorageReadService) extends LogHelper {
-  val store: GeocodeStorageReadService = _store()
+class GeocoderImpl(store: GeocodeStorageReadService) extends LogHelper {
   type FullParse = Seq[GeocodeFeature]
   type Parse = Seq[GeocodeFeature]
   type ParseSeq = Seq[Parse]

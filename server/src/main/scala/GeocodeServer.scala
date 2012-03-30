@@ -26,8 +26,7 @@ class ThreadLocal[T](init: => T) extends java.lang.ThreadLocal[T] with Function0
 }
 
 object Store {
-  val store = (new ThreadLocal({new HFileStorageService()})).get _
- // val store = new MongoGeocodeStorageService()
+  val store = new HFileStorageService()
 }
 
 class GeocodeServerImpl extends Geocoder.ServiceIface {
@@ -42,6 +41,7 @@ class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
   val store = Store.store
 
   val diskIoFuturePool = FuturePool(Executors.newFixedThreadPool(8))
+ // val ioFuturePool = FuturePool(Executors.newFixedThreadPool(24))
 
   def handleQuery(request: GeocodeRequest): Future[DefaultHttpResponse] = {
     val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)

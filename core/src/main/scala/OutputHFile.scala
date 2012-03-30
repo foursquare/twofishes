@@ -56,6 +56,7 @@ abstract class HFileInput(hfile: String) {
   val conf = new Configuration()
   val fs = new LocalFileSystem()
   fs.initialize(URI.create("file:///"), conf)
+
   val path = new Path(hfile)
   val cacheConfig = new CacheConfig(conf)
   println(cacheConfig)
