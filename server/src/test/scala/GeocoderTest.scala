@@ -218,6 +218,23 @@ class GeocoderSpec extends Specification {
     interp2.feature.cc must_== "US"
   }
 
+  "everything after connector geocodes" in {
+    val store = buildRegoPark()
+
+    val r = new GeocoderImpl(store).geocode(new GeocodeRequest("Pizza near Rego Park, New York")).apply()
+    r.interpretations.size must_== 1
+    val interp = r.interpretations.asScala(0)
+    interp.what must_== "pizza"
+    interp.where must_== "rego park new york"
+  }
+
+  "not everything after connector geocodes" in {
+    val store = buildRegoPark()
+
+    val r = new GeocoderImpl(store).geocode(new GeocodeRequest("Pizza near sdklfj kljsklfdj Rego Park, New York")).apply()
+    r.interpretations.size must_== 0
+  }
+
   // add a preferred name test
   // add a name filtering test
   // add a displayname test

@@ -1,7 +1,5 @@
 Short Term
 ==========
-*   fix tests
-*   update docs
 *   general code cleanup
 *   should we have parents/full be separate req params?
 *   fewer names returned?
