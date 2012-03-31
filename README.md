@@ -52,6 +52,7 @@ Serving
 NOTE: mongod is not required for serving, only index building.
 *   ./sbt  "server/run-main com.foursquare.twofish.GeocodeFinagleServer --port 8080 --hfile_basepath /input/directory/for/finished/files/"
 *   server should be responding to finagle-thrift on the port specified (8080 by default), and responding to http requests at the next port up: http://localhost:8081/?query=rego+park+ny http://localhost:8081/static/geocoder.html#rego+park
+*   if you want to run vanilla thrift-rpc (not finagle). use class com.foursquare.twofish.GeocodeThriftServer instead.
 
 Performance
 ===========
