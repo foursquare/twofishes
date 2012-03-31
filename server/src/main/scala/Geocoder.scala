@@ -172,43 +172,40 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
   class ParseOrdering(llHint: GeocodePoint, ccHint: String) extends Ordering[Parse] {
     // Higher is better
     def scoreParse(parse: Parse): Int = {
-      parse match {
-        case primaryFeature :: rest => {
-          var signal = primaryFeature.scoringFeatures.population
+      parse.headOption.map(primaryFeature => {
+        val rest = parse.drop(1)
+        var signal = primaryFeature.scoringFeatures.population
 
-          // if we have a repeated feature, downweight this like crazy
-          // so st petersburg, st petersburg works, but doesn't break new york, ny
-          if (rest.contains(primaryFeature)) {
-            signal -= 100000000
-          }
-
-          // prefer a more aggressive parse ... bleh
-          // this prefers "mt laurel" over the town of "laurel" in "mt" (montana)
-          signal -= 20000 * parse.length
-
-          // Matching country hint is good
-          if (Option(ccHint).exists(_ == primaryFeature.feature.cc)) {
-            signal += 100000
-          }
-
-          Option(llHint).foreach(ll => {
-            signal -= GeoTools.getDistance(ll.lat, ll.lng,
-                primaryFeature.feature.geometry.center.lat,
-                primaryFeature.feature.geometry.center.lng)
-          })
-
-          signal += primaryFeature.scoringFeatures.boost
-
-          // as a terrible tie break, things in the US > elsewhere
-          // meant primarily for zipcodes
-          if (primaryFeature.feature.cc == "US") {
-            signal += 1
-          }
-          
-          signal
+        // if we have a repeated feature, downweight this like crazy
+        // so st petersburg, st petersburg works, but doesn't break new york, ny
+        if (rest.contains(primaryFeature)) {
+          signal -= 100000000
         }
-        case Nil => 0
-      }
+
+        // prefer a more aggressive parse ... bleh
+        // this prefers "mt laurel" over the town of "laurel" in "mt" (montana)
+        signal -= 20000 * parse.length
+
+        // Matching country hint is good
+        if (Option(ccHint).exists(_ == primaryFeature.feature.cc)) {
+          signal += 100000
+        }
+
+        Option(llHint).foreach(ll => {
+          signal -= GeoTools.getDistance(ll.lat, ll.lng,
+              primaryFeature.feature.geometry.center.lat,
+              primaryFeature.feature.geometry.center.lng)
+        })
+
+        signal += primaryFeature.scoringFeatures.boost
+
+        // as a terrible tie break, things in the US > elsewhere
+        // meant primarily for zipcodes
+        if (primaryFeature.feature.cc == "US") {
+          signal += 1
+        }
+        signal
+      }).getOrElse(0)
     }
 
     def compare(a: Parse, b: Parse) = {

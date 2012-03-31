@@ -14,6 +14,7 @@ class MockGeocodeStorageReadService extends GeocodeStorageFutureReadService {
   def getByName(name: String): Future[Seq[GeocodeServingFeature]] = {
     Future.value(nameMap.getOrElse(name, Nil))
   }
+
   def getByObjectIds(ids: Seq[ObjectId]): Future[Map[ObjectId, GeocodeServingFeature]] = {
     Future.value(
       ids.map(id => {
@@ -28,17 +29,10 @@ class MockGeocodeStorageReadService extends GeocodeStorageFutureReadService {
     lat: Double,
     lng: Double,
     woeType: YahooWoeType,
-    population: Option[Int] = None
+    population: Option[Int] = None,
+    cc: String = "US"
   ): GeocodeServingFeature = {
     var id = new ObjectId()
-
-    // val record = GeocodeRecord(
-    //   cc = "US",
-    //   _woeType = woeType.getValue,
-
-    //   displayNames = List(DisplayName("en", name, true)),
-    //   names = List(name.toLowerCase),
-    // )
 
     val center = new GeocodePoint()
     center.setLat(lat)
@@ -49,7 +43,7 @@ class MockGeocodeStorageReadService extends GeocodeStorageFutureReadService {
 
     val feature = new GeocodeFeature()
     feature.setGeometry(geometry)
-    feature.setCc("US")
+    feature.setCc(cc)
     feature.setWoeType(woeType)
 
     val featureName = new FeatureName()
@@ -65,7 +59,7 @@ class MockGeocodeStorageReadService extends GeocodeStorageFutureReadService {
     servingFeature.setScoringFeatures(scoringFeatures)
     servingFeature.setId(id.toString)
     servingFeature.setFeature(feature)
-    nameMap(name.toLowerCase) = servingFeature :: nameMap.getOrElse(name, Nil)
+    nameMap(name.toLowerCase) = servingFeature :: nameMap.getOrElse(name.toLowerCase, Nil)
     idMap(id) = servingFeature
 
     servingFeature
@@ -73,12 +67,28 @@ class MockGeocodeStorageReadService extends GeocodeStorageFutureReadService {
 }
 
 class GeocoderSpec extends Specification {
+  def addParisFrance(store: MockGeocodeStorageReadService) = {
+    val frRecord = store.addGeocode("FR", Nil, 1, 2, YahooWoeType.COUNTRY, cc="FR")
+    val idfRecord = store.addGeocode("IDF", List(frRecord), 3, 4, YahooWoeType.ADMIN1, cc="FR")
+    val parisRecord = store.addGeocode("Paris", List(idfRecord, frRecord), 5, 6, YahooWoeType.TOWN, population=Some(1000000), cc="FR")
+    store
+  }
+
+  def addParisTX(store: MockGeocodeStorageReadService) = {
+    val usRecord = store.addGeocode("US", Nil, 1, 2, YahooWoeType.COUNTRY)
+    val txRecord = store.addGeocode("Texas", List(usRecord), 3, 4, YahooWoeType.ADMIN1)
+    val parisRecord = store.addGeocode("Paris", List(txRecord, usRecord), 5, 6, YahooWoeType.TOWN, population=Some(20000))
+    store
+  }
+
   def addRegoPark(store: MockGeocodeStorageReadService) = {
     val usRecord = store.addGeocode("US", Nil, 1, 2, YahooWoeType.COUNTRY)
     val nyRecord = store.addGeocode("New York", List(usRecord), 3, 4, YahooWoeType.ADMIN1)
     val regoParkRecord = store.addGeocode("Rego Park", List(nyRecord, usRecord), 5, 6, YahooWoeType.TOWN)
     store
   }
+
+  def getStore = new MockGeocodeStorageReadService()
 
   def buildRegoPark(): MockGeocodeStorageReadService = {
     addRegoPark(new MockGeocodeStorageReadService())
@@ -185,6 +195,27 @@ class GeocoderSpec extends Specification {
     parents.size must_== 2
     parents(0).name mustEqual "New York"
     parents(1).name mustEqual "US"
+  }
+
+ "full request fills parents" in {
+    val store = getStore
+    addParisTX(store)
+    addParisFrance(store)
+
+    println(store.nameMap("paris"))
+
+    val req = new GeocodeRequest("Paris")
+    val r = new GeocoderImpl(store).geocode(req).apply()
+    r.interpretations.size must_== 2
+    val interp1 = r.interpretations.asScala(0)
+    interp1.what must_== ""
+    interp1.where must_== "paris"
+    interp1.feature.cc must_== "FR"
+
+    val interp2 = r.interpretations.asScala(1)
+    interp2.what must_== ""
+    interp2.where must_== "paris"
+    interp2.feature.cc must_== "US"
   }
 
   // add a basic ranking test
