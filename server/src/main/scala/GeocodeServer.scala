@@ -25,29 +25,19 @@ class ThreadLocal[T](init: => T) extends java.lang.ThreadLocal[T] with Function0
   def withValue[S](thunk:(T => S)):S = thunk(get)
 }
 
-object Store {
-  val store = new HFileStorageService()
-}
-
-class GeocodeServerImpl extends Geocoder.ServiceIface {
-  val store = Store.store
-  val ioFuturePool = FuturePool(Executors.newFixedThreadPool(24))
-
+class GeocodeServerImpl(store: GeocodeStorageFutureReadService) extends Geocoder.ServiceIface {
   def geocode(r: GeocodeRequest): Future[GeocodeResponse] = {
-    new GeocoderImpl(ioFuturePool, store).geocode(r)
+    new GeocoderImpl(store).geocode(r)
   }
 }
 
-class GeocoderHttpService extends Service[HttpRequest, HttpResponse] {
-  val store = Store.store
-
+class GeocoderHttpService(geocoder: GeocodeServerImpl) extends Service[HttpRequest, HttpResponse] {
   val diskIoFuturePool = FuturePool(Executors.newFixedThreadPool(8))
-  val ioFuturePool = FuturePool(Executors.newFixedThreadPool(24))
 
   def handleQuery(request: GeocodeRequest): Future[DefaultHttpResponse] = {
     val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
 
-    new GeocoderImpl(ioFuturePool, store).geocode(request).map(geocode => {
+    geocoder.geocode(request).map(geocode => {
       val serializer = new TSerializer(new TSimpleJSONProtocol.Factory());
       val json = serializer.toString(geocode);
 
@@ -144,15 +134,20 @@ object GeocodeFinagleServer {
 
     val config = new GeocodeServerConfig(args)
 
+    val ioFuturePool = FuturePool(Executors.newFixedThreadPool(24))
+
+    val store = new WrappedGeocodeStorageFutureReadService(
+      new HFileStorageService(config.hfileBasePath),
+      ioFuturePool)
+
     // Implement the Thrift Interface
-    val processor = new GeocodeServerImpl()
+    val processor = new GeocodeServerImpl(store)
 
     // Convert the Thrift Processor to a Finagle Service
     val service = new Geocoder.Service(processor, new TBinaryProtocol.Factory())
 
     println("serving thrift on port %d".format(config.thriftServerPort))
-        println("serving http/json on port %d".format(config.thriftServerPort + 1))
-
+    println("serving http/json on port %d".format(config.thriftServerPort + 1))
 
     val server: Server = ServerBuilder()
       .bindTo(new InetSocketAddress(config.thriftServerPort))
@@ -165,7 +160,7 @@ object GeocodeFinagleServer {
         .bindTo(new InetSocketAddress(config.thriftServerPort + 1))
         .codec(Http())
         .name("geocoder-http")
-        .build(new GeocoderHttpService())
+        .build(new GeocoderHttpService(processor))
     }
   }
 }

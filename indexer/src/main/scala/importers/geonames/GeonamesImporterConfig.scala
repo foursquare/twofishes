@@ -21,6 +21,8 @@ class GeonamesImporterConfig(args: Array[String]) {
   var importBoundingBoxes = true
   var boundingBoxFilename = "./data/computed/flickr_bbox.tsv"
 
+  var hfileBasePath: String = null
+
   private val config = this
 
   val parser = 
@@ -31,10 +33,17 @@ class GeonamesImporterConfig(args: Array[String]) {
         { v: String => config.parseCountry = v } )
       booleanOpt("parse_postal_codes", "parse postal codes",
         { v: Boolean => config.importPostalCodes = v } )
+      opt("hfile_basepath", "directory to output hfiles to",
+        { v: String => config.hfileBasePath = v} )
     }
 
   if (!parser.parse(args)) {
     // arguments are bad, usage message will have been displayed
+    System.exit(1)
+  }
+
+  if (hfileBasePath == null) {
+    println("must specify --hfile_basepath")
     System.exit(1)
   }
 }

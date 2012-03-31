@@ -120,6 +120,8 @@ public class FeatureName implements TBase<FeatureName, FeatureName._Fields>, jav
   }
 
   public FeatureName() {
+    this.flags = new ArrayList<FeatureNameFlags>();
+
   }
 
   public FeatureName(
@@ -158,7 +160,8 @@ public class FeatureName implements TBase<FeatureName, FeatureName._Fields>, jav
   public void clear() {
     this.name = null;
     this.lang = null;
-    this.flags = null;
+    this.flags = new ArrayList<FeatureNameFlags>();
+
   }
 
   public String getName() {

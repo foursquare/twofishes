@@ -1,14 +1,9 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofish
 
-import com.novus.salat._
-import com.novus.salat.global._
-import com.novus.salat.annotations._
-import com.novus.salat.dao._
-import com.mongodb.casbah.Imports._
-import com.mongodb.casbah.MongoConnection
-import scala.collection.JavaConversions._
 import com.twitter.util.{Future, FuturePool}
+import org.bson.types.ObjectId
+import scala.collection.JavaConversions._
 
 object Implicits {
   implicit def fidToString(fid: StoredFeatureId): String = fid.toString
@@ -16,13 +11,13 @@ object Implicits {
 }
 
 case class DisplayName(
-  @Key("l") lang: String,
-  @Key("n") name: String,
-  @Key("p") preferred: Boolean
+  lang: String,
+  name: String,
+  preferred: Boolean
 )
 
 case class StoredFeatureId(
-  @Key("n") namespace: String,
+  namespace: String,
   id: String) {
   override def toString = "%s:%s".format(namespace, id)
 }
@@ -39,14 +34,14 @@ case class GeocodeRecord(
   ids: List[String],
   names: List[String],
   cc: String,
-  @Key("wt") _woeType: Int,
+  _woeType: Int,
   lat: Double,
   lng: Double,
-  @Key("dns") displayNames: List[DisplayName],
-  @Key("p") parents: List[String],
+  displayNames: List[DisplayName],
+  parents: List[String],
   population: Option[Int],
   boost: Option[Int] = None,
-  @Key("bb") boundingbox: Option[BoundingBox] = None
+  boundingbox: Option[BoundingBox] = None
 ) extends Ordered[GeocodeRecord] {
   def featureIds = ids.map(id => {
     val parts = id.split(":")
@@ -116,8 +111,13 @@ case class GeocodeRecord(
   def isPostalCode = woeType == YahooWoeType.POSTAL_CODE
 }
 
-class GeocodeStorageFutureReadService(underlying: GeocodeStorageReadService, future: FuturePool) {
-  def getByName(name: String): Future[Iterator[GeocodeServingFeature]] = future {
+trait GeocodeStorageFutureReadService {
+  def getByName(name: String): Future[Seq[GeocodeServingFeature]]
+  def getByObjectIds(ids: Seq[ObjectId]): Future[Map[ObjectId, GeocodeServingFeature]]
+}
+
+class WrappedGeocodeStorageFutureReadService(underlying: GeocodeStorageReadService, future: FuturePool) extends GeocodeStorageFutureReadService {
+  def getByName(name: String): Future[Seq[GeocodeServingFeature]] = future {
     underlying.getByName(name)
   }
 
@@ -127,74 +127,6 @@ class GeocodeStorageFutureReadService(underlying: GeocodeStorageReadService, fut
 }
 
 trait GeocodeStorageReadService {
-  def getByName(name: String): Iterator[GeocodeServingFeature]
+  def getByName(name: String): Seq[GeocodeServingFeature]
   def getByObjectIds(ids: Seq[ObjectId]): Map[ObjectId, GeocodeServingFeature]
-}
-
-case class NameIndex(
-  @Key("_id") name: String,
-  fids: List[String]
-)
-
-case class FidIndex(
-  @Key("_id") fid: String,
-  oid: ObjectId
-)
-
-trait GeocodeStorageWriteService {
-  def insert(record: GeocodeRecord): Unit
-  def setRecordNames(id: StoredFeatureId, names: List[DisplayName])
-  def addNameToRecord(name: DisplayName, id: StoredFeatureId)
-  def addBoundingBoxToRecord(id: StoredFeatureId, bbox: BoundingBox)
-  def getById(id: StoredFeatureId): Iterator[GeocodeRecord]
-}
-
-object MongoGeocodeDAO extends SalatDAO[GeocodeRecord, ObjectId](
-  collection = MongoConnection()("geocoder")("features"))
-
-object NameIndexDAO extends SalatDAO[NameIndex, String](
-  collection = MongoConnection()("geocoder")("name_index"))
-
-object FidIndexDAO extends SalatDAO[FidIndex, String](
-  collection = MongoConnection()("geocoder")("fid_index"))
-
-class MongoGeocodeStorageService extends GeocodeStorageWriteService {
-  def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = {
-    MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))))
-  }
-
-  def insert(record: GeocodeRecord) {
-    MongoGeocodeDAO.insert(record)
-
-    record.ids.foreach(fid => {
-      FidIndexDAO.insert(FidIndex(fid, record._id))
-    })
-
-    record.names.foreach(name => {
-      record.ids.foreach(fid => {
-        NameIndexDAO.update(MongoDBObject("_id" -> name),
-          MongoDBObject("$addToSet" -> MongoDBObject("fids" -> fid)),
-          true, false)
-      })
-    })
-  }
-
-  def addNameToRecord(name: DisplayName, id: StoredFeatureId) {
-    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))),
-      MongoDBObject("$addToSet" -> MongoDBObject("dns" -> grater[DisplayName].asDBObject(name))),
-      false, false)
-  }
-
-  def addBoundingBoxToRecord(id: StoredFeatureId, bbox: BoundingBox) {
-    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))),
-      MongoDBObject("$set" -> MongoDBObject("bb" -> grater[BoundingBox].asDBObject(bbox))),
-      false, false)
-  }
-
-  def setRecordNames(id: StoredFeatureId, names: List[DisplayName]) {
-    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))),
-      MongoDBObject("$set" -> MongoDBObject(
-        "dns" -> names.map(n => grater[DisplayName].asDBObject(n)))),
-      false, false)
-  }
 }

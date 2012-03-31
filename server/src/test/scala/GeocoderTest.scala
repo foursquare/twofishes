@@ -2,171 +2,194 @@
 package com.foursquare.twofish
 
 import collection.JavaConverters._
-import com.twitter.util.FuturePool
-import java.util.concurrent.Executors
+import com.twitter.util.Future
 import org.specs2.mutable._
 import scala.collection.mutable.HashMap
+import org.bson.types.ObjectId
 
-// class MockGeocodeStorageReadService extends GeocodeStorageReadService {
-//   val nameMap = new HashMap[String, List[GeocodeRecord]]
-//   val idMap = new HashMap[String, List[GeocodeRecord]]
+class MockGeocodeStorageReadService extends GeocodeStorageFutureReadService {
+  val nameMap = new HashMap[String, List[GeocodeServingFeature]]
+  val idMap = new HashMap[ObjectId, GeocodeServingFeature]
 
-//   def addName(name: String, record: GeocodeRecord) {
-//     nameMap(name) = record :: nameMap.getOrElse(name, Nil)
-//   }
+  def getByName(name: String): Future[Seq[GeocodeServingFeature]] = {
+    Future.value(nameMap.getOrElse(name, Nil))
+  }
+  def getByObjectIds(ids: Seq[ObjectId]): Future[Map[ObjectId, GeocodeServingFeature]] = {
+    Future.value(
+      ids.map(id => {
+        (id -> idMap(id))
+      }).toMap
+    )
+  }
 
-//   def addId(id: String, record: GeocodeRecord) {
-//     idMap(id) = record:: idMap.getOrElse(id, Nil)
-//   }
+  def addGeocode(
+    name: String,
+    parents: List[GeocodeServingFeature],
+    lat: Double,
+    lng: Double,
+    woeType: YahooWoeType,
+    population: Option[Int] = None
+  ): GeocodeServingFeature = {
+    var id = new ObjectId()
 
-//   var id = 0
-//   def addGeocode(
-//     name: String,
-//     parents: List[GeocodeRecord],
-//     lat: Double,
-//     lng: Double,
-//     woeType: YahooWoeType,
-//     population: Option[Int] = None
-//   ): GeocodeRecord = {
-//     val idStr = "test:%d".format(id)
-//     val record = GeocodeRecord(
-//       ids = List(idStr),
-//       cc = "US",
-//       _woeType = woeType.getValue,
-//       lat = lat,
-//       lng = lng,
-//       displayNames = List(DisplayName("en", name, true)),
-//       parents = parents.flatMap(_.ids),
-//       names = List(name.toLowerCase),
-//       population = population
-//     )
+    // val record = GeocodeRecord(
+    //   cc = "US",
+    //   _woeType = woeType.getValue,
 
-//     addName(name.toLowerCase, record)
-//     addId(idStr, record)
+    //   displayNames = List(DisplayName("en", name, true)),
+    //   names = List(name.toLowerCase),
+    // )
 
-//     id += 1
-//     record
+    val center = new GeocodePoint()
+    center.setLat(lat)
+    center.setLng(lng)
 
-//   }
+    val geometry = new FeatureGeometry()
+    geometry.setCenter(center)
 
-//   // implementation methods
-//   def getByName(name: String): Iterator[GeocodeRecord] =
-//     nameMap.getOrElse(name, Nil).iterator
+    val feature = new GeocodeFeature()
+    feature.setGeometry(geometry)
+    feature.setCc("US")
+    feature.setWoeType(woeType)
 
-//   def getByIds(ids: Seq[String]): Iterator[GeocodeRecord] =
-//     ids.flatMap(id => idMap.getOrElse(id.toString, Nil)).iterator
+    val featureName = new FeatureName()
+    featureName.setName(name)
+    featureName.setLang("en")
+    feature.setNames(List(featureName).asJava)
 
-//   def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = 
-//     idMap.getOrElse(id.toString, Nil).iterator
-// }
+    val scoringFeatures = new ScoringFeatures()
+    scoringFeatures.setParents(parents.map(_.id).asJava)
+    population.foreach(p => scoringFeatures.setPopulation(p))
 
-// class GeocoderSpec extends Specification {
-//   def addRegoPark(store: MockGeocodeStorageReadService) = {
-//     val usRecord = store.addGeocode("US", Nil, 1, 2, YahooWoeType.COUNTRY)
-//     val nyRecord = store.addGeocode("New York", List(usRecord), 3, 4, YahooWoeType.ADMIN1)
-//     val regoParkRecord = store.addGeocode("Rego Park", List(nyRecord, usRecord), 5, 6, YahooWoeType.TOWN)
-//     store
-//   }
+    val servingFeature = new GeocodeServingFeature()
+    servingFeature.setScoringFeatures(scoringFeatures)
+    servingFeature.setId(id.toString)
+    servingFeature.setFeature(feature)
+    nameMap(name.toLowerCase) = servingFeature :: nameMap.getOrElse(name, Nil)
+    idMap(id) = servingFeature
 
-//   def buildRegoPark(): MockGeocodeStorageReadService = {
-//     addRegoPark(new MockGeocodeStorageReadService())
-//   }
+    servingFeature
+  }
+}
 
-//   def addLosAngeles(store: MockGeocodeStorageReadService) = {
-//     val usRecord = store.addGeocode("US", Nil, 1, 2, YahooWoeType.COUNTRY)
-//     val caRecord = store.addGeocode("California", List(usRecord), 10, 11, YahooWoeType.ADMIN1)
-//     val losAngelesRecord = store.addGeocode("Los Angeles", List(caRecord, usRecord), 12, 13, YahooWoeType.TOWN)
-//     store
-//   }
+class GeocoderSpec extends Specification {
+  def addRegoPark(store: MockGeocodeStorageReadService) = {
+    val usRecord = store.addGeocode("US", Nil, 1, 2, YahooWoeType.COUNTRY)
+    val nyRecord = store.addGeocode("New York", List(usRecord), 3, 4, YahooWoeType.ADMIN1)
+    val regoParkRecord = store.addGeocode("Rego Park", List(nyRecord, usRecord), 5, 6, YahooWoeType.TOWN)
+    store
+  }
 
-//   def buildLostAngeles(): MockGeocodeStorageReadService = {
-//     addLosAngeles(new MockGeocodeStorageReadService())
-//   }
+  def buildRegoPark(): MockGeocodeStorageReadService = {
+    addRegoPark(new MockGeocodeStorageReadService())
+  }
 
-//   "one feature geocodes succeeds with matching data" in {
-//     val store = buildRegoPark()
+  def addLosAngeles(store: MockGeocodeStorageReadService) = {
+    val usRecord = store.addGeocode("US", Nil, 1, 2, YahooWoeType.COUNTRY)
+    val caRecord = store.addGeocode("California", List(usRecord), 10, 11, YahooWoeType.ADMIN1)
+    val losAngelesRecord = store.addGeocode("Los Angeles", List(caRecord, usRecord), 12, 13, YahooWoeType.TOWN)
+    store
+  }
 
-//     val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(1))
-//     val r = new GeocoderImpl(mongoFuturePool, store).geocode(new GeocodeRequest("Rego Park")).apply()
-//     r.interpretations.size must_== 1
-//     val interp = r.interpretations.asScala(0)
-//     interp.what must_== ""
-//     interp.feature.geometry.center.lat must_== 5
-//     interp.feature.geometry.center.lng must_== 6
-//     interp.feature.displayName must_== "Rego Park, New York"
-//     interp.feature.woeType must_== YahooWoeType.TOWN
-//     interp.where must_== "rego park"
-//     interp.parents must_== null
-//   }
+  def buildLostAngeles(): MockGeocodeStorageReadService = {
+    addLosAngeles(new MockGeocodeStorageReadService())
+  }
 
-//   "hierarchical feature geocodes succeeds with matching data" in {
-//     val store = buildRegoPark()
+  "one feature geocodes succeeds with matching data" in {
+    val store = buildRegoPark()
 
-//     val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(1))
-//     val r = new GeocoderImpl(mongoFuturePool, store).geocode(new GeocodeRequest("Rego Park, New York")).apply()
-//     r.interpretations.size must_== 1
-//     val interp = r.interpretations.asScala(0)
-//     interp.what must_== ""
-//     interp.feature.geometry.center.lat must_== 5
-//     interp.feature.geometry.center.lng must_== 6
-//     interp.where must_== "rego park new york"
-//   }
+    val req = new GeocodeRequest("Rego Park")
 
-//   "splitting geocodes succeeds with matching data" in {
-//     val store = buildRegoPark()
+    val r = new GeocoderImpl(store).geocode(req).apply()
+    r.interpretations.size must_== 1
+    val interp = r.interpretations.asScala(0)
+    interp.what must_== ""
+    interp.feature.geometry.center.lat must_== 5
+    interp.feature.geometry.center.lng must_== 6
+    interp.feature.displayName must_== "Rego Park, New York, US"
+    interp.feature.woeType must_== YahooWoeType.TOWN
+    interp.where must_== "rego park"
+    interp.parents.size mustEqual 2
+  }
 
-//     val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(1))
-//     val r = new GeocoderImpl(mongoFuturePool, store).geocode(new GeocodeRequest("Pizza Rego Park, New York")).apply()
-//     r.interpretations.size must_== 1
-//     val interp = r.interpretations.asScala(0)
-//     interp.what must_== "pizza"
-//     interp.feature.geometry.center.lat must_== 5
-//     interp.feature.geometry.center.lng must_== 6
-//     interp.where must_== "rego park new york"
-//   }
+  "don't include matching country in displayName" in {
+    val store = buildRegoPark()
 
-//   "geocodes fails without matching data" in {
-//     val store = buildRegoPark()
+    val req = new GeocodeRequest("Rego Park")
+    req.setCc("US")
 
-//     val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(1))
-//     val r = new GeocoderImpl(mongoFuturePool, store).geocode(new GeocodeRequest("Berlin, Germany")).apply()
-//     r.interpretations.size must_== 0
-//   }
+    val r2 = new GeocoderImpl(store).geocode(req).apply()
+    r2.interpretations.size must_== 1
+    val interp2 = r2.interpretations.asScala(0)
+    interp2.feature.displayName must_== "Rego Park, New York"
+  }
 
-//   "geocode interpretations don't cross parent hierarchies" in {
-//     val store = buildRegoPark()
-//     addLosAngeles(store)
+  "hierarchical feature geocodes succeeds with matching data" in {
+    val store = buildRegoPark()
 
-//     val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(1))
-//     val r = new GeocoderImpl(mongoFuturePool, store).geocode(new GeocodeRequest("Rego Park, California")).apply()
-//     r.interpretations.size must_== 1
-//     val interp = r.interpretations.asScala(0)
-//     interp.what must_== "rego park"
-//     interp.feature.geometry.center.lat must_== 10
-//     interp.feature.geometry.center.lng must_== 11
-//     interp.where must_== "california"
-//   }
+    val r = new GeocoderImpl(store).geocode(new GeocodeRequest("Rego Park, New York")).apply()
+    r.interpretations.size must_== 1
+    val interp = r.interpretations.asScala(0)
+    interp.what must_== ""
+    interp.feature.geometry.center.lat must_== 5
+    interp.feature.geometry.center.lng must_== 6
+    interp.where must_== "rego park new york"
+  }
 
-//   "full request fills parents" in {
-//     val store = buildRegoPark()
+  "splitting geocodes succeeds with matching data" in {
+    val store = buildRegoPark()
 
-//     val mongoFuturePool = FuturePool(Executors.newFixedThreadPool(1))
-//     val req = new GeocodeRequest("Rego Park, New York")
-//     req.setFull(true)
-//     val r = new GeocoderImpl(mongoFuturePool, store).geocode(req).apply()
-//     r.interpretations.size must_== 1
-//     val interp = r.interpretations.asScala(0)
-//     interp.what must_== ""
-//     interp.where must_== "rego park new york"
-//     interp.feature.geometry.center.lat must_== 5
-//     interp.feature.geometry.center.lng must_== 6
+    val r = new GeocoderImpl(store).geocode(new GeocodeRequest("Pizza Rego Park, New York")).apply()
+    r.interpretations.size must_== 1
+    val interp = r.interpretations.asScala(0)
+    interp.what must_== "pizza"
+    interp.feature.geometry.center.lat must_== 5
+    interp.feature.geometry.center.lng must_== 6
+    interp.where must_== "rego park new york"
+  }
 
-//     val parents = interp.parents.asScala
-//     parents.size must_== 2
-//     parents(0).name mustEqual "New York"
-//     parents(1).name mustEqual "US"
-//   }
+  "geocodes fails without matching data" in {
+    val store = buildRegoPark()
+
+    val r = new GeocoderImpl(store).geocode(new GeocodeRequest("Berlin, Germany")).apply()
+    r.interpretations.size must_== 0
+  }
+
+  "geocode interpretations don't cross parent hierarchies" in {
+    val store = buildRegoPark()
+    addLosAngeles(store)
+
+    val r = new GeocoderImpl(store).geocode(new GeocodeRequest("Rego Park, California")).apply()
+    r.interpretations.size must_== 1
+    val interp = r.interpretations.asScala(0)
+    interp.what must_== "rego park"
+    interp.feature.geometry.center.lat must_== 10
+    interp.feature.geometry.center.lng must_== 11
+    interp.where must_== "california"
+  }
+
+  "full request fills parents" in {
+    val store = buildRegoPark()
+
+    val req = new GeocodeRequest("Rego Park, New York")
+    req.setFull(true)
+    val r = new GeocoderImpl(store).geocode(req).apply()
+    r.interpretations.size must_== 1
+    val interp = r.interpretations.asScala(0)
+    interp.what must_== ""
+    interp.where must_== "rego park new york"
+    interp.feature.geometry.center.lat must_== 5
+    interp.feature.geometry.center.lng must_== 6
+
+    val parents = interp.parents.asScala
+    parents.size must_== 2
+    parents(0).name mustEqual "New York"
+    parents(1).name mustEqual "US"
+  }
 
   // add a basic ranking test
   // add a preferred name test
-// }
+  // add a name filtering test
+  // add a displayname test
+  // add a test test
+}

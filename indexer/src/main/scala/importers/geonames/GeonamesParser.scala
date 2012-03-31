@@ -45,6 +45,9 @@ object GeonamesParser {
     if (config.importBoundingBoxes) {
       new BoundingBoxTsvImporter(store).parse(config.boundingBoxFilename)
     }
+
+    new OutputHFile(config.hfileBasePath).process()
+
   }
 }
 
@@ -55,7 +58,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     def error(s: String) { println("**ERROR** " + s)}
     def info(s: String) { println(s)}
   }
-  
+
   // token -> alt tokens
   val rewriteTable = new TsvHelperFileParser("data/custom/rewrites.txt")
   // geonameid -> boost value

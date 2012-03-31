@@ -4,6 +4,7 @@ package com.foursquare.twofish
 class GeocodeServerConfig(args: Array[String]) {
   var runHttpServer: Boolean = true
   var thriftServerPort: Int = 8080
+  var hfileBasePath: String = null
 
   private val config = this
 
@@ -13,10 +14,17 @@ class GeocodeServerConfig(args: Array[String]) {
         { v: Int => config.thriftServerPort = v } )
       booleanOpt("h", "run_http_server", "whether or not to run http/json server on port+1",
         { v: Boolean => config.runHttpServer = v } )
-    }
+      opt("hfile_basepath", "directory containing output hfile for serving",
+        { v: String => config.hfileBasePath = v} )
+      }
 
   if (!parser.parse(args)) {
     // arguments are bad, usage message will have been displayed
+    System.exit(1)
+  }
+
+  if (hfileBasePath == null) {
+    println("must specify --hfile_basepath")
     System.exit(1)
   }
 }

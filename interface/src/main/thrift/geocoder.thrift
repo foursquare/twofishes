@@ -58,7 +58,7 @@ enum FeatureNameFlags {
 struct FeatureName {
   1: string name,
   2: string lang,
-  3: optional list<FeatureNameFlags> flags,
+  3: optional list<FeatureNameFlags> flags = []
 }
 
 struct FeatureGeometry {
