@@ -218,9 +218,7 @@ class GeocoderSpec extends Specification {
     interp2.feature.cc must_== "US"
   }
 
-  // add a basic ranking test
   // add a preferred name test
   // add a name filtering test
   // add a displayname test
-  // add a test test
 }
