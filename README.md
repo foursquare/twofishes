@@ -53,6 +53,17 @@ NOTE: mongod is not required for serving, only index building.
 *   ./sbt  "server/run-main com.foursquare.twofish.GeocodeFinagleServer --port 8080 --hfile_basepath /input/directory/for/finished/files/"
 *   server should be responding to finagle-thrift on the port specified (8080 by default), and responding to http requests at the next port up: http://localhost:8081/?query=rego+park+ny http://localhost:8081/static/geocoder.html#rego+park
 
+Performance
+===========
+Performance was only tested against the json frontend. Hitting the finagle would probably be a lot faster.
+
+On a beefy AWS box, apachebench, running the same query over and over claims we can do 250 concurrent connections at 1500qps with sub-100ms latency @ 95%ile. There's a terrible drop-off in 98th percentile latency -- 3-4s. This might be java GC pauses, though I don't see terrible GC in profiling. Also, this workload is unrealistic.
+
+httpperf lets us better control qps but not concurrentcy (why are the two major http benchmarking tools complementary with a gap between them?). On a more randomized workload, httperf shows says we can do 500qps with a median connection time of 13.5ms and an average response time of 60.8ms.
+
+This is pretty performant for java. It's terrible compared to what a c++ implementation could probably do.
+
+
 Future
 ======
 I'd like to integrate more data from OSM and possibly an entire build solely from OSM. I'd also like to get supplemental data from the Foursquare database where possible. If I was feeling more US-centric, I'd parse the TIGER-line data for US polygons, but I'm expecting those to mostly be in OSM.
