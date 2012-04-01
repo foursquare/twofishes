@@ -1,5 +1,5 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
-package com.foursquare.twofish
+package com.foursquare.twofishes
 
 import com.twitter.logging.Logger
 import com.twitter.logging.config._
@@ -17,8 +17,8 @@ object LogHelper {
 }
 
 object NullLogger {
-  def ifTrace(msg: => String) { 
-    println(msg)
+  def ifTrace(msg: => String) {
+  //  println(msg)
   }
   def error(s: String) {}
   def info(s: String) {}

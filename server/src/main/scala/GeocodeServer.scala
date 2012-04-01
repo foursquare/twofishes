@@ -1,5 +1,5 @@
  //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
-package com.foursquare.twofish
+package com.foursquare.twofishes
 
 import collection.JavaConverters._
 import com.twitter.finagle.builder.{ServerBuilder, Server}

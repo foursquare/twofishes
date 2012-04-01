@@ -1,4 +1,4 @@
-package com.foursquare.twofish
+package com.foursquare.twofishes
 
 import com.mongodb.casbah.Imports._
 import com.mongodb.casbah.MongoConnection

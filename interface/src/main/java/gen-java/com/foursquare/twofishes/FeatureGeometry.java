@@ -3,7 +3,7 @@
  *
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
-package com.foursquare.twofish;
+package com.foursquare.twofishes;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -28,19 +28,19 @@ import org.apache.thrift.protocol.*;
 
 // No additional import required for struct/union.
 
-public class FeatureId implements TBase<FeatureId, FeatureId._Fields>, java.io.Serializable, Cloneable {
-  private static final TStruct STRUCT_DESC = new TStruct("FeatureId");
+public class FeatureGeometry implements TBase<FeatureGeometry, FeatureGeometry._Fields>, java.io.Serializable, Cloneable {
+  private static final TStruct STRUCT_DESC = new TStruct("FeatureGeometry");
 
-  private static final TField SOURCE_FIELD_DESC = new TField("source", TType.STRING, (short)1);
-  private static final TField ID_FIELD_DESC = new TField("id", TType.STRING, (short)2);
+  private static final TField CENTER_FIELD_DESC = new TField("center", TType.STRUCT, (short)1);
+  private static final TField BOUNDS_FIELD_DESC = new TField("bounds", TType.STRUCT, (short)2);
 
-  public String source;
-  public String id;
+  public GeocodePoint center;
+  public GeocodeBoundingBox bounds;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
-    SOURCE((short)1, "source"),
-    ID((short)2, "id");
+    CENTER((short)1, "center"),
+    BOUNDS((short)2, "bounds");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -55,10 +55,10 @@ public class FeatureId implements TBase<FeatureId, FeatureId._Fields>, java.io.S
      */
     public static _Fields findByThriftId(int fieldId) {
       switch(fieldId) {
-        case 1: // SOURCE
-          return SOURCE;
-        case 2: // ID
-          return ID;
+        case 1: // CENTER
+          return CENTER;
+        case 2: // BOUNDS
+          return BOUNDS;
         default:
           return null;
       }
@@ -103,111 +103,109 @@ public class FeatureId implements TBase<FeatureId, FeatureId._Fields>, java.io.S
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
     Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.SOURCE, new FieldMetaData("source", TFieldRequirementType.DEFAULT, 
-        new FieldValueMetaData(TType.STRING)));
-    tmpMap.put(_Fields.ID, new FieldMetaData("id", TFieldRequirementType.DEFAULT, 
-        new FieldValueMetaData(TType.STRING)));
+    tmpMap.put(_Fields.CENTER, new FieldMetaData("center", TFieldRequirementType.DEFAULT, 
+        new StructMetaData(TType.STRUCT, GeocodePoint.class)));
+    tmpMap.put(_Fields.BOUNDS, new FieldMetaData("bounds", TFieldRequirementType.OPTIONAL, 
+        new StructMetaData(TType.STRUCT, GeocodeBoundingBox.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
-    FieldMetaData.addStructMetaDataMap(FeatureId.class, metaDataMap);
+    FieldMetaData.addStructMetaDataMap(FeatureGeometry.class, metaDataMap);
   }
 
-  public FeatureId() {
+  public FeatureGeometry() {
   }
 
-  public FeatureId(
-    String source,
-    String id)
+  public FeatureGeometry(
+    GeocodePoint center)
   {
     this();
-    this.source = source;
-    this.id = id;
+    this.center = center;
   }
 
   /**
    * Performs a deep copy on <i>other</i>.
    */
-  public FeatureId(FeatureId other) {
-    if (other.isSetSource()) {
-      this.source = other.source;
+  public FeatureGeometry(FeatureGeometry other) {
+    if (other.isSetCenter()) {
+      this.center = new GeocodePoint(other.center);
     }
-    if (other.isSetId()) {
-      this.id = other.id;
+    if (other.isSetBounds()) {
+      this.bounds = new GeocodeBoundingBox(other.bounds);
     }
   }
 
-  public FeatureId deepCopy() {
-    return new FeatureId(this);
+  public FeatureGeometry deepCopy() {
+    return new FeatureGeometry(this);
   }
 
   @Override
   public void clear() {
-    this.source = null;
-    this.id = null;
+    this.center = null;
+    this.bounds = null;
   }
 
-  public String getSource() {
-    return this.source;
+  public GeocodePoint getCenter() {
+    return this.center;
   }
 
-  public FeatureId setSource(String source) {
-    this.source = source;
+  public FeatureGeometry setCenter(GeocodePoint center) {
+    this.center = center;
     return this;
   }
 
-  public void unsetSource() {
-    this.source = null;
+  public void unsetCenter() {
+    this.center = null;
   }
 
-  /** Returns true if field source is set (has been asigned a value) and false otherwise */
-  public boolean isSetSource() {
-    return this.source != null;
+  /** Returns true if field center is set (has been asigned a value) and false otherwise */
+  public boolean isSetCenter() {
+    return this.center != null;
   }
 
-  public void setSourceIsSet(boolean value) {
+  public void setCenterIsSet(boolean value) {
     if (!value) {
-      this.source = null;
+      this.center = null;
     }
   }
 
-  public String getId() {
-    return this.id;
+  public GeocodeBoundingBox getBounds() {
+    return this.bounds;
   }
 
-  public FeatureId setId(String id) {
-    this.id = id;
+  public FeatureGeometry setBounds(GeocodeBoundingBox bounds) {
+    this.bounds = bounds;
     return this;
   }
 
-  public void unsetId() {
-    this.id = null;
+  public void unsetBounds() {
+    this.bounds = null;
   }
 
-  /** Returns true if field id is set (has been asigned a value) and false otherwise */
-  public boolean isSetId() {
-    return this.id != null;
+  /** Returns true if field bounds is set (has been asigned a value) and false otherwise */
+  public boolean isSetBounds() {
+    return this.bounds != null;
   }
 
-  public void setIdIsSet(boolean value) {
+  public void setBoundsIsSet(boolean value) {
     if (!value) {
-      this.id = null;
+      this.bounds = null;
     }
   }
 
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
-    case SOURCE:
+    case CENTER:
       if (value == null) {
-        unsetSource();
+        unsetCenter();
       } else {
-        setSource((String)value);
+        setCenter((GeocodePoint)value);
       }
       break;
 
-    case ID:
+    case BOUNDS:
       if (value == null) {
-        unsetId();
+        unsetBounds();
       } else {
-        setId((String)value);
+        setBounds((GeocodeBoundingBox)value);
       }
       break;
 
@@ -216,11 +214,11 @@ public class FeatureId implements TBase<FeatureId, FeatureId._Fields>, java.io.S
 
   public Object getFieldValue(_Fields field) {
     switch (field) {
-    case SOURCE:
-      return getSource();
+    case CENTER:
+      return getCenter();
 
-    case ID:
-      return getId();
+    case BOUNDS:
+      return getBounds();
 
     }
     throw new IllegalStateException();
@@ -233,10 +231,10 @@ public class FeatureId implements TBase<FeatureId, FeatureId._Fields>, java.io.S
     }
 
     switch (field) {
-    case SOURCE:
-      return isSetSource();
-    case ID:
-      return isSetId();
+    case CENTER:
+      return isSetCenter();
+    case BOUNDS:
+      return isSetBounds();
     }
     throw new IllegalStateException();
   }
@@ -245,30 +243,30 @@ public class FeatureId implements TBase<FeatureId, FeatureId._Fields>, java.io.S
   public boolean equals(Object that) {
     if (that == null)
       return false;
-    if (that instanceof FeatureId)
-      return this.equals((FeatureId)that);
+    if (that instanceof FeatureGeometry)
+      return this.equals((FeatureGeometry)that);
     return false;
   }
 
-  public boolean equals(FeatureId that) {
+  public boolean equals(FeatureGeometry that) {
     if (that == null)
       return false;
 
-    boolean this_present_source = true && this.isSetSource();
-    boolean that_present_source = true && that.isSetSource();
-    if (this_present_source || that_present_source) {
-      if (!(this_present_source && that_present_source))
+    boolean this_present_center = true && this.isSetCenter();
+    boolean that_present_center = true && that.isSetCenter();
+    if (this_present_center || that_present_center) {
+      if (!(this_present_center && that_present_center))
         return false;
-      if (!this.source.equals(that.source))
+      if (!this.center.equals(that.center))
         return false;
     }
 
-    boolean this_present_id = true && this.isSetId();
-    boolean that_present_id = true && that.isSetId();
-    if (this_present_id || that_present_id) {
-      if (!(this_present_id && that_present_id))
+    boolean this_present_bounds = true && this.isSetBounds();
+    boolean that_present_bounds = true && that.isSetBounds();
+    if (this_present_bounds || that_present_bounds) {
+      if (!(this_present_bounds && that_present_bounds))
         return false;
-      if (!this.id.equals(that.id))
+      if (!this.bounds.equals(that.bounds))
         return false;
     }
 
@@ -280,30 +278,30 @@ public class FeatureId implements TBase<FeatureId, FeatureId._Fields>, java.io.S
     return 0;
   }
 
-  public int compareTo(FeatureId other) {
+  public int compareTo(FeatureGeometry other) {
     if (!getClass().equals(other.getClass())) {
       return getClass().getName().compareTo(other.getClass().getName());
     }
 
     int lastComparison = 0;
-    FeatureId typedOther = (FeatureId)other;
+    FeatureGeometry typedOther = (FeatureGeometry)other;
 
-    lastComparison = Boolean.valueOf(isSetSource()).compareTo(typedOther.isSetSource());
+    lastComparison = Boolean.valueOf(isSetCenter()).compareTo(typedOther.isSetCenter());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetSource()) {
-      lastComparison = TBaseHelper.compareTo(this.source, typedOther.source);
+    if (isSetCenter()) {
+      lastComparison = TBaseHelper.compareTo(this.center, typedOther.center);
       if (lastComparison != 0) {
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetId()).compareTo(typedOther.isSetId());
+    lastComparison = Boolean.valueOf(isSetBounds()).compareTo(typedOther.isSetBounds());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetId()) {
-      lastComparison = TBaseHelper.compareTo(this.id, typedOther.id);
+    if (isSetBounds()) {
+      lastComparison = TBaseHelper.compareTo(this.bounds, typedOther.bounds);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -325,16 +323,18 @@ public class FeatureId implements TBase<FeatureId, FeatureId._Fields>, java.io.S
         break;
       }
       switch (field.id) {
-        case 1: // SOURCE
-          if (field.type == TType.STRING) {
-            this.source = iprot.readString();
+        case 1: // CENTER
+          if (field.type == TType.STRUCT) {
+            this.center = new GeocodePoint();
+            this.center.read(iprot);
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
-        case 2: // ID
-          if (field.type == TType.STRING) {
-            this.id = iprot.readString();
+        case 2: // BOUNDS
+          if (field.type == TType.STRUCT) {
+            this.bounds = new GeocodeBoundingBox();
+            this.bounds.read(iprot);
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -354,15 +354,17 @@ public class FeatureId implements TBase<FeatureId, FeatureId._Fields>, java.io.S
     validate();
 
     oprot.writeStructBegin(STRUCT_DESC);
-    if (this.source != null) {
-      oprot.writeFieldBegin(SOURCE_FIELD_DESC);
-      oprot.writeString(this.source);
+    if (this.center != null) {
+      oprot.writeFieldBegin(CENTER_FIELD_DESC);
+      this.center.write(oprot);
       oprot.writeFieldEnd();
     }
-    if (this.id != null) {
-      oprot.writeFieldBegin(ID_FIELD_DESC);
-      oprot.writeString(this.id);
-      oprot.writeFieldEnd();
+    if (this.bounds != null) {
+      if (isSetBounds()) {
+        oprot.writeFieldBegin(BOUNDS_FIELD_DESC);
+        this.bounds.write(oprot);
+        oprot.writeFieldEnd();
+      }
     }
     oprot.writeFieldStop();
     oprot.writeStructEnd();
@@ -370,24 +372,26 @@ public class FeatureId implements TBase<FeatureId, FeatureId._Fields>, java.io.S
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("FeatureId(");
+    StringBuilder sb = new StringBuilder("FeatureGeometry(");
     boolean first = true;
 
-    sb.append("source:");
-    if (this.source == null) {
+    sb.append("center:");
+    if (this.center == null) {
       sb.append("null");
     } else {
-      sb.append(this.source);
+      sb.append(this.center);
     }
     first = false;
-    if (!first) sb.append(", ");
-    sb.append("id:");
-    if (this.id == null) {
-      sb.append("null");
-    } else {
-      sb.append(this.id);
+    if (isSetBounds()) {
+      if (!first) sb.append(", ");
+      sb.append("bounds:");
+      if (this.bounds == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.bounds);
+      }
+      first = false;
     }
-    first = false;
     sb.append(")");
     return sb.toString();
   }

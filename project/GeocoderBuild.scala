@@ -5,8 +5,8 @@ import AssemblyKeys._
 
 object GeocoderBuild extends Build {
   lazy val buildSettings = Seq(
-    organization := "com.foursquare.twofish",
-    name := "twofish",
+    organization := "com.foursquare.twofishes",
+    name := "twofishes",
     version      := "0.12",
     scalaVersion := "2.9.1"
   )
@@ -28,7 +28,7 @@ object GeocoderBuild extends Build {
     Keys.publishArtifact in (Compile, Keys.packageDoc) := false,
 
     pomExtra := (
-      <url>http://github.com/foursquare/twofish</url>
+      <url>http://github.com/foursquare/twofishes</url>
       <licenses>
         <license>
           <name>Apache</name>
@@ -37,8 +37,8 @@ object GeocoderBuild extends Build {
         </license>
       </licenses>
       <scm>
-        <url>git@github.com:foursquare/twofish.git</url>
-        <connection>scm:git:git@github.com:foursquare/twofish.git</connection>
+        <url>git@github.com:foursquare/twofishes.git</url>
+        <connection>scm:git:git@github.com:foursquare/twofishes.git</connection>
       </scm>
       <developers>
         <developer>
@@ -105,7 +105,7 @@ object GeocoderBuild extends Build {
 
   lazy val server = Project(id = "server",
       settings = defaultSettings ++ assemblySettings ++ Seq(
-        mainClass in assembly := Some("com.foursquare.twofish.GeocodeFinagleServer"),
+        mainClass in assembly := Some("com.foursquare.twofishes.GeocodeFinagleServer"),
         publishArtifact := true,
         libraryDependencies ++= Seq(
           "com.twitter" % "finagle-http_2.9.1" % "1.9.12",

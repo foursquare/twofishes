@@ -1,5 +1,5 @@
  //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
-package com.foursquare.twofish
+package com.foursquare.twofishes
 
 class GeocodeServerConfig(args: Array[String]) {
   var runHttpServer: Boolean = true
@@ -9,7 +9,7 @@ class GeocodeServerConfig(args: Array[String]) {
   private val config = this
 
   val parser = 
-    new scopt.OptionParser("twofish", "0.12") {
+    new scopt.OptionParser("twofishes", "0.12") {
       intOpt("p", "port", "port to run thrift server on",
         { v: Int => config.thriftServerPort = v } )
       booleanOpt("h", "run_http_server", "whether or not to run http/json server on port+1",

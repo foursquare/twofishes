@@ -1,9 +1,9 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
-package com.foursquare.twofish.importers.geonames
+package com.foursquare.twofishes.importers.geonames
 
-import com.foursquare.twofish._
-import com.foursquare.twofish.Helpers._
-import com.foursquare.twofish.Implicits._
+import com.foursquare.twofishes._
+import com.foursquare.twofishes.Helpers._
+import com.foursquare.twofishes.Implicits._
 import java.io.File
 
 object GeonamesParser {

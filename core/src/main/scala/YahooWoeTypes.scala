@@ -1,7 +1,7 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
-package com.foursquare.twofish
+package com.foursquare.twofishes
 
-import com.foursquare.twofish.YahooWoeType._
+import com.foursquare.twofishes.YahooWoeType._
 
 object YahooWoeTypes {
   val order = List(POSTAL_CODE, AIRPORT,  TOWN, SUBURB, ADMIN3, ADMIN2, ADMIN1, COUNTRY)

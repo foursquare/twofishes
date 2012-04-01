@@ -3,7 +3,7 @@
  *
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
-package com.foursquare.twofish;
+package com.foursquare.twofishes;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -28,19 +28,19 @@ import org.apache.thrift.protocol.*;
 
 // No additional import required for struct/union.
 
-public class FeatureGeometry implements TBase<FeatureGeometry, FeatureGeometry._Fields>, java.io.Serializable, Cloneable {
-  private static final TStruct STRUCT_DESC = new TStruct("FeatureGeometry");
+public class GeocodePoint implements TBase<GeocodePoint, GeocodePoint._Fields>, java.io.Serializable, Cloneable {
+  private static final TStruct STRUCT_DESC = new TStruct("GeocodePoint");
 
-  private static final TField CENTER_FIELD_DESC = new TField("center", TType.STRUCT, (short)1);
-  private static final TField BOUNDS_FIELD_DESC = new TField("bounds", TType.STRUCT, (short)2);
+  private static final TField LAT_FIELD_DESC = new TField("lat", TType.DOUBLE, (short)1);
+  private static final TField LNG_FIELD_DESC = new TField("lng", TType.DOUBLE, (short)2);
 
-  public GeocodePoint center;
-  public GeocodeBoundingBox bounds;
+  public double lat;
+  public double lng;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
-    CENTER((short)1, "center"),
-    BOUNDS((short)2, "bounds");
+    LAT((short)1, "lat"),
+    LNG((short)2, "lng");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -55,10 +55,10 @@ public class FeatureGeometry implements TBase<FeatureGeometry, FeatureGeometry._
      */
     public static _Fields findByThriftId(int fieldId) {
       switch(fieldId) {
-        case 1: // CENTER
-          return CENTER;
-        case 2: // BOUNDS
-          return BOUNDS;
+        case 1: // LAT
+          return LAT;
+        case 2: // LNG
+          return LNG;
         default:
           return null;
       }
@@ -99,113 +99,118 @@ public class FeatureGeometry implements TBase<FeatureGeometry, FeatureGeometry._
   }
 
   // isset id assignments
+  private static final int __LAT_ISSET_ID = 0;
+  private static final int __LNG_ISSET_ID = 1;
+  private BitSet __isset_bit_vector = new BitSet(2);
 
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
     Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.CENTER, new FieldMetaData("center", TFieldRequirementType.DEFAULT, 
-        new StructMetaData(TType.STRUCT, GeocodePoint.class)));
-    tmpMap.put(_Fields.BOUNDS, new FieldMetaData("bounds", TFieldRequirementType.OPTIONAL, 
-        new StructMetaData(TType.STRUCT, GeocodeBoundingBox.class)));
+    tmpMap.put(_Fields.LAT, new FieldMetaData("lat", TFieldRequirementType.DEFAULT, 
+        new FieldValueMetaData(TType.DOUBLE)));
+    tmpMap.put(_Fields.LNG, new FieldMetaData("lng", TFieldRequirementType.DEFAULT, 
+        new FieldValueMetaData(TType.DOUBLE)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
-    FieldMetaData.addStructMetaDataMap(FeatureGeometry.class, metaDataMap);
+    FieldMetaData.addStructMetaDataMap(GeocodePoint.class, metaDataMap);
   }
 
-  public FeatureGeometry() {
+  public GeocodePoint() {
   }
 
-  public FeatureGeometry(
-    GeocodePoint center)
+  public GeocodePoint(
+    double lat,
+    double lng)
   {
     this();
-    this.center = center;
+    this.lat = lat;
+    setLatIsSet(true);
+    this.lng = lng;
+    setLngIsSet(true);
   }
 
   /**
    * Performs a deep copy on <i>other</i>.
    */
-  public FeatureGeometry(FeatureGeometry other) {
-    if (other.isSetCenter()) {
-      this.center = new GeocodePoint(other.center);
-    }
-    if (other.isSetBounds()) {
-      this.bounds = new GeocodeBoundingBox(other.bounds);
-    }
+  public GeocodePoint(GeocodePoint other) {
+    __isset_bit_vector.clear();
+    __isset_bit_vector.or(other.__isset_bit_vector);
+    this.lat = other.lat;
+    this.lng = other.lng;
   }
 
-  public FeatureGeometry deepCopy() {
-    return new FeatureGeometry(this);
+  public GeocodePoint deepCopy() {
+    return new GeocodePoint(this);
   }
 
   @Override
   public void clear() {
-    this.center = null;
-    this.bounds = null;
+    setLatIsSet(false);
+    this.lat = 0.0;
+    setLngIsSet(false);
+    this.lng = 0.0;
   }
 
-  public GeocodePoint getCenter() {
-    return this.center;
+  public double getLat() {
+    return this.lat;
   }
 
-  public FeatureGeometry setCenter(GeocodePoint center) {
-    this.center = center;
+  public GeocodePoint setLat(double lat) {
+    this.lat = lat;
+    setLatIsSet(true);
     return this;
   }
 
-  public void unsetCenter() {
-    this.center = null;
+  public void unsetLat() {
+    __isset_bit_vector.clear(__LAT_ISSET_ID);
   }
 
-  /** Returns true if field center is set (has been asigned a value) and false otherwise */
-  public boolean isSetCenter() {
-    return this.center != null;
+  /** Returns true if field lat is set (has been asigned a value) and false otherwise */
+  public boolean isSetLat() {
+    return __isset_bit_vector.get(__LAT_ISSET_ID);
   }
 
-  public void setCenterIsSet(boolean value) {
-    if (!value) {
-      this.center = null;
-    }
+  public void setLatIsSet(boolean value) {
+    __isset_bit_vector.set(__LAT_ISSET_ID, value);
   }
 
-  public GeocodeBoundingBox getBounds() {
-    return this.bounds;
+  public double getLng() {
+    return this.lng;
   }
 
-  public FeatureGeometry setBounds(GeocodeBoundingBox bounds) {
-    this.bounds = bounds;
+  public GeocodePoint setLng(double lng) {
+    this.lng = lng;
+    setLngIsSet(true);
     return this;
   }
 
-  public void unsetBounds() {
-    this.bounds = null;
+  public void unsetLng() {
+    __isset_bit_vector.clear(__LNG_ISSET_ID);
   }
 
-  /** Returns true if field bounds is set (has been asigned a value) and false otherwise */
-  public boolean isSetBounds() {
-    return this.bounds != null;
+  /** Returns true if field lng is set (has been asigned a value) and false otherwise */
+  public boolean isSetLng() {
+    return __isset_bit_vector.get(__LNG_ISSET_ID);
   }
 
-  public void setBoundsIsSet(boolean value) {
-    if (!value) {
-      this.bounds = null;
-    }
+  public void setLngIsSet(boolean value) {
+    __isset_bit_vector.set(__LNG_ISSET_ID, value);
   }
 
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
-    case CENTER:
+    case LAT:
       if (value == null) {
-        unsetCenter();
+        unsetLat();
       } else {
-        setCenter((GeocodePoint)value);
+        setLat((Double)value);
       }
       break;
 
-    case BOUNDS:
+    case LNG:
       if (value == null) {
-        unsetBounds();
+        unsetLng();
       } else {
-        setBounds((GeocodeBoundingBox)value);
+        setLng((Double)value);
       }
       break;
 
@@ -214,11 +219,11 @@ public class FeatureGeometry implements TBase<FeatureGeometry, FeatureGeometry._
 
   public Object getFieldValue(_Fields field) {
     switch (field) {
-    case CENTER:
-      return getCenter();
+    case LAT:
+      return new Double(getLat());
 
-    case BOUNDS:
-      return getBounds();
+    case LNG:
+      return new Double(getLng());
 
     }
     throw new IllegalStateException();
@@ -231,10 +236,10 @@ public class FeatureGeometry implements TBase<FeatureGeometry, FeatureGeometry._
     }
 
     switch (field) {
-    case CENTER:
-      return isSetCenter();
-    case BOUNDS:
-      return isSetBounds();
+    case LAT:
+      return isSetLat();
+    case LNG:
+      return isSetLng();
     }
     throw new IllegalStateException();
   }
@@ -243,30 +248,30 @@ public class FeatureGeometry implements TBase<FeatureGeometry, FeatureGeometry._
   public boolean equals(Object that) {
     if (that == null)
       return false;
-    if (that instanceof FeatureGeometry)
-      return this.equals((FeatureGeometry)that);
+    if (that instanceof GeocodePoint)
+      return this.equals((GeocodePoint)that);
     return false;
   }
 
-  public boolean equals(FeatureGeometry that) {
+  public boolean equals(GeocodePoint that) {
     if (that == null)
       return false;
 
-    boolean this_present_center = true && this.isSetCenter();
-    boolean that_present_center = true && that.isSetCenter();
-    if (this_present_center || that_present_center) {
-      if (!(this_present_center && that_present_center))
+    boolean this_present_lat = true;
+    boolean that_present_lat = true;
+    if (this_present_lat || that_present_lat) {
+      if (!(this_present_lat && that_present_lat))
         return false;
-      if (!this.center.equals(that.center))
+      if (this.lat != that.lat)
         return false;
     }
 
-    boolean this_present_bounds = true && this.isSetBounds();
-    boolean that_present_bounds = true && that.isSetBounds();
-    if (this_present_bounds || that_present_bounds) {
-      if (!(this_present_bounds && that_present_bounds))
+    boolean this_present_lng = true;
+    boolean that_present_lng = true;
+    if (this_present_lng || that_present_lng) {
+      if (!(this_present_lng && that_present_lng))
         return false;
-      if (!this.bounds.equals(that.bounds))
+      if (this.lng != that.lng)
         return false;
     }
 
@@ -278,30 +283,30 @@ public class FeatureGeometry implements TBase<FeatureGeometry, FeatureGeometry._
     return 0;
   }
 
-  public int compareTo(FeatureGeometry other) {
+  public int compareTo(GeocodePoint other) {
     if (!getClass().equals(other.getClass())) {
       return getClass().getName().compareTo(other.getClass().getName());
     }
 
     int lastComparison = 0;
-    FeatureGeometry typedOther = (FeatureGeometry)other;
+    GeocodePoint typedOther = (GeocodePoint)other;
 
-    lastComparison = Boolean.valueOf(isSetCenter()).compareTo(typedOther.isSetCenter());
+    lastComparison = Boolean.valueOf(isSetLat()).compareTo(typedOther.isSetLat());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetCenter()) {
-      lastComparison = TBaseHelper.compareTo(this.center, typedOther.center);
+    if (isSetLat()) {
+      lastComparison = TBaseHelper.compareTo(this.lat, typedOther.lat);
       if (lastComparison != 0) {
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetBounds()).compareTo(typedOther.isSetBounds());
+    lastComparison = Boolean.valueOf(isSetLng()).compareTo(typedOther.isSetLng());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetBounds()) {
-      lastComparison = TBaseHelper.compareTo(this.bounds, typedOther.bounds);
+    if (isSetLng()) {
+      lastComparison = TBaseHelper.compareTo(this.lng, typedOther.lng);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -323,18 +328,18 @@ public class FeatureGeometry implements TBase<FeatureGeometry, FeatureGeometry._
         break;
       }
       switch (field.id) {
-        case 1: // CENTER
-          if (field.type == TType.STRUCT) {
-            this.center = new GeocodePoint();
-            this.center.read(iprot);
+        case 1: // LAT
+          if (field.type == TType.DOUBLE) {
+            this.lat = iprot.readDouble();
+            setLatIsSet(true);
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
-        case 2: // BOUNDS
-          if (field.type == TType.STRUCT) {
-            this.bounds = new GeocodeBoundingBox();
-            this.bounds.read(iprot);
+        case 2: // LNG
+          if (field.type == TType.DOUBLE) {
+            this.lng = iprot.readDouble();
+            setLngIsSet(true);
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -354,44 +359,28 @@ public class FeatureGeometry implements TBase<FeatureGeometry, FeatureGeometry._
     validate();
 
     oprot.writeStructBegin(STRUCT_DESC);
-    if (this.center != null) {
-      oprot.writeFieldBegin(CENTER_FIELD_DESC);
-      this.center.write(oprot);
-      oprot.writeFieldEnd();
-    }
-    if (this.bounds != null) {
-      if (isSetBounds()) {
-        oprot.writeFieldBegin(BOUNDS_FIELD_DESC);
-        this.bounds.write(oprot);
-        oprot.writeFieldEnd();
-      }
-    }
+    oprot.writeFieldBegin(LAT_FIELD_DESC);
+    oprot.writeDouble(this.lat);
+    oprot.writeFieldEnd();
+    oprot.writeFieldBegin(LNG_FIELD_DESC);
+    oprot.writeDouble(this.lng);
+    oprot.writeFieldEnd();
     oprot.writeFieldStop();
     oprot.writeStructEnd();
   }
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("FeatureGeometry(");
+    StringBuilder sb = new StringBuilder("GeocodePoint(");
     boolean first = true;
 
-    sb.append("center:");
-    if (this.center == null) {
-      sb.append("null");
-    } else {
-      sb.append(this.center);
-    }
+    sb.append("lat:");
+    sb.append(this.lat);
     first = false;
-    if (isSetBounds()) {
-      if (!first) sb.append(", ");
-      sb.append("bounds:");
-      if (this.bounds == null) {
-        sb.append("null");
-      } else {
-        sb.append(this.bounds);
-      }
-      first = false;
-    }
+    if (!first) sb.append(", ");
+    sb.append("lng:");
+    sb.append(this.lng);
+    first = false;
     sb.append(")");
     return sb.toString();
   }

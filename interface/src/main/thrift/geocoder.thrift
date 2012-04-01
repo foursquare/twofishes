@@ -1,4 +1,4 @@
-namespace java com.foursquare.twofish
+namespace java com.foursquare.twofishes
 
 // comments from http://developer.yahoo.com/geo/geoplanet/guide/concepts.html
 enum YahooWoeType {

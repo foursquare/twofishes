@@ -1,5 +1,5 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
-package com.foursquare.twofish.importers.geonames
+package com.foursquare.twofishes.importers.geonames
 
 class GeonamesImporterConfig(args: Array[String]) {
   // Buildings are places like the eiffel tower, but also schools and federal offices.
@@ -26,7 +26,7 @@ class GeonamesImporterConfig(args: Array[String]) {
   private val config = this
 
   val parser = 
-    new scopt.OptionParser("twofish", "0.12") {
+    new scopt.OptionParser("twofishes", "0.12") {
       booleanOpt("parse_world", "parse the whole world, or one country",
         { v: Boolean => config.parseWorld = v } )
       opt("parse_country", "country to parse, two letter iso code",

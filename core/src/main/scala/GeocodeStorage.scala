@@ -1,5 +1,5 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
-package com.foursquare.twofish
+package com.foursquare.twofishes
 
 import com.twitter.util.{Future, FuturePool}
 import org.bson.types.ObjectId

@@ -1,7 +1,7 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
-package com.foursquare.twofish
+package com.foursquare.twofishes
 
-import com.foursquare.twofish.Implicits._
+import com.foursquare.twofishes.Implicits._
 import com.twitter.util.{Future, FuturePool}
 import java.util.concurrent.ConcurrentHashMap
 import org.bson.types.ObjectId
@@ -266,13 +266,9 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
     val connectorEnd = connectorStart
     val hadConnector = connectorStart != -1
 
-    println(hadConnector)
-
     val tokens = if (hadConnector) {
       originalTokens.drop(connectorEnd + 1)
     } else { originalTokens }
-
-    println(tokens)
 
     val cache = generateParses(tokens)
     val futureCache: Iterable[Future[(Int, ParseSeq)]] = cache.map({case (k, v) => {

@@ -3,7 +3,7 @@
  *
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
-package com.foursquare.twofish;
+package com.foursquare.twofishes;
 
 import java.util.List;
 import java.util.ArrayList;

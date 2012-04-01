@@ -1,7 +1,7 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
-package com.foursquare.twofish.importers.geonames
+package com.foursquare.twofishes.importers.geonames
 
-import com.foursquare.twofish.LogHelper
+import com.foursquare.twofishes.LogHelper
 import java.io.File
 
 class TsvHelperFileParser(filename: String) extends LogHelper {

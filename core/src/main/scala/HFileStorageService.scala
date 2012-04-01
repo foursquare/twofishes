@@ -1,4 +1,4 @@
-package com.foursquare.twofish
+package com.foursquare.twofishes
 
 import java.io._
 import java.net.URI
