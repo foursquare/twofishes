@@ -52,7 +52,7 @@
       _(data.interpretations).each(function(interp) {
         if (interp.feature) {
           var feature = interp.feature;
-          var center = feature.center;
+          var center = feature.geometry.center;
           var point = new L.LatLng(center.lat, center.lng)
           if (!boundingBox) {
             boundingBox = new L.LatLngBounds(point, point);
