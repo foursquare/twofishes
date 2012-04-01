@@ -19,12 +19,6 @@ import org.jboss.netty.handler.codec.http._
 import org.jboss.netty.util.CharsetUtil
 import scala.collection.mutable.ListBuffer
 
-class ThreadLocal[T](init: => T) extends java.lang.ThreadLocal[T] with Function0[T] {
-  override def initialValue:T = init
-  def apply = get
-  def withValue[S](thunk:(T => S)):S = thunk(get)
-}
-
 class GeocodeServerImpl(store: GeocodeStorageFutureReadService) extends Geocoder.ServiceIface {
   def geocode(r: GeocodeRequest): Future[GeocodeResponse] = {
     new GeocoderImpl(store).geocode(r)
@@ -104,9 +98,13 @@ class GeocoderHttpService(geocoder: GeocodeServerImpl) extends Service[HttpReque
 object ServerStore {
   val ioFuturePool = FuturePool(Executors.newFixedThreadPool(24))
 
-  def getStore(config: GeocodeServerConfig) = {
+  def getStore(config: GeocodeServerConfig): GeocodeStorageFutureReadService = {
+    getStore(config.hfileBasePath)
+  }
+
+  def getStore(path: String): GeocodeStorageFutureReadService = {
     new WrappedGeocodeStorageFutureReadService(
-      new HFileStorageService(config.hfileBasePath),
+      new HFileStorageService(path),
       ioFuturePool)
   }
 }

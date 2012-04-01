@@ -88,6 +88,7 @@ object GeocoderBuild extends Build {
           <dependencies>
             <exclude org="org.mongodb" name="mongo-java-driver"/>
             <exclude org="org.mortbay.jetty" name="jetty"/>
+            <exclude org="org.apache.avro" name="avro-ipc"/>
           </dependencies>
         )
       )
