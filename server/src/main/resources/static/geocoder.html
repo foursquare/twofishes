@@ -69,8 +69,8 @@
           map.addLayer(marker);
           previousLayers.push(marker);
 
-          if (feature.bounds) {
-            var bounds = feature.bounds;
+          if (feature.geometry.bounds) {
+            var bounds = feature.geometry.bounds;
             var p1 = new L.LatLng(bounds.ne.lat, bounds.ne.lng),
                 p2 = new L.LatLng(bounds.ne.lat, bounds.sw.lng),
                 p3 = new L.LatLng(bounds.sw.lat, bounds.sw.lng),
