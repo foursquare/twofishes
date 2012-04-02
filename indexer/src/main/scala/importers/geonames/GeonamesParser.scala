@@ -114,20 +114,21 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
 
   def parseAdminFile(filename: String) {
     parseFromFile(filename, (index: Int, line: String) => 
-      GeonamesFeature.parseFromAdminLine(index, line))
+      GeonamesFeature.parseFromAdminLine(index, line), "features")
   }
 
   def parsePostalCodeFile(filename: String, countryFile: Boolean) {
     parseFromFile(filename, (index: Int, line: String) => 
-      GeonamesFeature.parseFromPostalCodeLine(index, line))
+      GeonamesFeature.parseFromPostalCodeLine(index, line), "postal codes")
   }
 
   private def parseFromFile(filename: String,
-    lineProcessor: (Int, String) => Option[GeonamesFeature]) {
+    lineProcessor: (Int, String) => Option[GeonamesFeature],
+    typeName: String) {
     val lines = scala.io.Source.fromFile(new File(filename), "UTF-8").getLines
     lines.zipWithIndex.foreach({case (line, index) => {
-      if (index % 1000 == 0) {
-        logger.info("imported %d features so far".format(index))
+      if (index % 10000 == 0) {
+        logger.info("imported %d %s so far".format(index, typeName))
       }
       val feature = lineProcessor(index, line)
       feature.foreach(f => {
@@ -141,7 +142,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
   def parseAlternateNamesFile(filename: String) {
     val lines = scala.io.Source.fromFile(new File(filename)).getLines
     lines.zipWithIndex.foreach({case (line, index) => {
-      if (index % 1000 == 0) {
+      if (index % 10000 == 0) {
         logger.info("imported %d alternateNames so far".format(index))
       }
 
