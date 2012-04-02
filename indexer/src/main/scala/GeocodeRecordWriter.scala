@@ -60,20 +60,20 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
 
   def addNameToRecord(name: DisplayName, id: StoredFeatureId) {
     MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))),
-      MongoDBObject("$addToSet" -> MongoDBObject("dns" -> grater[DisplayName].asDBObject(name))),
+      MongoDBObject("$addToSet" -> MongoDBObject("displayNames" -> grater[DisplayName].asDBObject(name))),
       false, false)
   }
 
   def addBoundingBoxToRecord(id: StoredFeatureId, bbox: BoundingBox) {
     MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))),
-      MongoDBObject("$set" -> MongoDBObject("bb" -> grater[BoundingBox].asDBObject(bbox))),
+      MongoDBObject("$set" -> MongoDBObject("displayNames" -> grater[BoundingBox].asDBObject(bbox))),
       false, false)
   }
 
   def setRecordNames(id: StoredFeatureId, names: List[DisplayName]) {
     MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))),
       MongoDBObject("$set" -> MongoDBObject(
-        "dns" -> names.map(n => grater[DisplayName].asDBObject(n)))),
+        "displayNames" -> names.map(n => grater[DisplayName].asDBObject(n)))),
       false, false)
   }
 }
