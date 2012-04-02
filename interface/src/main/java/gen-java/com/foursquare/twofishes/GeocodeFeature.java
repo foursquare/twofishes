@@ -39,6 +39,7 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
   private static final TField IDS_FIELD_DESC = new TField("ids", TType.LIST, (short)6);
   private static final TField NAMES_FIELD_DESC = new TField("names", TType.LIST, (short)7);
   private static final TField ATTRIBUTION_FIELD_DESC = new TField("attribution", TType.LIST, (short)8);
+  private static final TField TIMEZONES_FIELD_DESC = new TField("timezones", TType.LIST, (short)9);
 
   public String cc;
   public FeatureGeometry geometry;
@@ -52,6 +53,7 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
   public List<FeatureId> ids;
   public List<FeatureName> names;
   public List<String> attribution;
+  public List<String> timezones;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
@@ -66,7 +68,8 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     WOE_TYPE((short)5, "woeType"),
     IDS((short)6, "ids"),
     NAMES((short)7, "names"),
-    ATTRIBUTION((short)8, "attribution");
+    ATTRIBUTION((short)8, "attribution"),
+    TIMEZONES((short)9, "timezones");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -97,6 +100,8 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
           return NAMES;
         case 8: // ATTRIBUTION
           return ATTRIBUTION;
+        case 9: // TIMEZONES
+          return TIMEZONES;
         default:
           return null;
       }
@@ -160,6 +165,9 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     tmpMap.put(_Fields.ATTRIBUTION, new FieldMetaData("attribution", TFieldRequirementType.OPTIONAL, 
         new ListMetaData(TType.LIST, 
             new FieldValueMetaData(TType.STRING))));
+    tmpMap.put(_Fields.TIMEZONES, new FieldMetaData("timezones", TFieldRequirementType.OPTIONAL, 
+        new ListMetaData(TType.LIST, 
+            new FieldValueMetaData(TType.STRING))));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeFeature.class, metaDataMap);
   }
@@ -216,6 +224,13 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       }
       this.attribution = __this__attribution;
     }
+    if (other.isSetTimezones()) {
+      List<String> __this__timezones = new ArrayList<String>();
+      for (String other_element : other.timezones) {
+        __this__timezones.add(other_element);
+      }
+      this.timezones = __this__timezones;
+    }
   }
 
   public GeocodeFeature deepCopy() {
@@ -232,6 +247,7 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     this.ids = null;
     this.names = null;
     this.attribution = null;
+    this.timezones = null;
   }
 
   public String getCc() {
@@ -479,6 +495,45 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     }
   }
 
+  public int getTimezonesSize() {
+    return (this.timezones == null) ? 0 : this.timezones.size();
+  }
+
+  public java.util.Iterator<String> getTimezonesIterator() {
+    return (this.timezones == null) ? null : this.timezones.iterator();
+  }
+
+  public void addToTimezones(String elem) {
+    if (this.timezones == null) {
+      this.timezones = new ArrayList<String>();
+    }
+    this.timezones.add(elem);
+  }
+
+  public List<String> getTimezones() {
+    return this.timezones;
+  }
+
+  public GeocodeFeature setTimezones(List<String> timezones) {
+    this.timezones = timezones;
+    return this;
+  }
+
+  public void unsetTimezones() {
+    this.timezones = null;
+  }
+
+  /** Returns true if field timezones is set (has been asigned a value) and false otherwise */
+  public boolean isSetTimezones() {
+    return this.timezones != null;
+  }
+
+  public void setTimezonesIsSet(boolean value) {
+    if (!value) {
+      this.timezones = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case CC:
@@ -545,6 +600,14 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       }
       break;
 
+    case TIMEZONES:
+      if (value == null) {
+        unsetTimezones();
+      } else {
+        setTimezones((List<String>)value);
+      }
+      break;
+
     }
   }
 
@@ -574,6 +637,9 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     case ATTRIBUTION:
       return getAttribution();
 
+    case TIMEZONES:
+      return getTimezones();
+
     }
     throw new IllegalStateException();
   }
@@ -601,6 +667,8 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       return isSetNames();
     case ATTRIBUTION:
       return isSetAttribution();
+    case TIMEZONES:
+      return isSetTimezones();
     }
     throw new IllegalStateException();
   }
@@ -687,6 +755,15 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       if (!(this_present_attribution && that_present_attribution))
         return false;
       if (!this.attribution.equals(that.attribution))
+        return false;
+    }
+
+    boolean this_present_timezones = true && this.isSetTimezones();
+    boolean that_present_timezones = true && that.isSetTimezones();
+    if (this_present_timezones || that_present_timezones) {
+      if (!(this_present_timezones && that_present_timezones))
+        return false;
+      if (!this.timezones.equals(that.timezones))
         return false;
     }
 
@@ -782,6 +859,16 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     }
     if (isSetAttribution()) {
       lastComparison = TBaseHelper.compareTo(this.attribution, typedOther.attribution);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetTimezones()).compareTo(typedOther.isSetTimezones());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetTimezones()) {
+      lastComparison = TBaseHelper.compareTo(this.timezones, typedOther.timezones);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -892,6 +979,23 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
+        case 9: // TIMEZONES
+          if (field.type == TType.LIST) {
+            {
+              TList _list17 = iprot.readListBegin();
+              this.timezones = new ArrayList<String>(_list17.size);
+              for (int _i18 = 0; _i18 < _list17.size; ++_i18)
+              {
+                String _elem19;
+                _elem19 = iprot.readString();
+                this.timezones.add(_elem19);
+              }
+              iprot.readListEnd();
+            }
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -943,9 +1047,9 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         oprot.writeFieldBegin(IDS_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.STRUCT, this.ids.size()));
-          for (FeatureId _iter17 : this.ids)
+          for (FeatureId _iter20 : this.ids)
           {
-            _iter17.write(oprot);
+            _iter20.write(oprot);
           }
           oprot.writeListEnd();
         }
@@ -957,9 +1061,9 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         oprot.writeFieldBegin(NAMES_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.STRUCT, this.names.size()));
-          for (FeatureName _iter18 : this.names)
+          for (FeatureName _iter21 : this.names)
           {
-            _iter18.write(oprot);
+            _iter21.write(oprot);
           }
           oprot.writeListEnd();
         }
@@ -971,9 +1075,23 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         oprot.writeFieldBegin(ATTRIBUTION_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.STRING, this.attribution.size()));
-          for (String _iter19 : this.attribution)
+          for (String _iter22 : this.attribution)
           {
-            oprot.writeString(_iter19);
+            oprot.writeString(_iter22);
+          }
+          oprot.writeListEnd();
+        }
+        oprot.writeFieldEnd();
+      }
+    }
+    if (this.timezones != null) {
+      if (isSetTimezones()) {
+        oprot.writeFieldBegin(TIMEZONES_FIELD_DESC);
+        {
+          oprot.writeListBegin(new TList(TType.STRING, this.timezones.size()));
+          for (String _iter23 : this.timezones)
+          {
+            oprot.writeString(_iter23);
           }
           oprot.writeListEnd();
         }
@@ -1061,6 +1179,16 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         sb.append("null");
       } else {
         sb.append(this.attribution);
+      }
+      first = false;
+    }
+    if (isSetTimezones()) {
+      if (!first) sb.append(", ");
+      sb.append("timezones:");
+      if (this.timezones == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.timezones);
       }
       first = false;
     }

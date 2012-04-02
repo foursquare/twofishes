@@ -279,14 +279,14 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
         case 1: // INTERPRETATIONS
           if (field.type == TType.LIST) {
             {
-              TList _list24 = iprot.readListBegin();
-              this.interpretations = new ArrayList<GeocodeInterpretation>(_list24.size);
-              for (int _i25 = 0; _i25 < _list24.size; ++_i25)
+              TList _list28 = iprot.readListBegin();
+              this.interpretations = new ArrayList<GeocodeInterpretation>(_list28.size);
+              for (int _i29 = 0; _i29 < _list28.size; ++_i29)
               {
-                GeocodeInterpretation _elem26;
-                _elem26 = new GeocodeInterpretation();
-                _elem26.read(iprot);
-                this.interpretations.add(_elem26);
+                GeocodeInterpretation _elem30;
+                _elem30 = new GeocodeInterpretation();
+                _elem30.read(iprot);
+                this.interpretations.add(_elem30);
               }
               iprot.readListEnd();
             }
@@ -313,9 +313,9 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
       oprot.writeFieldBegin(INTERPRETATIONS_FIELD_DESC);
       {
         oprot.writeListBegin(new TList(TType.STRUCT, this.interpretations.size()));
-        for (GeocodeInterpretation _iter27 : this.interpretations)
+        for (GeocodeInterpretation _iter31 : this.interpretations)
         {
-          _iter27.write(oprot);
+          _iter31.write(oprot);
         }
         oprot.writeListEnd();
       }
