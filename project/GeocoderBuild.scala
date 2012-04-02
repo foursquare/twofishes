@@ -7,7 +7,7 @@ object GeocoderBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.foursquare.twofishes",
     name := "twofishes",
-    version      := "0.2",
+    version      := "0.21",
     scalaVersion := "2.9.1"
   )
 
@@ -17,6 +17,7 @@ object GeocoderBuild extends Build {
     resolvers += "repo.novus rels" at "http://repo.novus.com/releases/",
     resolvers += "repo.novus snaps" at "http://repo.novus.com/snapshots/",
     resolvers += "Java.net Maven 2 Repo" at "http://download.java.net/maven/2",
+    resolvers += "apache" at "http://repo2.maven.org/maven2/org/apache/hbase/hbase/",
     resolvers += "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos/",
     resolvers ++= Seq("snapshots" at "http://oss.sonatype.org/content/repositories/snapshots",
                       "releases"  at "http://oss.sonatype.org/content/repositories/releases"),
@@ -82,7 +83,9 @@ object GeocoderBuild extends Build {
           "com.twitter" % "util-logging_2.9.1" % "1.12.8",
           "org.slf4j" % "slf4j-api" % "1.6.1",
           "org.apache.hadoop" % "hadoop-core" % "0.20.2-cdh3u3",
-          "org.apache.hbase" % "hbase" % "0.90.4-cdh3u3"
+          "org.apache.hbase" % "hbase" % "0.92.1",
+          "com.novus" % "salat-core_2.9.1" % "0.0.8-SNAPSHOT",
+          "thrift" % "libthrift" % "0.5.0" from "http://maven.twttr.com/org/apache/thrift/libthrift/0.5.0/libthrift-0.5.0.jar"
         ),
         ivyXML := (
           <dependencies>
@@ -111,9 +114,7 @@ object GeocoderBuild extends Build {
           "com.twitter" % "finagle-http_2.9.1" % "1.9.12",
           "org.specs2" %% "specs2" % "1.8.2" % "test",
           "org.scala-tools.testing" %% "specs" % "1.6.9" % "test",
-          "com.github.scopt" %% "scopt" % "2.0.0",
-          "com.sleepycat" % "je" % "4.0.92"
-        )
+          "com.github.scopt" %% "scopt" % "2.0.0"        )
       ),
       base = file("server")) dependsOn(core, interface)
 
@@ -125,8 +126,7 @@ object GeocoderBuild extends Build {
           "com.twitter" % "util-core_2.9.1" % "1.12.8",
           "com.twitter" % "util-logging_2.9.1" % "1.12.8",
           "com.novus" % "salat-core_2.9.1" % "0.0.8-SNAPSHOT",
-          "com.github.scopt" %% "scopt" % "2.0.0",
-          "com.sleepycat" % "je" % "4.0.92"
+          "com.github.scopt" %% "scopt" % "2.0.0"
         )
       )
   ) dependsOn(core)
