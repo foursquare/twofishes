@@ -161,7 +161,6 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
       if (name.flags.contains(FeatureNameFlags.ABBREVIATION) && preferAbbrev) {
         score += 4
       }
-      println("%s -- %d".format(name, score))
       score
     }
   }
