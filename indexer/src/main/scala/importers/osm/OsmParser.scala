@@ -7,6 +7,7 @@ class OsmParser extends BinaryParser {
   def doParse(filename: String) {
     val fis = new FileInputStream(filename)
     val bis = new BlockInputStream(fis, this)
+    bis.process()
   }
 
   protected def parseRelations(rels: java.util.List[Osmformat.Relation]) {}
