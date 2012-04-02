@@ -10,7 +10,7 @@ object GeonamesParser {
   val geonameIdNamespace = "geonameid"
   val geonameAdminIdNamespace = "gadminid"
 
-  var config = new GeonamesImporterConfig(Array())
+  var config: GeonamesImporterConfig = null
 
   def main(args: Array[String]) {
     val store = new MongoGeocodeStorageService()
