@@ -36,7 +36,7 @@ Requirements
 
 First time setup
 ================
-*   git clone git@github.com:foursquare/twofish.git
+*   git clone git@github.com:foursquare/twofishes.git
 *   cd twofish
 *   ./init.sh
 *   ./download-US.sh # or ./download-world.sh
@@ -45,14 +45,16 @@ Data import
 ===========
 *   mongod --dbpath /local/directory/for/output/
 *   ./init-database.sh # drops existing table and creates indexes
-*   ./sbt "indexer/run-main com.foursquare.twofish.importers.geonames.GeonamesParser --parse_country US --hfile_basepath /output/directory/for/finished/files/" # or ./sbt "indexer/run-main com.foursquare.twofish.importers.geonames.GeonamesParser --parse_world true"
+*   ./sbt "indexer/run-main com.foursquare.twofishes.importers.geonames.GeonamesParser --parse_country US --hfile_basepath /output/directory/for/finished/files/" # or ./sbt "indexer/run-main com.foursquare.twofishes.importers.geonames.GeonamesParser --parse_world true"
 
 Serving
 =======
 NOTE: mongod is not required for serving, only index building.
-*   ./sbt  "server/run-main com.foursquare.twofish.GeocodeFinagleServer --port 8080 --hfile_basepath /input/directory/for/finished/files/"
+*   ./sbt  "server/run-main com.foursquare.twofishes.GeocodeFinagleServer --port 8080 --hfile_basepath /input/directory/for/finished/files/"
 *   server should be responding to finagle-thrift on the port specified (8080 by default), and responding to http requests at the next port up: http://localhost:8081/?query=rego+park+ny http://localhost:8081/static/geocoder.html#rego+park
-*   if you want to run vanilla thrift-rpc (not finagle). use class com.foursquare.twofish.GeocodeThriftServer instead.
+*   if you want to run vanilla thrift-rpc (not finagle). use class com.foursquare.twofishes.GeocodeThriftServer instead.
+
+A better option is to run "./sbt server/assembly" and then use the resulting server/target/server-assembly-VERSION.jar. Serve that with java -jar JARFILE --hfile_basepath /directory
 
 Performance
 ===========
