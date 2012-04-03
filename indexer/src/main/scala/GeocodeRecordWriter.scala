@@ -66,7 +66,7 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
 
   def addBoundingBoxToRecord(id: StoredFeatureId, bbox: BoundingBox) {
     MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))),
-      MongoDBObject("$set" -> MongoDBObject("displayNames" -> grater[BoundingBox].asDBObject(bbox))),
+      MongoDBObject("$set" -> MongoDBObject("boundingbox" -> grater[BoundingBox].asDBObject(bbox))),
       false, false)
   }
 

@@ -11,7 +11,6 @@ class OsmParser extends BinaryParser {
   }
 
   override protected def parseRelations(rels: java.util.List[Osmformat.Relation]) {
-    println(rels)
   }
 
   /** Parse a DenseNode protocol buffer and send the resulting nodes to a sink.  */
