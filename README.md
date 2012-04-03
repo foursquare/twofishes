@@ -57,6 +57,16 @@ NOTE: mongod is not required for serving, only index building.
 
 A better option is to run "./sbt server/assembly" and then use the resulting server/target/server-assembly-VERSION.jar. Serve that with java -jar JARFILE --hfile_basepath /directory
 
+From Binary
+===========
+*   mongod
+*   curl -L "https://github.com/downloads/foursquare/twofishes/init-database.sh" | sh
+*   curl -L "https://github.com/downloads/foursquare/twofishes/download-US.sh" | sh # or download-world.sh
+*   java -jar indexer-assembly-0.21.jar --hfile_basepath /output/dir # indexing
+*   java -jar server-assembly-0.21.jar --hfile_basepath /output/dir # serving
+
+
+
 Performance
 ===========
 Performance was only tested against the json frontend. Hitting the finagle would probably be a lot faster.

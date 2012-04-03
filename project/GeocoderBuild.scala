@@ -69,7 +69,7 @@ object GeocoderBuild extends Build {
   )
 
   lazy val all = Project(id = "all",
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ assemblySettings ++ Seq(
       publishArtifact := true
     ),
     base = file(".")) aggregate(core, interface, server, indexer)
@@ -121,6 +121,7 @@ object GeocoderBuild extends Build {
   lazy val indexer = Project(id = "indexer",
       base = file("indexer"),
       settings = defaultSettings ++ assemblySettings ++ Seq(
+        mainClass in assembly := Some("com.foursquare.twofishes.importers.geonames.GeonamesParser"),
         publishArtifact := false,
         libraryDependencies ++= Seq(
           "com.twitter" % "util-core_2.9.1" % "1.12.8",
