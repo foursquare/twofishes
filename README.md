@@ -25,7 +25,7 @@ Geonames is great, but not perfect. Southeast Asia doesn't have the most compreh
 
 Additionally, the mapbox folks generated a mapping for us from OSM features with geometry to geonameids, however OSM has very low polygon/bounding box coverage.
 
-Geonames is licensed under CC-BY-SA http://www.geonames.org/
+Geonames is licensed under CC-BY http://www.geonames.org/. They take a pretty liberal interpretation of this and just ask for about page attribution if you make use of the data. 
 Flickr shapefiles are public domain 
 
 Requirements
@@ -49,10 +49,11 @@ Data import
 
 Serving
 =======
-NOTE: mongod is not required for serving, only index building.
 *   ./sbt  "server/run-main com.foursquare.twofishes.GeocodeFinagleServer --port 8080 --hfile_basepath /input/directory/for/finished/files/"
-*   server should be responding to finagle-thrift on the port specified (8080 by default), and responding to http requests at the next port up: http://localhost:8081/?query=rego+park+ny http://localhost:8081/static/geocoder.html#rego+park
+*   server should be responding to finagle-thrift on the port specified (8080 by default), and responding to http requests at the next port up: <http://localhost:8081/?query=rego+park+ny> <http://localhost:8081/static/geocoder.html#rego+park>
 *   if you want to run vanilla thrift-rpc (not finagle). use class com.foursquare.twofishes.GeocodeThriftServer instead.
+NOTE: mongod is not required for serving, only index building.
+
 
 A better option is to run "./sbt server/assembly" and then use the resulting server/target/server-assembly-VERSION.jar. Serve that with java -jar JARFILE --hfile_basepath /directory
 
@@ -60,12 +61,9 @@ Performance
 ===========
 Performance was only tested against the json frontend. Hitting the finagle would probably be a lot faster.
 
-On a beefy AWS box, apachebench, running the same query over and over claims we can do 250 concurrent connections at 1500qps with sub-100ms latency @ 95%ile. There's a terrible drop-off in 98th percentile latency -- 3-4s. This might be java GC pauses, though I don't see terrible GC in profiling. Also, this workload is unrealistic.
+On a beefy AWS box, apachebench, running the same query over and over claims we can do 250 concurrent connections at 1500qps with sub-200ms latency @ 95%ile. There's a terrible drop-off in 98th percentile latency -- 3-4s. This might be java GC pauses, though I don't see terrible GC in profiling. Also, this workload is unrealistic.
 
-httpperf lets us better control qps but not concurrentcy (why are the two major http benchmarking tools complementary with a gap between them?). On a more randomized workload, httperf shows says we can do 500qps with a median connection time of 13.5ms and an average response time of 60.8ms.
-
-This is pretty performant for java. It's terrible compared to what a c++ implementation could probably do.
-
+httpperf lets us better control qps but not concurrentcy (why are the two major http benchmarking tools complementary with a gap between them?). On a more randomized workload, httperf shows says we can do 500qps with a median connection time of 4.5ms and an average response time of 8.9ms.
 
 Future
 ======
