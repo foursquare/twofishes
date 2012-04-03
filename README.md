@@ -45,7 +45,7 @@ Data import
 ===========
 *   mongod --dbpath /local/directory/for/output/
 *   ./init-database.sh # drops existing table and creates indexes
-*   ./sbt "indexer/run-main com.foursquare.twofishes.importers.geonames.GeonamesParser --parse_country US --hfile_basepath /output/directory/for/finished/files/" # or ./sbt "indexer/run-main com.foursquare.twofishes.importers.geonames.GeonamesParser --parse_world true"
+*   ./sbt "indexer/run-main com.foursquare.twofishes.importers.geonames.GeonamesParser --parse_country US --hfile_basepath /output/directory/for/finished/files/" # or ./sbt "indexer/run-main com.foursquare.twofishes.importers.geonames.GeonamesParser --parse_world true --hfile_basepath /output/directory"
 
 Serving
 =======
