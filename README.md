@@ -63,7 +63,7 @@ Performance was only tested against the json frontend. Hitting the finagle would
 
 On a beefy AWS box, apachebench, running the same query over and over claims we can do 250 concurrent connections at 1500qps with sub-200ms latency @ 95%ile. There's a terrible drop-off in 98th percentile latency -- 3-4s. This might be java GC pauses, though I don't see terrible GC in profiling. Also, this workload is unrealistic.
 
-httpperf lets us better control qps but not concurrentcy (why are the two major http benchmarking tools complementary with a gap between them?). On a more randomized workload, httperf shows says we can do 500qps with a median connection time of 4.5ms and an average response time of 8.9ms.
+httpperf lets us better control qps but not concurrency (why are the two major http benchmarking tools complementary with a gap between them?). On a more randomized workload, httperf shows says we can do 500qps with a median connection time of 4.5ms and an average response time of 8.9ms.
 
 Future
 ======
