@@ -36,7 +36,7 @@ Requirements
 
 First time setup
 ================
-*   git clone git@github.com:foursquare/twofishes.git
+*   git clone https://github.com/foursquare/twofishes.git
 *   cd twofish
 *   ./init.sh
 *   ./download-US.sh # or ./download-world.sh
