@@ -85,6 +85,10 @@ Legacy Python Server
 ====================
 I originally implemented this as a weekend python hack in a few hundred lines ... then added some features ... then some more ... and then it was way too much gross python with no object model. So I rewrote it entirely in scala. If you want to try running the python server, use importer.py in legacy-python/ and geocoder.py in legacy-python/
 
+Me
+==
+David Blackman <blackmad@foursquare.com>
+
 Unrelated
 =========
 These are the two fishes I grilled the night I started coding the original python implementation <https://twitter.com/#!/whizziwig/statuses/154431957630066688>
