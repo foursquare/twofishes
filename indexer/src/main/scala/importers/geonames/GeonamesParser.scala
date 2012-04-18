@@ -62,7 +62,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
   // token -> alt tokens
   val rewriteTable = new TsvHelperFileParser("data/custom/rewrites.txt")
   // tokenlist
-  val deletesList = scala.io.Source.fromFile(new File("data/custom/deletes.txt")).getLines.map(NameNormalizer.normalize)
+  val deletesList: List[String] = scala.io.Source.fromFile(new File("data/custom/deletes.txt")).getLines.map(NameNormalizer.normalize).toList
   // geonameid -> boost value
   val boostTable = new TsvHelperFileParser("data/custom/boosts.txt")
   // geonameid -> alias
@@ -97,7 +97,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     nameSet.toList
   }
 
-  def parseFeature(feature: GeonamesFeature) {
+  def parseFeature(feature: GeonamesFeature): GeocodeRecord = {
     // Build ids
     val adminId = feature.adminId.map(id => StoredFeatureId(geonameAdminIdNamespace, id))
     val geonameId = feature.geonameid.map(id => StoredFeatureId(geonameIdNamespace, id))
@@ -121,7 +121,6 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       )
     })
  
-
     val record = GeocodeRecord(
       ids = ids,
       names = names,
@@ -136,6 +135,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     )
 
     store.insert(record)
+    record
   }
 
   def parseAdminFile(filename: String) {

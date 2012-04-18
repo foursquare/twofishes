@@ -47,4 +47,32 @@ class IndexerSpec extends Specification {
     names must contain("brick")
     names must contain("of brick")
   }
+
+  "deletes work in practice" in {
+    val record = parser.parseFeature(
+      new GeonamesFeature(Map(
+        GeonamesFeatureColumns.LATITUDE -> "40.74",
+        GeonamesFeatureColumns.LONGITUDE -> "-74",
+        GeonamesFeatureColumns.NAME -> "Brick Township",
+        GeonamesFeatureColumns.ALTERNATENAMES -> "Township of Brick"
+      ))
+    )
+
+    // Yes, this is totally awful. awful awful.
+    record.names mustEqual List(
+      "brick township",
+      "brick charter",
+      "of brick",
+      "charter township of brick",
+      "brick charter charter township",
+      "brick twp",
+      "brick",
+      "township of brick",
+      "charter brick",
+      "brick charter twp",
+      "twp of brick",
+      "brick charter township",
+      "brick charter charter",
+      "charter of brick")
+  }
 }
