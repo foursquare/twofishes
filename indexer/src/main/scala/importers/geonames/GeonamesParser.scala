@@ -94,7 +94,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
         nameSet += name.replace(delete, "").split(" ").filterNot(_.isEmpty).mkString(" ")
       })
     })
-    nameSet.toList
+    nameSet.toList.filterNot(_.isEmpty)
   }
 
   def parseFeature(feature: GeonamesFeature): GeocodeRecord = {
