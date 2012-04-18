@@ -65,7 +65,7 @@ class OutputHFile(basepath: String) {
     var nameCount = 0
     val nameSize = NameIndexDAO.collection.count
     val nameCursor = NameIndexDAO.find(MongoDBObject())
-    nameCursor.filterNot(_.isEmpty).foreach(n => {
+    nameCursor.filterNot(_.name.isEmpty).foreach(n => {
       nameMap(n.name.getBytes()) = n.fids
       nameCount += 1
       if (nameCount % 100000 == 0) {
