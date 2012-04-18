@@ -124,6 +124,7 @@ object GeocoderBuild extends Build {
         mainClass in assembly := Some("com.foursquare.twofishes.importers.geonames.GeonamesParser"),
         publishArtifact := false,
         libraryDependencies ++= Seq(
+          "org.specs2" %% "specs2" % "1.8.2" % "test",
           "com.twitter" % "util-core_2.9.1" % "1.12.8",
           "com.twitter" % "util-logging_2.9.1" % "1.12.8",
           "com.novus" % "salat-core_2.9.1" % "0.0.8-SNAPSHOT",

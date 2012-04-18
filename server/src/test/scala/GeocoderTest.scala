@@ -7,6 +7,7 @@ import org.specs2.mutable._
 import scala.collection.mutable.HashMap
 import org.bson.types.ObjectId
 
+
 class MockGeocodeStorageReadService extends GeocodeStorageFutureReadService {
   val nameMap = new HashMap[String, List[GeocodeServingFeature]]
   val idMap = new HashMap[ObjectId, GeocodeServingFeature]

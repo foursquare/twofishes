@@ -61,6 +61,8 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
 
   // token -> alt tokens
   val rewriteTable = new TsvHelperFileParser("data/custom/rewrites.txt")
+  // tokenlist
+  val deletesList = scala.io.Source.fromFile(new File("data/custom/deletes.txt")).getLines.map(NameNormalizer.normalize)
   // geonameid -> boost value
   val boostTable = new TsvHelperFileParser("data/custom/boosts.txt")
   // geonameid -> alias
@@ -70,6 +72,29 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
 
   def logUnusedHelperEntries {
     helperTables.foreach(_.logUnused)
+  }
+
+  def doRewrites(names: List[String]): List[String] = {
+    val nameSet = new scala.collection.mutable.HashSet() ++ names.toSet
+    rewriteTable.gidMap.foreach({case(from, toList) => {
+      nameSet.foreach(name => {
+        toList.values.foreach(to => {
+          nameSet += name.replace(from, to)
+        })
+      })
+    }})
+    nameSet.toList
+  }
+
+  def doDeletes(names: List[String]) = {
+    val nameSet = new scala.collection.mutable.HashSet() ++ names.toSet
+    // val newNameSet = new scala.collection.mutable.HashSet() ++ names.toSet
+    deletesList.foreach(delete => {
+      nameSet.foreach(name => {
+        nameSet += name.replace(delete, "").split(" ").filterNot(_.isEmpty).mkString(" ")
+      })
+    })
+    nameSet.toList
   }
 
   def parseFeature(feature: GeonamesFeature) {
@@ -85,7 +110,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     val allNames = feature.allNames ++ aliases
     val normalizedNames = allNames.map(n => NameNormalizer.normalize(n))
     val deaccentedNames = normalizedNames.map(n => NameNormalizer.deaccent(n))
-    val names = (normalizedNames ++ deaccentedNames).toSet.toList.filterNot(_.isEmpty)
+    val names = doDeletes(doRewrites((normalizedNames ++ deaccentedNames).toSet.toList.filterNot(_.isEmpty)))
 
     // Build parents
     val parents = feature.parents.map(p => StoredFeatureId(geonameAdminIdNamespace, p))
@@ -96,6 +121,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       )
     })
  
+
     val record = GeocodeRecord(
       ids = ids,
       names = names,
