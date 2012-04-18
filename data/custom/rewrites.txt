@@ -6,3 +6,4 @@ south	s
 east	e
 west	w
 air force base	afb
+township	twp,charter township

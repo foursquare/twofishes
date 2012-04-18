@@ -3,3 +3,9 @@
 5128581	NYC
 3530597	DF
 5391959	SF
+1642911	Jakarta Capital Region
+1733046	Federal Territory of Kuala Lum
+4994358	Grand Rapids Charter Township
+4560349	phila
+4544349	okc
+1850144 新宿区
