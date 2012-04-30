@@ -71,6 +71,7 @@ abstract class HFileInput(basepath: String, filename: String) {
 
     while (scanner.getKeyValue().getKeyString().startsWith(key)) {
       ret.append(scanner.getKeyValue().getValue())
+      scanner.next()
     }
 
     ret
