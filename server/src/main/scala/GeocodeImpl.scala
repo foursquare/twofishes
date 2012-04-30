@@ -19,6 +19,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
   type ParseSeq = Seq[Parse]
   type ParseCache = ConcurrentHashMap[Int, Future[ParseSeq]]
 
+  val autoComplete = true
+
   /*
     The basic algorithm works like this
     - roughly a depth-first recursive descent parser
@@ -55,9 +57,15 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
         val searchStrs: Seq[String] =
           1.to(tokens.size).map(i => tokens.take(i).mkString(" "))
 
+        val toEndStr = tokens.mkString(" ")
+
         val featuresFs: Seq[Future[Parse]] =
           for ((searchStr, i) <- searchStrs.zipWithIndex) yield {
-            val result: Future[Parse] = store.getByName(searchStr)
+            val result: Future[Parse] = if (searchStr == toEndStr && autoComplete) {
+              store.getByNamePrefix(searchStr)
+            } else {
+              store.getByName(searchStr)
+            }
             result
           }
 

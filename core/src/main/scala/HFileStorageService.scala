@@ -23,6 +23,12 @@ class HFileStorageService(basepath: String) extends GeocodeStorageReadService {
   val nameMap = new NameIndexHFileInput(basepath)
   val oidMap = new GeocodeRecordHFileInput(basepath)
 
+  def getByNamePrefix(name: String): Seq[GeocodeServingFeature] = {
+    nameMap.getPrefix(name).flatMap(oid => {
+      oidMap.get(oid)
+    })
+  }
+
   def getByName(name: String): Seq[GeocodeServingFeature] = {
     nameMap.get(name).flatMap(oid => {
       oidMap.get(oid)
@@ -53,18 +59,43 @@ abstract class HFileInput(basepath: String, filename: String) {
       None
     }
   }
+
+  import scala.collection.mutable.ListBuffer
+  
+  def lookupPrefix(key: String): Seq[Array[Byte]] = {
+    val scanner: HFileScanner = reader.getScanner(true, true)
+    scanner.seekTo(key.getBytes())
+    scanner.next()
+
+    val ret: ListBuffer[Array[Byte]] = new ListBuffer()
+
+    while (scanner.getKeyValue().getKeyString().startsWith(key)) {
+      ret.append(scanner.getKeyValue().getValue())
+    }
+
+    ret
+  }
 }
 
 class NameIndexHFileInput(basepath: String) extends HFileInput(basepath, "name_index.hfile") {
+  def decodeObjectIds(bytes: Array[Byte]): Seq[ObjectId] = {
+    0.until(bytes.length / 12).map(i => {
+      new ObjectId(Arrays.copyOfRange(bytes, i * 12, (i + 1) * 12))
+    })
+  }
+
   def get(name: String): List[ObjectId] = {
     val buf = ByteBuffer.wrap(name.getBytes())
     lookup(buf).toList.flatMap(b => {
       val bytes = new Array[Byte](b.capacity())
       b.get(bytes, 0, bytes.length);
+      decodeObjectIds(bytes)
+    })
+  }
 
-      0.until(bytes.length / 12).map(i => {
-        new ObjectId(Arrays.copyOfRange(bytes, i * 12, (i + 1) * 12))
-      })
+  def getPrefix(name: String): Seq[ObjectId] = {
+    lookupPrefix(name).flatMap(bytes => {
+      decodeObjectIds(bytes)
     })
   }
 }

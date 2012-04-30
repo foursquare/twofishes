@@ -12,6 +12,13 @@ class MockGeocodeStorageReadService extends GeocodeStorageFutureReadService {
   val nameMap = new HashMap[String, List[GeocodeServingFeature]]
   val idMap = new HashMap[ObjectId, GeocodeServingFeature]
 
+  def getByNamePrefix(name: String): Future[Seq[GeocodeServingFeature]] = {
+    Future.value(
+      nameMap.find({case(k, v) => k.startsWith(name)})
+        .toList.flatMap(_._2)
+    )
+  }
+
   def getByName(name: String): Future[Seq[GeocodeServingFeature]] = {
     Future.value(nameMap.getOrElse(name, Nil))
   }
