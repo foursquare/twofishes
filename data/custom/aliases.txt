@@ -1,5 +1,7 @@
 6941775	Brooklyn
 5363385	Brooklyn
+6941775	bklyn
+5363385	bklyn
 5128581	NYC
 3530597	DF
 5391959	SF
@@ -8,4 +10,9 @@
 4994358	Grand Rapids Charter Township
 4560349	phila
 4544349	okc
+2193733 central auckland
 1850144 新宿区
+2759879 almere
+3012874 idf
+3531732	san francisco de campeche
+5125125	LIC
