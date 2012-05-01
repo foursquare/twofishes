@@ -107,7 +107,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     val adminId = feature.adminId.map(id => StoredFeatureId(geonameAdminIdNamespace, id))
     val geonameId = feature.geonameid.map(id => {
       if (id.contains(":")) {
-        val parts = id.split(",")
+        val parts = id.split(":")
         StoredFeatureId(parts(0), parts(1))
       } else {
         StoredFeatureId(geonameIdNamespace, id)
