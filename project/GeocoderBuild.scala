@@ -122,6 +122,17 @@ object GeocoderBuild extends Build {
       base = file("indexer"),
       settings = defaultSettings ++ assemblySettings ++ Seq(
         mainClass in assembly := Some("com.foursquare.twofishes.importers.geonames.GeonamesParser"),
+        initialCommands := """
+        import com.foursquare.twofishes.importers.geonames._
+        import com.foursquare.twofishes._
+        import com.foursquare.twofishes.Helpers._
+        import com.foursquare.twofishes.Implicits._
+        import java.io.File
+
+        val store = new MongoGeocodeStorageService()
+        val parser = new GeonamesParser(store)
+        """,
+
         publishArtifact := false,
         libraryDependencies ++= Seq(
           "org.specs2" %% "specs2" % "1.8.2" % "test",
