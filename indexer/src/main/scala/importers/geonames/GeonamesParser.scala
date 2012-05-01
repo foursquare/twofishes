@@ -35,6 +35,10 @@ object GeonamesParser {
       }
     }
 
+    new File("data/supplemental/").listFiles.foreach(f => {
+      parser.parseAdminFile(f.toString)
+    })
+
     if (config.importAlternateNames) {
       parser.parseAlternateNamesFile(
         "data/downloaded/alternateNames.txt")
@@ -100,7 +104,15 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
   def parseFeature(feature: GeonamesFeature): GeocodeRecord = {
     // Build ids
     val adminId = feature.adminId.map(id => StoredFeatureId(geonameAdminIdNamespace, id))
-    val geonameId = feature.geonameid.map(id => StoredFeatureId(geonameIdNamespace, id))
+    val geonameId = feature.geonameid.map(id => {
+      if (id.contains(":")) {
+        val parts = id.split(",")
+        StoredFeatureId(parts(0), parts(1))
+      } else {
+        StoredFeatureId(geonameIdNamespace, id)
+      }
+    })
+
     val ids: List[StoredFeatureId] = List(adminId, geonameId).flatMap(a => a)
 
     // Build names
@@ -113,7 +125,9 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     val names = doDeletes(doRewrites((normalizedNames ++ deaccentedNames).toSet.toList.filterNot(_.isEmpty)))
 
     // Build parents
-    val parents = feature.parents.map(p => StoredFeatureId(geonameAdminIdNamespace, p))
+    val extraParents: List[String] = feature.extraColumns.get("parents").toList.flatMap(_.split(",").toList)
+    val parents: List[String] = feature.parents.map(p => StoredFeatureId(geonameAdminIdNamespace, p))
+    val allParents = parents ++ extraParents
 
     val boost: Option[Int] = feature.geonameid.flatMap(gid => {
       boostTable.get(gid).headOption.flatMap(boost =>
@@ -128,7 +142,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       _woeType = feature.featureClass.woeType.getValue,
       lat = feature.latitude,
       lng = feature.longitude,
-      parents = parents,
+      parents = allParents,
       population = feature.population,
       displayNames = List(DisplayName("en", feature.name, false)),
       boost = boost

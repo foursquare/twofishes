@@ -10,7 +10,7 @@ object GeonamesFeatureColumns extends Enumeration {
    val GEONAMEID, PLACE_NAME, NAME, ASCIINAME, ALTERNATENAMES, LATITUDE, LONGITUDE,
       FEATURE_CLASS, FEATURE_CODE, COUNTRY_CODE, CC2, ADMIN1_CODE, ADMIN2_CODE, ADMIN3_CODE,
       ADMIN4_CODE, ADMIN1_NAME, ADMIN2_NAME, ADMIN3_NAME, POPULATION, ELEVATION, GTOPO30, TIMEZONE,
-      MODIFICATION_DATE, ACCURACY = Value
+      MODIFICATION_DATE, ACCURACY, EXTRA = Value
 }
 
 import GeonamesFeatureColumns._
@@ -81,12 +81,16 @@ object GeonamesFeature extends LogHelper {
       modifyCallback: Map[GeonamesFeatureColumns.Value, String] => Map[GeonamesFeatureColumns.Value, String]
       ): Option[GeonamesFeature] = {
     val parts = line.split("\t")
-    if (parts.size != columns.size) {
-      logger.error("line %d has the wrong number of columns. Has %d, needs %d (%s)".format(
+    if (parts.size < columns.size) {
+      logger.error("line %d has too few columns. Has %d, needs %d (%s)".format(
         index, parts.size, columns.size, parts.mkString(",")))
       None
     } else {
-      val colMap = modifyCallback(columns.zip(parts).toMap)
+      var colMap = modifyCallback(columns.zip(parts).toMap)
+
+      if (parts.size > columns.size) {
+        colMap += (EXTRA -> columns.drop(parts.size).mkString("\t"))
+      }
 
       val feature = new GeonamesFeature(colMap)
       if (feature.isValid) {
@@ -202,6 +206,11 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) {
   def countryCode: String = values.get(COUNTRY_CODE).getOrElse("XX")
   def name: String = values.getOrElse(NAME, "no name")
   def place: String = values.getOrElse(PLACE_NAME, "no name")
+
+  def extraColumns: Map[String,String] = values.getOrElse(EXTRA, "").split("\t").map(p => {
+    val parts = p.split(";")
+    (parts(0) -> parts(1))
+  }).toMap
 
   def geonameid: Option[String] = values.get(GEONAMEID)
 
