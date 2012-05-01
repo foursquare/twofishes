@@ -208,8 +208,10 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) {
   def place: String = values.getOrElse(PLACE_NAME, "no name")
 
   def extraColumns: Map[String,String] = values.getOrElse(EXTRA, "").split("\t").map(p => {
-    val parts = p.split(";")
-    (parts(0) -> parts(1))
+    if (p.nonEmpty) {
+      val parts = p.split(";")
+      (parts(0) -> parts(1))
+    }
   }).toMap
 
   def geonameid: Option[String] = values.get(GEONAMEID)
