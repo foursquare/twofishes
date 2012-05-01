@@ -31,12 +31,13 @@ object GeonamesParser {
         "data/downloaded/allCountries.txt")
       if (config.importPostalCodes) {
         parser.parsePostalCodeFile(
-        "data/downloaded/zip/allCountries.txt", false)
+          "data/downloaded/zip/allCountries.txt", false)
       }
     }
 
     new File("data/supplemental/").listFiles.foreach(f => {
-      parser.parseAdminFile(f.toString)
+      println("parsing supplemental file: %s".format(f))
+      parser.parseAdminFile(f.toString, allowBuildings=true)
     })
 
     if (config.importAlternateNames) {
@@ -152,9 +153,9 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     record
   }
 
-  def parseAdminFile(filename: String) {
+  def parseAdminFile(filename: String, allowBuildings: Boolean) {
     parseFromFile(filename, (index: Int, line: String) => 
-      GeonamesFeature.parseFromAdminLine(index, line), "features")
+      GeonamesFeature.parseFromAdminLine(index, line), "features", allowBuildings)
   }
 
   def parsePostalCodeFile(filename: String, countryFile: Boolean) {
@@ -172,7 +173,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       }
       val feature = lineProcessor(index, line)
       feature.foreach(f => {
-        if (!f.featureClass.isBuilding || config.shouldParseBuildings) {
+        if (!f.featureClass.isBuilding || config.shouldParseBuildings || allowBuildings) {
           parseFeature(f)
         }
       })
