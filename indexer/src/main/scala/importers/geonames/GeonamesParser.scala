@@ -153,7 +153,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     record
   }
 
-  def parseAdminFile(filename: String, allowBuildings: Boolean) {
+  def parseAdminFile(filename: String, allowBuildings: Boolean = false) {
     parseFromFile(filename, (index: Int, line: String) => 
       GeonamesFeature.parseFromAdminLine(index, line), "features", allowBuildings)
   }
@@ -165,7 +165,8 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
 
   private def parseFromFile(filename: String,
     lineProcessor: (Int, String) => Option[GeonamesFeature],
-    typeName: String) {
+    typeName: String,
+    allowBuildings: Boolean = false) {
     val lines = scala.io.Source.fromFile(new File(filename), "UTF-8").getLines
     lines.zipWithIndex.foreach({case (line, index) => {
       if (index % 10000 == 0) {
