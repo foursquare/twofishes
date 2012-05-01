@@ -207,10 +207,12 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) {
   def name: String = values.getOrElse(NAME, "no name")
   def place: String = values.getOrElse(PLACE_NAME, "no name")
 
-  def extraColumns: Map[String,String] = values.getOrElse(EXTRA, "").split("\t").map(p => {
+  def extraColumns: Map[String,String] = values.getOrElse(EXTRA, "").split("\t").flatMap(p => {
     if (p.nonEmpty) {
       val parts = p.split(";")
-      (parts(0) -> parts(1))
+      Some(parts(0) -> parts(1))
+    } else {
+      None
     }
   }).toMap
 
