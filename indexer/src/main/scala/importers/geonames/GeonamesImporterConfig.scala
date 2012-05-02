@@ -19,7 +19,7 @@ class GeonamesImporterConfig(args: Array[String]) {
   // Geonames doesn't have bounding boxes, only points. This is a precomputed mapping of geonameids to yahoo
   // woeids to flickr bounding boxes. Precomputed because I could't get the geojson java libraries to work.
   var importBoundingBoxes = true
-  var boundingBoxFilename = "./data/computed/flickr_bbox.tsv"
+  var boundingBoxDirectory = "./data/computed/bboxes/"
 
   var hfileBasePath: String = null
 
