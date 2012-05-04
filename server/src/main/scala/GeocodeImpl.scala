@@ -182,6 +182,10 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
           signal -= 100000000
         }
 
+        if (primaryFeature.feature.geometry.bounds != null) {
+          signal += 1000
+        }
+
         // prefer a more aggressive parse ... bleh
         // this prefers "mt laurel" over the town of "laurel" in "mt" (montana)
         signal -= 20000 * parse.length

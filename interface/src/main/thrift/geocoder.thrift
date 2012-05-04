@@ -94,7 +94,8 @@ struct GeocodeInterpretation {
   1: string what,
   2: string where,
   3: GeocodeFeature feature
-  4: optional list<GeocodeFeature> parents
+  4: optional list<GeocodeFeature> parents,
+  5: optional string debugInfo
 }
 
 struct GeocodeResponse {
@@ -107,6 +108,7 @@ struct GeocodeRequest {
   3: optional string lang = "en",
   4: optional GeocodePoint ll,
   5: optional bool full = 0,
+  6: optional bool debug = 0,
 }
 
 service Geocoder {
