@@ -84,12 +84,12 @@ object GeocoderBuild extends Build {
           "org.slf4j" % "slf4j-api" % "1.6.1",
           "org.apache.hadoop" % "hadoop-core" % "0.20.2-cdh3u3",
           "org.apache.hbase" % "hbase" % "0.92.1",
-          "com.novus" % "salat-core_2.9.1" % "0.0.8-SNAPSHOT",
-          "thrift" % "libthrift" % "0.5.0" from "http://maven.twttr.com/org/apache/thrift/libthrift/0.5.0/libthrift-0.5.0.jar"
+          "com.novus" % "salat-core_2.9.1" % "0.0.8-SNAPSHOT"
+          // "thrift" % "libthrift" % "0.5.0" from "http://maven.twttr.com/org/apache/thrift/libthrift/0.5.0/libthrift-0.5.0.jar"
         ),
         ivyXML := (
           <dependencies>
-            <exclude org="org.apache.thrift"/>
+            <exclude org="thrift"/>
           </dependencies>
         )
       )
