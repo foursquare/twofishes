@@ -48,9 +48,9 @@ object GeonamesParser {
     parser.parsePreferredNames()
 
     if (config.importBoundingBoxes) {
-      new File(config.boundingBoxFilename).listFiles.sort.foreach(f => {
-        println("parsing boudning box file: %s".format(f))
-        new BoundingBoxTsvImporter(store).parse(f)
+      new File(config.boundingBoxDirectory).listFiles.toList.sorted.foreach(f => {
+        println("parsing bounding box file: %s".format(f))
+        new BoundingBoxTsvImporter(store).parse(f.toString)
       })
     }
 
@@ -144,7 +144,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       val parts = bboxStr.split(",").map(_.trim)
       parts.toList match {
         case w :: s :: e :: n :: Nil => {
-          Some(BoundingBox(Point(n, e), Point(s, w)))
+          Some(BoundingBox(Point(n.toDouble, e.toDouble), Point(s.toDouble, w.toDouble)))
         }
         case _ => {
           logger.error("malformed bbox: " + bboxStr)

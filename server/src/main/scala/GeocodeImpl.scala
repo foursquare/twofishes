@@ -270,6 +270,12 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
       originalTokens.drop(connectorEnd + 1)
     } else { originalTokens }
 
+    // Need to tune the algorithm to not explode on > 10 tokens
+    // in the meantime, reject.
+    if (tokens.size > 10) {
+      throw new Exception("too many tokens")
+    }
+
     val cache = generateParses(tokens)
     val futureCache: Iterable[Future[(Int, ParseSeq)]] = cache.map({case (k, v) => {
       Future.value(k).join(v)
