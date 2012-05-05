@@ -15,19 +15,20 @@ class BoundingBoxTsvImporter(store: GeocodeStorageWriteService) extends LogHelpe
     lines.foreach(line => {
       val parts = line.split("\t")
       // 0: geonameid
-      // 1: woeid
-      // 2: label
-      // 3: bbox: [%f,%f,%f,%f]
-      if (parts.size != 4) {
-        logger.error("wrong # of parts: %d vs %d in %s".format(parts.size, 4, line))
+      // 1->5:       // west, south, east, north
+      if (parts.size != 5) {
+        logger.error("wrong # of parts: %d vs %d in %s".format(parts.size, 5, line))
       } else {
         val geonameid = parts(0)
-        val bboxString = parts(3)
-        val bbox = bboxString.replace("[", "").replace("]", "").split(",").toList.map(_.toDouble)
+        val w = parts(1).toDouble
+        val s = parts(2).toDouble
+        val e = parts(3).toDouble
+        val n = parts(4).toDouble
         // println("%s --> %s".format(geonameid, bbox))
         store.addBoundingBoxToRecord(
           StoredFeatureId(GeonamesParser.geonameIdNamespace, geonameid),
-          BoundingBox(Point(bbox(0), bbox(1)), Point(bbox(2), bbox(3)))
+          // ne, sw
+          BoundingBox(Point(n, e), Point(s, w))
         )
       }
     })
