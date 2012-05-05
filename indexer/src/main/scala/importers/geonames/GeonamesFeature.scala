@@ -134,6 +134,7 @@ class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[Str
         case "ADM1" => YahooWoeType.ADMIN1
         case "ADM2" => YahooWoeType.ADMIN2
         case "ADM3" => YahooWoeType.ADMIN3
+        case "ADM4" | "ADMD" => YahooWoeType.ADMIN3
         case _ => YahooWoeType.UNKNOWN
       }).getOrElse(YahooWoeType.UNKNOWN)
     }
