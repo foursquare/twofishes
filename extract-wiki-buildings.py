@@ -23,6 +23,6 @@ for line in alternateNames:
 
 for line in input:
   parts = line.split('\t')
-  if parts[0] in gidList:
+  if parts[0] in gidList and parts[6] == 'S':
     output.write(line)
 
