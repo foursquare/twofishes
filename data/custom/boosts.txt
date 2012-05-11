@@ -1,4 +1,4 @@
 # Los Angeles (LA) over laos or louisiana
-5368361	10000000
+5368361|10000000
 # Greater London over London City
-2648110 10000000
+2648110|10000000

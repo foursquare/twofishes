@@ -10,9 +10,9 @@ class TsvHelperFileParser(filename: String) extends LogHelper {
     def markUsed { used = true}
   }
 
-  val lines = scala.io.Source.fromFile(new File(filename)).getLines
+  val lines = scala.io.Source.fromFile(new File(filename)).getLines.filterNot(_.startsWith("#"))
   val gidMap = lines.flatMap(line => {
-    val parts = line.split("\t")
+    val parts = line.split("\\|")
     if (parts.length != 2) {
       logger.error("Broken line in %s: %s (%d parts, needs 2)".format(filename, line, parts.length))
       None

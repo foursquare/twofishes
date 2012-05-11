@@ -1,9 +1,9 @@
-saint	st,ste
-mountain	mount,mt,mtn
-mount	mt,mountain,mtn
-north	n
-south	s
-east	e
-west	w
-air force base	afb
-township	twp,charter township
+saint|st,ste
+mountain|mount,mt,mtn
+mount|mt,mountain,mtn
+north|n
+south|s
+east|e
+west|w
+air force base|afb
+township|twp,charter township
