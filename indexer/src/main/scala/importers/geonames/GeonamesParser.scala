@@ -123,6 +123,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     val aliases: List[String] = feature.geonameid.toList.flatMap(gid => {
       aliasTable.get(gid)
     })
+
     val allNames = feature.allNames ++ aliases
     val normalizedNames = allNames.map(n => NameNormalizer.normalize(n))
     val deaccentedNames = normalizedNames.map(n => NameNormalizer.deaccent(n))
@@ -254,7 +255,9 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
             })
 
             val newNames = modifiedNames ++ (
-              if (foundName) { Nil } else { List(DisplayName(lang, name, true)) }
+              if (foundName) { Nil } else { 
+                List(DisplayName(lang, name, true))
+              }
             )            
 
             store.setRecordNames(StoredFeatureId(geonameIdNamespace, gid), newNames)

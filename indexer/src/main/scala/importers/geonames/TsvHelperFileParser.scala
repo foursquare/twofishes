@@ -11,15 +11,23 @@ class TsvHelperFileParser(filename: String) extends LogHelper {
   }
 
   val lines = scala.io.Source.fromFile(new File(filename)).getLines.filterNot(_.startsWith("#"))
-  val gidMap = lines.flatMap(line => {
+
+  val gidMap = new scala.collection.mutable.HashMap[String,TableEntry]()
+
+  lines.foreach(line => {
     val parts = line.split("\\|")
     if (parts.length != 2) {
       logger.error("Broken line in %s: %s (%d parts, needs 2)".format(filename, line, parts.length))
-      None
     } else {
-      Some(parts(0), new TableEntry(parts(1).split(",").toList))
+      val key = parts(0)
+      var values: List[String] = parts(1).split(",").toList
+
+      gidMap.get(key).foreach(te => 
+        values ++= te.values
+      )
+      gidMap += (key -> new TableEntry(values))
     }
-  }).toMap
+  })
 
   def logUnused {
     gidMap.foreach({case (k, v) => {

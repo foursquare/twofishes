@@ -35,6 +35,8 @@ class GeonamesImporterConfig(args: Array[String]) {
         { v: Boolean => config.importPostalCodes = v } )
       opt("hfile_basepath", "directory to output hfiles to",
         { v: String => config.hfileBasePath = v} )
+      booleanOpt("parse_alternate_names", "parse alternate names",
+        { v: Boolean => config.importAlternateNames = v } )
     }
 
   if (!parser.parse(args)) {
