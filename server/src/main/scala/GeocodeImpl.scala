@@ -244,17 +244,63 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
       ))
     }
 
-    // set displayName
-    val parentsToUse = parents.filter(p => {
-      // if it's a country and it's the same country as the request
-      // don't use it
-      val sameCountry = p.feature.woeType == YahooWoeType.COUNTRY && p.feature.cc == req.cc
-      !sameCountry
-    })
+    // Take the least specific parent, hopefully a state
+    // Yields names like "Brick, NJ, US"
+    val parentsToUse =
+      parents
+        .filter(p => p.feature.woeType != YahooWoeType.COUNTRY)
+        .sorted(GeocodeServingFeatureOrdering)
+        .lastOption
+        .toList
+
+    val countryAbbrev: Option[String] = if (f.cc != req.cc) {
+      Some(f.cc)
+    } else {
+      None
+    }
 
     val parentNames = parentsToUse.map(p =>
       bestName(p.feature, Some(req.lang), true).map(_.name).getOrElse(""))
-    f.setDisplayName((Vector(name) ++ parentNames).mkString(", "))
+    f.setDisplayName((Vector(name) ++ parentNames ++ countryAbbrev.toList).mkString(", "))
+  }
+
+  def featureDistance(f1: GeocodeFeature, f2: GeocodeFeature) = {
+    GeoTools.getDistance(
+      f1.geometry.center.lat,
+      f1.geometry.center.lng,
+      f2.geometry.center.lat,
+      f2.geometry.center.lng)
+  }
+
+  def parseDistance(p1: Parse, p2: Parse): Int = {
+    (p1.headOption, p2.headOption) match {
+      case (Some(sf1), Some(sf2)) => featureDistance(sf1.feature, sf2.feature)
+      case _ => 0
+    }
+  }
+
+  def filterDupeParses(parses: ParseSeq): ParseSeq = {
+    val parseMap: Map[String, Seq[(Parse, Int)]] = parses.zipWithIndex.groupBy({case (parse, index) => {
+      parse.headOption.flatMap(servingFeature => 
+         // en is cheating, sorry
+         bestName(servingFeature.feature, Some("en"), false).map(_.name)
+      ).getOrElse("")
+    }})
+
+
+    val dedupedMap = parseMap.mapValues(parsePairs => {
+      // see if there's an earlier parse that's close enough,
+      // if so, return false
+      parsePairs.filterNot({case (parse, index) => {
+        parsePairs.exists({case (otherParse, otherIndex) => {
+          otherIndex < index && parseDistance(parse, otherParse) < 1000
+        }})
+      }})
+    })
+
+    // We have a map of [name -> List[Parse, Int]] ... extract out the parse-int pairs
+    // join them, and re-sort by the int, which was their original ordering
+    dedupedMap.toList.flatMap(_._2).sortBy(_._2).map(_._1)
   }
 
   def geocode(req: GeocodeRequest): Future[GeocodeResponse] = {
@@ -296,7 +342,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
           val longestParses = validParseCaches.find(_._1 == longest).get._2
 
           // TODO: make this configurable
-          val sortedParses = longestParses.sorted(new ParseOrdering(req.ll, req.cc)).take(3)
+          val sortedParses = filterDupeParses(longestParses.sorted(new ParseOrdering(req.ll, req.cc)).take(3))
 
           val parentIds = sortedParses.flatMap(_.headOption.toList.flatMap(_.scoringFeatures.parents))
           val parentOids = parentIds.map(i => new ObjectId(i))
@@ -312,7 +358,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
             val where = tokens.drop(tokens.size - longest).mkString(" ")
             logger.ifTrace("%d sorted parses".format(sortedParses.size))
 
-            new GeocodeResponse(sortedParses.map(p => {
+            val interpretations = sortedParses.map(p => {
               val feature = p(0).feature
               val sortedParents = p(0).scoringFeatures.parents.flatMap(id => parentMap.get(new ObjectId(id))).sorted(GeocodeServingFeatureOrdering)
               fixFeature(req, feature, sortedParents)
@@ -324,7 +370,9 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
                 feature
               }))
               interp
-            }))
+            })
+
+            new GeocodeResponse(interpretations)
           })
         }
       } else {
