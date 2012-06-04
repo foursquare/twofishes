@@ -192,7 +192,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
 
         // Matching country hint is good
         if (Option(ccHint).exists(_ == primaryFeature.feature.cc)) {
-          signal += 100000
+          signal += 10000
         }
 
         Option(llHint).foreach(ll => {
