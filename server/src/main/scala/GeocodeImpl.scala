@@ -196,9 +196,9 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
         }
 
         Option(llHint).foreach(ll => {
-          signal -= GeoTools.getDistance(ll.lat, ll.lng,
+          signal -= (GeoTools.getDistance(ll.lat, ll.lng,
               primaryFeature.feature.geometry.center.lat,
-              primaryFeature.feature.geometry.center.lng)
+              primaryFeature.feature.geometry.center.lng) / 100)
         })
 
         signal += primaryFeature.scoringFeatures.boost
