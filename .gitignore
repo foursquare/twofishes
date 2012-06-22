@@ -19,4 +19,5 @@ mongo-testdb/*
 .#*
 #*
 data/downloaded/*
+data/supplemental/*
 javarebel/*
