@@ -23,10 +23,12 @@ class HFileStorageService(basepath: String) extends GeocodeStorageReadService {
   val nameMap = new NameIndexHFileInput(basepath)
   val oidMap = new GeocodeRecordHFileInput(basepath)
 
-  def getByNamePrefix(name: String): Seq[GeocodeServingFeature] = {
-    nameMap.getPrefix(name).flatMap(oid => {
-      oidMap.get(oid)
-    })
+  def getIdsByNamePrefix(name: String): Seq[ObjectId] = {
+    nameMap.getPrefix(name)
+  }
+
+  def getIdsByName(name: String): Seq[ObjectId] = {
+    nameMap.get(name)
   }
 
   def getByName(name: String): Seq[GeocodeServingFeature] = {

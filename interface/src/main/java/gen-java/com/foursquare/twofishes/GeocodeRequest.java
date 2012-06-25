@@ -37,6 +37,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   private static final TField LL_FIELD_DESC = new TField("ll", TType.STRUCT, (short)4);
   private static final TField FULL_FIELD_DESC = new TField("full", TType.BOOL, (short)5);
   private static final TField DEBUG_FIELD_DESC = new TField("debug", TType.BOOL, (short)6);
+  private static final TField AUTOCOMPLETE_FIELD_DESC = new TField("autocomplete", TType.BOOL, (short)7);
 
   public String query;
   public String cc;
@@ -44,6 +45,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   public GeocodePoint ll;
   public boolean full;
   public boolean debug;
+  public boolean autocomplete;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
@@ -52,7 +54,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     LANG((short)3, "lang"),
     LL((short)4, "ll"),
     FULL((short)5, "full"),
-    DEBUG((short)6, "debug");
+    DEBUG((short)6, "debug"),
+    AUTOCOMPLETE((short)7, "autocomplete");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -79,6 +82,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
           return FULL;
         case 6: // DEBUG
           return DEBUG;
+        case 7: // AUTOCOMPLETE
+          return AUTOCOMPLETE;
         default:
           return null;
       }
@@ -121,7 +126,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   // isset id assignments
   private static final int __FULL_ISSET_ID = 0;
   private static final int __DEBUG_ISSET_ID = 1;
-  private BitSet __isset_bit_vector = new BitSet(2);
+  private static final int __AUTOCOMPLETE_ISSET_ID = 2;
+  private BitSet __isset_bit_vector = new BitSet(3);
 
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
@@ -138,6 +144,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         new FieldValueMetaData(TType.BOOL)));
     tmpMap.put(_Fields.DEBUG, new FieldMetaData("debug", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.BOOL)));
+    tmpMap.put(_Fields.AUTOCOMPLETE, new FieldMetaData("autocomplete", TFieldRequirementType.OPTIONAL, 
+        new FieldValueMetaData(TType.BOOL)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeRequest.class, metaDataMap);
   }
@@ -148,6 +156,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     this.full = false;
 
     this.debug = false;
+
+    this.autocomplete = false;
 
   }
 
@@ -178,6 +188,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     }
     this.full = other.full;
     this.debug = other.debug;
+    this.autocomplete = other.autocomplete;
   }
 
   public GeocodeRequest deepCopy() {
@@ -194,6 +205,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     this.full = false;
 
     this.debug = false;
+
+    this.autocomplete = false;
 
   }
 
@@ -339,6 +352,29 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     __isset_bit_vector.set(__DEBUG_ISSET_ID, value);
   }
 
+  public boolean isAutocomplete() {
+    return this.autocomplete;
+  }
+
+  public GeocodeRequest setAutocomplete(boolean autocomplete) {
+    this.autocomplete = autocomplete;
+    setAutocompleteIsSet(true);
+    return this;
+  }
+
+  public void unsetAutocomplete() {
+    __isset_bit_vector.clear(__AUTOCOMPLETE_ISSET_ID);
+  }
+
+  /** Returns true if field autocomplete is set (has been asigned a value) and false otherwise */
+  public boolean isSetAutocomplete() {
+    return __isset_bit_vector.get(__AUTOCOMPLETE_ISSET_ID);
+  }
+
+  public void setAutocompleteIsSet(boolean value) {
+    __isset_bit_vector.set(__AUTOCOMPLETE_ISSET_ID, value);
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case QUERY:
@@ -389,6 +425,14 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       }
       break;
 
+    case AUTOCOMPLETE:
+      if (value == null) {
+        unsetAutocomplete();
+      } else {
+        setAutocomplete((Boolean)value);
+      }
+      break;
+
     }
   }
 
@@ -411,6 +455,9 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
 
     case DEBUG:
       return new Boolean(isDebug());
+
+    case AUTOCOMPLETE:
+      return new Boolean(isAutocomplete());
 
     }
     throw new IllegalStateException();
@@ -435,6 +482,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       return isSetFull();
     case DEBUG:
       return isSetDebug();
+    case AUTOCOMPLETE:
+      return isSetAutocomplete();
     }
     throw new IllegalStateException();
   }
@@ -503,6 +552,15 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       if (!(this_present_debug && that_present_debug))
         return false;
       if (this.debug != that.debug)
+        return false;
+    }
+
+    boolean this_present_autocomplete = true && this.isSetAutocomplete();
+    boolean that_present_autocomplete = true && that.isSetAutocomplete();
+    if (this_present_autocomplete || that_present_autocomplete) {
+      if (!(this_present_autocomplete && that_present_autocomplete))
+        return false;
+      if (this.autocomplete != that.autocomplete)
         return false;
     }
 
@@ -582,6 +640,16 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetAutocomplete()).compareTo(typedOther.isSetAutocomplete());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetAutocomplete()) {
+      lastComparison = TBaseHelper.compareTo(this.autocomplete, typedOther.autocomplete);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -644,6 +712,14 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
+        case 7: // AUTOCOMPLETE
+          if (field.type == TType.BOOL) {
+            this.autocomplete = iprot.readBool();
+            setAutocompleteIsSet(true);
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -693,6 +769,11 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     if (isSetDebug()) {
       oprot.writeFieldBegin(DEBUG_FIELD_DESC);
       oprot.writeBool(this.debug);
+      oprot.writeFieldEnd();
+    }
+    if (isSetAutocomplete()) {
+      oprot.writeFieldBegin(AUTOCOMPLETE_FIELD_DESC);
+      oprot.writeBool(this.autocomplete);
       oprot.writeFieldEnd();
     }
     oprot.writeFieldStop();
@@ -751,6 +832,12 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       if (!first) sb.append(", ");
       sb.append("debug:");
       sb.append(this.debug);
+      first = false;
+    }
+    if (isSetAutocomplete()) {
+      if (!first) sb.append(", ");
+      sb.append("autocomplete:");
+      sb.append(this.autocomplete);
       first = false;
     }
     sb.append(")");

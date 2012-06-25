@@ -112,14 +112,19 @@ case class GeocodeRecord(
 }
 
 trait GeocodeStorageFutureReadService {
-  def getByNamePrefix(name: String): Future[Seq[GeocodeServingFeature]]
+  def getIdsByNamePrefix(name: String): Future[Seq[ObjectId]]
+  def getIdsByName(name: String): Future[Seq[ObjectId]]
   def getByName(name: String): Future[Seq[GeocodeServingFeature]]
   def getByObjectIds(ids: Seq[ObjectId]): Future[Map[ObjectId, GeocodeServingFeature]]
 }
 
 class WrappedGeocodeStorageFutureReadService(underlying: GeocodeStorageReadService, future: FuturePool) extends GeocodeStorageFutureReadService {
-  def getByNamePrefix(name: String): Future[Seq[GeocodeServingFeature]] = future {
-    underlying.getByNamePrefix(name)
+  def getIdsByNamePrefix(name: String): Future[Seq[ObjectId]] = future {
+    underlying.getIdsByNamePrefix(name)
+  }
+
+  def getIdsByName(name: String): Future[Seq[ObjectId]] = future {
+    underlying.getIdsByName(name)
   }
 
   def getByName(name: String): Future[Seq[GeocodeServingFeature]] = future {
@@ -132,7 +137,8 @@ class WrappedGeocodeStorageFutureReadService(underlying: GeocodeStorageReadServi
 }
 
 trait GeocodeStorageReadService {
-  def getByNamePrefix(name: String): Seq[GeocodeServingFeature]
+  def getIdsByName(name: String): Seq[ObjectId]
+  def getIdsByNamePrefix(name: String): Seq[ObjectId]
   def getByName(name: String): Seq[GeocodeServingFeature]
   def getByObjectIds(ids: Seq[ObjectId]): Map[ObjectId, GeocodeServingFeature]
 }

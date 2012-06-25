@@ -109,6 +109,7 @@ struct GeocodeRequest {
   4: optional GeocodePoint ll,
   5: optional bool full = 0,
   6: optional bool debug = 0,
+  7: optional bool autocomplete = 0
 }
 
 service Geocoder {
