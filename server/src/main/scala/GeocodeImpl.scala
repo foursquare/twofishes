@@ -9,6 +9,7 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
 
 // TODO
+// --why does rego p give me "rego"
 // --why don't I get "rego" for "rego"
 // --don't fetch names unless you're > 3 chars or the completion is < 4 chars?
 // --need to deal with generating the right name for the completion
@@ -121,7 +122,6 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
         })
       })
       Future.collect(validParses).map(vp => {
-        println("vp: " + vp)
         println("vp: " + vp)
         vp.flatten
       })
