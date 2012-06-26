@@ -10,7 +10,8 @@ import scala.collection.mutable.HashMap
 
 // TODO
 // --don't fetch names unless you're > 3 chars or the completion is < 4 chars?
-// --need to deal with generating the right name for the completion
+// --dupes in autocomplete parses
+// --highlighting
 // --add request logger
 
 // Represents a match from a run of tokens to one particular feature
@@ -114,10 +115,9 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
                   val _ = logger.ifTrace("sub_parse: %s".format(p))
                 } yield {
                   val parse: Parse = p ++ List(f)
-                  if (isValidParse(parse)) {
+                  val sortedParse = parse.sorted(FeatureMatchOrdering)
+                  if (isValidParse(sortedParse)) {
                     logger.ifTrace("VALID -- adding to %d".format(cacheKey))
-                    logger.ifTrace("adding parse " + parse)
-                    val sortedParse = parse.sorted(FeatureMatchOrdering)
                     logger.ifTrace("sorted " + sortedParse)
                     Some(sortedParse)
                   } else {
@@ -172,8 +172,11 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
       true
     } else {
       val most_specific = parse(0)
+      println("most specific: " + most_specific)
+      println("most specific: parents" + most_specific.fmatch.scoringFeatures.parents)
       val rest = parse.drop(1)
       rest.forall(f => {
+        println("checking if %s in parents".format(f.fmatch.id))
         f.fmatch.id == most_specific.fmatch.id ||
         most_specific.fmatch.scoringFeatures.parents.contains(f.fmatch.id)
       })
@@ -305,9 +308,41 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
     }
   }
 
-   def bestName(f: GeocodeFeature, lang: Option[String], preferAbbrev: Boolean): Option[FeatureName] = {
-     f.names.sorted(new FeatureNameComparator(lang, preferAbbrev)).headOption
-   }
+  // Another delightful hack. We don't save a pointer to the specific name we matched
+  // in our inverted index, instead, if we know which tokens matched this feature,
+  // we look for the name that, when normalized, matches the query substring.
+  // i.e. for [New York, NY, Nueva York], if we know that we matched "neuv", we
+  // look for the names that started with that.
+  def bestName(
+    f: GeocodeFeature,
+    lang: Option[String],
+    preferAbbrev: Boolean
+  ): Option[FeatureName] = {
+    f.names.sorted(new FeatureNameComparator(lang, preferAbbrev)).headOption
+  }
+
+  def bestNameWithMatch(
+    f: GeocodeFeature,
+    lang: Option[String],
+    preferAbbrev: Boolean,
+    matchedString: String
+  ): Option[(FeatureName, Option[String])] = {
+    val nameCandidates = f.names.filter(n => {
+      val normalizedName = NameNormalizer.tokenize(NameNormalizer.normalize(n.name)).mkString(" ")
+      logger.ifTrace("Does %s start with %s?".format(normalizedName, matchedString))
+      normalizedName.startsWith(matchedString)
+    })
+        
+    val bestNameMatch = nameCandidates.sorted(new FeatureNameComparator(lang, preferAbbrev)).headOption
+    bestNameMatch match {
+      case Some(name) => {
+        Some((name,
+          Some("<b>" + name.name.take(matchedString.size) + "</b>" + name.name.drop(matchedString.size))
+        ))
+      }
+      case None => bestName(f, lang, preferAbbrev).map(n => (n, None))
+    } 
+  }
  
   // Comparator for parses, we score by a number of different features
   // 
@@ -388,10 +423,10 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
 
     // Take the least specific parent, hopefully a state
     // Yields names like "Brick, NJ, US"
-    val parentsToUse =
+    val parentsToUse: List[GeocodeServingFeature] =
       parents
         .filter(p => p.feature.woeType != YahooWoeType.COUNTRY)
-        .sorted(GeocodeServingFeatureOrdering)
+        // .sorted(GeocodeServingFeatureOrdering)
         .lastOption
         .toList
 
@@ -402,9 +437,27 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
     }
 
     parse.foreach(p => {
-      // Go through each FeatureMatch in the parse
-      // 
+      val partsFromParse: Seq[(Option[FeatureMatch], GeocodeServingFeature)] =
+        p.map(fmatch => (Some(fmatch), fmatch.fmatch))
+      val partsFromParents: Seq[(Option[FeatureMatch], GeocodeServingFeature)] =
+       parentsToUse.filterNot(f => partsFromParse.exists(_._2 == f))
+        .map(f => (None, f))
+      val partsToUse = (partsFromParse ++ partsFromParents).sortBy(_._2)(GeocodeServingFeatureOrdering)
+      println("parts to use: " + partsToUse)
+      var i = 0
+      val namesToUse = partsToUse.flatMap({case(fmatchOpt, servingFeature) => {
+        val name = bestName(servingFeature.feature, Some(req.lang), i != 0,
+          fmatchOpt.map(_.phrase))
+        i += 1
+        name
+      }})
 
+      val matchedName = if (partsToUse.exists(_._2.feature.woeType == YahooWoeType.COUNTRY)) {
+        namesToUse.map(_.name).mkString(", ")
+      } else {
+        (namesToUse.map(_.name) ++ countryAbbrev.toList).mkString(", ")
+      }
+      f.setMatchedName(matchedName)
     })
 
     val parentNames = parentsToUse.map(p =>
@@ -422,16 +475,16 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
 
   def parseDistance(p1: Parse, p2: Parse): Int = {
     (p1.headOption, p2.headOption) match {
-      case (Some(sf1), Some(sf2)) => featureDistance(sf1.feature, sf2.feature)
+      case (Some(sf1), Some(sf2)) => featureDistance(sf1.fmatch.feature, sf2.fmatch.feature)
       case _ => 0
     }
   }
 
   def filterDupeParses(parses: ParseSeq): ParseSeq = {
     val parseMap: Map[String, Seq[(Parse, Int)]] = parses.zipWithIndex.groupBy({case (parse, index) => {
-      parse.headOption.flatMap(servingFeature => 
+      parse.headOption.flatMap(f => 
          // en is cheating, sorry
-         bestName(servingFeature.feature, Some("en"), false).map(_.name)
+         bestName(f.fmatch.feature, Some("en"), false).map(_.name)
       ).getOrElse("")
     }})
 

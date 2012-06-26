@@ -40,6 +40,8 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
   private static final TField NAMES_FIELD_DESC = new TField("names", TType.LIST, (short)7);
   private static final TField ATTRIBUTION_FIELD_DESC = new TField("attribution", TType.LIST, (short)8);
   private static final TField TIMEZONES_FIELD_DESC = new TField("timezones", TType.LIST, (short)9);
+  private static final TField HIGHLIGHTED_NAME_FIELD_DESC = new TField("highlightedName", TType.STRING, (short)11);
+  private static final TField MATCHED_NAME_FIELD_DESC = new TField("matchedName", TType.STRING, (short)12);
 
   public String cc;
   public FeatureGeometry geometry;
@@ -54,6 +56,8 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
   public List<FeatureName> names;
   public List<String> attribution;
   public List<String> timezones;
+  public String highlightedName;
+  public String matchedName;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
@@ -69,7 +73,9 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     IDS((short)6, "ids"),
     NAMES((short)7, "names"),
     ATTRIBUTION((short)8, "attribution"),
-    TIMEZONES((short)9, "timezones");
+    TIMEZONES((short)9, "timezones"),
+    HIGHLIGHTED_NAME((short)11, "highlightedName"),
+    MATCHED_NAME((short)12, "matchedName");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -102,6 +108,10 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
           return ATTRIBUTION;
         case 9: // TIMEZONES
           return TIMEZONES;
+        case 11: // HIGHLIGHTED_NAME
+          return HIGHLIGHTED_NAME;
+        case 12: // MATCHED_NAME
+          return MATCHED_NAME;
         default:
           return null;
       }
@@ -168,6 +178,10 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     tmpMap.put(_Fields.TIMEZONES, new FieldMetaData("timezones", TFieldRequirementType.OPTIONAL, 
         new ListMetaData(TType.LIST, 
             new FieldValueMetaData(TType.STRING))));
+    tmpMap.put(_Fields.HIGHLIGHTED_NAME, new FieldMetaData("highlightedName", TFieldRequirementType.OPTIONAL, 
+        new FieldValueMetaData(TType.STRING)));
+    tmpMap.put(_Fields.MATCHED_NAME, new FieldMetaData("matchedName", TFieldRequirementType.OPTIONAL, 
+        new FieldValueMetaData(TType.STRING)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeFeature.class, metaDataMap);
   }
@@ -231,6 +245,12 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       }
       this.timezones = __this__timezones;
     }
+    if (other.isSetHighlightedName()) {
+      this.highlightedName = other.highlightedName;
+    }
+    if (other.isSetMatchedName()) {
+      this.matchedName = other.matchedName;
+    }
   }
 
   public GeocodeFeature deepCopy() {
@@ -248,6 +268,8 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     this.names = null;
     this.attribution = null;
     this.timezones = null;
+    this.highlightedName = null;
+    this.matchedName = null;
   }
 
   public String getCc() {
@@ -534,6 +556,54 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     }
   }
 
+  public String getHighlightedName() {
+    return this.highlightedName;
+  }
+
+  public GeocodeFeature setHighlightedName(String highlightedName) {
+    this.highlightedName = highlightedName;
+    return this;
+  }
+
+  public void unsetHighlightedName() {
+    this.highlightedName = null;
+  }
+
+  /** Returns true if field highlightedName is set (has been asigned a value) and false otherwise */
+  public boolean isSetHighlightedName() {
+    return this.highlightedName != null;
+  }
+
+  public void setHighlightedNameIsSet(boolean value) {
+    if (!value) {
+      this.highlightedName = null;
+    }
+  }
+
+  public String getMatchedName() {
+    return this.matchedName;
+  }
+
+  public GeocodeFeature setMatchedName(String matchedName) {
+    this.matchedName = matchedName;
+    return this;
+  }
+
+  public void unsetMatchedName() {
+    this.matchedName = null;
+  }
+
+  /** Returns true if field matchedName is set (has been asigned a value) and false otherwise */
+  public boolean isSetMatchedName() {
+    return this.matchedName != null;
+  }
+
+  public void setMatchedNameIsSet(boolean value) {
+    if (!value) {
+      this.matchedName = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case CC:
@@ -608,6 +678,22 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       }
       break;
 
+    case HIGHLIGHTED_NAME:
+      if (value == null) {
+        unsetHighlightedName();
+      } else {
+        setHighlightedName((String)value);
+      }
+      break;
+
+    case MATCHED_NAME:
+      if (value == null) {
+        unsetMatchedName();
+      } else {
+        setMatchedName((String)value);
+      }
+      break;
+
     }
   }
 
@@ -640,6 +726,12 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     case TIMEZONES:
       return getTimezones();
 
+    case HIGHLIGHTED_NAME:
+      return getHighlightedName();
+
+    case MATCHED_NAME:
+      return getMatchedName();
+
     }
     throw new IllegalStateException();
   }
@@ -669,6 +761,10 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       return isSetAttribution();
     case TIMEZONES:
       return isSetTimezones();
+    case HIGHLIGHTED_NAME:
+      return isSetHighlightedName();
+    case MATCHED_NAME:
+      return isSetMatchedName();
     }
     throw new IllegalStateException();
   }
@@ -764,6 +860,24 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       if (!(this_present_timezones && that_present_timezones))
         return false;
       if (!this.timezones.equals(that.timezones))
+        return false;
+    }
+
+    boolean this_present_highlightedName = true && this.isSetHighlightedName();
+    boolean that_present_highlightedName = true && that.isSetHighlightedName();
+    if (this_present_highlightedName || that_present_highlightedName) {
+      if (!(this_present_highlightedName && that_present_highlightedName))
+        return false;
+      if (!this.highlightedName.equals(that.highlightedName))
+        return false;
+    }
+
+    boolean this_present_matchedName = true && this.isSetMatchedName();
+    boolean that_present_matchedName = true && that.isSetMatchedName();
+    if (this_present_matchedName || that_present_matchedName) {
+      if (!(this_present_matchedName && that_present_matchedName))
+        return false;
+      if (!this.matchedName.equals(that.matchedName))
         return false;
     }
 
@@ -869,6 +983,26 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     }
     if (isSetTimezones()) {
       lastComparison = TBaseHelper.compareTo(this.timezones, typedOther.timezones);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetHighlightedName()).compareTo(typedOther.isSetHighlightedName());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetHighlightedName()) {
+      lastComparison = TBaseHelper.compareTo(this.highlightedName, typedOther.highlightedName);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetMatchedName()).compareTo(typedOther.isSetMatchedName());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetMatchedName()) {
+      lastComparison = TBaseHelper.compareTo(this.matchedName, typedOther.matchedName);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -996,6 +1130,20 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
+        case 11: // HIGHLIGHTED_NAME
+          if (field.type == TType.STRING) {
+            this.highlightedName = iprot.readString();
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 12: // MATCHED_NAME
+          if (field.type == TType.STRING) {
+            this.matchedName = iprot.readString();
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -1098,6 +1246,20 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         oprot.writeFieldEnd();
       }
     }
+    if (this.highlightedName != null) {
+      if (isSetHighlightedName()) {
+        oprot.writeFieldBegin(HIGHLIGHTED_NAME_FIELD_DESC);
+        oprot.writeString(this.highlightedName);
+        oprot.writeFieldEnd();
+      }
+    }
+    if (this.matchedName != null) {
+      if (isSetMatchedName()) {
+        oprot.writeFieldBegin(MATCHED_NAME_FIELD_DESC);
+        oprot.writeString(this.matchedName);
+        oprot.writeFieldEnd();
+      }
+    }
     oprot.writeFieldStop();
     oprot.writeStructEnd();
   }
@@ -1189,6 +1351,26 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         sb.append("null");
       } else {
         sb.append(this.timezones);
+      }
+      first = false;
+    }
+    if (isSetHighlightedName()) {
+      if (!first) sb.append(", ");
+      sb.append("highlightedName:");
+      if (this.highlightedName == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.highlightedName);
+      }
+      first = false;
+    }
+    if (isSetMatchedName()) {
+      if (!first) sb.append(", ");
+      sb.append("matchedName:");
+      if (this.matchedName == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.matchedName);
       }
       first = false;
     }

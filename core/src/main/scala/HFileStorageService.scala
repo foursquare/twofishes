@@ -67,7 +67,9 @@ abstract class HFileInput(basepath: String, filename: String) {
   def lookupPrefix(key: String): Seq[Array[Byte]] = {
     val scanner: HFileScanner = reader.getScanner(true, true)
     scanner.seekTo(key.getBytes())
-    // scanner.next()
+    if (!scanner.getKeyValue().getKeyString().startsWith(key)) {
+      scanner.next()
+    }
 
     val ret: ListBuffer[Array[Byte]] = new ListBuffer()
 

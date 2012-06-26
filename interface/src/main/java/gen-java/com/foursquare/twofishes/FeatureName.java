@@ -34,16 +34,19 @@ public class FeatureName implements TBase<FeatureName, FeatureName._Fields>, jav
   private static final TField NAME_FIELD_DESC = new TField("name", TType.STRING, (short)1);
   private static final TField LANG_FIELD_DESC = new TField("lang", TType.STRING, (short)2);
   private static final TField FLAGS_FIELD_DESC = new TField("flags", TType.LIST, (short)3);
+  private static final TField HIGHLIGHTED_NAME_FIELD_DESC = new TField("highlightedName", TType.STRING, (short)4);
 
   public String name;
   public String lang;
   public List<FeatureNameFlags> flags;
+  public String highlightedName;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
     NAME((short)1, "name"),
     LANG((short)2, "lang"),
-    FLAGS((short)3, "flags");
+    FLAGS((short)3, "flags"),
+    HIGHLIGHTED_NAME((short)4, "highlightedName");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -64,6 +67,8 @@ public class FeatureName implements TBase<FeatureName, FeatureName._Fields>, jav
           return LANG;
         case 3: // FLAGS
           return FLAGS;
+        case 4: // HIGHLIGHTED_NAME
+          return HIGHLIGHTED_NAME;
         default:
           return null;
       }
@@ -115,6 +120,8 @@ public class FeatureName implements TBase<FeatureName, FeatureName._Fields>, jav
     tmpMap.put(_Fields.FLAGS, new FieldMetaData("flags", TFieldRequirementType.OPTIONAL, 
         new ListMetaData(TType.LIST, 
             new EnumMetaData(TType.ENUM, FeatureNameFlags.class))));
+    tmpMap.put(_Fields.HIGHLIGHTED_NAME, new FieldMetaData("highlightedName", TFieldRequirementType.OPTIONAL, 
+        new FieldValueMetaData(TType.STRING)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(FeatureName.class, metaDataMap);
   }
@@ -150,6 +157,9 @@ public class FeatureName implements TBase<FeatureName, FeatureName._Fields>, jav
       }
       this.flags = __this__flags;
     }
+    if (other.isSetHighlightedName()) {
+      this.highlightedName = other.highlightedName;
+    }
   }
 
   public FeatureName deepCopy() {
@@ -162,6 +172,7 @@ public class FeatureName implements TBase<FeatureName, FeatureName._Fields>, jav
     this.lang = null;
     this.flags = new ArrayList<FeatureNameFlags>();
 
+    this.highlightedName = null;
   }
 
   public String getName() {
@@ -251,6 +262,30 @@ public class FeatureName implements TBase<FeatureName, FeatureName._Fields>, jav
     }
   }
 
+  public String getHighlightedName() {
+    return this.highlightedName;
+  }
+
+  public FeatureName setHighlightedName(String highlightedName) {
+    this.highlightedName = highlightedName;
+    return this;
+  }
+
+  public void unsetHighlightedName() {
+    this.highlightedName = null;
+  }
+
+  /** Returns true if field highlightedName is set (has been asigned a value) and false otherwise */
+  public boolean isSetHighlightedName() {
+    return this.highlightedName != null;
+  }
+
+  public void setHighlightedNameIsSet(boolean value) {
+    if (!value) {
+      this.highlightedName = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case NAME:
@@ -277,6 +312,14 @@ public class FeatureName implements TBase<FeatureName, FeatureName._Fields>, jav
       }
       break;
 
+    case HIGHLIGHTED_NAME:
+      if (value == null) {
+        unsetHighlightedName();
+      } else {
+        setHighlightedName((String)value);
+      }
+      break;
+
     }
   }
 
@@ -290,6 +333,9 @@ public class FeatureName implements TBase<FeatureName, FeatureName._Fields>, jav
 
     case FLAGS:
       return getFlags();
+
+    case HIGHLIGHTED_NAME:
+      return getHighlightedName();
 
     }
     throw new IllegalStateException();
@@ -308,6 +354,8 @@ public class FeatureName implements TBase<FeatureName, FeatureName._Fields>, jav
       return isSetLang();
     case FLAGS:
       return isSetFlags();
+    case HIGHLIGHTED_NAME:
+      return isSetHighlightedName();
     }
     throw new IllegalStateException();
   }
@@ -349,6 +397,15 @@ public class FeatureName implements TBase<FeatureName, FeatureName._Fields>, jav
       if (!(this_present_flags && that_present_flags))
         return false;
       if (!this.flags.equals(that.flags))
+        return false;
+    }
+
+    boolean this_present_highlightedName = true && this.isSetHighlightedName();
+    boolean that_present_highlightedName = true && that.isSetHighlightedName();
+    if (this_present_highlightedName || that_present_highlightedName) {
+      if (!(this_present_highlightedName && that_present_highlightedName))
+        return false;
+      if (!this.highlightedName.equals(that.highlightedName))
         return false;
     }
 
@@ -394,6 +451,16 @@ public class FeatureName implements TBase<FeatureName, FeatureName._Fields>, jav
     }
     if (isSetFlags()) {
       lastComparison = TBaseHelper.compareTo(this.flags, typedOther.flags);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetHighlightedName()).compareTo(typedOther.isSetHighlightedName());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetHighlightedName()) {
+      lastComparison = TBaseHelper.compareTo(this.highlightedName, typedOther.highlightedName);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -446,6 +513,13 @@ public class FeatureName implements TBase<FeatureName, FeatureName._Fields>, jav
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
+        case 4: // HIGHLIGHTED_NAME
+          if (field.type == TType.STRING) {
+            this.highlightedName = iprot.readString();
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -485,6 +559,13 @@ public class FeatureName implements TBase<FeatureName, FeatureName._Fields>, jav
         oprot.writeFieldEnd();
       }
     }
+    if (this.highlightedName != null) {
+      if (isSetHighlightedName()) {
+        oprot.writeFieldBegin(HIGHLIGHTED_NAME_FIELD_DESC);
+        oprot.writeString(this.highlightedName);
+        oprot.writeFieldEnd();
+      }
+    }
     oprot.writeFieldStop();
     oprot.writeStructEnd();
   }
@@ -516,6 +597,16 @@ public class FeatureName implements TBase<FeatureName, FeatureName._Fields>, jav
         sb.append("null");
       } else {
         sb.append(this.flags);
+      }
+      first = false;
+    }
+    if (isSetHighlightedName()) {
+      if (!first) sb.append(", ");
+      sb.append("highlightedName:");
+      if (this.highlightedName == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.highlightedName);
       }
       first = false;
     }
