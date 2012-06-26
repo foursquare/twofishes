@@ -81,7 +81,10 @@ struct GeocodeFeature {
   6: optional list<FeatureId> ids,
   7: optional list<FeatureName> names,
   8: optional list<string> attribution,
-  9: optional list<string> timezones
+  9: optional list<string> timezones,
+
+  11: optional string highlightedName,
+  12: optional string matchedName,
 }
 
 struct GeocodeServingFeature {

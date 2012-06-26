@@ -9,17 +9,20 @@ import org.bson.types.ObjectId
 
 
 class MockGeocodeStorageReadService extends GeocodeStorageFutureReadService {
-  val nameMap = new HashMap[String, List[GeocodeServingFeature]]
+  val nameMap = new HashMap[String, List[ObjectId]]
   val idMap = new HashMap[ObjectId, GeocodeServingFeature]
 
-  def getByNamePrefix(name: String): Future[Seq[GeocodeServingFeature]] = {
+  def getByName(name: String): Future[Seq[GeocodeServingFeature]] = {
+    getIdsByName(name).flatMap(getByObjectIds).map(_.map(_._2).toList)
+  }
+
+  def getIdsByNamePrefix(name: String): Future[Seq[ObjectId]] = {
     Future.value(
-      nameMap.find({case(k, v) => k.startsWith(name)})
-        .toList.flatMap(_._2)
+      nameMap.toList.filter(_._1.startsWith(name)).flatMap(_._2)
     )
   }
 
-  def getByName(name: String): Future[Seq[GeocodeServingFeature]] = {
+  def getIdsByName(name: String): Future[Seq[ObjectId]] = {
     Future.value(nameMap.getOrElse(name, Nil))
   }
 
@@ -67,7 +70,7 @@ class MockGeocodeStorageReadService extends GeocodeStorageFutureReadService {
     servingFeature.setScoringFeatures(scoringFeatures)
     servingFeature.setId(id.toString)
     servingFeature.setFeature(feature)
-    nameMap(name.toLowerCase) = servingFeature :: nameMap.getOrElse(name.toLowerCase, Nil)
+    nameMap(name.toLowerCase) = id :: nameMap.getOrElse(name.toLowerCase, Nil)
     idMap(id) = servingFeature
 
     servingFeature
@@ -93,6 +96,12 @@ class GeocoderSpec extends Specification {
     val usRecord = store.addGeocode("US", Nil, 1, 2, YahooWoeType.COUNTRY)
     val nyRecord = store.addGeocode("New York", List(usRecord), 3, 4, YahooWoeType.ADMIN1)
     val regoParkRecord = store.addGeocode("Rego Park", List(nyRecord, usRecord), 5, 6, YahooWoeType.TOWN)
+    store
+  }
+
+  def addRego(store: MockGeocodeStorageReadService) = {
+    val usRecord = store.addGeocode("US", Nil, 1, 2, YahooWoeType.COUNTRY)
+    store.addGeocode("Rego", List(usRecord), 5, 6, YahooWoeType.TOWN)
     store
   }
 
@@ -242,6 +251,39 @@ class GeocoderSpec extends Specification {
     val r = new GeocoderImpl(store).geocode(new GeocodeRequest("Pizza near sdklfj kljsklfdj Rego Park, New York")).apply()
     r.interpretations.size must_== 0
   }
+
+  "autocomplete" in {
+    val store = buildRegoPark()
+    addRego(store)
+
+    val req = new GeocodeRequest("Rego")
+    req.setAutocomplete(true)
+
+    store.getIdsByNamePrefix("rego").get().size must_== 2
+
+    val r = new GeocoderImpl(store).geocode(req).apply()
+    println(r)
+    r.interpretations.size must_== 2
+    val interp = r.interpretations.asScala(0)
+    println(interp)
+  } 
+
+  "autocomplete 2" in {
+    val store = buildRegoPark()
+    addRego(store)
+
+    val req = new GeocodeRequest("Rego P")
+    req.setAutocomplete(true)
+
+    store.getIdsByNamePrefix("rego p").get().size must_== 1
+
+    val r = new GeocoderImpl(store).geocode(req).apply()
+    println(r)
+    r.interpretations.size must_== 1
+    val interp = r.interpretations.asScala(0)
+    println(interp)
+  } 
+
 
   // add a preferred name test
   // add a name filtering test
