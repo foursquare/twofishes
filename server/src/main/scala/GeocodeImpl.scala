@@ -325,23 +325,24 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
     f: GeocodeFeature,
     lang: Option[String],
     preferAbbrev: Boolean,
-    matchedString: String
+    matchedStringOpt: Option[String]
   ): Option[(FeatureName, Option[String])] = {
-    val nameCandidates = f.names.filter(n => {
-      val normalizedName = NameNormalizer.tokenize(NameNormalizer.normalize(n.name)).mkString(" ")
-      logger.ifTrace("Does %s start with %s?".format(normalizedName, matchedString))
-      normalizedName.startsWith(matchedString)
-    })
-        
-    val bestNameMatch = nameCandidates.sorted(new FeatureNameComparator(lang, preferAbbrev)).headOption
-    bestNameMatch match {
-      case Some(name) => {
-        Some((name,
-          Some("<b>" + name.name.take(matchedString.size) + "</b>" + name.name.drop(matchedString.size))
-        ))
-      }
-      case None => bestName(f, lang, preferAbbrev).map(n => (n, None))
-    } 
+    matchedStringOpt.flatMap(matchedString => {
+      val nameCandidates = f.names.filter(n => {
+        val normalizedName = NameNormalizer.tokenize(NameNormalizer.normalize(n.name)).mkString(" ")
+        logger.ifTrace("Does %s start with %s?".format(normalizedName, matchedString))
+        normalizedName.startsWith(matchedString)
+      })
+
+      println(nameCandidates)
+          
+      val bestNameMatch = nameCandidates.sorted(new FeatureNameComparator(lang, preferAbbrev)).headOption
+      println(bestNameMatch)
+      bestNameMatch.map(name => 
+          (name,
+            Some("<b>" + name.name.take(matchedString.size) + "</b>" + name.name.drop(matchedString.size))
+      ))
+    }) orElse bestName(f, lang, preferAbbrev).map(n => (n, None))
   }
  
   // Comparator for parses, we score by a number of different features
@@ -446,18 +447,24 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService) extends LogHelper {
       println("parts to use: " + partsToUse)
       var i = 0
       val namesToUse = partsToUse.flatMap({case(fmatchOpt, servingFeature) => {
-        val name = bestName(servingFeature.feature, Some(req.lang), i != 0,
+        val name = bestNameWithMatch(servingFeature.feature, Some(req.lang), i != 0,
           fmatchOpt.map(_.phrase))
         i += 1
         name
       }})
 
-      val matchedName = if (partsToUse.exists(_._2.feature.woeType == YahooWoeType.COUNTRY)) {
-        namesToUse.map(_.name).mkString(", ")
-      } else {
-        (namesToUse.map(_.name) ++ countryAbbrev.toList).mkString(", ")
+      var (matchedNameParts, highlightedNameParts) = 
+        (namesToUse.map(_._1.name),
+         namesToUse.map({case(fname, highlightedName) => {
+          highlightedName.getOrElse(fname.name)
+        }}))
+
+      if (partsToUse.exists(_._2.feature.woeType != YahooWoeType.COUNTRY)) {
+        matchedNameParts ++= countryAbbrev.toList
+        highlightedNameParts ++= countryAbbrev.toList
       }
-      f.setMatchedName(matchedName)
+      f.setMatchedName(matchedNameParts.mkString(", "))
+      f.setHighlightedName(highlightedNameParts.mkString(", "))
     })
 
     val parentNames = parentsToUse.map(p =>
