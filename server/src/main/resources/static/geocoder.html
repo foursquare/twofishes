@@ -35,7 +35,7 @@
     
     function geocode() {
       var query = location.hash.substr(1);
-      $.getJSON('http://' + window.location.host + '/?query=' + query,
+      $.getJSON('http://' + window.location.host + '/?debug=1&query=' + query,
         success, failure);
 
     }

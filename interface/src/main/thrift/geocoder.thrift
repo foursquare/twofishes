@@ -103,7 +103,8 @@ struct GeocodeInterpretation {
 }
 
 struct GeocodeResponse {
-  1: list<GeocodeInterpretation> interpretations
+  1: list<GeocodeInterpretation> interpretations,
+  2: optional list<string> debugLines,
 }
 
 struct GeocodeRequest {

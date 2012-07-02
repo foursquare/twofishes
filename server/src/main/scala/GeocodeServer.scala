@@ -21,7 +21,7 @@ import scala.collection.mutable.ListBuffer
 
 class GeocodeServerImpl(store: GeocodeStorageFutureReadService) extends Geocoder.ServiceIface {
   def geocode(r: GeocodeRequest): Future[GeocodeResponse] = {
-    new GeocoderImpl(store).geocode(r)
+    new GeocoderImpl(store, r).geocode()
   }
 }
 
@@ -117,7 +117,7 @@ object ServerStore {
 object GeocodeThriftServer extends Application {
   class GeocodeServer(store: GeocodeStorageFutureReadService) extends Geocoder.Iface {
     override def geocode(request: GeocodeRequest): GeocodeResponse = {
-      new GeocoderImpl(store).geocode(request).get
+      new GeocoderImpl(store, request).geocode().get
     }
   }
 

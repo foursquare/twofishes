@@ -32,12 +32,15 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
   private static final TStruct STRUCT_DESC = new TStruct("GeocodeResponse");
 
   private static final TField INTERPRETATIONS_FIELD_DESC = new TField("interpretations", TType.LIST, (short)1);
+  private static final TField DEBUG_LINES_FIELD_DESC = new TField("debugLines", TType.LIST, (short)2);
 
   public List<GeocodeInterpretation> interpretations;
+  public List<String> debugLines;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
-    INTERPRETATIONS((short)1, "interpretations");
+    INTERPRETATIONS((short)1, "interpretations"),
+    DEBUG_LINES((short)2, "debugLines");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -54,6 +57,8 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
       switch(fieldId) {
         case 1: // INTERPRETATIONS
           return INTERPRETATIONS;
+        case 2: // DEBUG_LINES
+          return DEBUG_LINES;
         default:
           return null;
       }
@@ -101,6 +106,9 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
     tmpMap.put(_Fields.INTERPRETATIONS, new FieldMetaData("interpretations", TFieldRequirementType.DEFAULT, 
         new ListMetaData(TType.LIST, 
             new StructMetaData(TType.STRUCT, GeocodeInterpretation.class))));
+    tmpMap.put(_Fields.DEBUG_LINES, new FieldMetaData("debugLines", TFieldRequirementType.OPTIONAL, 
+        new ListMetaData(TType.LIST, 
+            new FieldValueMetaData(TType.STRING))));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeResponse.class, metaDataMap);
   }
@@ -126,6 +134,13 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
       }
       this.interpretations = __this__interpretations;
     }
+    if (other.isSetDebugLines()) {
+      List<String> __this__debugLines = new ArrayList<String>();
+      for (String other_element : other.debugLines) {
+        __this__debugLines.add(other_element);
+      }
+      this.debugLines = __this__debugLines;
+    }
   }
 
   public GeocodeResponse deepCopy() {
@@ -135,6 +150,7 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
   @Override
   public void clear() {
     this.interpretations = null;
+    this.debugLines = null;
   }
 
   public int getInterpretationsSize() {
@@ -176,6 +192,45 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
     }
   }
 
+  public int getDebugLinesSize() {
+    return (this.debugLines == null) ? 0 : this.debugLines.size();
+  }
+
+  public java.util.Iterator<String> getDebugLinesIterator() {
+    return (this.debugLines == null) ? null : this.debugLines.iterator();
+  }
+
+  public void addToDebugLines(String elem) {
+    if (this.debugLines == null) {
+      this.debugLines = new ArrayList<String>();
+    }
+    this.debugLines.add(elem);
+  }
+
+  public List<String> getDebugLines() {
+    return this.debugLines;
+  }
+
+  public GeocodeResponse setDebugLines(List<String> debugLines) {
+    this.debugLines = debugLines;
+    return this;
+  }
+
+  public void unsetDebugLines() {
+    this.debugLines = null;
+  }
+
+  /** Returns true if field debugLines is set (has been asigned a value) and false otherwise */
+  public boolean isSetDebugLines() {
+    return this.debugLines != null;
+  }
+
+  public void setDebugLinesIsSet(boolean value) {
+    if (!value) {
+      this.debugLines = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case INTERPRETATIONS:
@@ -186,6 +241,14 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
       }
       break;
 
+    case DEBUG_LINES:
+      if (value == null) {
+        unsetDebugLines();
+      } else {
+        setDebugLines((List<String>)value);
+      }
+      break;
+
     }
   }
 
@@ -193,6 +256,9 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
     switch (field) {
     case INTERPRETATIONS:
       return getInterpretations();
+
+    case DEBUG_LINES:
+      return getDebugLines();
 
     }
     throw new IllegalStateException();
@@ -207,6 +273,8 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
     switch (field) {
     case INTERPRETATIONS:
       return isSetInterpretations();
+    case DEBUG_LINES:
+      return isSetDebugLines();
     }
     throw new IllegalStateException();
   }
@@ -233,6 +301,15 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
         return false;
     }
 
+    boolean this_present_debugLines = true && this.isSetDebugLines();
+    boolean that_present_debugLines = true && that.isSetDebugLines();
+    if (this_present_debugLines || that_present_debugLines) {
+      if (!(this_present_debugLines && that_present_debugLines))
+        return false;
+      if (!this.debugLines.equals(that.debugLines))
+        return false;
+    }
+
     return true;
   }
 
@@ -255,6 +332,16 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
     }
     if (isSetInterpretations()) {
       lastComparison = TBaseHelper.compareTo(this.interpretations, typedOther.interpretations);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetDebugLines()).compareTo(typedOther.isSetDebugLines());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetDebugLines()) {
+      lastComparison = TBaseHelper.compareTo(this.debugLines, typedOther.debugLines);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -294,6 +381,23 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
+        case 2: // DEBUG_LINES
+          if (field.type == TType.LIST) {
+            {
+              TList _list31 = iprot.readListBegin();
+              this.debugLines = new ArrayList<String>(_list31.size);
+              for (int _i32 = 0; _i32 < _list31.size; ++_i32)
+              {
+                String _elem33;
+                _elem33 = iprot.readString();
+                this.debugLines.add(_elem33);
+              }
+              iprot.readListEnd();
+            }
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -313,13 +417,27 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
       oprot.writeFieldBegin(INTERPRETATIONS_FIELD_DESC);
       {
         oprot.writeListBegin(new TList(TType.STRUCT, this.interpretations.size()));
-        for (GeocodeInterpretation _iter31 : this.interpretations)
+        for (GeocodeInterpretation _iter34 : this.interpretations)
         {
-          _iter31.write(oprot);
+          _iter34.write(oprot);
         }
         oprot.writeListEnd();
       }
       oprot.writeFieldEnd();
+    }
+    if (this.debugLines != null) {
+      if (isSetDebugLines()) {
+        oprot.writeFieldBegin(DEBUG_LINES_FIELD_DESC);
+        {
+          oprot.writeListBegin(new TList(TType.STRING, this.debugLines.size()));
+          for (String _iter35 : this.debugLines)
+          {
+            oprot.writeString(_iter35);
+          }
+          oprot.writeListEnd();
+        }
+        oprot.writeFieldEnd();
+      }
     }
     oprot.writeFieldStop();
     oprot.writeStructEnd();
@@ -337,6 +455,16 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
       sb.append(this.interpretations);
     }
     first = false;
+    if (isSetDebugLines()) {
+      if (!first) sb.append(", ");
+      sb.append("debugLines:");
+      if (this.debugLines == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.debugLines);
+      }
+      first = false;
+    }
     sb.append(")");
     return sb.toString();
   }
