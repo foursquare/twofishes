@@ -44,8 +44,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     val lines: ListBuffer[String] = new ListBuffer()
 
     def ifDebug(s: => String, level: Int = 0) {
-      val debugLevel = if (req.debug) { 1 } else { 0 }
-      if (level >= 0 && debugLevel >= level) {
+      if (level >= 0 && req.debug >= level) {
         lines.append(s)
       }
     }
@@ -131,18 +130,18 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
               featureLists.zip(subParseSeqs).flatMap({case(features: Parse, subparses: ParseSeq) => {
                 (for {
                   f <- features
-                  val _ = logger.ifDebug("looking at %s".format(f))
+                  val _ = logger.ifDebug("looking at %s".format(f), 3)
                   p <- subparses
-                  val _ = logger.ifDebug("sub_parse: %s".format(p))
+                  val _ = logger.ifDebug("sub_parse: %s".format(p), 3)
                 } yield {
                   val parse: Parse = p ++ List(f)
                   val sortedParse = parse.sorted(FeatureMatchOrdering)
                   if (isValidParse(sortedParse)) {
-                    logger.ifDebug("VALID -- adding to %d".format(cacheKey))
-                    logger.ifDebug("sorted " + sortedParse)
+                    logger.ifDebug("VALID -- adding to %d".format(cacheKey), 4)
+                    logger.ifDebug("sorted " + sortedParse, 4)
                     Some(sortedParse)
                   } else {
-                    logger.ifDebug("INVALID")
+                    logger.ifDebug("INVALID", 4)
                     None
                   }
                 }).flatten
@@ -350,7 +349,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
   ): Option[(FeatureName, Option[String])] = {
     matchedStringOpt.flatMap(matchedString => {
       val nameCandidates = f.names.filter(n => {
-        val normalizedName = NameNormalizer.tokenize(NameNormalizer.normalize(n.name)).mkString(" ")
+        val normalizedName = NameNormalizer.normalize(n.name)
         logger.ifDebug("Does %s start with %s?".format(normalizedName, matchedString))
         normalizedName.startsWith(matchedString)
       })
@@ -362,8 +361,19 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       bestNameMatch.map(name => 
           (name,
             Some("<b>" + name.name.take(matchedString.size) + "</b>" + name.name.drop(matchedString.size))
-      ))
-    }) orElse bestName(f, lang, preferAbbrev).map(n => (n, None))
+      )) orElse {bestName(f, lang, preferAbbrev).map(name => {
+        val normalizedName = NameNormalizer.normalize(name.name)
+        val index = normalizedName.indexOf(matchedString)
+        if (index > -1) {
+          val before = name.name.take(index)
+          val matched = name.name.drop(index).take(matchedString.size)
+          val after = name.name.drop(index + matchedString.size)
+          (name, Some("%s<b>%s</b>%s".format(before, matched, after)))
+        } else {
+          (name, None)
+        }
+      })}
+    }) orElse { bestName(f, lang, preferAbbrev).map(n => (n, None)) }
   }
  
   // Comparator for parses, we score by a number of different features
@@ -397,9 +407,12 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
         // Penalize far-away things
         Option(llHint).foreach(ll => {
-          signal -= (GeoTools.getDistance(ll.lat, ll.lng,
+          val distancePenalty = (GeoTools.getDistance(ll.lat, ll.lng,
               primaryFeature.feature.geometry.center.lat,
               primaryFeature.feature.geometry.center.lng) / 100)
+          logger.ifDebug(
+            "%d distancePenalty for %s".format(distancePenalty, printDebugParse(parse)), 3)
+          signal -= distancePenalty
         })
 
         // manual boost added at indexing time
@@ -535,10 +548,16 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
   def generateResponse(interpretations: Seq[GeocodeInterpretation]): GeocodeResponse = {
     val resp = new GeocodeResponse()
     resp.setInterpretations(interpretations)
-    if (req.debug) {
+    if (req.debug > 0) {
       resp.setDebugLines(logger.getLines)
     }
     resp
+  }
+
+  def printDebugParse(p: Parse): String = {
+    val name = p.flatMap(_.fmatch.feature.names.headOption).map(_.name).mkString(", ")
+    val id = p.flatMap(_.fmatch.feature.ids).mkString(",")
+    "%s: %s".format(id, name)
   }
 
   // This function signature is gross
@@ -555,6 +574,10 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
     // TODO: make this configurable
     val sortedParses = parses.sorted(new ParseOrdering(req.ll, req.cc)).take(3)
+
+    // sortedParses.foreach(p => {
+    //   logger.ifDebug(printDebugParse(p))
+    // })
 
     val parentIds = sortedParses.flatMap(
       _.headOption.toList.flatMap(_.fmatch.scoringFeatures.parents))
@@ -580,7 +603,13 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         val sortedParents = p(0).fmatch.scoringFeatures.parents.flatMap(id =>
           parentMap.get(new ObjectId(id))).sorted(GeocodeServingFeatureOrdering)
         fixFeature(feature, sortedParents, Some(p))
-        val interp = new GeocodeInterpretation(what, where, feature)
+        val interp = new GeocodeInterpretation()
+        interp.setWhat(what)
+        interp.setWhere(where)
+        interp.setFeature(feature)
+        if (req.debug > 0) {
+          interp.setScoringFeatures(fmatch.scoringFeatures)
+        }
         if (req.full) {
           interp.setParents(sortedParents.map(parentFeature => {
             val sortedParentParents = parentFeature.scoringFeatures.parents.flatMap(id => parentMap.get(new ObjectId(id))).sorted

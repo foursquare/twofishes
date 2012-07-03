@@ -36,7 +36,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   private static final TField LANG_FIELD_DESC = new TField("lang", TType.STRING, (short)3);
   private static final TField LL_FIELD_DESC = new TField("ll", TType.STRUCT, (short)4);
   private static final TField FULL_FIELD_DESC = new TField("full", TType.BOOL, (short)5);
-  private static final TField DEBUG_FIELD_DESC = new TField("debug", TType.BOOL, (short)6);
+  private static final TField DEBUG_FIELD_DESC = new TField("debug", TType.I32, (short)6);
   private static final TField AUTOCOMPLETE_FIELD_DESC = new TField("autocomplete", TType.BOOL, (short)7);
 
   public String query;
@@ -44,7 +44,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   public String lang;
   public GeocodePoint ll;
   public boolean full;
-  public boolean debug;
+  public int debug;
   public boolean autocomplete;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
@@ -143,7 +143,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     tmpMap.put(_Fields.FULL, new FieldMetaData("full", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.BOOL)));
     tmpMap.put(_Fields.DEBUG, new FieldMetaData("debug", TFieldRequirementType.OPTIONAL, 
-        new FieldValueMetaData(TType.BOOL)));
+        new FieldValueMetaData(TType.I32)));
     tmpMap.put(_Fields.AUTOCOMPLETE, new FieldMetaData("autocomplete", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.BOOL)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
@@ -155,7 +155,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
 
     this.full = false;
 
-    this.debug = false;
+    this.debug = 0;
 
     this.autocomplete = false;
 
@@ -204,7 +204,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     this.ll = null;
     this.full = false;
 
-    this.debug = false;
+    this.debug = 0;
 
     this.autocomplete = false;
 
@@ -329,11 +329,11 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     __isset_bit_vector.set(__FULL_ISSET_ID, value);
   }
 
-  public boolean isDebug() {
+  public int getDebug() {
     return this.debug;
   }
 
-  public GeocodeRequest setDebug(boolean debug) {
+  public GeocodeRequest setDebug(int debug) {
     this.debug = debug;
     setDebugIsSet(true);
     return this;
@@ -421,7 +421,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       if (value == null) {
         unsetDebug();
       } else {
-        setDebug((Boolean)value);
+        setDebug((Integer)value);
       }
       break;
 
@@ -454,7 +454,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       return new Boolean(isFull());
 
     case DEBUG:
-      return new Boolean(isDebug());
+      return new Integer(getDebug());
 
     case AUTOCOMPLETE:
       return new Boolean(isAutocomplete());
@@ -705,8 +705,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
           }
           break;
         case 6: // DEBUG
-          if (field.type == TType.BOOL) {
-            this.debug = iprot.readBool();
+          if (field.type == TType.I32) {
+            this.debug = iprot.readI32();
             setDebugIsSet(true);
           } else { 
             TProtocolUtil.skip(iprot, field.type);
@@ -768,7 +768,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     }
     if (isSetDebug()) {
       oprot.writeFieldBegin(DEBUG_FIELD_DESC);
-      oprot.writeBool(this.debug);
+      oprot.writeI32(this.debug);
       oprot.writeFieldEnd();
     }
     if (isSetAutocomplete()) {

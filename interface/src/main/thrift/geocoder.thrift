@@ -99,7 +99,7 @@ struct GeocodeInterpretation {
   2: string where,
   3: GeocodeFeature feature
   4: optional list<GeocodeFeature> parents,
-  5: optional string debugInfo
+  5: optional ScoringFeatures scoringFeatures,
 }
 
 struct GeocodeResponse {
@@ -113,7 +113,7 @@ struct GeocodeRequest {
   3: optional string lang = "en",
   4: optional GeocodePoint ll,
   5: optional bool full = 0,
-  6: optional int debug = 0,
+  6: optional i32 debug = 0,
   7: optional bool autocomplete = 0
 }
 

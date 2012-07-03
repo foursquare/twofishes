@@ -82,7 +82,7 @@ class GeocoderHttpService(geocoder: GeocodeServerImpl) extends Service[HttpReque
         params.get("full").foreach(_.asScala.headOption.foreach(v =>
           request.setFull(v.toBoolean)))
         params.get("debug").foreach(_.asScala.headOption.foreach(v =>
-          request.setDebug(v.toBoolean)))
+          request.setDebug(v.toInt)))
         params.get("autocomplete").foreach(_.asScala.headOption.foreach(v =>
           request.setAutocomplete(v.toBoolean)))
         params.get("ll").foreach(_.asScala.headOption.foreach(v => {
