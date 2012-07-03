@@ -64,7 +64,7 @@ abstract class HFileInput(basepath: String, filename: String) {
 
   import scala.collection.mutable.ListBuffer
   
-  def lookupPrefix(key: String): Seq[Array[Byte]] = {
+  def lookupPrefix(key: String, minPrefixRatio: Double = 0.5): Seq[Array[Byte]] = {
     val scanner: HFileScanner = reader.getScanner(true, true)
     scanner.seekTo(key.getBytes())
     if (!scanner.getKeyValue().getKeyString().startsWith(key)) {
@@ -73,8 +73,14 @@ abstract class HFileInput(basepath: String, filename: String) {
 
     val ret: ListBuffer[Array[Byte]] = new ListBuffer()
 
+    // I hate to encode this logic here, but I don't really want to thread it
+    // all the way through the storage logic.
     while (scanner.getKeyValue().getKeyString().startsWith(key)) {
-      ret.append(scanner.getKeyValue().getValue())
+      if ((key.size >= 3) ||
+          (key.size*1.0 / scanner.getKeyValue().getKeyString().size) >= minPrefixRatio) {
+        // println("ACCEPTING: " + scanner.getKeyValue().getKeyString())
+        ret.append(scanner.getKeyValue().getValue())
+      }
       scanner.next()
     }
 

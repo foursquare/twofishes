@@ -113,7 +113,7 @@ struct GeocodeRequest {
   3: optional string lang = "en",
   4: optional GeocodePoint ll,
   5: optional bool full = 0,
-  6: optional bool debug = 0,
+  6: optional int debug = 0,
   7: optional bool autocomplete = 0
 }
 
