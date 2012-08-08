@@ -381,6 +381,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
   // Comparator for parses, we score by a number of different features
   // 
   class ParseOrdering(llHint: GeocodePoint, ccHint: String) extends Ordering[Parse] {
+    var scoreMap = new scala.collection.mutable.HashMap[String, Int]
+
     // Higher is better
     def scoreParse(parse: Parse): Int = {
       parse.headOption.map(primaryFeatureMatch => {
@@ -440,6 +442,17 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       }).getOrElse(0)
     }
 
+    def getScore(p: Parse): Int = {
+      p.headOption.flatMap(f => {
+        val fid = f.fmatch.id.toString
+        if (!scoreMap.contains(fid)) {
+          scoreMap(fid) = scoreParse(p)
+        }
+
+        scoreMap.get(fid) 
+      }).getOrElse(-1)
+    }
+
     def compare(a: Parse, b: Parse): Int = {
       logger.ifDebug("Scoring %s vs %s".format(printDebugParse(a), printDebugParse(b)))
 
@@ -458,7 +471,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
           return 1
         }
       }
-      scoreParse(b) - scoreParse(a)
+      getScore(b) - getScore(a)
     }
   }
 
@@ -586,8 +599,9 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
   def printDebugParse(p: Parse): String = {
     val name = p.flatMap(_.fmatch.feature.names.headOption).map(_.name).mkString(", ")
-    val id = p.flatMap(_.fmatch.feature.ids).mkString(",")
-    "%s: %s".format(id, name)
+    val id = p.flatMap(_.fmatch.feature.ids).headOption.map(fid =>
+      "%s:%s".format(fid.source, fid.id)).getOrElse("no:id")
+    "%s %s".format(id, name)
   }
 
   // This function signature is gross
