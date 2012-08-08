@@ -68,13 +68,16 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
   }
 
   // token -> alt tokens
-  val rewriteTable = new TsvHelperFileParser("data/custom/rewrites.txt")
+  val rewriteTable = new TsvHelperFileParser("data/custom/rewrites.txt",
+    "data/private/rewrites.txt")
   // tokenlist
   val deletesList: List[String] = scala.io.Source.fromFile(new File("data/custom/deletes.txt")).getLines.map(NameNormalizer.normalize).toList
   // geonameid -> boost value
   val boostTable = new TsvHelperFileParser("data/custom/boosts.txt")
   // geonameid -> alias
-  val aliasTable = new TsvHelperFileParser("data/custom/aliases.txt")
+  val aliasTable = new TsvHelperFileParser("data/custom/aliases.txt",
+    "data/private/aliases.txt")
+
 
   val helperTables = List(rewriteTable, boostTable, aliasTable)
 
