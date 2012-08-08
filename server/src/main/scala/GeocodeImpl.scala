@@ -9,6 +9,8 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable.{HashMap, ListBuffer}
 
 // TODO
+// --start treating Parse like an object, stop using headOption
+// --paris te doesn't work b/c of 50% thing?
 // --test autocomplete more
 // --better debugging
 // --this 50% match thing is dumb. Figure out a better way.
@@ -48,7 +50,6 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         lines.append(s)
       }
     }
-
 
     def getLines: List[String] = lines.toList
 
@@ -278,9 +279,10 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         val isEnd = (i == tokens.size)
 
         val fidsF: Future[Seq[ObjectId]] = if (isEnd) {
-          val fids = store.getIdsByNamePrefix(query)
-          // TODO(blackmad): possibly prune here + OR exact query
-          fids
+          store.getIdsByNamePrefix(query).map(fids => {
+            val possibleParents = parses.flatMap(_.flatMap(_.fmatch.scoringFeatures.parents)).map(id => new ObjectId(id)).toSet
+            fids.toSet.intersect(possibleParents).toList
+          })
         } else {
           store.getIdsByName(query)
         }
@@ -386,23 +388,32 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         val rest = parse.drop(1)
         var signal = primaryFeature.scoringFeatures.population
 
+        def modifySignal(value: Int, debug: String) {
+          logger.ifDebug("%s: %s + %s = %s".format(
+            debug, signal, value, signal + value))
+          signal += value
+        }
+
+        logger.ifDebug("Scoring %s".format(printDebugParse(parse)))
+
         // if we have a repeated feature, downweight this like crazy
         // so st petersburg, st petersburg works, but doesn't break new york, ny
         if (rest.contains(primaryFeature)) {
-          signal -= 100000000
+          modifySignal(100000000,
+            "downweighting dupe-feature parse")
         }
 
         if (primaryFeature.feature.geometry.bounds != null) {
-          signal += 1000
+          modifySignal(1000, "promoting feature with bounds")
         }
 
         // prefer a more aggressive parse ... bleh
         // this prefers "mt laurel" over the town of "laurel" in "mt" (montana)
-        signal -= 20000 * parse.length
+        modifySignal(20000 * parse.length, "parse length boost")
 
         // Matching country hint is good
         if (Option(ccHint).exists(_ == primaryFeature.feature.cc)) {
-          signal += 10000
+          modifySignal(10000 * parse.length, "country code matchyy")
         }
 
         // Penalize far-away things
@@ -410,24 +421,43 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
           val distancePenalty = (GeoTools.getDistance(ll.lat, ll.lng,
               primaryFeature.feature.geometry.center.lat,
               primaryFeature.feature.geometry.center.lng) / 100)
-          logger.ifDebug(
-            "%d distancePenalty for %s".format(distancePenalty, printDebugParse(parse)), 3)
-          signal -= distancePenalty
+          modifySignal(-distancePenalty, "distance penalty")          
         })
 
         // manual boost added at indexing time
-        signal += primaryFeature.scoringFeatures.boost
+        if (primaryFeature.scoringFeatures.boost != 0) {
+          modifySignal(primaryFeature.scoringFeatures.boost, "manual boost")
+        }
 
         // as a terrible tie break, things in the US > elsewhere
         // meant primarily for zipcodes
         if (primaryFeature.feature.cc == "US") {
-          signal += 1
+          modifySignal(1, "US tie-break")
         }
+
+        logger.ifDebug("final score %s".format(signal))
         signal
       }).getOrElse(0)
     }
 
-    def compare(a: Parse, b: Parse) = {
+    def compare(a: Parse, b: Parse): Int = {
+      logger.ifDebug("Scoring %s vs %s".format(printDebugParse(a), printDebugParse(b)))
+
+      for {
+        aFeature <- a.headOption
+        bFeature <- b.headOption
+      } {
+        // if a is a parent of b, prefer b
+        if (aFeature.fmatch.scoringFeatures.parents.contains(bFeature.fmatch.id)) {
+          logger.ifDebug("Preferring %s because it's a child of %s".format(printDebugParse(a), printDebugParse(b)))
+          return -1
+        }
+        // if b is a parent of a, prefer a
+        if (bFeature.fmatch.scoringFeatures.parents.contains(aFeature.fmatch.id)) {
+          logger.ifDebug("Preferring %s because it's a child of %s".format(printDebugParse(b), printDebugParse(a)))
+          return 1
+        }
+      }
       scoreParse(b) - scoreParse(a)
     }
   }
