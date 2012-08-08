@@ -454,7 +454,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     }
 
     def compare(a: Parse, b: Parse): Int = {
-      logger.ifDebug("Scoring %s vs %s".format(printDebugParse(a), printDebugParse(b)))
+      // logger.ifDebug("Scoring %s vs %s".format(printDebugParse(a), printDebugParse(b)))
 
       for {
         aFeature <- a.headOption
