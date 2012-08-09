@@ -75,4 +75,21 @@ class IndexerSpec extends Specification {
       "brick charter charter",
       "charter of brick")
   }
+
+  "deletes work in practice  -- county" in {
+    val record = parser.parseFeature(
+      new GeonamesFeature(Map(
+        GeonamesFeatureColumns.LATITUDE -> "40.74",
+        GeonamesFeatureColumns.LONGITUDE -> "-74",
+        GeonamesFeatureColumns.NAME -> "San Francisco County"
+      ))
+    )
+
+    // Yes, this is totally awful. awful awful.
+    record.names mustEqual List(
+      "san francisco county",
+      "san francisco"
+    )
+  }
+
 }
