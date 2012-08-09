@@ -2,5 +2,5 @@
 5368361|10000000
 # Greater London over London City
 2648110|10000000
-# williamsburg nyc boost, just enough to win in nyc
-5144580|25000
+# williamsburg nyc boost
+5144580|40000
