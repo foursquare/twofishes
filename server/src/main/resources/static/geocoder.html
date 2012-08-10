@@ -80,7 +80,13 @@
           sectionDiv.append('<div class="highlightedName">Interp ' + (count+1) + ': ' + feature.highlightedName + '</div>');
           sectionDiv.append(jsonDiv);
           sectionDiv.append(mapDiv);
-          var map = new L.Map('result-' + count, _.extend(defaults, opts));
+
+          var opts = {
+            layers: new L.TileLayer(mapUrl, {subdomains: subdomains}),
+            attributionControl: false
+          }
+
+          var map = new L.Map('result-' + count, opts);
           jsonDiv.html('<pre>' + JSON.stringify(data, undefined, 2) + '</pre>');
 
           var center = feature.geometry.center;
@@ -109,9 +115,9 @@
             boundingBox.extend(p2);
             boundingBox.extend(p3);
             boundingBox.extend(p4);
+            map.fitBounds(boundingBox);
           }
         }
-        map.fitBounds(boundingBox);
       });
     }
 
@@ -120,12 +126,6 @@
 
      var mapUrl = 'http://{s}.tiles.mapbox.com/v3/mapbox.mapbox-streets/{z}/{x}/{y}.png';
      var subdomains = ['a','b','c','d'];
-
-     var defaults = {
-       layers: new L.TileLayer(mapUrl, {subdomains: subdomains}),
-       attributionControl: false
-     }
-     var opts = {}
 
      geocode();
   </script>
