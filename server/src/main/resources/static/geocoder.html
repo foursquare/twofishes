@@ -1,7 +1,10 @@
 <html>
 <head>
-  <link rel="stylesheet" href="leaflet/leaflet.css" />
-  <script src="leaflet/leaflet.js"></script>
+<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.4.4/leaflet.css" />
+<!--[if lte IE 8]>
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.4.4/leaflet.ie.css" />
+<![endif]-->
+<script src="http://cdn.leafletjs.com/leaflet-0.4.4/leaflet.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
   <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.3.1/underscore-min.js"></script>
   <style>
@@ -37,8 +40,6 @@
   <div id="geocodes"/>
 
   <script>
-    var previousLayers = [];
-
     var statusArea = $('#geocodes');
     var queryInput = $('#query');
     var searchButton = $('#search');
@@ -68,20 +69,18 @@
 
       statusArea.empty();
 
-      var count = 0;
-      //var boundingBox = null;
-      _(data.interpretations).each(function(interp) {
+      _(data.interpretations).each(function(interp, count) {
         if (interp.feature) {
           var feature = interp.feature;
 
           var sectionDiv = $('<div class="result"/>');
           var jsonDiv = $('<div class="json"/>');
-          var mapDiv = $('<div class="map"/>');
+          var mapDiv = $('<div class="map" id="result-' + count + '" />');
           statusArea.append(sectionDiv);
           sectionDiv.append('<div class="highlightedName">Interp ' + (count+1) + ': ' + feature.highlightedName + '</div>');
           sectionDiv.append(jsonDiv);
           sectionDiv.append(mapDiv);
-          var map = new L.Map(mapDiv[0], _.extend(defaults, opts));
+          var map = new L.Map('result-' + count, _.extend(defaults, opts));
           jsonDiv.html('<pre>' + JSON.stringify(data, undefined, 2) + '</pre>');
 
           var center = feature.geometry.center;
@@ -95,10 +94,7 @@
           // create a marker in the given location and add it to the map
           var marker = new L.Marker(new L.LatLng(center.lat, center.lng));
           var str = JSON.stringify(data, undefined, 2);
-          marker.bindPopup('Interpretation ' + count + ' ' + str);
           map.addLayer(marker);
-          previousLayers.push(marker);
-
           if (feature.geometry.bounds) {
             var bounds = feature.geometry.bounds;
             var p1 = new L.LatLng(bounds.ne.lat, bounds.ne.lng),
@@ -109,14 +105,12 @@
 
             var polygon = new L.Polygon(polygonPoints);
             map.addLayer(polygon);
-            previousLayers.push(polygon);
             boundingBox.extend(p1);
             boundingBox.extend(p2);
             boundingBox.extend(p3);
             boundingBox.extend(p4);
           }
         }
-        count += 1;
         map.fitBounds(boundingBox);
       });
     }
@@ -124,7 +118,7 @@
     function failure() {
     }
 
-     var mapUrl = 'http://{s}.tiles.mapbox.com/v3/externals.streetlevel,mapbox.open-streets-nyc/{z}/{x}/{y}.png';
+     var mapUrl = 'http://{s}.tiles.mapbox.com/v3/mapbox.mapbox-streets/{z}/{x}/{y}.png';
      var subdomains = ['a','b','c','d'];
 
      var defaults = {
