@@ -4,19 +4,42 @@
   <script src="leaflet/leaflet.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
   <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.3.1/underscore-min.js"></script>
-<head>
+  <style>
+    .highlightedName {
+      font-size:200%;
+    }
+
+    .result {
+      overflow: hidden;
+      border-bottom:thick dotted #ff0000;
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      margin-top: 10px;
+    }
+    .json {
+      float: left;
+      width: 400px;
+      height: 600px;
+      overflow: scroll;
+    }
+
+    .map {
+      height: 600px;
+      width: 600px;
+      float: left;
+    }
+  </style>
+</head>
 <body>
-  <div id="map" style="height: 600px; width: 600px; float: left"></div> <!-- width equals available horizontal space by default -->
-  <div id="notmap" style="width: 400px; float: left">
-    <form id="searchForm">
-      <input name="query" id="query"/><input type="button" id="search" name="Search" value="Search"/></br>
-    </form>
-    <div id="status">
-  </div>
+  <form id="searchForm">
+    <input name="query" id="query"/><input type="button" id="search" name="Search" value="Search" placeholder="Search Geocoder" width="100"/></br>
+  </form>
+  <div id="geocodes"/>
+
   <script>
     var previousLayers = [];
 
-    var statusArea = $('#status');
+    var statusArea = $('#geocodes');
     var queryInput = $('#query');
     var searchButton = $('#search');
     var searchForm = $('#searchForm');
@@ -42,21 +65,28 @@
 
     function success(data) {
       window.console.log(data);
-      _(previousLayers).each(function(l) {
-        map.removeLayer(l);
-      });
 
-      statusArea.html('<pre>' + JSON.stringify(data, undefined, 2) + '</pre>');
+      statusArea.empty();
+
       var count = 0;
-      var boundingBox = null;
+      //var boundingBox = null;
       _(data.interpretations).each(function(interp) {
         if (interp.feature) {
           var feature = interp.feature;
+
+          var sectionDiv = $('<div class="result"/>');
+          var jsonDiv = $('<div class="json"/>');
+          var mapDiv = $('<div class="map"/>');
+          statusArea.append(sectionDiv);
+          sectionDiv.append('<div class="highlightedName">Interp ' + (count+1) + ': ' + feature.highlightedName + '</div>');
+          sectionDiv.append(jsonDiv);
+          sectionDiv.append(mapDiv);
+          var map = new L.Map(mapDiv[0], _.extend(defaults, opts));
+          jsonDiv.html('<pre>' + JSON.stringify(data, undefined, 2) + '</pre>');
+
           var center = feature.geometry.center;
           var point = new L.LatLng(center.lat, center.lng)
-          if (!boundingBox) {
-            boundingBox = new L.LatLngBounds(point, point);
-          }
+          var boundingBox = new L.LatLngBounds(point, point);
           boundingBox.extend(point)
 
           // add the CloudMade layer to the map set the view to a given center and zoom
@@ -87,8 +117,8 @@
           }
         }
         count += 1;
+        map.fitBounds(boundingBox);
       });
-      map.fitBounds(boundingBox);
     }
 
     function failure() {
@@ -103,7 +133,6 @@
      }
      var opts = {}
 
-     var map = new L.Map('map', _.extend(defaults, opts));
      geocode();
   </script>
 </body>
