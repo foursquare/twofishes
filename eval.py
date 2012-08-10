@@ -10,17 +10,19 @@ import math
 
 # TODO: move this to thrift
 
-serverA = "http://prodproxy-b-2:35010/"
-serverB = "http://dev-blackmad:8081/"
+serverA = "http://prodproxy-b-2:35010"
+serverB = "http://dev-blackmad:8081"
 
-def getUrl(server, paramDict):
-  params = urllib.urlencode(paramDict)
-  return server + "?" + params
+def getUrl(server, param):
+  return server + param
 
-def getResponse(server, paramDict):
-  response = urllib2.urlopen(getUrl(server, paramDict))
-  json_response = json.loads(response.read())
-  return json_response
+def getResponse(server, param):
+  try:
+    response = urllib2.urlopen(getUrl(server, param))
+    json_response = json.loads(response.read())
+    return json_response
+  except:
+    return None
 
 def earthDistance(lat_1, long_1, lat_2, long_2):
   dlong = long_2 - long_1
@@ -31,20 +33,26 @@ def earthDistance(lat_1, long_1, lat_2, long_2):
   return dist
 
 for line in open(sys.argv[1]):
-  parts = line.strip().split("\t")
-  post_params = {
-    'query': parts[0]
-  }
+  param = line.strip()
+  import urlparse
+  params = urlparse.parse_qs(param[param.find('?'):])
 
   def evallog(message):
-    print '%s: %s' % (post_params['query'], message)
-    print '\tserverA: %s' % getUrl(serverA, post_params)
-    print '\tserverB: %s' % getUrl(serverB, post_params)
+    print '%s: %s<br>' % (params['query'], message)
+    print ' -- <a href="%s">serverA</a>' % (serverA + '/static/geocoder.html#' + params['query'][0])
+    print ' - <a href="%s">serverB</a><p>' % (serverB + '/static/geocoder.html#' + params['query'][0])
 
-  responseA = getResponse(serverA, post_params)
-  responseB = getResponse(serverB, post_params)
+  responseA = getResponse(serverA, param)
+  responseB = getResponse(serverB, param)
 
-  if (len(responseA['interpretations']) == 0 and
+  if (responseA == None and responseB == None):
+    continue
+
+  if (responseA == None and responseB != None):
+    evallog('error from A, something from B')
+  elif (responseB == None and responseA != None):
+    evallog('error from B, something from A')
+  elif (len(responseA['interpretations']) == 0 and
       len(responseB['interpretations']) == 1):
     evallog('geocoded B, not A')
 
@@ -56,7 +64,9 @@ for line in open(sys.argv[1]):
     interpA = responseA['interpretations'][0]
     interpB = responseB['interpretations'][0]
 
-    if interpA['feature']['ids'] != interpB['feature']['ids']:
+    if interpA['feature']['ids'] != interpB['feature']['ids'] and \
+        interpA['feature']['woeType'] != 11 and \
+        interpB['feature']['woeType'] != 11:
       evallog('ids changed')
     else:
       centerA = interpA['feature']['geometry']['center']
