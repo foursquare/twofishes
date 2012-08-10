@@ -32,18 +32,32 @@ def earthDistance(lat_1, long_1, lat_2, long_2):
   dist = 3956 * c
   return dist
 
+evalLogDict = {}
+
 for line in open(sys.argv[1]):
   param = line.strip()
   import urlparse
   params = urlparse.parse_qs(param[param.find('?'):])
-
-  def evallog(message):
-    print '%s: %s<br>' % (params['query'], message)
-    print ' -- <a href="%s">serverA</a>' % (serverA + '/static/geocoder.html#' + params['query'][0])
-    print ' - <a href="%s">serverB</a><p>' % (serverB + '/static/geocoder.html#' + params['query'][0])
-
+ 
   responseA = getResponse(serverA, param)
   responseB = getResponse(serverB, param)
+
+  def getId(response):
+    if (len(response['interpretations']) and
+        'feature' in response['interpretations'][0] and
+        'ids' in response['interpretations'][0]['feature']):
+      return response['interpretations'][0]['feature']['ids'] 
+    else:
+      return ''
+
+  def evallog(message):
+    responseKey = '%s:%s' % (getId(responseA), getId(responseB))
+    if responseKey not in evalLogDict:
+      evalLogDict[responseKey] = []
+    message = ('%s: %s<br>' % (params['query'], message) +
+               ' -- <a href="%s">serverA</a>' % (serverA + '/static/geocoder.html#' + params['query'][0]) +
+               ' - <a href="%s">serverB</a><p>' % (serverB + '/static/geocoder.html#' + params['query'][0]))
+    evalLogDict[responseKey].append(message)
 
   if (responseA == None and responseB == None):
     continue
@@ -78,3 +92,7 @@ for line in open(sys.argv[1]):
         centerB['lng'])
       if distance > 0.1:
         evallog('moved by %s miles' % distance)
+
+for k in sorted(evalLogDict, key=lambda x: -1*len(evalLogDict[x])):
+  print "%d changes" % len(evalLogDict[k])
+  print evalLogDict[k][0]
