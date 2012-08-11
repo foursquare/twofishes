@@ -6,12 +6,14 @@ import urllib
 import urllib2
 import sys
 import math
-
+import datetime
 
 # TODO: move this to thrift
 
 serverA = "http://prodproxy-b-2:35010"
 serverB = "http://dev-blackmad:8081"
+
+outputFile = open('eval-%s.html' % datetime.datetime.now(), 'w')
 
 def getUrl(server, param):
   return server + param
@@ -34,7 +36,12 @@ def earthDistance(lat_1, long_1, lat_2, long_2):
 
 evalLogDict = {}
 
+count = 0
 for line in open(sys.argv[1]):
+  if count % 1000 == 0:
+    print 'processed %d queries' % count
+  count += 1
+
   param = line.strip()
   import urlparse
   params = urlparse.parse_qs(param[param.find('?'):])
@@ -43,7 +50,9 @@ for line in open(sys.argv[1]):
   responseB = getResponse(serverB, param)
 
   def getId(response):
-    if (len(response['interpretations']) and
+    if (response and 
+        'interpretations' in response and
+        len(response['interpretations']) and
         'feature' in response['interpretations'][0] and
         'ids' in response['interpretations'][0]['feature']):
       return response['interpretations'][0]['feature']['ids'] 
@@ -94,5 +103,5 @@ for line in open(sys.argv[1]):
         evallog('moved by %s miles' % distance)
 
 for k in sorted(evalLogDict, key=lambda x: -1*len(evalLogDict[x])):
-  print "%d changes" % len(evalLogDict[k])
-  print evalLogDict[k][0]
+  outputFile.write("%d changes\n<br/>" % len(evalLogDict[k]))
+  outputFile.write(evalLogDict[k][0])
