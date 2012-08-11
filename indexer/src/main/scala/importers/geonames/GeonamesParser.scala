@@ -221,8 +221,10 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
           val isPrefName = parts.lift(4).exists(_ == "1")
           val isShortName = parts.lift(5).exists(_ == "1")
 
-          val name = DisplayName(lang, altName, isPrefName)
-          store.addNameToRecord(name, StoredFeatureId(geonameIdNamespace, geonameid))
+          if (lang != "post") {
+            val name = DisplayName(lang, altName, isPrefName)
+            store.addNameToRecord(name, StoredFeatureId(geonameIdNamespace, geonameid))
+          }
         }
     }})
   }
