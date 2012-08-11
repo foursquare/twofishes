@@ -37,13 +37,15 @@
   <form id="searchForm">
     <input name="query" id="query"/><input type="button" id="search" name="Search" value="Search" placeholder="Search Geocoder" width="100"/></br>
   </form>
-  <div id="geocodes"/>
+  <div id="geocodes"></div>
+  <div id="debugInfo"></div>
 
   <script>
     var statusArea = $('#geocodes');
     var queryInput = $('#query');
     var searchButton = $('#search');
     var searchForm = $('#searchForm');
+    var debugInfo = $('#debugInfo');
     searchButton.click(function() {
       window.location.hash = queryInput.val();
       geocode();
@@ -68,6 +70,12 @@
       window.console.log(data);
 
       statusArea.empty();
+      debugInfo.empty();
+
+      _(data.debugLines).each(function(l) {
+        debugInfo.append(l);
+        debugInfo.append($('<br>'));
+      })
 
       _(data.interpretations).each(function(interp, count) {
         if (interp.feature) {
@@ -87,7 +95,7 @@
           }
 
           var map = new L.Map('result-' + count, opts);
-          jsonDiv.html('<pre>' + JSON.stringify(data, undefined, 2) + '</pre>');
+          jsonDiv.html('<pre>' + JSON.stringify(interp, undefined, 2) + '</pre>');
 
           var center = feature.geometry.center;
           var point = new L.LatLng(center.lat, center.lng)
