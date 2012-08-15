@@ -77,7 +77,8 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
   // geonameid -> alias
   val aliasTable = new TsvHelperFileParser("data/custom/aliases.txt",
     "data/private/aliases.txt")
-
+  // geonameid --> new center
+  val moveTable = new TsvHelperFileParser("data/custom/moves.txt")
 
   val helperTables = List(rewriteTable, boostTable, aliasTable)
 
@@ -157,13 +158,24 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       }
     })
 
+    var lat = feature.latitude
+    var lng = feature.longitude
+
+    feature.geonameid.foreach(gid => {
+      val latlngs = moveTable.get(gid)
+      if (latlngs.size > 0) {
+        lat = latlngs(0).toDouble
+        lng = latlngs(1).toDouble
+      }
+    })
+
     val record = GeocodeRecord(
       ids = ids,
       names = names,
       cc = feature.countryCode,
       _woeType = feature.featureClass.woeType.getValue,
-      lat = feature.latitude,
-      lng = feature.longitude,
+      lat = lat,
+      lng = lng,
       parents = allParents,
       population = feature.population,
       displayNames = List(DisplayName("en", feature.name, false)),
