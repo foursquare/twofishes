@@ -14,6 +14,10 @@
   <div id="notmap" style="width: 400px; float: left">
     <form id="searchForm">
       <input name="query" id="query" autocomplete="off"/></br>
+      <label>
+        Debug
+        <input type="checkbox" id="debugButton"/>
+      </label>
     </form>
     <div id="status"></div>
     <div id="debug"></div>
@@ -38,8 +42,12 @@
     
     function geocode() {
       var query = location.hash.substr(1);
-      $.getJSON('http://' + window.location.host + '/?autocomplete=true&debug=1&query=' + query,
-        success, failure);
+      var url = 'http://' + window.location.host + '/?autocomplete=true&query=' + query;
+
+      if ($('#debugButton').attr('checked')) {
+        url += '&debug=1';
+      }
+      $.getJSON(url, success, failure);
 
     }
 
