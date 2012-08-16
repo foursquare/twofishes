@@ -6,7 +6,7 @@ import com.twitter.util.{Future, FuturePool}
 import java.util.concurrent.ConcurrentHashMap
 import org.bson.types.ObjectId
 import scala.collection.JavaConversions._
-import scala.collection.mutable.{HashMap, ListBuffer}
+import scala.collection.mutable.{HashMap, HashSet, ListBuffer}
 
 // TODO
 // --start treating Parse like an object, stop using headOption
@@ -237,11 +237,13 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       )
     } else {
       val validParsePairs: Seq[(Parse, ObjectId)] = parses.flatMap(parse => {
-        logger.ifDebug("checking %d fids against %s".format(fids.size, parse))
+      logger.ifDebug("checking %d fids against %s".format(fids.size, parse.map(_.fmatch.id)))
+      logger.ifDebug("these are the fids of my parse: %s".format(fids))
         fids.flatMap(fid => {
-          // logger.ifDebug("checking if %s is a parent of %s".format(
-          //   fid, parse))
-          val isValid = parse.exists(_.fmatch.scoringFeatures.parents.contains(fid))
+           logger.ifDebug("checking if %s is an unused parent of %s".format(
+             fid, parse.map(_.fmatch.id)))
+          val isValid = parse.exists(_.fmatch.scoringFeatures.parents.contains(fid)) &&
+            !parse.exists(_.fmatch.id.toString == fid.toString)
           if (isValid) {
             logger.ifDebug("HAD %s as a parent".format(fid))
             Some((parse, fid))
@@ -287,7 +289,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         val query = tokens.take(i).mkString(" ")
         val isEnd = (i == tokens.size)
 
-        val possibleParents = parses.flatMap(_.flatMap(_.fmatch.scoringFeatures.parents)).map(id => new ObjectId(id))
+        val possibleParents = parses.flatMap(_.flatMap(_.fmatch.scoringFeatures.parents))
+          .map(id => new ObjectId(id))
 
         val fidsF: Future[Seq[ObjectId]] = 
           if (parses.size == 0) {
@@ -429,11 +432,11 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
         // prefer a more aggressive parse ... bleh
         // this prefers "mt laurel" over the town of "laurel" in "mt" (montana)
-        modifySignal(20000 * parse.length, "parse length boost")
+        modifySignal(-5000 * parse.length, "parse length boost")
 
         // Matching country hint is good
         if (Option(ccHint).exists(_ == primaryFeature.feature.cc)) {
-          modifySignal(10000 * parse.length, "country code matchyy")
+          modifySignal(10000, "country code match")
         }
 
         // Penalize far-away things
@@ -461,14 +464,12 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     }
 
     def getScore(p: Parse): Int = {
-      p.headOption.flatMap(f => {
-        val fid = f.fmatch.id.toString
-        if (!scoreMap.contains(fid)) {
-          scoreMap(fid) = scoreParse(p)
-        }
+      val scoreKey = p.map(_.fmatch.id).mkString(":")
+      if (!scoreMap.contains(scoreKey)) {
+        scoreMap(scoreKey) = scoreParse(p)
+      }
 
-        scoreMap.get(fid) 
-      }).getOrElse(-1)
+      scoreMap.getOrElse(scoreKey, -1)
     }
 
     def compare(a: Parse, b: Parse): Int = {
@@ -478,15 +479,18 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         aFeature <- a.headOption
         bFeature <- b.headOption
       } {
-        // if a is a parent of b, prefer b
-        if (aFeature.fmatch.scoringFeatures.parents.contains(bFeature.fmatch.id)) {
-          logger.ifDebug("Preferring %s because it's a child of %s".format(printDebugParse(a), printDebugParse(b)))
-          return -1
-        }
-        // if b is a parent of a, prefer a
-        if (bFeature.fmatch.scoringFeatures.parents.contains(aFeature.fmatch.id)) {
-          logger.ifDebug("Preferring %s because it's a child of %s".format(printDebugParse(b), printDebugParse(a)))
-          return 1
+        if (aFeature.tokenStart == bFeature.tokenStart && 
+          aFeature.tokenEnd == bFeature.tokenEnd) {
+          // if a is a parent of b, prefer b
+          if (aFeature.fmatch.scoringFeatures.parents.contains(bFeature.fmatch.id)) {
+            logger.ifDebug("Preferring %s because it's a child of %s".format(printDebugParse(a), printDebugParse(b)))
+            return -1
+          }
+          // if b is a parent of a, prefer a
+          if (bFeature.fmatch.scoringFeatures.parents.contains(aFeature.fmatch.id)) {
+            logger.ifDebug("Preferring %s because it's a child of %s".format(printDebugParse(b), printDebugParse(a)))
+            return 1
+          }
         }
       }
       getScore(b) - getScore(a)
@@ -723,7 +727,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
     val originalTokens =
       NameNormalizer.tokenize(NameNormalizer.normalize(query))
-      
+
     logger.ifDebug("--> %s".format(originalTokens.mkString("_|_")))
 
     // This is awful connector parsing
@@ -743,7 +747,15 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
     if (req.autocomplete) {
       generateAutoParses(tokens).flatMap(parses => {
+        parses.foreach(p => {
+          logger.ifDebug("parse ids: %s".format(p.map(_.fmatch.id)))
+        })
+
         val dedupedParses = filterDupeParses(parses.sorted(new ParseOrdering(req.ll, req.cc)).take(3))
+        dedupedParses.foreach(p =>
+          logger.ifDebug("deduped parse ids: %s".format(p.map(_.fmatch.id)))
+        )
+
         hydrateParses(originalTokens, tokens, connectorStart, connectorEnd, 0, dedupedParses)
       })
     } else {

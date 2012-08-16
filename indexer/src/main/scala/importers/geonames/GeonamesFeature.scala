@@ -119,6 +119,7 @@ class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[Str
   def isCountry = featureCode.exists(_.contains("PCL"))
   def isAdmin = adminLevel != OTHER
   def isAirport = featureCode.exists(_ == "AIRP")
+  def isStupid = featureCode.exists(_ == "RGNE")
 
   def woeType: YahooWoeType = {
     if (isCountry) {
