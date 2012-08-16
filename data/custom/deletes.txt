@@ -4,3 +4,5 @@ county
 city
 city of
 district
+kraj
+oblast

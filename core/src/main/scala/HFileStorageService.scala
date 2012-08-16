@@ -78,7 +78,6 @@ abstract class HFileInput(basepath: String, filename: String) {
     while (scanner.getKeyValue().getKeyString().startsWith(key)) {
       if ((key.size >= 3) ||
           (key.size*1.0 / scanner.getKeyValue().getKeyString().size) >= minPrefixRatio) {
-        // println("ACCEPTING: " + scanner.getKeyValue().getKeyString())
         ret.append(scanner.getKeyValue().getValue())
       }
       scanner.next()

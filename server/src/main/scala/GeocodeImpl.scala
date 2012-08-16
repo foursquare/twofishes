@@ -270,6 +270,15 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     generateAutoParsesHelper(tokens, 0, Nil)
   }
 
+  def matchName(name: FeatureName, query: String, isEnd: Boolean): Boolean = {
+    val normalizedName = NameNormalizer.normalize(name.name)
+    if (isEnd) {
+      normalizedName.startsWith(query)
+    } else {
+      normalizedName == query
+    }
+  }
+
   def generateAutoParsesHelper(tokens: List[String], offset: Int, parses: ParseSeq): Future[ParseSeq] = {
     if (tokens.size == 0) {
       Future.value(parses)
@@ -278,14 +287,23 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         val query = tokens.take(i).mkString(" ")
         val isEnd = (i == tokens.size)
 
-        val fidsF: Future[Seq[ObjectId]] = if (isEnd) {
-          store.getIdsByNamePrefix(query).map(fids => {
-            val possibleParents = parses.flatMap(_.flatMap(_.fmatch.scoringFeatures.parents)).map(id => new ObjectId(id)).toSet
-            fids.toSet.intersect(possibleParents).toList
-          })
-        } else {
-          store.getIdsByName(query)
-        }
+        val possibleParents = parses.flatMap(_.flatMap(_.fmatch.scoringFeatures.parents)).map(id => new ObjectId(id))
+
+        val fidsF: Future[Seq[ObjectId]] = 
+          if (parses.size == 0) {
+            if (isEnd) {
+              logger.ifDebug("looking at prefix: %s".format(query))
+              store.getIdsByNamePrefix(query)
+            } else {
+              store.getIdsByName(query)
+            }
+          } else {
+            store.getByObjectIds(possibleParents).map(features => {
+              features.filter(feature => {
+                feature._2.feature.names.exists(n => matchName(n, query, isEnd))
+              }).map(_._1).toList
+            })
+          }
 
         val nextParseF: Future[ParseSeq] = fidsF.flatMap(featureIds => {
           logger.ifDebug("%d-%d: looking at: %s (is end? %s)".format(offset, i, query, isEnd))
@@ -352,7 +370,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     matchedStringOpt.flatMap(matchedString => {
       val nameCandidates = f.names.filter(n => {
         val normalizedName = NameNormalizer.normalize(n.name)
-        logger.ifDebug("Does %s start with %s?".format(normalizedName, matchedString))
+        // logger.ifDebug("Does %s start with %s?".format(normalizedName, matchedString))
         normalizedName.startsWith(matchedString)
       })
 
@@ -521,7 +539,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
        parentsToUse.filterNot(f => partsFromParse.exists(_._2 == f))
         .map(f => (None, f))
       val partsToUse = (partsFromParse ++ partsFromParents).sortBy(_._2)(GeocodeServingFeatureOrdering)
-      logger.ifDebug("parts to use: " + partsToUse)
+      // logger.ifDebug("parts to use: " + partsToUse)
       var i = 0
       val namesToUse = partsToUse.flatMap({case(fmatchOpt, servingFeature) => {
         val name = bestNameWithMatch(servingFeature.feature, Some(req.lang), i != 0,
@@ -565,6 +583,9 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
   }
 
   def filterDupeParses(parses: ParseSeq): ParseSeq = {
+    logger.ifDebug("have %d parses in filterDupeParses".format(parses.size))
+    parses.foreach(s => logger.ifDebug(s.toString))
+
     val parseMap: Map[String, Seq[(Parse, Int)]] = parses.zipWithIndex.groupBy({case (parse, index) => {
       parse.headOption.flatMap(f => 
          // en is cheating, sorry
@@ -572,6 +593,9 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       ).getOrElse("")
     }})
 
+    parseMap.foreach({case(name, parseSeq) => {
+      logger.ifDebug("have %d parses for %s".format(parseSeq.size, name)) 
+    }})
 
     val dedupedMap = parseMap.mapValues(parsePairs => {
       // see if there's an earlier parse that's close enough,
