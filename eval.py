@@ -106,8 +106,10 @@ class GeocodeFetch(threading.Thread):
             interpB['feature']['woeType'] != 11:
           evallog('ids changed')
         else:
-          centerA = interpA['feature']['geometry']['center']
-          centerB = interpB['feature']['geometry']['center']
+          geomA = interpA['feature']['geometry']
+          geomB = interpB['feature']['geometry']
+          centerA = geomA['center']
+          centerB = geomB['center']
           distance = earthDistance(
             centerA['lat'], 
             centerA['lng'], 
@@ -115,6 +117,13 @@ class GeocodeFetch(threading.Thread):
             centerB['lng'])
           if distance > 0.1:
             evallog('moved by %s miles' % distance)
+          if 'bounds' in geomA and 'bounds' not in geomB:
+            evallog('bounds in A, but not B')
+          elif 'bounds' not in geomA and 'bounds' in geomB:
+            evallog('bounds in B, but not A')
+          elif 'bounds' in geomA and 'bounds' in geomB and geomA['bounds'] != geomB['bounds']:
+            evallog('bounds differ')
+
       self.queue.task_done()
 
 if __name__ == '__main__':
