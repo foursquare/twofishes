@@ -21,31 +21,31 @@ class IndexerSpec extends Specification {
   val parser = new GeonamesParser(store)
 
   "rewrites work" in {
-    val names = parser.doRewrites(List("mount laurel", "north bergen"))
+    val names = parser.doRewrites(List("Mount Laurel", "North Bergen"))
     names.size aka names.toString mustEqual 6
-    names must contain("mt laurel")
-    names must contain("mtn laurel")
-    names must contain("mount laurel")
-    names must contain("mountain laurel")
-    names must contain("north bergen")
-    names must contain("n bergen")
+    names must contain("Mount Laurel")
+    names must contain("Mt Laurel")
+    names must contain("Mtn Laurel")
+    names must contain("Mountain Laurel")
+    names must contain("North Bergen")
+    names must contain("N Bergen")
   }
 
  "long rewrites work" in {
-    val names = parser.doRewrites(List("griffiss air force base"))
+    val names = parser.doRewrites(List("Griffiss Air Force Base"))
     names.size aka names.toString mustEqual 2
-    names must contain("griffiss air force base")
-    names must contain("griffiss afb")
+    names must contain("Griffiss AFB")
+    names must contain("Griffiss Air Force Base")
   }
   
   "deletes work" in {
-    val names = parser.doDeletes(List("cook county", "township of brick"))
+    val names = parser.doDeletes(List("Cook County", "Township of Brick"))
     names.size aka names.toString mustEqual 5
-    names must contain("cook county")
-    names must contain("cook")
-    names must contain("township of brick")    
-    names must contain("brick")
-    names must contain("of brick")
+    names must contain("Cook")
+    names must contain("Cook County")
+    names must contain("Brick")
+    names must contain("of Brick")
+    names must contain("Township of Brick")
   }
 
   "deletes work in practice" in {
@@ -59,21 +59,16 @@ class IndexerSpec extends Specification {
     )
 
     // Yes, this is totally awful. awful awful.
-    record.names mustEqual List(
-      "brick township",
-      "brick charter",
-      "of brick",
-      "charter township of brick",
-      "brick charter charter township",
-      "brick twp",
-      "brick",
-      "township of brick",
-      "charter brick",
-      "brick charter twp",
-      "twp of brick",
+    record.names.toList must haveTheSameElementsAs(List(
       "brick charter township",
-      "brick charter charter",
-      "charter of brick")
+      "township of brick",
+      "charter township of brick",
+      "brick township",
+      "twp of brick",
+      "brick twp",
+      "of brick",
+      "brick"
+    ))
   }
 
   "deletes work in practice  -- county" in {
@@ -85,7 +80,6 @@ class IndexerSpec extends Specification {
       ))
     )
 
-    // Yes, this is totally awful. awful awful.
     record.names mustEqual List(
       "san francisco county",
       "san francisco"

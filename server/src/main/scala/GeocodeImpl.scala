@@ -507,16 +507,6 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     val name = bestName(f, Some(req.lang), false).map(_.name).getOrElse("")
     f.setName(name)
 
-    // possibly clear names
-    if (!req.full) {
-      val names = f.names
-      f.setNames(names.filter(n => 
-        n.flags.contains(FeatureNameFlags.ABBREVIATION) ||
-        n.lang == req.lang ||
-        n.lang == "en"
-      ))
-    }
-
     // Take the least specific parent, hopefully a state
     // Yields names like "Brick, NJ, US"
     // should already be sorted, so we don't need to do: // .sorted(GeocodeServingFeatureOrdering)
@@ -532,6 +522,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       None
     }
 
+    var namesToUse: Seq[(com.foursquare.twofishes.FeatureName, Option[String])] = Nil
+
     parse.foreach(p => {
       val partsFromParse: Seq[(Option[FeatureMatch], GeocodeServingFeature)] =
         p.map(fmatch => (Some(fmatch), fmatch.fmatch))
@@ -541,7 +533,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       val partsToUse = (partsFromParse ++ partsFromParents).sortBy(_._2)(GeocodeServingFeatureOrdering)
       // logger.ifDebug("parts to use: " + partsToUse)
       var i = 0
-      val namesToUse = partsToUse.flatMap({case(fmatchOpt, servingFeature) => {
+       namesToUse = partsToUse.flatMap({case(fmatchOpt, servingFeature) => {
         val name = bestNameWithMatch(servingFeature.feature, Some(req.lang), i != 0,
           fmatchOpt.map(_.phrase))
         i += 1
@@ -561,6 +553,17 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       f.setMatchedName(matchedNameParts.mkString(", "))
       f.setHighlightedName(highlightedNameParts.mkString(", "))
     })
+
+    // possibly clear names
+    if (!req.full) {
+      val names = f.names
+      f.setNames(names.filter(n => 
+        n.flags.contains(FeatureNameFlags.ABBREVIATION) ||
+        n.lang == req.lang ||
+        n.lang == "en" ||
+        namesToUse.contains(n)
+      ))
+    }
 
     val parentNames = parentsToUse.map(p =>
       bestName(p.feature, Some(req.lang), true).map(_.name).getOrElse(""))
@@ -718,7 +721,9 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
     logger.ifDebug("%s --> %s".format(query, NameNormalizer.normalize(query)))
 
-    val originalTokens = NameNormalizer.tokenize(NameNormalizer.normalize(query))
+    val originalTokens =
+      NameNormalizer.tokenize(NameNormalizer.normalize(query))
+      
     logger.ifDebug("--> %s".format(originalTokens.mkString("_|_")))
 
     // This is awful connector parsing

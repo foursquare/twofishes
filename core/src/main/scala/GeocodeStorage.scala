@@ -76,9 +76,19 @@ case class GeocodeRecord(
       new FeatureId(i.namespace, i.id)
     }))
 
-    val filteredNames = displayNames.filterNot(n => List("post", "link").contains(n.lang))
+    val filteredNames: List[DisplayName] = displayNames.filterNot(n => List("post", "link").contains(n.lang))
+    var hackedNames: List[DisplayName] = Nil
 
-    feature.setNames(filteredNames.map(name => {
+    // HACK(blackmad)
+    if (this.woeType == YahooWoeType.ADMIN1 && cc == "JP") {
+      hackedNames ++= 
+        filteredNames.filter(n => n.lang == "en" || n.lang == "")
+          .map(n => DisplayName(n.lang, n.name + " Prefecture", false))
+    }
+
+    val allNames = filteredNames ++ hackedNames
+
+    feature.setNames(allNames.map(name => {
       var flags: List[FeatureNameFlags] = Nil
       if (name.lang == "abbr") {
         flags ::= FeatureNameFlags.ABBREVIATION

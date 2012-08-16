@@ -1,8 +1,9 @@
-township
-township of
-county
-city
-city of
-district
+Township
+Township of
+County
+City
+City of
+District
 kraj
-oblast
+Kraj
+Oblast

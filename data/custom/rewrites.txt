@@ -1,9 +1,10 @@
-saint|st,ste
-mountain|mount,mt,mtn
-mount|mt,mountain,mtn
-north|n
-south|s
-east|e
-west|w
-air force base|afb
-township|twp,charter township
+Saint\b|St,Ste
+Mountain\b|Mount,Mt,Mtn
+Mount\b|Mt,Mountain,Mtn
+North\b|N
+South\b|S
+East\b|E
+West\b|W
+Air Force Base|AFB
+Township\b|Twp,Charter Township
+kommun\b|Kommune

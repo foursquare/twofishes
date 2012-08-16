@@ -71,7 +71,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
   val rewriteTable = new TsvHelperFileParser("data/custom/rewrites.txt",
     "data/private/rewrites.txt")
   // tokenlist
-  val deletesList: List[String] = scala.io.Source.fromFile(new File("data/custom/deletes.txt")).getLines.map(NameNormalizer.normalize).toList
+  val deletesList: List[String] = scala.io.Source.fromFile(new File("data/custom/deletes.txt")).getLines.toList
   // geonameid -> boost value
   val boostTable = new TsvHelperFileParser("data/custom/boosts.txt")
   // geonameid -> alias
@@ -87,15 +87,26 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
   }
 
   def doRewrites(names: List[String]): List[String] = {
-    val nameSet = new scala.collection.mutable.HashSet() ++ names.toSet
+    val nameSet = new scala.collection.mutable.HashSet[String]()
     rewriteTable.gidMap.foreach({case(from, toList) => {
-      nameSet.foreach(name => {
+      names.foreach(name => {
         toList.values.foreach(to => {
-          nameSet += name.replace(from, to)
+          nameSet += name.replaceAll(from, to)
         })
       })
     }})
     nameSet.toList
+  }
+
+  def doDelete(name: String): List[String] = {
+    deletesList.flatMap(delete => {
+      val newName = name.replaceAll(delete + "\\b", "").split(" ").filterNot(_.isEmpty).mkString(" ")
+      if (newName != name) {
+        Some(newName)
+      } else {
+        None
+      }
+    })
   }
 
   def doDeletes(names: List[String]) = {
@@ -123,15 +134,36 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
 
     val ids: List[StoredFeatureId] = List(adminId, geonameId).flatMap(a => a)
 
+    var displayNames = List(
+      DisplayName("en", feature.name, false)
+    )
+
+    if (feature.featureClass.woeType.getValue == YahooWoeType.COUNTRY.getValue) {
+      displayNames ::= DisplayName("abbr", feature.countryCode, true)
+    }
+
     // Build names
-    val aliases: List[String] = feature.geonameid.toList.flatMap(gid => {
+    val aliasedNames: List[String] = feature.geonameid.toList.flatMap(gid => {
       aliasTable.get(gid)
     })
 
-    val allNames = feature.allNames ++ aliases
-    val normalizedNames = allNames.map(n => NameNormalizer.normalize(n))
-    val deaccentedNames = normalizedNames.map(n => NameNormalizer.deaccent(n))
-    val names = doDeletes(doRewrites((normalizedNames ++ deaccentedNames).toSet.toList.filterNot(_.isEmpty)))
+    val allNames = feature.allNames ++ aliasedNames
+    val deleteModifiedNames: List[String] = allNames.flatMap(doDelete)
+
+    val deaccentedNames = allNames.map(NameNormalizer.deaccent).filterNot(n =>
+      allNames.contains(n))
+
+    val rewrittenNames = doRewrites(allNames).filterNot(n =>
+      allNames.contains(n))
+
+    val allModifiedNames = deaccentedNames ++ deleteModifiedNames ++ aliasedNames ++ rewrittenNames
+
+    val normalizedNames = (allNames ++ allModifiedNames).map(n => NameNormalizer.normalize(n))
+    val names = normalizedNames.toSet.toList.filterNot(_.isEmpty)
+
+    allModifiedNames.foreach(n =>
+      displayNames ::= DisplayName("alias", n, false)
+    )
 
     // Build parents
     val extraParents: List[String] = feature.extraColumns.get("parents").toList.flatMap(_.split(",").toList)
@@ -178,7 +210,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       lng = lng,
       parents = allParents,
       population = feature.population,
-      displayNames = List(DisplayName("en", feature.name, false)),
+      displayNames = displayNames,
       boost = boost,
       boundingbox = bbox
     )
