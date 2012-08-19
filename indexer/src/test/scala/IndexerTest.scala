@@ -86,4 +86,26 @@ class IndexerSpec extends Specification {
     )
   }
 
+  "deaccents work" in {
+    val record = parser.parseFeature(
+      new GeonamesFeature(Map(
+        GeonamesFeatureColumns.LATITUDE -> "40.74",
+        GeonamesFeatureColumns.LONGITUDE -> "-74",
+        GeonamesFeatureColumns.NAME -> "Ōsaka"
+      ))
+    )
+
+    record.names mustEqual List(
+      "ōsaka",
+      "osaka"
+    )
+
+    record.displayNames must contain(
+        DisplayName("en", "Ōsaka", false)
+    )
+    record.displayNames must contain(
+        DisplayName("alias", "Osaka", false)
+    )
+  }
+
 }

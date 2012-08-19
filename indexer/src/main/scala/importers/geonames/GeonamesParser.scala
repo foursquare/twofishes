@@ -242,7 +242,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       val feature = lineProcessor(index, line)
       feature.foreach(f => {
         if (
-          !f.isStupid() &&
+          !f.featureClass.isStupid &&
           (!f.featureClass.isBuilding || config.shouldParseBuildings || allowBuildings)) {
           parseFeature(f)
         }

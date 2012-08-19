@@ -630,7 +630,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
   def printDebugParse(p: Parse): String = {
     val name = p.flatMap(_.fmatch.feature.names.headOption).map(_.name).mkString(", ")
-    val id = p.flatMap(_.fmatch.feature.ids).headOption.map(fid =>
+    // god forgive this line of code
+    val id = p.headOption.toList.flatMap(f => Option(f.fmatch.feature.ids)).flatten.headOption.map(fid =>
       "%s:%s".format(fid.source, fid.id)).getOrElse("no:id")
     "%s %s".format(id, name)
   }
