@@ -729,6 +729,19 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     val originalTokens =
       NameNormalizer.tokenize(NameNormalizer.normalize(query))
 
+    geocode(originalTokens)
+  }
+
+  def deleteCommonWords(tokens: List[String]): List[String] = {
+    val commonWords = Set(
+      "city", "gemeinde", "canton", "of", "county", "gmina", "stadtteil", "district", "kommune", "prefecture"
+    )
+
+    tokens.filterNot(t => commonWords.contains(t))
+  }
+
+
+  def geocode(originalTokens: List[String]): Future[GeocodeResponse] = {
     logger.ifDebug("--> %s".format(originalTokens.mkString("_|_")))
 
     // This is awful connector parsing
@@ -778,7 +791,13 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
             hydrateParses(originalTokens, tokens, connectorStart, connectorEnd, longest, longestParses)
           }
         } else {
-          Future.value(generateResponse(Nil))
+          val modifiedTokens = deleteCommonWords(originalTokens)
+          if (modifiedTokens.size != originalTokens.size) {
+            logger.ifDebug("RESTARTING common words query: %s".format(modifiedTokens.mkString(" ")))
+            geocode(modifiedTokens)
+          } else {
+            Future.value(generateResponse(Nil))
+          }
         }
       })
     }

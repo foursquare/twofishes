@@ -82,8 +82,14 @@ case class GeocodeRecord(
     // HACK(blackmad)
     if (this.woeType == YahooWoeType.ADMIN1 && cc == "JP") {
       hackedNames ++= 
-        filteredNames.filter(n => n.lang == "en" || n.lang == "")
+        filteredNames.filter(n => n.lang == "en" || n.lang == "" || n.lang == "alias")
           .map(n => DisplayName(n.lang, n.name + " Prefecture", false))
+    }
+
+    if (this.woeType == YahooWoeType.TOWN && cc == "TW") {
+      hackedNames ++= 
+        filteredNames.filter(n => n.lang == "en" || n.lang == "" || n.lang == "alias")
+          .map(n => DisplayName(n.lang, n.name + " County", false))
     }
 
     val allNames = filteredNames ++ hackedNames
