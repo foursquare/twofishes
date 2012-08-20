@@ -738,10 +738,11 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     )
 
     tokens.filterNot(t => commonWords.contains(t))
-  }
+  } 
 
-
-  def geocode(originalTokens: List[String]): Future[GeocodeResponse] = {
+  def geocode(originalTokens: List[String],
+              isRetry: Boolean = false
+      ): Future[GeocodeResponse] = {
     logger.ifDebug("--> %s".format(originalTokens.mkString("_|_")))
 
     // This is awful connector parsing
@@ -759,18 +760,35 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       throw new Exception("too many tokens")
     }
 
+    def maybeRetryParsing(parses: ParseSeq, parseLength: Int) = {
+      val modifiedTokens = deleteCommonWords(originalTokens)
+      logger.ifDebug("common words deleted: %s".format(modifiedTokens.mkString(" ")))
+      if (modifiedTokens.size != originalTokens.size && !isRetry) {
+        logger.ifDebug("RESTARTING common words query: %s".format(modifiedTokens.mkString(" ")))
+        geocode(modifiedTokens, isRetry=true)
+      } else {
+        buildFinalParses(parses, parseLength)
+      }
+    }
+
+    def buildFinalParses(parses: ParseSeq, parseLength: Int) = {
+      val dedupedParses = filterDupeParses(
+        parses.sorted(new ParseOrdering(req.ll, req.cc)).take(3))
+      dedupedParses.foreach(p =>
+        logger.ifDebug("deduped parse ids: %s".format(p.map(_.fmatch.id)))
+      )
+
+      hydrateParses(originalTokens, tokens, connectorStart, connectorEnd,
+        parseLength, dedupedParses)
+    }
+
+
     if (req.autocomplete) {
       generateAutoParses(tokens).flatMap(parses => {
         parses.foreach(p => {
           logger.ifDebug("parse ids: %s".format(p.map(_.fmatch.id)))
         })
-
-        val dedupedParses = filterDupeParses(parses.sorted(new ParseOrdering(req.ll, req.cc)).take(3))
-        dedupedParses.foreach(p =>
-          logger.ifDebug("deduped parse ids: %s".format(p.map(_.fmatch.id)))
-        )
-
-        hydrateParses(originalTokens, tokens, connectorStart, connectorEnd, 0, dedupedParses)
+        buildFinalParses(parses, 0)
       })
     } else {
       val cache = generateParses(tokens)
@@ -779,7 +797,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       }})
 
       Future.collect(futureCache.toList).flatMap(cache => {
-        val validParseCaches: Iterable[(Int, ParseSeq)] = cache.filter(_._2.nonEmpty)
+        val validParseCaches: Iterable[(Int, ParseSeq)] =
+          cache.filter(_._2.nonEmpty)
 
         if (validParseCaches.size > 0) {
           val longest = validParseCaches.map(_._1).max
@@ -787,17 +806,14 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
             Future.value(generateResponse(Nil))
           } else {
             val longestParses = validParseCaches.find(_._1 == longest).get._2
-            val sortedParses = filterDupeParses(longestParses.sorted(new ParseOrdering(req.ll, req.cc)).take(3))
-            hydrateParses(originalTokens, tokens, connectorStart, connectorEnd, longest, longestParses)
+            if (longest != tokens.size) {
+              maybeRetryParsing(longestParses, longest)
+            } else {
+              buildFinalParses(longestParses, longest)
+            }
           }
         } else {
-          val modifiedTokens = deleteCommonWords(originalTokens)
-          if (modifiedTokens.size != originalTokens.size) {
-            logger.ifDebug("RESTARTING common words query: %s".format(modifiedTokens.mkString(" ")))
-            geocode(modifiedTokens)
-          } else {
-            Future.value(generateResponse(Nil))
-          }
+          Future.value(generateResponse(Nil))
         }
       })
     }

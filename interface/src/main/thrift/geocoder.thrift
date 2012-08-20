@@ -115,6 +115,8 @@ struct GeocodeRequest {
   5: optional bool full = 0,
   6: optional i32 debug = 0,
   7: optional bool autocomplete = 0
+  8: optional list<YahooWoeType> woeHint,
+  9: optional list<YahooWoeType> woeRestrict
 }
 
 service Geocoder {
