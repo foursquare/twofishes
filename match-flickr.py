@@ -23,7 +23,7 @@ for f in files:
     woetype = int(feature['properties']['place_type_id'])
     bbox = feature['geometry']['bbox']
 
-    url = u"http://dev-blackmad:8081/?query=%s" % urllib.quote(label.encode('utf-8'))
+    url = u"http://dev-blackmad:8081/?query=%s&woeHint=%s" % (urllib.quote(label.encode('utf-8')), woetype)
     try:
       response = urllib2.urlopen(url)
       data = response.read()
