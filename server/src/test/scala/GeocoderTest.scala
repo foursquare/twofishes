@@ -81,7 +81,7 @@ class GeocoderSpec extends Specification {
   def addParisFrance(store: MockGeocodeStorageReadService) = {
     val frRecord = store.addGeocode("FR", Nil, 1, 2, YahooWoeType.COUNTRY, cc="FR")
     val idfRecord = store.addGeocode("IDF", List(frRecord), 3, 4, YahooWoeType.ADMIN1, cc="FR")
-    val parisRecord = store.addGeocode("Paris", List(idfRecord, frRecord), 5, 6, YahooWoeType.TOWN, population=Some(1000000), cc="FR")
+    val parisRecord = store.addGeocode("Paris", List(idfRecord, frRecord), 50, 60, YahooWoeType.TOWN, population=Some(1000000), cc="FR")
     store
   }
 
@@ -239,8 +239,10 @@ class GeocoderSpec extends Specification {
     println(store.nameMap("paris"))
 
     val req = new GeocodeRequest("Paris")
+    req.setDebug(1)
     val r = new GeocoderImpl(store, req).geocode().apply()
-    r.interpretations.size must_== 2
+    println(r.debugLines.asScala.mkString("\n"))
+    r.interpretations.size must_== 2 
     val interp1 = r.interpretations.asScala(0)
     interp1.what must_== ""
     interp1.where must_== "paris"
@@ -298,6 +300,41 @@ class GeocoderSpec extends Specification {
     r.interpretations.size must_== 1
     val interp = r.interpretations.asScala(0)
   } 
+
+  "woe restrict works" in {
+    val store = getStore
+    val parisTownRecord = store.addGeocode("Paris", Nil, 5, 6, YahooWoeType.TOWN, cc="FR")
+    val parisAdmin1Record = store.addGeocode("Paris", Nil, 10, 11, YahooWoeType.ADMIN1, cc="FR")
+
+    val req = new GeocodeRequest("paris")
+    req.setWoeRestrict(List(YahooWoeType.ADMIN1).asJava)
+
+    val r = new GeocoderImpl(store, req).geocode().apply()
+    r.interpretations.size must_== 1
+    val interp = r.interpretations.asScala(0)
+    interp.feature.geometry.center.lat must_== 10
+    interp.feature.geometry.center.lng must_== 11
+
+    req.setWoeRestrict(List(YahooWoeType.ADMIN2).asJava)
+
+    val r2 = new GeocoderImpl(store, req).geocode().apply()
+    r2.interpretations.size must_== 0
+  }
+
+  "woe hint works" in {
+    val store = getStore
+    val parisTownRecord = store.addGeocode("Paris", Nil, 5, 6, YahooWoeType.TOWN, cc="FR")
+    val parisAdmin1Record = store.addGeocode("Paris", Nil, 10, 11, YahooWoeType.ADMIN1, cc="FR")
+
+    val req = new GeocodeRequest("paris")
+    req.setWoeHint(List(YahooWoeType.ADMIN1).asJava)
+
+    val r = new GeocoderImpl(store, req).geocode().apply()
+    r.interpretations.size must_== 2
+    val interp = r.interpretations.asScala(0)
+    interp.feature.geometry.center.lat must_== 10
+    interp.feature.geometry.center.lng must_== 11
+  }
 
 
   // add a preferred name test

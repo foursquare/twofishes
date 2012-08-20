@@ -38,6 +38,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   private static final TField FULL_FIELD_DESC = new TField("full", TType.BOOL, (short)5);
   private static final TField DEBUG_FIELD_DESC = new TField("debug", TType.I32, (short)6);
   private static final TField AUTOCOMPLETE_FIELD_DESC = new TField("autocomplete", TType.BOOL, (short)7);
+  private static final TField WOE_HINT_FIELD_DESC = new TField("woeHint", TType.LIST, (short)8);
+  private static final TField WOE_RESTRICT_FIELD_DESC = new TField("woeRestrict", TType.LIST, (short)9);
 
   public String query;
   public String cc;
@@ -46,6 +48,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   public boolean full;
   public int debug;
   public boolean autocomplete;
+  public List<YahooWoeType> woeHint;
+  public List<YahooWoeType> woeRestrict;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
@@ -55,7 +59,9 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     LL((short)4, "ll"),
     FULL((short)5, "full"),
     DEBUG((short)6, "debug"),
-    AUTOCOMPLETE((short)7, "autocomplete");
+    AUTOCOMPLETE((short)7, "autocomplete"),
+    WOE_HINT((short)8, "woeHint"),
+    WOE_RESTRICT((short)9, "woeRestrict");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -84,6 +90,10 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
           return DEBUG;
         case 7: // AUTOCOMPLETE
           return AUTOCOMPLETE;
+        case 8: // WOE_HINT
+          return WOE_HINT;
+        case 9: // WOE_RESTRICT
+          return WOE_RESTRICT;
         default:
           return null;
       }
@@ -146,6 +156,12 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         new FieldValueMetaData(TType.I32)));
     tmpMap.put(_Fields.AUTOCOMPLETE, new FieldMetaData("autocomplete", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.BOOL)));
+    tmpMap.put(_Fields.WOE_HINT, new FieldMetaData("woeHint", TFieldRequirementType.OPTIONAL, 
+        new ListMetaData(TType.LIST, 
+            new EnumMetaData(TType.ENUM, YahooWoeType.class))));
+    tmpMap.put(_Fields.WOE_RESTRICT, new FieldMetaData("woeRestrict", TFieldRequirementType.OPTIONAL, 
+        new ListMetaData(TType.LIST, 
+            new EnumMetaData(TType.ENUM, YahooWoeType.class))));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeRequest.class, metaDataMap);
   }
@@ -158,6 +174,10 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     this.debug = 0;
 
     this.autocomplete = false;
+
+    this.woeHint = new ArrayList<YahooWoeType>();
+
+    this.woeRestrict = new ArrayList<YahooWoeType>();
 
   }
 
@@ -189,6 +209,20 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     this.full = other.full;
     this.debug = other.debug;
     this.autocomplete = other.autocomplete;
+    if (other.isSetWoeHint()) {
+      List<YahooWoeType> __this__woeHint = new ArrayList<YahooWoeType>();
+      for (YahooWoeType other_element : other.woeHint) {
+        __this__woeHint.add(other_element);
+      }
+      this.woeHint = __this__woeHint;
+    }
+    if (other.isSetWoeRestrict()) {
+      List<YahooWoeType> __this__woeRestrict = new ArrayList<YahooWoeType>();
+      for (YahooWoeType other_element : other.woeRestrict) {
+        __this__woeRestrict.add(other_element);
+      }
+      this.woeRestrict = __this__woeRestrict;
+    }
   }
 
   public GeocodeRequest deepCopy() {
@@ -207,6 +241,10 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     this.debug = 0;
 
     this.autocomplete = false;
+
+    this.woeHint = new ArrayList<YahooWoeType>();
+
+    this.woeRestrict = new ArrayList<YahooWoeType>();
 
   }
 
@@ -375,6 +413,84 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     __isset_bit_vector.set(__AUTOCOMPLETE_ISSET_ID, value);
   }
 
+  public int getWoeHintSize() {
+    return (this.woeHint == null) ? 0 : this.woeHint.size();
+  }
+
+  public java.util.Iterator<YahooWoeType> getWoeHintIterator() {
+    return (this.woeHint == null) ? null : this.woeHint.iterator();
+  }
+
+  public void addToWoeHint(YahooWoeType elem) {
+    if (this.woeHint == null) {
+      this.woeHint = new ArrayList<YahooWoeType>();
+    }
+    this.woeHint.add(elem);
+  }
+
+  public List<YahooWoeType> getWoeHint() {
+    return this.woeHint;
+  }
+
+  public GeocodeRequest setWoeHint(List<YahooWoeType> woeHint) {
+    this.woeHint = woeHint;
+    return this;
+  }
+
+  public void unsetWoeHint() {
+    this.woeHint = null;
+  }
+
+  /** Returns true if field woeHint is set (has been asigned a value) and false otherwise */
+  public boolean isSetWoeHint() {
+    return this.woeHint != null;
+  }
+
+  public void setWoeHintIsSet(boolean value) {
+    if (!value) {
+      this.woeHint = null;
+    }
+  }
+
+  public int getWoeRestrictSize() {
+    return (this.woeRestrict == null) ? 0 : this.woeRestrict.size();
+  }
+
+  public java.util.Iterator<YahooWoeType> getWoeRestrictIterator() {
+    return (this.woeRestrict == null) ? null : this.woeRestrict.iterator();
+  }
+
+  public void addToWoeRestrict(YahooWoeType elem) {
+    if (this.woeRestrict == null) {
+      this.woeRestrict = new ArrayList<YahooWoeType>();
+    }
+    this.woeRestrict.add(elem);
+  }
+
+  public List<YahooWoeType> getWoeRestrict() {
+    return this.woeRestrict;
+  }
+
+  public GeocodeRequest setWoeRestrict(List<YahooWoeType> woeRestrict) {
+    this.woeRestrict = woeRestrict;
+    return this;
+  }
+
+  public void unsetWoeRestrict() {
+    this.woeRestrict = null;
+  }
+
+  /** Returns true if field woeRestrict is set (has been asigned a value) and false otherwise */
+  public boolean isSetWoeRestrict() {
+    return this.woeRestrict != null;
+  }
+
+  public void setWoeRestrictIsSet(boolean value) {
+    if (!value) {
+      this.woeRestrict = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case QUERY:
@@ -433,6 +549,22 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       }
       break;
 
+    case WOE_HINT:
+      if (value == null) {
+        unsetWoeHint();
+      } else {
+        setWoeHint((List<YahooWoeType>)value);
+      }
+      break;
+
+    case WOE_RESTRICT:
+      if (value == null) {
+        unsetWoeRestrict();
+      } else {
+        setWoeRestrict((List<YahooWoeType>)value);
+      }
+      break;
+
     }
   }
 
@@ -459,6 +591,12 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     case AUTOCOMPLETE:
       return new Boolean(isAutocomplete());
 
+    case WOE_HINT:
+      return getWoeHint();
+
+    case WOE_RESTRICT:
+      return getWoeRestrict();
+
     }
     throw new IllegalStateException();
   }
@@ -484,6 +622,10 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       return isSetDebug();
     case AUTOCOMPLETE:
       return isSetAutocomplete();
+    case WOE_HINT:
+      return isSetWoeHint();
+    case WOE_RESTRICT:
+      return isSetWoeRestrict();
     }
     throw new IllegalStateException();
   }
@@ -561,6 +703,24 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       if (!(this_present_autocomplete && that_present_autocomplete))
         return false;
       if (this.autocomplete != that.autocomplete)
+        return false;
+    }
+
+    boolean this_present_woeHint = true && this.isSetWoeHint();
+    boolean that_present_woeHint = true && that.isSetWoeHint();
+    if (this_present_woeHint || that_present_woeHint) {
+      if (!(this_present_woeHint && that_present_woeHint))
+        return false;
+      if (!this.woeHint.equals(that.woeHint))
+        return false;
+    }
+
+    boolean this_present_woeRestrict = true && this.isSetWoeRestrict();
+    boolean that_present_woeRestrict = true && that.isSetWoeRestrict();
+    if (this_present_woeRestrict || that_present_woeRestrict) {
+      if (!(this_present_woeRestrict && that_present_woeRestrict))
+        return false;
+      if (!this.woeRestrict.equals(that.woeRestrict))
         return false;
     }
 
@@ -650,6 +810,26 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetWoeHint()).compareTo(typedOther.isSetWoeHint());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetWoeHint()) {
+      lastComparison = TBaseHelper.compareTo(this.woeHint, typedOther.woeHint);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetWoeRestrict()).compareTo(typedOther.isSetWoeRestrict());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetWoeRestrict()) {
+      lastComparison = TBaseHelper.compareTo(this.woeRestrict, typedOther.woeRestrict);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -720,6 +900,40 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
+        case 8: // WOE_HINT
+          if (field.type == TType.LIST) {
+            {
+              TList _list36 = iprot.readListBegin();
+              this.woeHint = new ArrayList<YahooWoeType>(_list36.size);
+              for (int _i37 = 0; _i37 < _list36.size; ++_i37)
+              {
+                YahooWoeType _elem38;
+                _elem38 = YahooWoeType.findByValue(iprot.readI32());
+                this.woeHint.add(_elem38);
+              }
+              iprot.readListEnd();
+            }
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 9: // WOE_RESTRICT
+          if (field.type == TType.LIST) {
+            {
+              TList _list39 = iprot.readListBegin();
+              this.woeRestrict = new ArrayList<YahooWoeType>(_list39.size);
+              for (int _i40 = 0; _i40 < _list39.size; ++_i40)
+              {
+                YahooWoeType _elem41;
+                _elem41 = YahooWoeType.findByValue(iprot.readI32());
+                this.woeRestrict.add(_elem41);
+              }
+              iprot.readListEnd();
+            }
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -775,6 +989,34 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       oprot.writeFieldBegin(AUTOCOMPLETE_FIELD_DESC);
       oprot.writeBool(this.autocomplete);
       oprot.writeFieldEnd();
+    }
+    if (this.woeHint != null) {
+      if (isSetWoeHint()) {
+        oprot.writeFieldBegin(WOE_HINT_FIELD_DESC);
+        {
+          oprot.writeListBegin(new TList(TType.I32, this.woeHint.size()));
+          for (YahooWoeType _iter42 : this.woeHint)
+          {
+            oprot.writeI32(_iter42.getValue());
+          }
+          oprot.writeListEnd();
+        }
+        oprot.writeFieldEnd();
+      }
+    }
+    if (this.woeRestrict != null) {
+      if (isSetWoeRestrict()) {
+        oprot.writeFieldBegin(WOE_RESTRICT_FIELD_DESC);
+        {
+          oprot.writeListBegin(new TList(TType.I32, this.woeRestrict.size()));
+          for (YahooWoeType _iter43 : this.woeRestrict)
+          {
+            oprot.writeI32(_iter43.getValue());
+          }
+          oprot.writeListEnd();
+        }
+        oprot.writeFieldEnd();
+      }
     }
     oprot.writeFieldStop();
     oprot.writeStructEnd();
@@ -838,6 +1080,26 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       if (!first) sb.append(", ");
       sb.append("autocomplete:");
       sb.append(this.autocomplete);
+      first = false;
+    }
+    if (isSetWoeHint()) {
+      if (!first) sb.append(", ");
+      sb.append("woeHint:");
+      if (this.woeHint == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.woeHint);
+      }
+      first = false;
+    }
+    if (isSetWoeRestrict()) {
+      if (!first) sb.append(", ");
+      sb.append("woeRestrict:");
+      if (this.woeRestrict == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.woeRestrict);
+      }
       first = false;
     }
     sb.append(")");

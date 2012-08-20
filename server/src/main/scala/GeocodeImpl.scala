@@ -430,6 +430,11 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
           modifySignal(1000, "promoting feature with bounds")
         }
 
+        if (req.woeHint.contains(primaryFeature.feature.woeType)) {
+          modifySignal(1000000,
+            "woe hint matches %d".format(primaryFeature.feature.woeType.getValue))
+        }
+
         // prefer a more aggressive parse ... bleh
         // this prefers "mt laurel" over the town of "laurel" in "mt" (montana)
         modifySignal(-5000 * parse.length, "parse length boost")
@@ -589,11 +594,22 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     }
   }
 
-  def filterDupeParses(parses: ParseSeq): ParseSeq = {
-    logger.ifDebug("have %d parses in filterDupeParses".format(parses.size))
+  // Two jobs
+  // 1) filter out woeRestrict mismatches
+  // 2) try to filter out near dupe parses (based on formatting + latlng)
+  def filterParses(parses: ParseSeq): ParseSeq = {
+    logger.ifDebug("have %d parses in filterParses".format(parses.size))
     parses.foreach(s => logger.ifDebug(s.toString))
 
-    val parseMap: Map[String, Seq[(Parse, Int)]] = parses.zipWithIndex.groupBy({case (parse, index) => {
+    val goodParses = if (req.woeRestrict.size > 0) {
+      parses.filter(p =>
+        p.headOption.exists(f => req.woeRestrict.contains(f.fmatch.feature.woeType))
+      )
+    } else {
+      parses
+    }
+
+    val parseMap: Map[String, Seq[(Parse, Int)]] = goodParses.zipWithIndex.groupBy({case (parse, index) => {
       parse.headOption.flatMap(f => 
          // en is cheating, sorry
          bestName(f.fmatch.feature, Some("en"), false).map(_.name)
@@ -772,7 +788,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     }
 
     def buildFinalParses(parses: ParseSeq, parseLength: Int) = {
-      val dedupedParses = filterDupeParses(
+      val dedupedParses = filterParses(
         parses.sorted(new ParseOrdering(req.ll, req.cc)).take(3))
       dedupedParses.foreach(p =>
         logger.ifDebug("deduped parse ids: %s".format(p.map(_.fmatch.id)))

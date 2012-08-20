@@ -89,7 +89,14 @@ class GeocoderHttpService(geocoder: GeocodeServerImpl) extends Service[HttpReque
           val ll = v.split(",").toList
           request.setLl(new GeocodePoint(ll(0).toDouble, ll(1).toDouble))
         }))
-
+        params.get("woeHint").foreach(_.asScala.headOption.foreach(hintStr => {
+          val hints = hintStr.split(",").map(_.toInt).map(YahooWoeType.findByValue)
+          request.setWoeHint(hints.toList.asJava)
+        }))
+        params.get("woeRestrict").foreach(_.asScala.headOption.foreach(hintStr => {
+          val hints = hintStr.split(",").map(_.toInt).map(YahooWoeType.findByValue)
+          request.setWoeRestrict(hints.toList.asJava)
+        }))
 
         handleQuery(request)
       }).getOrElse({
