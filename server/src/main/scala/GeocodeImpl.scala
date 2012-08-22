@@ -421,9 +421,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
         // if we have a repeated feature, downweight this like crazy
         // so st petersburg, st petersburg works, but doesn't break new york, ny
-        if (rest.contains(primaryFeature)) {
-          modifySignal(100000000,
-            "downweighting dupe-feature parse")
+        if (rest.exists(_.fmatch.feature.ids == primaryFeature.feature.ids)) {
+          modifySignal(-100000000, "downweighting dupe-feature parse")
         }
 
         if (primaryFeature.feature.geometry.bounds != null) {
