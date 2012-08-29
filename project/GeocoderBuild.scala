@@ -7,7 +7,7 @@ object GeocoderBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.foursquare.twofishes",
     name := "twofishes",
-    version      := "0.32",
+    version      := "0.4-SNAPSHOT",
     scalaVersion := "2.9.1"
   )
 
@@ -79,8 +79,8 @@ object GeocoderBuild extends Build {
       settings = defaultSettings ++ Seq(
         publishArtifact := true,
         libraryDependencies ++= Seq(
-          "com.twitter" % "util-core_2.9.1" % "1.12.8",
-          "com.twitter" % "util-logging_2.9.1" % "1.12.8",
+          "com.twitter" % "util-core_2.9.1" % "4.0.1",
+          "com.twitter" % "util-logging_2.9.1" % "4.0.1",
           "org.slf4j" % "slf4j-api" % "1.6.1",
           "org.apache.hadoop" % "hadoop-core" % "0.20.2-cdh3u3" intransitive(),
           "org.apache.hbase" % "hbase" % "0.92.1" intransitive(),
@@ -101,7 +101,7 @@ object GeocoderBuild extends Build {
         publishArtifact := true,
         libraryDependencies ++= Seq(
           "thrift" % "libthrift" % "0.5.0" from "http://maven.twttr.com/org/apache/thrift/libthrift/0.5.0/libthrift-0.5.0.jar",
-          "com.twitter" % "finagle-thrift_2.9.1" % "1.9.12",
+          "com.twitter" % "finagle-thrift_2.9.1" % "4.0.2",
           "org.slf4j" % "slf4j-api" % "1.6.1"
         )
       ),
@@ -112,7 +112,7 @@ object GeocoderBuild extends Build {
         mainClass in assembly := Some("com.foursquare.twofishes.GeocodeFinagleServer"),
         publishArtifact := true,
         libraryDependencies ++= Seq(
-          "com.twitter" % "finagle-http_2.9.1" % "1.9.12",
+          "com.twitter" % "finagle-http_2.9.1" % "4.0.2",
           "org.specs2" %% "specs2" % "1.8.2" % "test",
           "org.scala-tools.testing" %% "specs" % "1.6.9" % "test",
           "com.github.scopt" %% "scopt" % "2.0.0"        )
@@ -137,9 +137,9 @@ object GeocoderBuild extends Build {
         publishArtifact := false,
         libraryDependencies ++= Seq(
           "org.specs2" %% "specs2" % "1.8.2" % "test",
-          "com.twitter" % "util-core_2.9.1" % "1.12.8",
-          "com.twitter" % "util-logging_2.9.1" % "1.12.8",
-          "com.novus" % "salat-core_2.9.1" % "0.0.8-SNAPSHOT",
+          // "com.twitter" % "util-core_2.9.1" % "4.0.2",
+          // "com.twitter" % "util-logging_2.9.1" % "4.0.2",
+          // "com.novus" % "salat-core_2.9.1" % "0.0.8-SNAPSHOT",
           "com.github.scopt" %% "scopt" % "2.0.0"
         )
       )
