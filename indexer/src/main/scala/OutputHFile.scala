@@ -102,10 +102,13 @@ class OutputHFile(basepath: String) {
   }
 
   import java.io._
-  def serializeBytes(g: GeocodeRecord) = {
+
+  type IdFixer = (String) => Option[String]
+
+  def serializeBytes(g: GeocodeRecord, fixParentId: IdFixer) = {
     val serializer = new TSerializer(new TBinaryProtocol.Factory());
     val f = g.toGeocodeServingFeature()
-    val parentOids = f.scoringFeatures.parents.flatMap(fid => fidMap.get(fid)).map(_.toString)
+    val parentOids = f.scoringFeatures.parents.flatMap(f => fixParentId(f))
     f.scoringFeatures.setParents(parentOids)
     serializer.serialize(f)
   }
@@ -126,9 +129,41 @@ class OutputHFile(basepath: String) {
 
     writeNames()
 
+    def fixParentId(fid: String) = fidMap.get(fid).map(_.toString)
+
     writeCollection("features.hfile",
       (g: GeocodeRecord) => 
-        (g._id.toByteArray(), serializeBytes(g)),
+        (g._id.toByteArray(), serializeBytes(g, fixParentId)),
       MongoGeocodeDAO, "_id")
   }
+
+  def processForGeoId() {
+    val geoCursor = MongoGeocodeDAO.find(MongoDBObject())
+
+    def pickBestId(g: GeocodeRecord): String = {
+      g.ids.find(_.startsWith("geonameid")).getOrElse(g.ids(0))
+    }
+    
+    val gidMap = new HashMap[String, String]
+
+    geoCursor.foreach(g => {
+      if (g.ids.size > 1) {
+        val bestId = pickBestId(g)
+        g.ids.foreach(id => {
+          if (id != bestId) {
+            gidMap(id) = bestId
+          }
+        })
+      }
+    })
+
+    def fixParentId(fid: String) = Some(gidMap.getOrElse(fid, fid))
+
+    writeCollection("gid-features.hfile",
+      (g: GeocodeRecord) => 
+        (pickBestId(g).getBytes("UTF-8"), serializeBytes(g, fixParentId)),
+      MongoGeocodeDAO, "_id")
+  }
+
+
 }
