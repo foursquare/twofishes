@@ -163,6 +163,7 @@ class OutputHFile(basepath: String) {
 
     val ids = MongoGeocodeDAO.find(MongoDBObject()).map(pickBestId)
       .map(_.getBytes("UTF-8")).toList.sort(lexicalSort)
+    println("%s ids found".format(ids.size))
 
     geoCursor.foreach(g => {
       if (g.ids.size > 1) {
@@ -175,6 +176,8 @@ class OutputHFile(basepath: String) {
       }
     })
 
+    println("have %d gid fixups".format(gidMap.size))
+
     def fixParentId(fid: String) = Some(gidMap.getOrElse(fid, fid))
 
     val filename = "gid-features.hfile"
@@ -186,9 +189,16 @@ class OutputHFile(basepath: String) {
 
     var fidCount = 0
     val fidSize = ids.size
+    println("have %d groups".format(ids.grouped(2000).size))
     ids.grouped(2000).foreach(chunk => {
-      val records = MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> chunk)))
-      records.foreach(g => {
+      val idChunk = chunk.map(i => new String(i))
+      val records = MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> idChunk)))
+      //println("looking for %d records, %d found %s %s".format(chunk.size, records.size, chunk(0), idChunk(0)))
+      val recordMap = records.flatMap(r => {
+        r.ids.map(id => (id, r))
+      }).toMap
+     
+      idChunk.foreach(i => recordMap.get(i).foreach(g => {
         val (k, v) =
           (pickBestId(g).getBytes("UTF-8"), serializeBytes(g, fixParentId))
         writer.append(k, v)
@@ -196,7 +206,8 @@ class OutputHFile(basepath: String) {
         if (fidCount % 1000 == 0) {
           println("processed %d of %d %s".format(fidCount, fidSize, filename))
         }
-      })
+      }))
     })
+    writer.close()
   }
 }
