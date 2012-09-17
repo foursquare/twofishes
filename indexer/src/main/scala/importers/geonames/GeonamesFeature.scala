@@ -64,7 +64,9 @@ object GeonamesFeature extends LogHelper {
     def cb(in: Map[GeonamesFeatureColumns.Value, String]) = {
       in ++ List(
         (GeonamesFeatureColumns.FEATURE_CLASS -> "Z"),
-        (GeonamesFeatureColumns.GEONAMEID -> "geonamezip:%s".format(new ObjectId()))
+        (GeonamesFeatureColumns.GEONAMEID -> "geonamezip:%s-%s".format(
+          in[COUNTRY_CODE], in[NAME]
+        )
       )
     }
 

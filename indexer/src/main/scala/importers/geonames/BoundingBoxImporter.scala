@@ -20,14 +20,14 @@ class BoundingBoxTsvImporter(store: GeocodeStorageWriteService) extends LogHelpe
         logger.error("wrong # of parts: %d vs %d in %s".format(parts.size, 5, line))
       } else {
         try {
-          val geonameid = parts(0)
+          val (namespace, id) = parts(0).split(":")
           val w = parts(1).toDouble
           val s = parts(2).toDouble
           val e = parts(3).toDouble
           val n = parts(4).toDouble
           // println("%s --> %s".format(geonameid, bbox))
           store.addBoundingBoxToRecord(
-            StoredFeatureId(GeonamesParser.geonameIdNamespace, geonameid),
+            StoredFeatureId(namespace, geonameid),
             // ne, sw
             BoundingBox(Point(n, e), Point(s, w))
           )
