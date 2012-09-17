@@ -183,7 +183,7 @@ class OutputHFile(basepath: String) {
     val filename = "gid-features.hfile"
     val writer = buildV1Writer(filename)
     writer.appendFileInfo(ThriftClassValueBytes,
-      classOf[GeocodeServingFeature].getName.getBytes("UTF-8"))
+      "com.foursquare.twofishes.RawGeocodeServingFeature".getBytes("UTF-8"))
     writer.appendFileInfo(ThriftEncodingKeyBytes,
       factory.getClass.getName.getBytes("UTF-8"))
 
