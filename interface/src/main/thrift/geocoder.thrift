@@ -27,9 +27,13 @@ enum YahooWoeType {
   COUNTRY = 12,
 
   AIRPORT = 14,
+  PARK = 16,
+  POI = 20,
 
   // One of the subdivisions within a town. This category includes suburbs, neighborhoods, wards.
   SUBURB = 22,
+
+  HISTORICAL_TOWN = 35,
 
   // UNOFFICIAL
   STREET = 100

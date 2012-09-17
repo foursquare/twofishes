@@ -121,11 +121,17 @@ class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[Str
   def isAirport = featureCode.exists(_ == "AIRP")
   val stupidCodes = List(
     "RGNE", // economic region
-    "WLL", "WLLS", "WLLQ")
+    "WLL", "WLLS", "WLLQ" // wells!
+  )
   def isStupid = featureCode.exists(fc => stupidCodes.contains(fc))
+  def isPark = featureCode.exists(_ == "PRK")
 
   def woeType: YahooWoeType = {
-    if (isCountry) {
+    if (isPark) {
+      YahooWoeType.PARK
+    } if (isBuilding) {
+      YahooWoeType.POI
+    } else if (isCountry) {
       YahooWoeType.COUNTRY
     } else if (isPostalCode) {
       YahooWoeType.POSTAL_CODE

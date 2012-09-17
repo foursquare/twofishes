@@ -237,8 +237,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       )
     } else {
       val validParsePairs: Seq[(Parse, ObjectId)] = parses.flatMap(parse => {
-      logger.ifDebug("checking %d fids against %s".format(fids.size, parse.map(_.fmatch.id)))
-      logger.ifDebug("these are the fids of my parse: %s".format(fids))
+        logger.ifDebug("checking %d fids against %s".format(fids.size, parse.map(_.fmatch.id)))
+        logger.ifDebug("these are the fids of my parse: %s".format(fids))
         fids.flatMap(fid => {
            logger.ifDebug("checking if %s is an unused parent of %s".format(
              fid, parse.map(_.fmatch.id)))
@@ -249,7 +249,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
             Some((parse, fid))
           } else {
            // logger.ifDebug("wasn't")
-            None
+           None
           }
         })
       })
@@ -460,6 +460,18 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         // meant primarily for zipcodes
         if (primaryFeature.feature.cc == "US") {
           modifySignal(1, "US tie-break")
+        }
+
+        // In autocomplete mode, prefer "tighter" interpretations
+        // That is, prefer "<b>Rego Park</b>, <b>N</b>Y" to 
+        // <b>Rego Park</b>, NY, <b>N</b>aalagaaffeqatigiit
+        //
+        // getOrdering returns a smaller # for a smaller thing
+        if (req.autocomplete) {
+          modifySignal(
+            -1 * rest.map(f => YahooWoeTypes.getOrdering(f.fmatch.feature.woeType)).min,
+            "prefer smaller parent interpretation"
+          )
         }
 
         logger.ifDebug("final score %s".format(signal))
