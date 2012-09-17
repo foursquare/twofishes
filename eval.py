@@ -128,7 +128,7 @@ class GeocodeFetch(threading.Thread):
 
 if __name__ == '__main__':
   print "going"
-  for i in range(2):
+  for i in range(10):
     t = GeocodeFetch(queue)
     t.setDaemon(True)
     t.start()
