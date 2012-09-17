@@ -1,8 +1,6 @@
 Township
 Township of
 County
-City
-City of
 District
 kraj
 Kraj
