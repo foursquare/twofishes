@@ -35,6 +35,7 @@ class GeocoderHttpService(geocoder: GeocodeServerImpl) extends Service[HttpReque
       val serializer = new TSerializer(new TSimpleJSONProtocol.Factory());
       val json = serializer.toString(geocode);
 
+      response.setHeader("Content-Type", "application/json; charset=utf-8")
       response.setContent(ChannelBuffers.copiedBuffer(json, CharsetUtil.UTF_8))
       response
     })
