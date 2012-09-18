@@ -468,10 +468,10 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         //
         // getOrdering returns a smaller # for a smaller thing
         if (req.autocomplete) {
-          modifySignal(
-            -1 * rest.map(f => YahooWoeTypes.getOrdering(f.fmatch.feature.woeType)).min,
-            "prefer smaller parent interpretation"
-          )
+          val parentTypes = rest.map(f => YahooWoeTypes.getOrdering(f.fmatch.feature.woeType))
+          if (parentTypes.nonEmpty) {
+            modifySignal( -1 * parentTypes.min, "prefer smaller parent interpretation")
+          }
         }
 
         logger.ifDebug("final score %s".format(signal))

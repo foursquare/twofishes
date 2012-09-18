@@ -120,7 +120,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     nameSet.toList.filterNot(_.isEmpty)
   }
 
-  def parseFeature(feature: GeonaemsFeature): GeocodeRecord = {
+  def parseFeature(feature: GeonamesFeature): GeocodeRecord = {
     // Build ids
     val adminId = feature.adminId.map(id => StoredFeatureId(geonameAdminIdNamespace, id))
     val geonameId = feature.geonameid.map(id => {

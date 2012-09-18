@@ -65,8 +65,8 @@ object GeonamesFeature extends LogHelper {
       in ++ List(
         (GeonamesFeatureColumns.FEATURE_CLASS -> "Z"),
         (GeonamesFeatureColumns.GEONAMEID -> "geonamezip:%s-%s".format(
-          in[COUNTRY_CODE], in[NAME]
-        )
+          in(COUNTRY_CODE), in(NAME)
+        ))
       )
     }
 
@@ -131,7 +131,7 @@ class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[Str
   def woeType: YahooWoeType = {
     if (isPark) {
       YahooWoeType.PARK
-    } if (isBuilding) {
+    } else if (isBuilding) {
       YahooWoeType.POI
     } else if (isCountry) {
       YahooWoeType.COUNTRY
