@@ -495,9 +495,17 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         aFeature <- a.headOption
         bFeature <- b.headOption
       } {
-        if (aFeature.tokenStart == bFeature.tokenStart && 
-          aFeature.tokenEnd == bFeature.tokenEnd) {
-          // if a is a parent of b, prefer b
+        var performContainHackCheck = false
+        if (req.autocomplete) {
+          val aName = bestNameWithMatch(aFeature.fmatch.feature, Some(req.lang), false, Some(aFeature.phrase))
+          val bName = bestNameWithMatch(bFeature.fmatch.feature, Some(req.lang), false, Some(bFeature.phrase))
+          performContainHackCheck = (aName == bName)
+        }
+
+        if (performContainHackCheck &&
+            aFeature.tokenStart == bFeature.tokenStart && 
+            aFeature.tokenEnd == bFeature.tokenEnd) {
+          // if a is a parent of b, prefer b 
           if (aFeature.fmatch.scoringFeatures.parents.contains(bFeature.fmatch.id)) {
             logger.ifDebug("Preferring %s because it's a child of %s".format(printDebugParse(a), printDebugParse(b)))
             return -1
