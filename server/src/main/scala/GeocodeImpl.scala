@@ -493,7 +493,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         aFeature <- a.headOption
         bFeature <- b.headOption
       } {
-        var performContainHackCheck = false
+        var performContainHackCheck = true
         if (req.autocomplete) {
           val aName = bestNameWithMatch(aFeature.fmatch.feature, Some(req.lang), false, Some(aFeature.phrase))
           val bName = bestNameWithMatch(bFeature.fmatch.feature, Some(req.lang), false, Some(bFeature.phrase))
