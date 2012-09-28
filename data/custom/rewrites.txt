@@ -1,4 +1,5 @@
 Saint\b|St,Ste
+Saint-\b|St,Ste
 Mountain\b|Mount,Mt,Mtn
 Mount\b|Mt,Mountain,Mtn
 North\b|N
