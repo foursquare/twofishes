@@ -627,7 +627,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     }
 
     goodParses = goodParses.filter(p => p.headOption.exists(m => {
-      m.fmatch.scoringFeatures.population > 5000 || p.length > 1
+      m.fmatch.scoringFeatures.population > 50000 || p.length > 1
     }))
 
     val parseMap: Map[String, Seq[(Parse, Int)]] = goodParses.zipWithIndex.groupBy({case (parse, index) => {
