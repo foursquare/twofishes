@@ -811,7 +811,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     }
 
     def buildFinalParses(parses: ParseSeq, parseLength: Int) = {
-      val removeLowRankingParses = (parseLength != tokens.size && !tryHard)
+      val removeLowRankingParses = (parseLength != tokens.size && tokens.size == 1 && !tryHard)
 
       val dedupedParses = filterParses(
         parses.sorted(new ParseOrdering(req.ll, req.cc)).take(3), removeLowRankingParses)
