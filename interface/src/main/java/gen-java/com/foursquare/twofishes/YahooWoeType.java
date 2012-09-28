@@ -18,10 +18,18 @@ public enum YahooWoeType implements TEnum {
   ADMIN3(10),
   POSTAL_CODE(11),
   COUNTRY(12),
+  ISLAND(13),
   AIRPORT(14),
+  DRAINAGE(15),
   PARK(16),
   POI(20),
   SUBURB(22),
+  SPORT(23),
+  COLLOQUIAL(24),
+  ZONE(25),
+  HISTORICAL_STATE(26),
+  HISTORICAL_COUNTY(27),
+  TIMEZONE(31),
   HISTORICAL_TOWN(35),
   STREET(100);
 
@@ -58,14 +66,30 @@ public enum YahooWoeType implements TEnum {
         return POSTAL_CODE;
       case 12:
         return COUNTRY;
+      case 13:
+        return ISLAND;
       case 14:
         return AIRPORT;
+      case 15:
+        return DRAINAGE;
       case 16:
         return PARK;
       case 20:
         return POI;
       case 22:
         return SUBURB;
+      case 23:
+        return SPORT;
+      case 24:
+        return COLLOQUIAL;
+      case 25:
+        return ZONE;
+      case 26:
+        return HISTORICAL_STATE;
+      case 27:
+        return HISTORICAL_COUNTY;
+      case 31:
+        return TIMEZONE;
       case 35:
         return HISTORICAL_TOWN;
       case 100:

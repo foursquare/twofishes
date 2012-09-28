@@ -25,13 +25,21 @@ enum YahooWoeType {
 
   POSTAL_CODE = 11,
   COUNTRY = 12,
-
+  ISLAND = 13,
   AIRPORT = 14,
+  DRAINAGE = 15,
   PARK = 16,
   POI = 20,
 
   // One of the subdivisions within a town. This category includes suburbs, neighborhoods, wards.
   SUBURB = 22,
+
+  SPORT = 23,
+  COLLOQUIAL = 24,
+  ZONE = 25,
+  HISTORICAL_STATE = 26,
+  HISTORICAL_COUNTY = 27,
+  TIMEZONE = 31,
 
   HISTORICAL_TOWN = 35,
 
