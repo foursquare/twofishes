@@ -9,14 +9,12 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable.{HashMap, HashSet, ListBuffer}
 
 // TODO
+// --make autocomplete faster
+// --save name-hit in the index
 // --start treating Parse like an object, stop using headOption
-// --paris te doesn't work b/c of 50% thing?
 // --test autocomplete more
 // --better debugging
-// --this 50% match thing is dumb. Figure out a better way.
-//   --honestly, we could just search across the parents of all the initial features and it would be faster
-// --paris --> city of paris (no highlighting) --> I know why
-// --add more components if we have unduped dupe
+// --add more components if we have ambiguous names
 
 // Represents a match from a run of tokens to one particular feature
 case class FeatureMatch(
@@ -616,17 +614,21 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
   // Two jobs
   // 1) filter out woeRestrict mismatches
   // 2) try to filter out near dupe parses (based on formatting + latlng)
-  def filterParses(parses: ParseSeq): ParseSeq = {
+  def filterParses(parses: ParseSeq, removeLowRankingParses: Boolean): ParseSeq = {
     logger.ifDebug("have %d parses in filterParses".format(parses.size))
     parses.foreach(s => logger.ifDebug(s.toString))
 
-    val goodParses = if (req.woeRestrict.size > 0) {
+    var goodParses = if (req.woeRestrict.size > 0) {
       parses.filter(p =>
         p.headOption.exists(f => req.woeRestrict.contains(f.fmatch.feature.woeType))
       )
     } else {
       parses
     }
+
+    goodParses = goodParses.filter(_.headOption.exists(p => {
+      p.fmatch.scoringFeatures.population > 5000
+    }))
 
     val parseMap: Map[String, Seq[(Parse, Int)]] = goodParses.zipWithIndex.groupBy({case (parse, index) => {
       parse.headOption.flatMap(f => 
@@ -785,6 +787,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     val connectorEnd = connectorStart
     val hadConnector = connectorStart != -1
 
+    val tryHard = hadConnector
+
     val tokens = if (hadConnector) {
       originalTokens.drop(connectorEnd + 1)
     } else { originalTokens }
@@ -807,8 +811,10 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     }
 
     def buildFinalParses(parses: ParseSeq, parseLength: Int) = {
+      val removeLowRankingParses = (parseLength != tokens.size && !tryHard)
+
       val dedupedParses = filterParses(
-        parses.sorted(new ParseOrdering(req.ll, req.cc)).take(3))
+        parses.sorted(new ParseOrdering(req.ll, req.cc)).take(3), removeLowRankingParses)
       dedupedParses.foreach(p =>
         logger.ifDebug("deduped parse ids: %s".format(p.map(_.fmatch.id)))
       )
