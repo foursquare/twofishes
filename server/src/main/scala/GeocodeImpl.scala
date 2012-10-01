@@ -369,13 +369,22 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     f.names.sorted(new FeatureNameComparator(lang, preferAbbrev)).headOption
   }
 
+  type BestNameMatch = (FeatureName, Option[String])
+  var nameMatchMap =
+    new scala.collection.mutable.HashMap[String, Option[BestNameMatch]]
+
   def bestNameWithMatch(
     f: GeocodeFeature,
     lang: Option[String],
     preferAbbrev: Boolean,
     matchedStringOpt: Option[String]
-  ): Option[(FeatureName, Option[String])] = {
-    matchedStringOpt.flatMap(matchedString => {
+  ): Option[BestNameMatch] = {
+    val hashKey = "%s:%s:%s:%s".format(f.ids, lang, preferAbbrev, matchedStringOpt)
+    if (!nameMatchMap.contains(hashKey)) {
+      return nameMatchMap(hashKey)
+    }
+
+    val ret = matchedStringOpt.flatMap(matchedString => {
       val nameCandidates = f.names.filter(n => {
         val normalizedName = NameNormalizer.normalize(n.name)
         // logger.ifDebug("Does %s start with %s?".format(normalizedName, matchedString))
@@ -402,8 +411,11 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         }
       })}
     }) orElse { bestName(f, lang, preferAbbrev).map(n => (n, None)) }
+
+    nameMatchMap(hashKey) = ret
+    ret
   }
- 
+
   // Comparator for parses, we score by a number of different features
   // 
   class ParseOrdering(llHint: GeocodePoint, ccHint: String) extends Ordering[Parse] {
