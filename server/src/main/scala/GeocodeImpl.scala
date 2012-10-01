@@ -380,7 +380,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     matchedStringOpt: Option[String]
   ): Option[BestNameMatch] = {
     val hashKey = "%s:%s:%s:%s".format(f.ids, lang, preferAbbrev, matchedStringOpt)
-    if (!nameMatchMap.contains(hashKey)) {
+    if (nameMatchMap.contains(hashKey)) {
       return nameMatchMap(hashKey)
     }
 
