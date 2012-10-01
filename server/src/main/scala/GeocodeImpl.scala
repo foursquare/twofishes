@@ -4,6 +4,7 @@ package com.foursquare.twofishes
 import com.foursquare.twofishes.Implicits._
 import com.twitter.util.{Future, FuturePool}
 import java.util.concurrent.ConcurrentHashMap
+import java.util.Date
 import org.bson.types.ObjectId
 import scala.collection.JavaConversions._
 import scala.collection.mutable.{HashMap, HashSet, ListBuffer}
@@ -41,11 +42,17 @@ object FeatureMatchOrdering extends Ordering[FeatureMatch] {
 
 class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) {
   class MemoryLogger {
+    val startTime = new Date()
+
+    def timeSinceStart = {
+      new Date().getTime() - startTime.getTime()
+    }
+
     val lines: ListBuffer[String] = new ListBuffer()
 
     def ifDebug(s: => String, level: Int = 0) {
       if (level >= 0 && req.debug >= level) {
-        lines.append(s)
+        lines.append("%d: %s".format(timeSinceStart, s))
       }
     }
 
