@@ -633,9 +633,11 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       parses
     }
 
-    goodParses = goodParses.filter(p => p.headOption.exists(m => {
-      m.fmatch.scoringFeatures.population > 50000 || p.length > 1
-    }))
+    if (removeLowRankingParses) {
+      goodParses = goodParses.filter(p => p.headOption.exists(m => {
+        m.fmatch.scoringFeatures.population > 50000 || p.length > 1
+      }))
+    }
 
     val parseMap: Map[String, Seq[(Parse, Int)]] = goodParses.zipWithIndex.groupBy({case (parse, index) => {
       parse.headOption.flatMap(f => 
@@ -819,7 +821,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     }
 
     def buildFinalParses(parses: ParseSeq, parseLength: Int) = {
-      val removeLowRankingParses = (parseLength != tokens.size && tokens.size == 1 && !tryHard)
+      val removeLowRankingParses = (parseLength != tokens.size && parseLength == 1 && !tryHard)
 
       val dedupedParses = filterParses(
         parses.sorted(new ParseOrdering(req.ll, req.cc)).take(3), removeLowRankingParses)

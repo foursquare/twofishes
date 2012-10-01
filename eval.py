@@ -59,7 +59,7 @@ class GeocodeFetch(threading.Thread):
 
       param = line.strip()
       import urlparse
-      params = urlparse.parse_qs(param[param.find('?'):])
+      params = urlparse.parse_qs(param[param.find('?')+1:])
      
       responseA = getResponse(serverA, param)
       responseB = getResponse(serverB, param)
@@ -90,10 +90,10 @@ class GeocodeFetch(threading.Thread):
       elif (responseB == None and responseA != None):
         evallog('error from B, something from A')
       elif (len(responseA['interpretations']) == 0 and
-          len(responseB['interpretations']) == 1):
+          len(responseB['interpretations']) > 0):
         evallog('geocoded B, not A')
 
-      elif (len(responseA['interpretations']) == 1 and
+      elif (len(responseA['interpretations']) > 0 and
           len(responseB['interpretations']) == 0):
         evallog('geocoded A, not B')
 
