@@ -20,6 +20,16 @@ case class FidIndex(
   oid: ObjectId
 )
 
+case class IdPop(
+  fid: String,
+  pop: Int
+)
+
+case class PrefixIndex(
+  @Key("_id") prefix: String,
+  ids: List[IdPop]
+)
+
 trait GeocodeStorageWriteService {
   def insert(record: GeocodeRecord): Unit
   def setRecordNames(id: StoredFeatureId, names: List[DisplayName])
@@ -36,6 +46,9 @@ object NameIndexDAO extends SalatDAO[NameIndex, String](
 
 object FidIndexDAO extends SalatDAO[FidIndex, String](
   collection = MongoConnection()("geocoder")("fid_index"))
+
+object PrefixIndexDAO extends SalatDAO[PrefixIndex, String](
+  collection = MongoConnection()("geocoder")("prefix_index"))
 
 class MongoGeocodeStorageService extends GeocodeStorageWriteService {
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = {
@@ -54,6 +67,14 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
         NameIndexDAO.update(MongoDBObject("_id" -> name),
           MongoDBObject("$addToSet" -> MongoDBObject("fids" -> fid)),
           true, false)
+
+        val idPop = IdPop(fid, record.boost.getOrElse(0) + record.population.getOrElse(0))
+        1.to(name.size).foreach(i => {
+          val prefix = name.substring(0, i)
+          PrefixIndexDAO.update(MongoDBObject("_id" -> prefix),
+            MongoDBObject("$addToSet" -> MongoDBObject("ids" -> idPop)),
+            true, false)
+        })
       })
     })
   }
