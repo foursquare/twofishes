@@ -148,7 +148,7 @@ class OutputHFile(basepath: String) {
     val prefixWriter = buildV2Writer("prefix_index.hfile")
     val numPrefixes = sortedPrefixes.size
     for {
-      prefix, index <- sortedPrefixes.zipWithIndex
+      (prefix, index) <- sortedPrefixes.zipWithIndex
     } {
       if (index % 1000 == 0) {
         println("done with %d of %d prefixes".format(index, numPrefixes))
@@ -168,7 +168,7 @@ class OutputHFile(basepath: String) {
       }
 
       prefixWriter.append(prefix.getBytes(), fidStringsToByteArray(fids.toList))
-    })
+    }
 
     prefixWriter.appendFileInfo("MAX_PREFIX_LENGTH".getBytes(), toBytes(maxPrefixLength))
     prefixWriter.close()
