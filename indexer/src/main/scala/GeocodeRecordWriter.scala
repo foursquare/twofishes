@@ -12,7 +12,8 @@ import com.twitter.util.{Future, FuturePool}
 
 case class NameIndex(
   @Key("_id") name: String,
-  fids: List[String]
+  fid: String,
+  pop: Int
 )
 
 case class FidIndex(
@@ -23,11 +24,6 @@ case class FidIndex(
 case class IdPop(
   fid: String,
   pop: Int
-)
-
-case class PrefixIndex(
-  @Key("_id") prefix: String,
-  ids: List[IdPop]
 )
 
 trait GeocodeStorageWriteService {
@@ -47,9 +43,6 @@ object NameIndexDAO extends SalatDAO[NameIndex, String](
 object FidIndexDAO extends SalatDAO[FidIndex, String](
   collection = MongoConnection()("geocoder")("fid_index"))
 
-object PrefixIndexDAO extends SalatDAO[PrefixIndex, String](
-  collection = MongoConnection()("geocoder")("prefix_index"))
-
 class MongoGeocodeStorageService extends GeocodeStorageWriteService {
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = {
     MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))))
@@ -64,17 +57,9 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
 
     record.names.foreach(name => {
       record.ids.foreach(fid => {
-        NameIndexDAO.update(MongoDBObject("_id" -> name),
-          MongoDBObject("$addToSet" -> MongoDBObject("fids" -> fid)),
-          true, false)
-
-        val idPop = IdPop(fid, record.boost.getOrElse(0) + record.population.getOrElse(0))
-        1.to(name.size).foreach(i => {
-          val prefix = name.substring(0, i)
-          PrefixIndexDAO.update(MongoDBObject("_id" -> prefix),
-            MongoDBObject("$addToSet" -> MongoDBObject("ids" -> idPop)),
-            true, false)
-        })
+        NameIndexDAO.insert(
+          NameIndex(name, fid, record.population.getOrElse(0) + record.boost.getOrElse(0))
+        )
       })
     })
   }
