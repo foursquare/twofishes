@@ -146,7 +146,13 @@ class OutputHFile(basepath: String) {
     ).map(_.getValue)
 
     val prefixWriter = buildV2Writer("prefix_index.hfile")
-    sortedPrefixes.foreach(prefix => {
+    val numPrefixes = sortedPrefixes.size
+    for {
+      prefix, index <- sortedPrefixes.zipWithIndex
+    } {
+      if (index % 1000 == 0) {
+        println("done with %d of %d prefixes".format(index, numPrefixes))
+      }
       val records = NameIndexDAO.find(
           MongoDBObject(
             "name" -> MongoDBObject("$regex" -> "^%s".format(prefix)))
@@ -164,7 +170,7 @@ class OutputHFile(basepath: String) {
       prefixWriter.append(prefix.getBytes(), fidStringsToByteArray(fids.toList))
     })
 
-    prefixWriter.append("MAX_PREFIX_LENGTH".getBytes(), maxPrefixLength.toString.getBytes())
+    prefixWriter.appendFileInfo("MAX_PREFIX_LENGTH".getBytes(), toBytes(maxPrefixLength))
     prefixWriter.close()
     println("done")
   }
