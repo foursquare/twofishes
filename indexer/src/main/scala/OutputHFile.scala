@@ -23,6 +23,7 @@ import org.apache.thrift.protocol.TBinaryProtocol
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
+import scala.collection.mutable.HashSet
 
 class OutputHFile(basepath: String) {
   val blockSizeKey = "hbase.mapreduce.hfileoutputformat.blocksize"
@@ -31,8 +32,10 @@ class OutputHFile(basepath: String) {
   val blockSize = HFile.DEFAULT_BLOCKSIZE
   val compressionAlgo = Compression.Algorithm.NONE.getName
 
-  val conf = new Configuration();
-  val cconf = new CacheConfig(conf);
+  val conf = new Configuration()
+  val cconf = new CacheConfig(conf)
+  
+  val maxPrefixLength = 5
 
   def buildV2Writer(filename: String) = {
     val fs = new LocalFileSystem() 
@@ -80,6 +83,7 @@ class OutputHFile(basepath: String) {
     var nameCount = 0
     val nameSize = NameIndexDAO.collection.count
     val nameCursor = NameIndexDAO.find(MongoDBObject())
+    var prefixSet = new HashSet[String]
     nameCursor.filterNot(_.name.isEmpty).foreach(n => {
       if (!nameMap.contains(n.name.getBytes())) {
         nameMap(n.name.getBytes()) = List()
@@ -89,6 +93,10 @@ class OutputHFile(basepath: String) {
       if (nameCount % 100000 == 0) {
         println("processed %d of %d names".format(nameCount, nameSize))
       }
+
+      1.to(List(maxPrefixLength, n.name.size).min).foreach(length => 
+        prefixSet.add(n.name.substring(0, length))
+      )
     })
 
     val writer = buildV2Writer("name_index.hfile")
@@ -99,17 +107,36 @@ class OutputHFile(basepath: String) {
 
     println("sorted")
 
-    sortedMap.map(n => {
-      val fids = nameMap(n)
+    def fidStringsToByteArray(fids: List[String]): Array[Byte] = {
       val oids = fids.flatMap(fid => fidMap.get(fid)).toSet
       val os = new ByteArrayOutputStream(12 * oids.size)
       oids.foreach(oid =>
         os.write(oid.toByteArray)
       )
+      os.toByteArray()
+    }
 
-      writer.append(n, os.toByteArray())
+    sortedMap.map(n => {
+      val fids = nameMap(n)
+      writer.append(n, fidStringsToByteArray(fids))
     })
     writer.close()
+    println("done")
+
+    println("sorting prefix set")
+    val sortedPrefixes = prefixSet.map(_.getBytes()).toList.sort(lexicalSort)
+    println("done sorting")
+    val prefixWriter = buildV2Writer("prefix_index.hfile")
+    sortedPrefixes.foreach(prefix => {
+      val fids = NameIndexDAO.find(MongoDBObject("name" -> MongoDBObject("$regex" -> "^%s".format(prefix))))
+        .sort(orderBy = MongoDBObject("pop" -> -1))
+        .limit(20)
+        .map(_.fid)
+      prefixWriter.append(prefix, fidStringsToByteArray(fids.toList))
+    })
+
+    prefixWriter.append("MAX_PREFIX_LENGTH".getBytes(), maxPrefixLength.toString.getBytes())
+    prefixWriter.close()
     println("done")
   }
 
