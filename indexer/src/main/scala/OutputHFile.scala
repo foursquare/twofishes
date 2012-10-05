@@ -108,7 +108,17 @@ class OutputHFile(basepath: String) {
     println("sorted")
 
     def fidStringsToByteArray(fids: List[String]): Array[Byte] = {
-      val oids = fids.flatMap(fid => fidMap.get(fid)).toSet
+      val oids = fids.flatMap(fid => 
+        try {
+          fidMap.get(fid)
+        } catch {
+          case e => {
+            println("couldn't find: %s".format(fid))
+            throw e
+          }
+        }
+
+      ).toSet
       val os = new ByteArrayOutputStream(12 * oids.size)
       oids.foreach(oid =>
         os.write(oid.toByteArray)
@@ -126,12 +136,30 @@ class OutputHFile(basepath: String) {
     println("sorting prefix set")
     val sortedPrefixes = prefixSet.map(_.getBytes()).toList.sort(lexicalSort)
     println("done sorting")
+
+    val bestWoeTypes = List(
+      YahooWoeType.TOWN,
+      YahooWoeType.SUBURB,
+      YahooWoeType.ADMIN3,
+      YahooWoeType.AIRPORT
+    ).map(_.getValue)
+
     val prefixWriter = buildV2Writer("prefix_index.hfile")
     sortedPrefixes.foreach(prefix => {
-      val fids = NameIndexDAO.find(MongoDBObject("name" -> MongoDBObject("$regex" -> "^%s".format(prefix))))
+      val records = NameIndexDAO.find(
+          MongoDBObject(
+            "name" -> MongoDBObject("$regex" -> "^%s".format(prefix)))
+          )
         .sort(orderBy = MongoDBObject("pop" -> -1))
-        .limit(20)
-        .map(_.fid)
+        .limit(1000)
+
+      val bestRecords = records.filter(r => bestWoeTypes.contains(r.woeType))
+      val fids = if (bestRecords.isEmpty) {
+        records.take(50).map(_.fid)
+      } else {
+        bestRecords.take(50).map(_.fid)
+      }
+
       prefixWriter.append(prefix, fidStringsToByteArray(fids.toList))
     })
 

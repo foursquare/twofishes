@@ -13,7 +13,8 @@ import com.twitter.util.{Future, FuturePool}
 case class NameIndex(
   name: String,
   fid: String,
-  pop: Int
+  pop: Int,
+  woeType: Int
 )
 
 case class FidIndex(
@@ -58,7 +59,7 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
     record.names.foreach(name => {
       record.ids.foreach(fid => {
         NameIndexDAO.insert(
-          NameIndex(name, fid, record.population.getOrElse(0) + record.boost.getOrElse(0))
+          NameIndex(name, fid, record.population.getOrElse(0) + record.boost.getOrElse(0), record._woeType)
         )
       })
     })
