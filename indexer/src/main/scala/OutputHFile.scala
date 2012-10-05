@@ -24,6 +24,7 @@ import org.apache.thrift.protocol.TBinaryProtocol
 import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.HashSet
+import scala.collection.mutable.ListBuffer
 
 class OutputHFile(basepath: String) {
   val blockSizeKey = "hbase.mapreduce.hfileoutputformat.blocksize"
@@ -74,21 +75,21 @@ class OutputHFile(basepath: String) {
   }
 
   val comp = new ByteArrayComparator()
-  def lexicalSort(a: Array[Byte], b: Array[Byte]) = {
-    comp.compare(a, b) < 0
+  def lexicalSort(a: String, b: String) = {
+    comp.compare(a.getBytes(), b.getBytes()) < 0
   }
 
   def writeNames() {
-    val nameMap = new HashMap[Array[Byte], List[String]]
+    val nameMap = new HashMap[String, ListBuffer[String]]
     var nameCount = 0
     val nameSize = NameIndexDAO.collection.count
     val nameCursor = NameIndexDAO.find(MongoDBObject())
     var prefixSet = new HashSet[String]
     nameCursor.filterNot(_.name.isEmpty).foreach(n => {
-      if (!nameMap.contains(n.name.getBytes())) {
-        nameMap(n.name.getBytes()) = List()
+      if (!nameMap.contains(n.name)) {
+        nameMap(n.name) = new ListBuffer()
       }
-      nameMap(n.name.getBytes()) = n.fid :: nameMap(n.name.getBytes())
+      nameMap(n.name).append(n.fid)
       nameCount += 1
       if (nameCount % 100000 == 0) {
         println("processed %d of %d names".format(nameCount, nameSize))
@@ -127,14 +128,14 @@ class OutputHFile(basepath: String) {
     }
 
     sortedMap.map(n => {
-      val fids = nameMap(n)
-      writer.append(n, fidStringsToByteArray(fids))
+      val fids = nameMap(n).toList
+      writer.append(n.getBytes(), fidStringsToByteArray(fids))
     })
     writer.close()
     println("done")
 
     println("sorting prefix set")
-    val sortedPrefixes = prefixSet.map(_.getBytes()).toList.sort(lexicalSort)
+    val sortedPrefixes = prefixSet.toList.sort(lexicalSort)
     println("done sorting")
 
     val bestWoeTypes = List(
@@ -160,7 +161,7 @@ class OutputHFile(basepath: String) {
         bestRecords.take(50).map(_.fid)
       }
 
-      prefixWriter.append(prefix, fidStringsToByteArray(fids.toList))
+      prefixWriter.append(prefix.getBytes(), fidStringsToByteArray(fids.toList))
     })
 
     prefixWriter.append("MAX_PREFIX_LENGTH".getBytes(), maxPrefixLength.toString.getBytes())
@@ -220,7 +221,7 @@ class OutputHFile(basepath: String) {
     val gidMap = new HashMap[String, String]
 
     val ids = MongoGeocodeDAO.find(MongoDBObject()).map(pickBestId)
-      .map(_.getBytes("UTF-8")).toList.sort(lexicalSort)
+      .toList.sort(lexicalSort)
 
     geoCursor.foreach(g => {
       if (g.ids.size > 1) {
