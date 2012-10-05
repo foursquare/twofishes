@@ -11,7 +11,7 @@ import scala.collection.JavaConversions._
 import com.twitter.util.{Future, FuturePool}
 
 case class NameIndex(
-  @Key("_id") name: String,
+  name: String,
   fid: String,
   pop: Int
 )
