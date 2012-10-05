@@ -88,6 +88,7 @@ abstract class HFileInput(basepath: String, filename: String) {
 }
 
 class NameIndexHFileInput(basepath: String) extends HFileInput(basepath, "name_index.hfile") {
+  val prefixMap = new PrefixIndexHFileInput(basepath)
   def decodeObjectIds(bytes: Array[Byte]): Seq[ObjectId] = {
     0.until(bytes.length / 12).map(i => {
       new ObjectId(Arrays.copyOfRange(bytes, i * 12, (i + 1) * 12))
@@ -104,7 +105,29 @@ class NameIndexHFileInput(basepath: String) extends HFileInput(basepath, "name_i
   }
 
   def getPrefix(name: String): Seq[ObjectId] = {
-    lookupPrefix(name).flatMap(bytes => {
+    if (name.length <= prefixMap.maxPrefixLength) {
+      prefixMap.get(name)
+    } else {
+      lookupPrefix(name).flatMap(bytes => {
+        decodeObjectIds(bytes)
+      })
+    }
+  }
+}
+
+class PrefixIndexHFileInput(basepath: String) extends HFileInput(basepath, "prefix_index.hfile") {
+  val maxPrefixLength = 5 // TODO: pull from hfile metadata  
+  def decodeObjectIds(bytes: Array[Byte]): Seq[ObjectId] = {
+    0.until(bytes.length / 12).map(i => {
+      new ObjectId(Arrays.copyOfRange(bytes, i * 12, (i + 1) * 12))
+    })
+  }
+
+  def get(name: String): List[ObjectId] = {
+    val buf = ByteBuffer.wrap(name.getBytes())
+    lookup(buf).toList.flatMap(b => {
+      val bytes = new Array[Byte](b.capacity())
+      b.get(bytes, 0, bytes.length);
       decodeObjectIds(bytes)
     })
   }
