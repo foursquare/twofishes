@@ -73,7 +73,8 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
   // tokenlist
   val deletesList: List[String] = scala.io.Source.fromFile(new File("data/custom/deletes.txt")).getLines.toList
   // geonameid -> boost value
-  val boostTable = new TsvHelperFileParser("data/custom/boosts.txt")
+  val boostTable = new TsvHelperFileParser("data/custom/boosts.txt",
+    "data/private/boosts.txt")
   // geonameid -> alias
   val aliasTable = new TsvHelperFileParser("data/custom/aliases.txt",
     "data/private/aliases.txt")

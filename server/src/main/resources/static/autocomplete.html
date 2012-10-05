@@ -33,10 +33,8 @@
     queryInput.keyup(function() {
       var query = queryInput.val();
       console.log('changed: ' + query);
-      if (query.length > 2) {
         window.location.hash = query;
         geocode();
-      }
       return true;
     })
     
