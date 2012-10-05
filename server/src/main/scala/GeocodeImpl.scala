@@ -556,10 +556,14 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     // Yields names like "Brick, NJ, US"
     // should already be sorted, so we don't need to do: // .sorted(GeocodeServingFeatureOrdering)
     val parentsToUse: List[GeocodeServingFeature] =
-      parents
-        .filter(p => p.feature.woeType != YahooWoeType.COUNTRY)
-        .takeRight(numComponentsToTake)
-        .toList
+      if (List("CA", "US").contains(f.cc) {
+        parents
+          .filter(p => p.feature.woeType != YahooWoeType.COUNTRY)
+          .takeRight(numComponentsToTake)
+          .toList
+      } else {
+        Nil
+      }
 
     val countryAbbrev: Option[String] = if (f.cc != req.cc) {
       Some(f.cc)
@@ -625,7 +629,9 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
   def parseDistance(p1: Parse, p2: Parse): Int = {
     (p1.headOption, p2.headOption) match {
-      case (Some(sf1), Some(sf2)) => featureDistance(sf1.fmatch.feature, sf2.fmatch.feature)
+      case (Some(sf1), Some(sf2)) => {
+        featureDistance(sf1.fmatch.feature, sf2.fmatch.feature)
+      }
       case _ => 0
     }
   }
@@ -667,7 +673,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       // if so, return false
       parsePairs.filterNot({case (parse, index) => {
         parsePairs.exists({case (otherParse, otherIndex) => {
-          otherIndex < index && parseDistance(parse, otherParse) < 1000
+          otherIndex < index && parseDistance(parse, otherParse) < 15000
         }})
       }})
     })
