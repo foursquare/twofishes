@@ -556,14 +556,18 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     // Yields names like "Brick, NJ, US"
     // should already be sorted, so we don't need to do: // .sorted(GeocodeServingFeatureOrdering)
     val parentsToUse: List[GeocodeServingFeature] =
-      if (List("CA", "US").contains(f.cc) {
-        parents
-          .filter(p => p.feature.woeType != YahooWoeType.COUNTRY)
-          .takeRight(numComponentsToTake)
-          .toList
-      } else {
-        Nil
-      }
+      parents
+        .filter(p => p.feature.woeType != YahooWoeType.COUNTRY)
+        .filter(p => {
+          if (f.cc != "US" && f.cc != "CA") {
+            p.feature.woeType != YahooWoeType.ADMIN1
+          } else {
+            true
+          }
+        })
+        .takeRight(numComponentsToTake)
+        .toList
+
 
     val countryAbbrev: Option[String] = if (f.cc != req.cc) {
       Some(f.cc)
