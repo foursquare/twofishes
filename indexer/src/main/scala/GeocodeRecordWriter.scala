@@ -15,7 +15,8 @@ case class NameIndex(
   fid: String,
   pop: Int,
   woeType: Int,
-  alias: Boolean,
+  flags: Int,
+  lang: String,
   @Key("_id") _id: ObjectId
 )
 

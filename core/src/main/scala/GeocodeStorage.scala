@@ -13,7 +13,7 @@ object Implicits {
 case class DisplayName(
   lang: String,
   name: String,
-  preferred: Boolean,
+  flags: Int,
   _id: ObjectId = new ObjectId()
 )
 
@@ -84,13 +84,13 @@ case class GeocodeRecord(
     if (this.woeType == YahooWoeType.ADMIN1 && cc == "JP") {
       hackedNames ++= 
         filteredNames.filter(n => n.lang == "en" || n.lang == "" || n.lang == "alias")
-          .map(n => DisplayName(n.lang, n.name + " Prefecture", false))
+          .map(n => DisplayName(n.lang, n.name + " Prefecture", FeatureNameFlags.ALIAS.getValue))
     }
 
     if (this.woeType == YahooWoeType.TOWN && cc == "TW") {
       hackedNames ++= 
         filteredNames.filter(n => n.lang == "en" || n.lang == "" || n.lang == "alias")
-          .map(n => DisplayName(n.lang, n.name + " County", false))
+          .map(n => DisplayName(n.lang, n.name + " County", FeatureNameFlags.ALIAS.getValue))
     }
 
     val allNames = filteredNames ++ hackedNames
@@ -100,9 +100,12 @@ case class GeocodeRecord(
       if (name.lang == "abbr") {
         flags ::= FeatureNameFlags.ABBREVIATION
       }
-      if (name.preferred) {
-        flags ::= FeatureNameFlags.PREFERRED
-      }
+
+      FeatureNameFlags.values.foreach(v => {
+        if ((v.getValue() & name.flags) > 0) {
+          flags ::= v
+        }
+      })
 
       val fname = new FeatureName(name.name, name.lang)
       if (flags.nonEmpty) {

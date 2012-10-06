@@ -12,7 +12,10 @@ import org.apache.thrift.TEnum;
 
 public enum FeatureNameFlags implements TEnum {
   PREFERRED(1),
-  ABBREVIATION(2);
+  ABBREVIATION(2),
+  DEACCENT(4),
+  ALIAS(8),
+  LOCAL_LANG(22);
 
   private final int value;
 
@@ -37,6 +40,12 @@ public enum FeatureNameFlags implements TEnum {
         return PREFERRED;
       case 2:
         return ABBREVIATION;
+      case 4:
+        return DEACCENT;
+      case 8:
+        return ALIAS;
+      case 22:
+        return LOCAL_LANG;
       default:
         return null;
     }

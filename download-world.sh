@@ -37,3 +37,12 @@ else
    mv allCountries.txt $FILE
    rm $FILE.zip
 fi
+
+
+FILE=data/downloaded/countryInfo.txt
+if [ -f $FILE ];
+then
+   echo "File $FILE exists."
+else
+   curl -o $FILE http://download.geonames.org/export/dump/countryInfo.txt
+fi
