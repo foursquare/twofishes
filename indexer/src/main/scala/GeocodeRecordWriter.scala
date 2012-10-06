@@ -14,7 +14,9 @@ case class NameIndex(
   name: String,
   fid: String,
   pop: Int,
-  woeType: Int
+  woeType: Int,
+  alias: Boolean,
+  @Key("_id") _id: ObjectId
 )
 
 case class FidIndex(
@@ -31,6 +33,7 @@ trait GeocodeStorageWriteService {
   def insert(record: GeocodeRecord): Unit
   def setRecordNames(id: StoredFeatureId, names: List[DisplayName])
   def addNameToRecord(name: DisplayName, id: StoredFeatureId)
+  def addNameIndex(name: NameIndex)
   def addBoundingBoxToRecord(id: StoredFeatureId, bbox: BoundingBox)
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord]
 }
@@ -55,20 +58,16 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
     record.ids.foreach(fid => {
       FidIndexDAO.insert(FidIndex(fid, record._id))
     })
-
-    record.names.foreach(name => {
-      record.ids.foreach(fid => {
-        NameIndexDAO.insert(
-          NameIndex(name, fid, record.population.getOrElse(0) + record.boost.getOrElse(0), record._woeType)
-        )
-      })
-    })
   }
 
   def addNameToRecord(name: DisplayName, id: StoredFeatureId) {
     MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))),
       MongoDBObject("$addToSet" -> MongoDBObject("displayNames" -> grater[DisplayName].asDBObject(name))),
       false, false)
+  }
+
+  def addNameIndex(name: NameIndex) {
+    NameIndexDAO.insert(name)
   }
 
   def addBoundingBoxToRecord(id: StoredFeatureId, bbox: BoundingBox) {

@@ -121,6 +121,20 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     nameSet.toList.filterNot(_.isEmpty)
   }
 
+  def rewriteNames(allNames: List[String]): List[String] = {
+    val deleteModifiedNames: List[String] = allNames.flatMap(doDelete)
+
+    val deaccentedNames = allNames.map(NameNormalizer.deaccent).filterNot(n =>
+      allNames.contains(n))
+
+    val rewrittenNames = doRewrites(allNames).filterNot(n =>
+      allNames.contains(n))
+
+    val allModifiedNames = deaccentedNames ++ deleteModifiedNames ++ rewrittenNames
+
+    allModifiedNames
+  }
+
   def parseFeature(feature: GeonamesFeature): GeocodeRecord = {
     // Build ids
     val adminId = feature.adminId.map(id => StoredFeatureId(geonameAdminIdNamespace, id))
@@ -148,21 +162,12 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       aliasTable.get(gid)
     })
 
-    val allNames = feature.allNames ++ aliasedNames
-    val deleteModifiedNames: List[String] = allNames.flatMap(doDelete)
+    // val allNames = feature.allNames ++ aliasedNames
+    // val allModifiedNames = rewriteNames(allNames)
+    // val normalizedNames = (allNames ++ allModifiedNames).map(n => NameNormalizer.normalize(n))
+    // normalizedNames.toSet.toList.filterNot(_.isEmpty)
 
-    val deaccentedNames = allNames.map(NameNormalizer.deaccent).filterNot(n =>
-      allNames.contains(n))
-
-    val rewrittenNames = doRewrites(allNames).filterNot(n =>
-      allNames.contains(n))
-
-    val allModifiedNames = deaccentedNames ++ deleteModifiedNames ++ aliasedNames ++ rewrittenNames
-
-    val normalizedNames = (allNames ++ allModifiedNames).map(n => NameNormalizer.normalize(n))
-    val names = normalizedNames.toSet.toList.filterNot(_.isEmpty)
-
-    allModifiedNames.foreach(n =>
+    aliasedNames.foreach(n =>
       displayNames ::= DisplayName("alias", n, false)
     )
 
@@ -204,7 +209,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
 
     val record = GeocodeRecord(
       ids = ids,
-      names = names,
+      names = Nil,
       cc = feature.countryCode,
       _woeType = feature.featureClass.woeType.getValue,
       lat = lat,
@@ -217,6 +222,13 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     )
 
     store.insert(record)
+
+    displayNames.foreach(n => {
+      val nameIndex = NameIndex(n.name, geonameId.toString,
+        record.population.getOrElse(0) + record.boost.getOrElse(0),
+        record._woeType, !n.preferred, n._id)
+      store.addNameIndex(nameIndex)
+    })
 
     record
   }
@@ -270,7 +282,33 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
 
           if (lang != "post") {
             val name = DisplayName(lang, altName, isPrefName)
-            store.addNameToRecord(name, StoredFeatureId(geonameIdNamespace, geonameid))
+
+            val allNames = List(altName)
+            val allModifiedNames = rewriteNames(allNames)
+            val normalizedModifiedNames = allModifiedNames.map(n => NameNormalizer.normalize(n))
+            val normalizedOriginalNames = allNames.map(n => NameNormalizer.normalize(n))
+            val normalizedNames = (allNames ++ allModifiedNames).map(n => NameNormalizer.normalize(n))
+            normalizedNames.toSet.toList.filterNot(_.isEmpty)
+
+            val fid = StoredFeatureId(geonameIdNamespace, geonameid)
+            store.getById(fid).toList.headOption.foreach(record => {
+
+              store.addNameToRecord(name, fid)
+
+              normalizedOriginalNames.foreach(n => {
+                val ni = NameIndex(n, fid,
+                  record.population.getOrElse(0) + record.boost.getOrElse(0),
+                  record._woeType, false, name._id)
+                store.addNameIndex(ni)
+              })
+
+              normalizedModifiedNames.foreach(n => {
+                val ni = NameIndex(n, fid,
+                  record.population.getOrElse(0) + record.boost.getOrElse(0),
+                  record._woeType, true, name._id)
+                store.addNameIndex(ni)
+              })
+            })
           }
         }
     }})

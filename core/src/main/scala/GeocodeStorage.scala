@@ -13,7 +13,8 @@ object Implicits {
 case class DisplayName(
   lang: String,
   name: String,
-  preferred: Boolean
+  preferred: Boolean,
+  _id: ObjectId = new ObjectId()
 )
 
 case class StoredFeatureId(
