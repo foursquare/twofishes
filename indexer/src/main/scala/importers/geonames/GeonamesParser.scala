@@ -312,7 +312,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
               def processNameList(names: List[String], flags: Int) = {
                 names.foreach(n => {
                   var finalFlags = flags
-                  if (countryLangMap(record.cc).contains(lang)) {
+                  if (countryLangMap.getOrElse(record.cc, Nil).contains(lang)) {
                     finalFlags &= FeatureNameFlags.LOCAL_LANG.getValue
                   }
                   val dn = buildDisplayName(name, finalFlags)

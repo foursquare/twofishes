@@ -160,7 +160,19 @@ class OutputHFile(basepath: String) {
         .sort(orderBy = MongoDBObject("pop" -> -1))
         .limit(1000)
 
-      val bestRecords = records.filter(r => bestWoeTypes.contains(r.woeType))
+      def hasFlag(record: NameIndex, flag: FeatureNameFlags) =
+        (record.flags & FeatureNameFlags.PREFERRED.getValue) > 0
+
+      val bestRecords = records.filter(r =>
+        bestWoeTypes.contains(r.woeType) &&
+        !hasFlag(r, FeatureNameFlags.ALIAS)  &&
+        !hasFlag(r, FeatureNameFlags.DEACCENT) &&
+          (
+            r.lang == "en"
+            || hasFlag(r, FeatureNameFlags.PREFERRED)
+            || hasFlag(r, FeatureNameFlags.LOCAL_LANG)
+          )
+      )
       val fids = if (bestRecords.isEmpty) {
         records.take(50).map(_.fid)
       } else {
