@@ -123,6 +123,7 @@ class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[Str
   def isAirport = featureCode.exists(_ == "AIRP")
   val stupidCodes = List(
     "RGNE", // economic region
+    "PPLQ", // abandoned (historical) place
     "WLL", "WLLS", "WLLQ" // wells!
   )
   def isStupid = featureCode.exists(fc => stupidCodes.contains(fc))
