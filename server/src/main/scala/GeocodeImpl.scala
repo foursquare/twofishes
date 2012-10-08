@@ -694,10 +694,12 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         m.fmatch.scoringFeatures.population > 50000 || p.length > 1
       }))
     }
+
+    goodParses
   }
 
   def dedupeParses(parses: ParseSeq): ParseSeq = {
-    val parseMap: Map[String, Seq[(Parse, Int)]] = goodParses.zipWithIndex.groupBy({case (parse, index) => {
+    val parseMap: Map[String, Seq[(Parse, Int)]] = parses.zipWithIndex.groupBy({case (parse, index) => {
       parse.headOption.flatMap(f => 
         // en is cheating, sorry
         if (req.autocomplete) {
