@@ -38,6 +38,40 @@ class OutputHFile(basepath: String) {
   
   val maxPrefixLength = 5
 
+  val bestWoeTypes = List(
+    YahooWoeType.TOWN,
+    YahooWoeType.SUBURB,
+    YahooWoeType.ADMIN3,
+    YahooWoeType.AIRPORT
+  ).map(_.getValue)
+
+  def hasFlag(record: NameIndex, flag: FeatureNameFlags) =
+    (record.flags & FeatureNameFlags.PREFERRED.getValue) > 0
+
+  def joinLists(lists: List[NameIndex]*): List[NameIndex] = {
+    lists.toList.flatMap(l => {
+      l.sortBy(_.pop)
+    })
+  }
+
+  def sortRecordByNames(records: List[NameIndex]) = {
+    val (pureNames, unpureNames) = records.partition(r => {
+      !hasFlag(r, FeatureNameFlags.ALIAS)  &&
+      !hasFlag(r, FeatureNameFlags.DEACCENT)
+    })
+
+    val (prefPureNames, nonPrefPureNames) = 
+      pureNames.partition(r => hasFlag(r, FeatureNameFlags.PREFERRED))
+
+    val (secondBestNames, worstNames) =
+      nonPrefPureNames.partition(r => 
+        r.lang == "en"
+        || hasFlag(r, FeatureNameFlags.LOCAL_LANG)
+      )
+
+    joinLists(prefPureNames, secondBestNames, worstNames, unpureNames)
+  }
+
   def buildV2Writer(filename: String) = {
     val fs = new LocalFileSystem() 
     val path = new Path(new File(basepath, filename).toString)
@@ -156,36 +190,7 @@ class OutputHFile(basepath: String) {
       val records = NameIndexDAO.find(
           MongoDBObject(
             "name" -> MongoDBObject("$regex" -> "^%s".format(prefix)))
-          )
-        .sort(orderBy = MongoDBObject("pop" -> -1))
-        .limit(1000)
-
-      def hasFlag(record: NameIndex, flag: FeatureNameFlags) =
-        (record.flags & FeatureNameFlags.PREFERRED.getValue) > 0
-
-      def joinLists(lists: List[NameIndex]*): List[NameIndex] = {
-        lists.toList.flatMap(l => {
-          l.sortBy(_.pop)
-        })
-      }
-
-      def sortRecordByNames(records: List[NameIndex]) = {
-        val (pureNames, unpureNames) = records.partition(r => {
-          !hasFlag(r, FeatureNameFlags.ALIAS)  &&
-          !hasFlag(r, FeatureNameFlags.DEACCENT)
-        })
-
-        val (prefPureNames, nonPrefPureNames) = 
-          pureNames.partition(r => hasFlag(r, FeatureNameFlags.PREFERRED))
-
-        val (secondBestNames, worstNames) =
-          nonPrefPureNames.partition(r => 
-            r.lang == "en"
-            || hasFlag(r, FeatureNameFlags.LOCAL_LANG)
-          )
-
-        joinLists(prefPureNames, secondBestNames, worstNames, unpureNames)
-      }
+          ).sort(orderBy = MongoDBObject("pop" -> -1)).limit(1000)
 
       val (woeMatches, woeMismatches) = records.partition(r =>
         bestWoeTypes.contains(r.woeType))
