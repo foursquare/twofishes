@@ -681,6 +681,10 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       parses.filter(p =>
         p.headOption.exists(f => req.woeRestrict.contains(f.fmatch.feature.woeType))
       )
+    } else if (req.autocomplete) {
+      parses.filterNot(p =>
+        p.headOption.exists(f => f.fmatch.feature.woeType == YahooWoeType.COUNTRY || f.fmatch.feature.woeType == YahooWoeType.ADMIN1 || f.fmatch.feature.woeType == YahooWoeType.CONTINENT)
+      )
     } else {
       parses
     }
@@ -690,7 +694,9 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         m.fmatch.scoringFeatures.population > 50000 || p.length > 1
       }))
     }
+  }
 
+  def dedupeParses(parses: ParseSeq): ParseSeq = {
     val parseMap: Map[String, Seq[(Parse, Int)]] = goodParses.zipWithIndex.groupBy({case (parse, index) => {
       parse.headOption.flatMap(f => 
         // en is cheating, sorry
@@ -888,8 +894,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
       val sortedParses = actualParses.sorted(new ParseOrdering(req.ll, req.cc))
 
-      val dedupedParses = filterParses(
-        sortedParses.take(3), removeLowRankingParses)
+      val filteredParses = filterParses(sortedParses, removeLowRankingParses)
+      val dedupedParses = dedupeParses(filteredParses.take(3))
       dedupedParses.foreach(p =>
         logger.ifDebug("deduped parse ids: %s".format(p.map(_.fmatch.id)))
       )
