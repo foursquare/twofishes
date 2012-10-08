@@ -608,10 +608,6 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       // don't strip out matched parts (that's the isempty check)
       // don't strip out the main feature name (index != 0)
       namesToUse = namesToUse.zipWithIndex.filterNot({case (nameMatch, index) => {
-        println(index)
-        println(nameMatch._2.isDefined)
-        println(nameMatch._1.name)
-        println(nameMatch._1.name == namesToUse(0)._1.name)
         index != 0 && nameMatch._2.isEmpty && nameMatch._1.name == namesToUse(0)._1.name
       }}).map(_._1)
     
@@ -708,7 +704,6 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
     parseMap.foreach({case(name, parseSeq) => {
       logger.ifDebug("have %d parses for %s".format(parseSeq.size, name)) 
-      println("have %d parses for %s".format(parseSeq.size, name))
     }})
 
     val dedupedMap = parseMap.mapValues(parsePairs => {
@@ -886,8 +881,15 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     def buildFinalParses(parses: ParseSeq, parseLength: Int) = {
       val removeLowRankingParses = (parseLength != tokens.size && parseLength == 1 && !tryHard)
 
+      // filter out parses that are really the same feature
+      val actualParses = 
+        parses.groupBy(_.headOption.map(_.fmatch.id))
+          .flatMap({case (k, v) => v.headOption}).toList
+
+      val sortedParses = actualParses.sorted(new ParseOrdering(req.ll, req.cc))
+
       val dedupedParses = filterParses(
-        parses.sorted(new ParseOrdering(req.ll, req.cc)).take(3), removeLowRankingParses)
+        sortedParses.take(3), removeLowRankingParses)
       dedupedParses.foreach(p =>
         logger.ifDebug("deduped parse ids: %s".format(p.map(_.fmatch.id)))
       )
