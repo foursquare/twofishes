@@ -49,6 +49,16 @@ object GeoTools {
   val MetersPerDegreeLatitude: Double = 111111.0
   val MetersPerDegreeLongitude: Double = 110540.0 // I'm assuming this as at the Equator
 
+  def boundsContains(bounds: GeocodeBoundingBox, ll: GeocodePoint): Boolean = {
+    val minLat = List(bounds.ne.lat, bounds.sw.lat).min
+    val maxLat = List(bounds.ne.lat, bounds.sw.lat).max
+    val minLng = List(bounds.ne.lng, bounds.sw.lng).min
+    val maxLng = List(bounds.ne.lng, bounds.sw.lng).max
+
+    ll.lat <= maxLat && ll.lat >= minLat &&
+      ll.lng <= maxLng && ll.lng >= minLng
+  }
+
   /**
    * @return distance in meters
    */
