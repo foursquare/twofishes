@@ -50,11 +50,11 @@ class OutputHFile(basepath: String) {
 
   def joinLists(lists: List[NameIndex]*): List[NameIndex] = {
     lists.toList.flatMap(l => {
-      l.sortBy(_.pop)
+      l.sortBy(_.pop * -1)
     })
   }
 
-  def sortRecordByNames(records: List[NameIndex]) = {
+  def sortRecordsByNames(records: List[NameIndex]) = {
     val (pureNames, unpureNames) = records.partition(r => {
       !hasFlag(r, FeatureNameFlags.ALIAS)  &&
       !hasFlag(r, FeatureNameFlags.DEACCENT)
@@ -200,7 +200,7 @@ class OutputHFile(basepath: String) {
         bestWoeTypes.contains(r.woeType))
 
       val sortedRecords =
-        sortRecordByNames(woeMatches.toList) ++ sortRecordByNames(woeMismatches.toList)
+        sortRecordsByNames(woeMatches.toList) ++ sortRecordsByNames(woeMismatches.toList)
 
       val fids = sortedRecords.take(50).map(_.fid)
 
