@@ -202,7 +202,12 @@ class OutputHFile(basepath: String) {
       val sortedRecords =
         sortRecordsByNames(woeMatches.toList) ++ sortRecordsByNames(woeMismatches.toList)
 
-      val fids = sortedRecords.take(50).map(_.fid)
+      var fids = new HashSet[String]
+      sortedRecords.foreach(f => {
+        if (fids.size < 50) {
+          fids.add(f.fid)
+        }
+      })
 
       prefixWriter.append(prefix.getBytes(), fidStringsToByteArray(fids.toList))
     }
