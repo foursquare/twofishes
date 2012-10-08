@@ -72,7 +72,7 @@ class OutputHFile(basepath: String) {
         || hasFlag(r, FeatureNameFlags.LOCAL_LANG)
       )
 
-    joinLists(prefPureNames, secondBestNames, worstNames, unpureNames)
+    (joinLists(prefPureNames), joinLists(secondBestNames, worstNames, unpureNames))
   }
 
   def getRecordsByPrefix(prefix: String, limit: Int) = {
@@ -202,15 +202,24 @@ class OutputHFile(basepath: String) {
       val (woeMatches, woeMismatches) = records.partition(r =>
         bestWoeTypes.contains(r.woeType))
 
-      val sortedRecords =
-        sortRecordsByNames(woeMatches.toList) ++ sortRecordsByNames(woeMismatches.toList)
+      val (prefSortedRecords, unprefSortedRecords) =
+        sortRecordsByNames(woeMatches.toList)
 
       var fids = new HashSet[String]
-      sortedRecords.foreach(f => {
+      prefSortedRecords.foreach(f => {
         if (fids.size < 50) {
           fids.add(f.fid)
         }
       })
+
+      if (fids.size < 3) {
+        unprefSortedRecords.foreach(f => {
+        if (fids.size < 50) {
+          fids.add(f.fid)
+        }
+      })
+
+      }
 
       prefixWriter.append(prefix.getBytes(), fidStringsToByteArray(fids.toList))
     }
