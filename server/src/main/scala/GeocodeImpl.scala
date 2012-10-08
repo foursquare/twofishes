@@ -273,8 +273,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     }
   }
 
-  def generateAutoParses(tokens: List[String]): Future[ParseSeq] = {
-    generateAutoParsesHelper(tokens, 0, Nil)
+  def generateAutoParses(tokens: List[String], spaceAtEnd: Boolean): Future[ParseSeq] = {
+    generateAutoParsesHelper(tokens, 0, Nil, spaceAtEnd)
   }
 
   def matchName(name: FeatureName, query: String, isEnd: Boolean): Boolean = {
@@ -286,13 +286,13 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     }
   }
 
-  def generateAutoParsesHelper(tokens: List[String], offset: Int, parses: ParseSeq): Future[ParseSeq] = {
+  def generateAutoParsesHelper(tokens: List[String], offset: Int, parses: ParseSeq, spaceAtEnd: Boolean): Future[ParseSeq] = {
     if (tokens.size == 0) {
       Future.value(parses)
     } else {
       val validParses: Seq[Future[ParseSeq]] = 1.to(tokens.size).map(i => {
         val query = tokens.take(i).mkString(" ")
-        val isEnd = (i == tokens.size)
+        val isEnd = (i == tokens.size) && !spaceAtEnd
 
         val possibleParents = parses.flatMap(_.flatMap(_.fmatch.scoringFeatures.parents))
           .map(id => new ObjectId(id))
@@ -324,7 +324,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
           if (nextParses.size == 0) {
             Future.value(Nil)
           } else {
-            generateAutoParsesHelper(tokens.drop(i), offset + i, nextParses)
+            generateAutoParsesHelper(tokens.drop(i), offset + i, nextParses, spaceAtEnd)
           }
         })
       })
@@ -485,9 +485,13 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         //
         // getOrdering returns a smaller # for a smaller thing
         if (req.autocomplete) {
-          val parentTypes = rest.map(f => YahooWoeTypes.getOrdering(f.fmatch.feature.woeType))
+          val parentTypes = rest.map(_.fmatch.feature.woeType).sortBy(YahooWoeTypes.getOrdering)
           if (parentTypes.nonEmpty) {
-            modifySignal( -1 * parentTypes.min, "prefer smaller parent interpretation")
+            if (parentTypes(0) != YahooWoeType.ADMIN2) {
+              modifySignal( -1 * YahooWoeTypes.getOrdering(parentTypes(0)), "prefer smaller parent interpretation")
+            } else {
+              modifySignal( -20, "downweight county matches a big")
+            }
           }
         }
 
@@ -586,13 +590,24 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       val partsToUse = (partsFromParse ++ partsFromParents).sortBy(_._2)(GeocodeServingFeatureOrdering)
       // logger.ifDebug("parts to use: " + partsToUse)
       var i = 0
-       namesToUse = partsToUse.flatMap({case(fmatchOpt, servingFeature) => {
+      namesToUse = partsToUse.flatMap({case(fmatchOpt, servingFeature) => {
         val name = bestNameWithMatch(servingFeature.feature, Some(req.lang), i != 0,
           fmatchOpt.map(_.phrase))
         i += 1
         name
       }})
 
+      // strip dupe un-matched parts, so we don't have "Istanbul, Istanbul, TR"
+      // don't strip out matched parts (that's the isempty check)
+      // don't strip out the main feature name (index != 0)
+      namesToUse = namesToUse.zipWithIndex.filterNot({case (nameMatch, index) => {
+        println(index)
+        println(nameMatch._2.isDefined)
+        println(nameMatch._1.name)
+        println(nameMatch._1.name == namesToUse(0)._1.name)
+        index != 0 && nameMatch._2.isEmpty && nameMatch._1.name == namesToUse(0)._1.name
+      }}).map(_._1)
+    
       var (matchedNameParts, highlightedNameParts) = 
         (namesToUse.map(_._1.name),
          namesToUse.map({case(fname, highlightedName) => {
@@ -620,7 +635,10 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
     val parentNames = parentsToUse.map(p =>
       bestName(p.feature, Some(req.lang), true).map(_.name).getOrElse(""))
-      .filterNot(_ == name)
+     .filterNot(parentName => {
+       name == parentName
+     })
+
     f.setDisplayName((Vector(name) ++ parentNames ++ countryAbbrev.toList).mkString(", "))
   }
 
@@ -632,15 +650,23 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       f2.geometry.center.lng)
   }
 
-  def parseDistance(p1: Parse, p2: Parse): Int = {
-    (p1.headOption, p2.headOption) match {
-      case (Some(sf1), Some(sf2)) => {
-        featureDistance(sf1.fmatch.feature, sf2.fmatch.feature)
-      }
-      case _ => 0
-    }
+  def boundsContains(f1: GeocodeFeature, f2: GeocodeFeature) = {
+    Option(f1.geometry.bounds).exists(bb =>
+      GeoTools.boundsContains(bb, f2.geometry.center)) ||
+    Option(f2.geometry.bounds).exists(bb =>
+      GeoTools.boundsContains(bb, f1.geometry.center))
   }
 
+  def parsesNear(p1: Parse, p2: Parse): Boolean = {
+    (p1.headOption, p2.headOption) match {
+      case (Some(sf1), Some(sf2)) => {
+        (featureDistance(sf1.fmatch.feature, sf2.fmatch.feature) < 15000) ||
+        boundsContains(sf1.fmatch.feature, sf2.fmatch.feature)
+      }
+      case _ => false
+    }
+  }
+  
   // Two jobs
   // 1) filter out woeRestrict mismatches
   // 2) try to filter out near dupe parses (based on formatting + latlng)
@@ -664,13 +690,18 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
     val parseMap: Map[String, Seq[(Parse, Int)]] = goodParses.zipWithIndex.groupBy({case (parse, index) => {
       parse.headOption.flatMap(f => 
-         // en is cheating, sorry
-         bestName(f.fmatch.feature, Some("en"), false).map(_.name)
+        // en is cheating, sorry
+        if (req.autocomplete) {
+           bestNameWithMatch(f.fmatch.feature, Some("en"), false, Some(f.phrase)).map(_._1.name)
+        } else {
+           bestName(f.fmatch.feature, Some("en"), false).map(_.name)
+        }
       ).getOrElse("")
     }})
 
     parseMap.foreach({case(name, parseSeq) => {
       logger.ifDebug("have %d parses for %s".format(parseSeq.size, name)) 
+      println("have %d parses for %s".format(parseSeq.size, name))
     }})
 
     val dedupedMap = parseMap.mapValues(parsePairs => {
@@ -678,7 +709,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       // if so, return false
       parsePairs.filterNot({case (parse, index) => {
         parsePairs.exists({case (otherParse, otherIndex) => {
-          otherIndex < index // && parseDistance(parse, otherParse) < 15000
+          otherIndex < index && parsesNear(parse, otherParse) 
         }})
       }})
     })
@@ -784,8 +815,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       //     if (feature.ids == 
       //     fixFeature(feature, sortedParents, Some(p))
       //   })
-
-      
+ 
       generateResponse(interpretations)
     })
   }
@@ -797,8 +827,10 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
     val originalTokens =
       NameNormalizer.tokenize(NameNormalizer.normalize(query))
+   
+    val spaceAtEnd = query.takeRight(1) == " "
 
-    geocode(originalTokens)
+    geocode(originalTokens, spaceAtEnd=spaceAtEnd)
   }
 
   def deleteCommonWords(tokens: List[String]): List[String] = {
@@ -811,7 +843,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
   } 
 
   def geocode(originalTokens: List[String],
-              isRetry: Boolean = false
+              isRetry: Boolean = false,
+              spaceAtEnd: Boolean = false
       ): Future[GeocodeResponse] = {
     logger.ifDebug("--> %s".format(originalTokens.mkString("_|_")))
 
@@ -856,9 +889,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         parseLength, dedupedParses)
     }
 
-
     if (req.autocomplete) {
-      generateAutoParses(tokens).flatMap(parses => {
+      generateAutoParses(tokens, spaceAtEnd).flatMap(parses => {
         parses.foreach(p => {
           logger.ifDebug("parse ids: %s".format(p.map(_.fmatch.id)))
         })

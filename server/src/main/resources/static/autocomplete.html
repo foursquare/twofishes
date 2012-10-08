@@ -33,13 +33,13 @@
     queryInput.keyup(function() {
       var query = queryInput.val();
       console.log('changed: ' + query);
-        window.location.hash = query;
+        window.location.hash = escape(query);
         geocode();
       return true;
     })
     
     function geocode() {
-      var query = location.hash.substr(1);
+      var query = location.hash.substr(1)
       var url = 'http://' + window.location.host + '/?autocomplete=true&query=' + query;
 
       if ($('#debugButton').attr('checked')) {
