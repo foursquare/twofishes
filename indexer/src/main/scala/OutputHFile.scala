@@ -46,7 +46,7 @@ class OutputHFile(basepath: String) {
   ).map(_.getValue)
 
   def hasFlag(record: NameIndex, flag: FeatureNameFlags) =
-    (record.flags & FeatureNameFlags.PREFERRED.getValue) > 0
+    (record.flags & flag.getValue) > 0
 
   def joinLists(lists: List[NameIndex]*): List[NameIndex] = {
     lists.toList.flatMap(l => {
@@ -61,7 +61,10 @@ class OutputHFile(basepath: String) {
     })
 
     val (prefPureNames, nonPrefPureNames) = 
-      pureNames.partition(r => hasFlag(r, FeatureNameFlags.PREFERRED))
+      pureNames.partition(r =>
+        hasFlag(r, FeatureNameFlags.PREFERRED) &&
+        (r.lang == "en" || hasFlag(r, FeatureNameFlags.LOCAL_LANG))
+      )
 
     val (secondBestNames, worstNames) =
       nonPrefPureNames.partition(r => 
