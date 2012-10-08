@@ -72,6 +72,13 @@ class OutputHFile(basepath: String) {
     joinLists(prefPureNames, secondBestNames, worstNames, unpureNames)
   }
 
+  def getRecordsByPrefix(prefix: String, limit: Int) = {
+    NameIndexDAO.find(
+      MongoDBObject(
+        "name" -> MongoDBObject("$regex" -> "^%s".format(prefix)))
+    ).sort(orderBy = MongoDBObject("pop" -> -1)).limit(limit)
+  }
+
   def buildV2Writer(filename: String) = {
     val fs = new LocalFileSystem() 
     val path = new Path(new File(basepath, filename).toString)
@@ -187,10 +194,7 @@ class OutputHFile(basepath: String) {
       if (index % 1000 == 0) {
         println("done with %d of %d prefixes".format(index, numPrefixes))
       }
-      val records = NameIndexDAO.find(
-          MongoDBObject(
-            "name" -> MongoDBObject("$regex" -> "^%s".format(prefix)))
-          ).sort(orderBy = MongoDBObject("pop" -> -1)).limit(1000)
+      val records = getRecordsByPrefix(prefix, limi)
 
       val (woeMatches, woeMismatches) = records.partition(r =>
         bestWoeTypes.contains(r.woeType))
