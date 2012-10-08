@@ -163,21 +163,37 @@ class OutputHFile(basepath: String) {
       def hasFlag(record: NameIndex, flag: FeatureNameFlags) =
         (record.flags & FeatureNameFlags.PREFERRED.getValue) > 0
 
-      val bestRecords = records.filter(r =>
-        bestWoeTypes.contains(r.woeType) &&
-        !hasFlag(r, FeatureNameFlags.ALIAS)  &&
-        !hasFlag(r, FeatureNameFlags.DEACCENT) &&
-          (
+      def joinLists(lists: List[NameIndex]*): List[NameIndex] = {
+        lists.toList.flatMap(l => {
+          l.sortBy(_.pop)
+        })
+      }
+
+      def sortRecordByNames(records: List[NameIndex]) = {
+        val (pureNames, unpureNames) = records.partition(r => {
+          !hasFlag(r, FeatureNameFlags.ALIAS)  &&
+          !hasFlag(r, FeatureNameFlags.DEACCENT)
+        })
+
+        val (prefPureNames, nonPrefPureNames) = 
+          pureNames.partition(r => hasFlag(r, FeatureNameFlags.PREFERRED))
+
+        val (secondBestNames, worstNames) =
+          nonPrefPureNames.partition(r => 
             r.lang == "en"
-            || hasFlag(r, FeatureNameFlags.PREFERRED)
             || hasFlag(r, FeatureNameFlags.LOCAL_LANG)
           )
-      )
-      val fids = if (bestRecords.isEmpty) {
-        records.take(50).map(_.fid)
-      } else {
-        bestRecords.take(50).map(_.fid)
+
+        joinLists(prefPureNames, secondBestNames, worstNames, unpureNames)
       }
+
+      val (woeMatches, woeMismatches) = records.partition(r =>
+        bestWoeTypes.contains(r.woeType))
+
+      val sortedRecords =
+        sortRecordByNames(woeMatches.toList) ++ sortRecordByNames(woeMismatches.toList)
+
+      val fids = sortedRecords.take(50).map(_.fid)
 
       prefixWriter.append(prefix.getBytes(), fidStringsToByteArray(fids.toList))
     }

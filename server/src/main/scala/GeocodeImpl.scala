@@ -620,6 +620,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
     val parentNames = parentsToUse.map(p =>
       bestName(p.feature, Some(req.lang), true).map(_.name).getOrElse(""))
+      .filterNot(_ == name)
     f.setDisplayName((Vector(name) ++ parentNames ++ countryAbbrev.toList).mkString(", "))
   }
 
@@ -677,7 +678,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       // if so, return false
       parsePairs.filterNot({case (parse, index) => {
         parsePairs.exists({case (otherParse, otherIndex) => {
-          otherIndex < index && parseDistance(parse, otherParse) < 15000
+          otherIndex < index // && parseDistance(parse, otherParse) < 15000
         }})
       }})
     })
