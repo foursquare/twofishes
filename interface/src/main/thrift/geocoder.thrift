@@ -64,11 +64,11 @@ struct FeatureId {
 }
 
 enum FeatureNameFlags {
-  PREFERRED = 0x1,
-  ABBREVIATION = 0x2,
-  DEACCENT = 0x4,
-  ALIAS = 0x8,
-  LOCAL_LANG =  0x16
+  PREFERRED = 1,
+  ABBREVIATION = 2,
+  DEACCENT = 4,
+  ALIAS = 8,
+  LOCAL_LANG = 16
 }
 
 struct FeatureName {
