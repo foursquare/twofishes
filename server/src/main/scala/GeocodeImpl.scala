@@ -292,7 +292,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     } else {
       val validParses: Seq[Future[ParseSeq]] = 1.to(tokens.size).map(i => {
         val query = tokens.take(i).mkString(" ")
-        val isEnd = (i == tokens.size) && !spaceAtEnd
+        val isEnd = (i == tokens.size)
 
         val possibleParents = parses.flatMap(_.flatMap(_.fmatch.scoringFeatures.parents))
           .map(id => new ObjectId(id))
@@ -301,7 +301,14 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
           if (parses.size == 0) {
             if (isEnd) {
               logger.ifDebug("looking at prefix: %s".format(query))
-              store.getIdsByNamePrefix(query)
+              if (spaceAtEnd) {
+                Future.collect(List(
+                  store.getIdsByNamePrefix(query + " "),
+                  store.getIdsByName(query)
+                )).map((a: Seq[Seq[ObjectId]]) => a.flatten)
+              } else {
+                store.getIdsByNamePrefix(query)
+              }
             } else {
               store.getIdsByName(query)
             }
@@ -825,9 +832,9 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
     logger.ifDebug("%s --> %s".format(query, NameNormalizer.normalize(query)))
 
-    val originalTokens =
+    var originalTokens =
       NameNormalizer.tokenize(NameNormalizer.normalize(query))
-   
+
     val spaceAtEnd = query.takeRight(1) == " "
 
     geocode(originalTokens, spaceAtEnd=spaceAtEnd)

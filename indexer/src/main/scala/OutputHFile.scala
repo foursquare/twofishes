@@ -194,7 +194,7 @@ class OutputHFile(basepath: String) {
       if (index % 1000 == 0) {
         println("done with %d of %d prefixes".format(index, numPrefixes))
       }
-      val records = getRecordsByPrefix(prefix, limi)
+      val records = getRecordsByPrefix(prefix, 1000)
 
       val (woeMatches, woeMismatches) = records.partition(r =>
         bestWoeTypes.contains(r.woeType))
