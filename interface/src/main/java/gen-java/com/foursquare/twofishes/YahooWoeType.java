@@ -29,6 +29,7 @@ public enum YahooWoeType implements TEnum {
   ZONE(25),
   HISTORICAL_STATE(26),
   HISTORICAL_COUNTY(27),
+  CONTINENT(29),
   TIMEZONE(31),
   HISTORICAL_TOWN(35),
   STREET(100);
@@ -88,6 +89,8 @@ public enum YahooWoeType implements TEnum {
         return HISTORICAL_STATE;
       case 27:
         return HISTORICAL_COUNTY;
+      case 29:
+        return CONTINENT;
       case 31:
         return TIMEZONE;
       case 35:

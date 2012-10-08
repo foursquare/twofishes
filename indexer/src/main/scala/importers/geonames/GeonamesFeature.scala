@@ -126,11 +126,14 @@ class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[Str
     "PPLQ", // abandoned (historical) place
     "WLL", "WLLS", "WLLQ" // wells!
   )
+  def isContinent = featureCode.exists(_ == "CONT")
   def isStupid = featureCode.exists(fc => stupidCodes.contains(fc))
   def isPark = featureCode.exists(_ == "PRK")
 
   def woeType: YahooWoeType = {
-    if (isPark) {
+    if (isContinent) {
+      YahooWoeType.CONTINENT
+    } else if (isPark) {
       YahooWoeType.PARK
     } else if (isBuilding) {
       YahooWoeType.POI
