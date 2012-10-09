@@ -275,6 +275,8 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       feature.foreach(f => {
         if (
           !f.featureClass.isStupid &&
+          // ADM4 is germany is things like "Berlin, Stadt"
+          !(f.featureClass.isAdmin4 && f.countryCode == "DE") &&
           (!f.featureClass.isBuilding || config.shouldParseBuildings || allowBuildings)) {
           parseFeature(f)
         }
@@ -326,8 +328,8 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
               } else { 0 }
               
               processNameList(originalNames, originalFlags)
-              processNameList(deaccentedNames, FeatureNameFlags.DEACCENT.getValue)
-              processNameList(allModifiedNames, FeatureNameFlags.ALIAS.getValue)
+              processNameList(deaccentedNames, originalFlags | FeatureNameFlags.DEACCENT.getValue)
+              processNameList(allModifiedNames, originalFlags | FeatureNameFlags.ALIAS.getValue)
             })
           }
         }

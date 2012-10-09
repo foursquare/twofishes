@@ -286,6 +286,16 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     }
   }
 
+  // Yet another huge hack because I don't know what name I hit
+  def filterNonPrefExactAutocompleteMatch(ids: Seq[ObjectId], phrase: String): Future[Seq[ObjectId]] = {
+    store.getByObjectIds(ids).map(features => {
+      features.filter(f => {
+        val nameMatch = bestNameWithMatch(f._2.feature, Some(req.lang), false, Some(phrase))
+        nameMatch.exists(_._1.flags.contains(FeatureNameFlags.PREFERRED))
+      }).toList.map(_._1)
+    })
+  }
+
   def generateAutoParsesHelper(tokens: List[String], offset: Int, parses: ParseSeq, spaceAtEnd: Boolean): Future[ParseSeq] = {
     if (tokens.size == 0) {
       Future.value(parses)
@@ -304,7 +314,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
               if (spaceAtEnd) {
                 Future.collect(List(
                   store.getIdsByNamePrefix(query + " "),
-                  store.getIdsByName(query)
+                  store.getIdsByName(query).flatMap(ids => 
+                    filterNonPrefExactAutocompleteMatch(ids, query))
                 )).map((a: Seq[Seq[ObjectId]]) => a.flatten)
               } else {
                 store.getIdsByNamePrefix(query)
@@ -897,7 +908,11 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       val sortedParses = actualParses.sorted(new ParseOrdering(req.ll, req.cc))
 
       val filteredParses = filterParses(sortedParses, removeLowRankingParses)
-      val dedupedParses = dedupeParses(filteredParses.take(3))
+      val dedupedParses = if (req.autocomplete) {
+        dedupeParses(filteredParses.take(6)).take(3)
+      } else {
+        dedupeParses(filteredParses.take(3))
+      }
       dedupedParses.foreach(p =>
         logger.ifDebug("deduped parse ids: %s".format(p.map(_.fmatch.id)))
       )

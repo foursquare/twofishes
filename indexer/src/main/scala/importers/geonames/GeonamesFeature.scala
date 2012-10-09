@@ -129,6 +129,7 @@ class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[Str
   def isContinent = featureCode.exists(_ == "CONT")
   def isStupid = featureCode.exists(fc => stupidCodes.contains(fc))
   def isPark = featureCode.exists(_ == "PRK")
+  def isAdmin4 = featureCode.exists(_ == "ADM4")
 
   def woeType: YahooWoeType = {
     if (isContinent) {
