@@ -172,9 +172,14 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     val ids: List[StoredFeatureId] = List(adminId, geonameId).flatMap(a => a)
 
     var displayNames = List(
-      DisplayName("en", feature.name, FeatureNameFlags.PREFERRED.getValue),
-      DisplayName("en", feature.asciiname, FeatureNameFlags.DEACCENT.getValue | FeatureNameFlags.PREFERRED.getValue)
+      DisplayName("en", feature.name, FeatureNameFlags.PREFERRED.getValue)
     )
+
+    if (feature.name != feature.asciiname) {
+      displayNames ::=
+        DisplayName("en", feature.asciiname,
+          FeatureNameFlags.DEACCENT.getValue | FeatureNameFlags.PREFERRED.getValue)
+    }
 
     if (feature.featureClass.woeType.getValue == YahooWoeType.COUNTRY.getValue) {
       displayNames ::= DisplayName("abbr", feature.countryCode, 0)

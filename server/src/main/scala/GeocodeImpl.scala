@@ -657,6 +657,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       ))
     }
 
+    f.names.foreach(_.unsetFlags())
+
     val parentNames = parentsToUse.map(p =>
       bestName(p.feature, Some(req.lang), true).map(_.name).getOrElse(""))
      .filterNot(parentName => {
