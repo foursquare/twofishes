@@ -297,11 +297,14 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
   def filterNonPrefExactAutocompleteMatch(ids: Seq[ObjectId], phrase: String): Future[Seq[ObjectId]] = {
     store.getByObjectIds(ids).map(features => {
       features.filter(f => {
-        val nameMatch = bestNameWithMatch(f._2.feature, Some(req.lang), false, Some(phrase))
-        nameMatch.exists(nm => 
-          nm._1.flags.contains(FeatureNameFlags.PREFERRED) ||
-          nm._1.flags.contains(FeatureNameFlags.ALT_NAME)
-        )
+        f._2.feature.woeType == YahooWoeType.POSTAL_CODE ||
+        {
+          val nameMatch = bestNameWithMatch(f._2.feature, Some(req.lang), false, Some(phrase))
+          nameMatch.exists(nm => 
+            nm._1.flags.contains(FeatureNameFlags.PREFERRED) ||
+            nm._1.flags.contains(FeatureNameFlags.ALT_NAME)
+          )
+        }
       }).toList.map(_._1)
     })
   }
@@ -592,7 +595,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         .filter(p => p.feature.woeType != YahooWoeType.COUNTRY)
         .filter(p => {
           if (f.cc != "US" && f.cc != "CA") {
-            p.feature.woeType != YahooWoeType.ADMIN1
+            p.feature.woeType == YahooWoeType.TOWN || 
+            p.feature.woeType == YahooWoeType.SUBURB
           } else {
             true
           }
@@ -915,7 +919,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       // filter out parses that are really the same feature
       val actualParses = 
         parses.groupBy(_.headOption.map(_.fmatch.id))
-          .flatMap({case (k, v) => v.headOption}).toList
+          .flatMap({case (k, v) => v.sortBy(_.size).headOption}).toList
 
       val sortedParses = actualParses.sorted(new ParseOrdering(req.ll, req.cc))
 
