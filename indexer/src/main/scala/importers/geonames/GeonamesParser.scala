@@ -175,7 +175,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       DisplayName("en", feature.name, FeatureNameFlags.PREFERRED.getValue)
     )
 
-    if (feature.name != feature.asciiname) {
+    if (feature.name != feature.asciiname && feature.asciiname.nonEmpty) {
       displayNames ::=
         DisplayName("en", feature.asciiname,
           FeatureNameFlags.DEACCENT.getValue | FeatureNameFlags.PREFERRED.getValue)
