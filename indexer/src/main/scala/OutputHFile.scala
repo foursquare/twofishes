@@ -72,7 +72,7 @@ class OutputHFile(basepath: String) {
         || hasFlag(r, FeatureNameFlags.LOCAL_LANG)
       )
 
-    (joinLists(prefPureNames), joinLists(secondBestNames, worstNames, unpureNames))
+    (joinLists(prefPureNames), joinLists(secondBestNames, worstNames))
   }
 
   def getRecordsByPrefix(prefix: String, limit: Int) = {
@@ -244,7 +244,7 @@ class OutputHFile(basepath: String) {
 
   val fidMap = new HashMap[String, ObjectId]
 
-  def process() {
+  def buildFidMap() {
     var fidCount = 0
     val fidSize = FidIndexDAO.collection.count
     val fidCursor = FidIndexDAO.find(MongoDBObject())
@@ -255,7 +255,10 @@ class OutputHFile(basepath: String) {
         println("processed %d of %d fids in memory".format(fidCount, fidSize))
       }
     })
+  }
 
+  def process() {
+    buildFidMap()
     writeNames()
 
     def fixParentId(fid: String) = fidMap.get(fid).map(_.toString)
