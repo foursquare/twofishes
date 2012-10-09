@@ -32,7 +32,7 @@ class HandleExceptions extends SimpleFilter[HttpRequest, HttpResponse] {
       case error =>
         val statusCode = HttpResponseStatus.INTERNAL_SERVER_ERROR
         val errorResponse = new DefaultHttpResponse(HttpVersion.HTTP_1_1, statusCode)
-        errorResponse.setContent(ChannelBuffers.copiedBuffer(error.getStackTraceString, CharsetUtil.UTF_8))
+        errorResponse.setContent(ChannelBuffers.copiedBuffer(error.toString + "\n" + error.getStackTraceString, CharsetUtil.UTF_8))
         errorResponse
     }
   }
