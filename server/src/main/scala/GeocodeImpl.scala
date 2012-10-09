@@ -657,7 +657,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     if (!req.full) {
       val names = f.names
       f.setNames(names.filter(n => 
-        n.flags.contains(FeatureNameFlags.ABBREVIATION) ||
+        Option(n.flags).exists(_.contains(FeatureNameFlags.ABBREVIATION)) ||
         n.lang == req.lang ||
         n.lang == "en" ||
         namesToUse.contains(n)
@@ -854,7 +854,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
           ambiguousIdMap.getOrElse(feature.ids.toString, Nil).foreach(interp => {
             val sortedParents = p(0).fmatch.scoringFeatures.parents.flatMap(id =>
               parentMap.get(new ObjectId(id))).sorted(GeocodeServingFeatureOrdering)
-            fixFeature(interp.feature, sortedParents, Some(p), 1)
+            fixFeature(interp.feature, sortedParents, Some(p), 2)
           })
         })
       }
