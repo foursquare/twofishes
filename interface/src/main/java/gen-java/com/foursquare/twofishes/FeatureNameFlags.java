@@ -15,7 +15,8 @@ public enum FeatureNameFlags implements TEnum {
   ABBREVIATION(2),
   DEACCENT(4),
   ALIAS(8),
-  LOCAL_LANG(16);
+  LOCAL_LANG(16),
+  ALT_NAME(32);
 
   private final int value;
 
@@ -46,6 +47,8 @@ public enum FeatureNameFlags implements TEnum {
         return ALIAS;
       case 16:
         return LOCAL_LANG;
+      case 32:
+        return ALT_NAME;
       default:
         return null;
     }

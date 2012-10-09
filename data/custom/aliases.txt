@@ -3,10 +3,10 @@
 6941775|Bklyn
 5363385|Bklyn
 5128581|NYC
+5128581|New York
 3530597|DF
 5391959|SF
 1642911|Jakarta Capital Region
-1733046|Federal Territory of Kuala Lum
 4994358|Grand Rapids Charter Township
 4560349|Phila
 4544349|OKC

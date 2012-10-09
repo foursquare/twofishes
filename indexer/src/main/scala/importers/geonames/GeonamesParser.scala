@@ -191,7 +191,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     // normalizedNames.toSet.toList.filterNot(_.isEmpty)
 
     aliasedNames.foreach(n =>
-      displayNames ::= DisplayName("en", n, FeatureNameFlags.ALIAS.getValue)
+      displayNames ::= DisplayName("en", n, FeatureNameFlags.ALT_NAME.getValue)
     )
 
     // Build parents

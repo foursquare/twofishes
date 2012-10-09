@@ -291,7 +291,10 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     store.getByObjectIds(ids).map(features => {
       features.filter(f => {
         val nameMatch = bestNameWithMatch(f._2.feature, Some(req.lang), false, Some(phrase))
-        nameMatch.exists(_._1.flags.contains(FeatureNameFlags.PREFERRED))
+        nameMatch.exists(nm => 
+          nm._1.flags.contains(FeatureNameFlags.PREFERRED) ||
+          nm._1.flags.contains(FeatureNameFlags.ALT_NAME)
+        )
       }).toList.map(_._1)
     })
   }

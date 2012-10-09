@@ -62,7 +62,7 @@ class OutputHFile(basepath: String) {
 
     val (prefPureNames, nonPrefPureNames) = 
       pureNames.partition(r =>
-        hasFlag(r, FeatureNameFlags.PREFERRED) &&
+        (hasFlag(r, FeatureNameFlags.PREFERRED) || hasFlag(r, FeatureNameFlags.ALT_NAME)) &&
         (r.lang == "en" || hasFlag(r, FeatureNameFlags.LOCAL_LANG))
       )
 

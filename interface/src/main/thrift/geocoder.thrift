@@ -68,7 +68,8 @@ enum FeatureNameFlags {
   ABBREVIATION = 2,
   DEACCENT = 4,
   ALIAS = 8,
-  LOCAL_LANG = 16
+  LOCAL_LANG = 16,
+  ALT_NAME = 32
 }
 
 struct FeatureName {
