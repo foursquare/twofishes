@@ -314,7 +314,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
                 names.foreach(n => {
                   var finalFlags = flags
                   if (countryLangMap.getOrElse(record.cc, Nil).contains(lang)) {
-                    finalFlags &= FeatureNameFlags.LOCAL_LANG.getValue
+                    finalFlags |= FeatureNameFlags.LOCAL_LANG.getValue
                   }
                   val dn = buildDisplayName(name, finalFlags)
                   addDisplayNameToNameIndex(dn, fid, record)
