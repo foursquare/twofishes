@@ -29,6 +29,7 @@
     var queryInput = $('#query');
     var searchForm = $('#searchForm');
     var debugSection = $('#debug');
+    var request = null;
 
     queryInput.keyup(function() {
       var query = queryInput.val();
@@ -39,14 +40,16 @@
     })
     
     function geocode() {
+      if (!!request) {
+        request.abort()
+      }
       var query = location.hash.substr(1)
       var url = 'http://' + window.location.host + '/?autocomplete=true&query=' + query;
 
       if ($('#debugButton').attr('checked')) {
         url += '&debug=1';
       }
-      $.getJSON(url, success, failure);
-
+      request = $.getJSON(url, success, failure);
     }
 
     function success(data) {
