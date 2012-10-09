@@ -278,11 +278,18 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
   }
 
   def matchName(name: FeatureName, query: String, isEnd: Boolean): Boolean = {
-    val normalizedName = NameNormalizer.normalize(name.name)
-    if (isEnd) {
-      normalizedName.startsWith(query)
+    if (name.flags.contains(FeatureNameFlags.PREFERRED) ||
+        name.flags.contains(FeatureNameFlags.ABBREVIATION) ||
+        name.flags.contains(FeatureNameFlags.LOCAL_LANG) ||
+        name.flags.contains(FeatureNameFlags.ALT_NAME)) { 
+      val normalizedName = NameNormalizer.normalize(name.name)
+      if (isEnd) {
+        normalizedName.startsWith(query)
+      } else {
+        normalizedName == query
+      }
     } else {
-      normalizedName == query
+      false
     }
   }
 
