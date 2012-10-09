@@ -203,7 +203,7 @@ class OutputHFile(basepath: String) {
         bestWoeTypes.contains(r.woeType))
 
       val (prefSortedRecords, unprefSortedRecords) =
-        res0.sortRecordsByNames(woeMatches.toList)
+        sortRecordsByNames(woeMatches.toList)
 
       var fids = new HashSet[String]
       prefSortedRecords.foreach(f => {
