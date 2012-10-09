@@ -374,13 +374,13 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
     def scoreName(name: FeatureName): Int = {
       var score = 0
-      if (name.flags.contains(FeatureNameFlags.PREFERRED)) {
+      if (Option(name.flags).exists(_.contains(FeatureNameFlags.PREFERRED))) {
         score += 1
       }
       if (lang.exists(_ == name.lang)) {
         score += 2
       }
-      if (name.flags.contains(FeatureNameFlags.ABBREVIATION) && preferAbbrev) {
+      if (Option(name.flags).exists(_.contains(FeatureNameFlags.ABBREVIATION) && preferAbbrev)) {
         score += 4
       }
       score
