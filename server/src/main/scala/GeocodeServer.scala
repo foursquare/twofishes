@@ -5,7 +5,7 @@ import collection.JavaConverters._
 import com.twitter.finagle.builder.{ServerBuilder, Server}
 import com.twitter.finagle.http.Http
 import com.twitter.finagle.thrift.ThriftServerFramedCodec
-import com.twitter.finagle.Service
+import com.twitter.finagle.{Service, SimpleFilter}
 import com.twitter.util.{Future, FuturePool, Throw}
 import java.io.InputStream
 import java.net.InetSocketAddress
@@ -22,6 +22,19 @@ import scala.collection.mutable.ListBuffer
 class GeocodeServerImpl(store: GeocodeStorageFutureReadService) extends Geocoder.ServiceIface {
   def geocode(r: GeocodeRequest): Future[GeocodeResponse] = {
     new GeocoderImpl(store, r).geocode()
+  }
+}
+
+class HandleExceptions extends SimpleFilter[HttpRequest, HttpResponse] {
+  def apply(request: HttpRequest, service: Service[HttpRequest, HttpResponse]) = {
+    // `handle` asynchronously handles exceptions.
+    service(request) handle {
+      case error =>
+        val statusCode = HttpResponseStatus.INTERNAL_SERVER_ERROR
+        val errorResponse = new DefaultHttpResponse(HttpVersion.HTTP_1_1, statusCode)
+        errorResponse.setContent(ChannelBuffers.copiedBuffer(error.getStackTraceString, CharsetUtil.UTF_8))
+        errorResponse
+    }
   }
 }
 
@@ -149,6 +162,7 @@ object GeocodeThriftServer extends Application {
 
 object GeocodeFinagleServer {
   def main(args: Array[String]) {
+    val handleExceptions = new HandleExceptions
 
     LogHelper.init
 
@@ -174,7 +188,7 @@ object GeocodeFinagleServer {
         .bindTo(new InetSocketAddress(config.thriftServerPort + 1))
         .codec(Http())
         .name("geocoder-http")
-        .build(new GeocoderHttpService(processor))
+        .build(handleExceptions andThen new GeocoderHttpService(processor))
     }
   }
 }
