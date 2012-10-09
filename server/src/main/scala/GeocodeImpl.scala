@@ -515,14 +515,12 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         // <b>Rego Park</b>, NY, <b>N</b>aalagaaffeqatigiit
         //
         // getOrdering returns a smaller # for a smaller thing
-        if (req.autocomplete) {
-          val parentTypes = rest.map(_.fmatch.feature.woeType).sortBy(YahooWoeTypes.getOrdering)
-          if (parentTypes.nonEmpty) {
-            if (parentTypes(0) != YahooWoeType.ADMIN2) {
-              modifySignal( -1 * YahooWoeTypes.getOrdering(parentTypes(0)), "prefer smaller parent interpretation")
-            } else {
-              modifySignal( -20, "downweight county matches a big")
-            }
+        val parentTypes = rest.map(_.fmatch.feature.woeType).sortBy(YahooWoeTypes.getOrdering)
+        if (parentTypes.nonEmpty) {
+          if (parentTypes(0) == YahooWoeType.ADMIN2 && req.autocomplete) {
+            modifySignal( -20, "downweight county matches a lot in autocomplete mode")
+          } else {
+            modifySignal( -1 * YahooWoeTypes.getOrdering(parentTypes(0)), "prefer smaller parent interpretation")
           }
         }
 
@@ -929,6 +927,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       } else {
         dedupeParses(filteredParses.take(3))
       }
+      logger.ifDebug("%d parses after deduping".format(dedupedParses.size))
       dedupedParses.foreach(p =>
         logger.ifDebug("deduped parse ids: %s".format(p.map(_.fmatch.id)))
       )

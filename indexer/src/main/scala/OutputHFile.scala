@@ -183,6 +183,7 @@ class OutputHFile(basepath: String) {
     println("done sorting")
 
     val bestWoeTypes = List(
+      YahooWoeType.POSTAL_CODE,
       YahooWoeType.TOWN,
       YahooWoeType.SUBURB,
       YahooWoeType.ADMIN3,
