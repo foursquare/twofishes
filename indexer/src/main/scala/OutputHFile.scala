@@ -203,7 +203,7 @@ class OutputHFile(basepath: String) {
         bestWoeTypes.contains(r.woeType))
 
       val (prefSortedRecords, unprefSortedRecords) =
-        sortRecordsByNames(woeMatches.toList)
+        res0.sortRecordsByNames(woeMatches.toList)
 
       var fids = new HashSet[String]
       prefSortedRecords.foreach(f => {
@@ -214,11 +214,10 @@ class OutputHFile(basepath: String) {
 
       if (fids.size < 3) {
         unprefSortedRecords.foreach(f => {
-        if (fids.size < 50) {
-          fids.add(f.fid)
-        }
-      })
-
+          if (fids.size < 50) {
+            fids.add(f.fid)
+          }
+        })
       }
 
       prefixWriter.append(prefix.getBytes(), fidStringsToByteArray(fids.toList))

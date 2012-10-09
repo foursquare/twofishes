@@ -321,7 +321,11 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
                 })
               }
 
-              processNameList(originalNames, FeatureNameFlags.PREFERRED.getValue)
+              val originalFlags = if (isPrefName) {
+                FeatureNameFlags.PREFERRED.getValue
+              } else { 0 }
+              
+              processNameList(originalNames, originalFlags)
               processNameList(deaccentedNames, FeatureNameFlags.DEACCENT.getValue)
               processNameList(allModifiedNames, FeatureNameFlags.ALIAS.getValue)
             })
@@ -351,7 +355,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
               if (dn.lang == lang) {
                 if (dn.name == name) {
                   foundName = true
-                  DisplayName(dn.lang, dn.name, dn.flags & FeatureNameFlags.PREFERRED.getValue())
+                  DisplayName(dn.lang, dn.name, dn.flags | FeatureNameFlags.PREFERRED.getValue())
                 } else {
                   DisplayName(dn.lang, dn.name, dn.flags ^ FeatureNameFlags.PREFERRED.getValue())
                 }
