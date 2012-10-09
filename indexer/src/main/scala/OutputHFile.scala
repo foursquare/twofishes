@@ -55,13 +55,13 @@ class OutputHFile(basepath: String) {
   }
 
   def sortRecordsByNames(records: List[NameIndex]) = {
-    val (pureNames, unpureNames) = records.partition(r => {
-      !hasFlag(r, FeatureNameFlags.ALIAS)  &&
-      !hasFlag(r, FeatureNameFlags.DEACCENT)
-    })
+    // val (pureNames, unpureNames) = records.partition(r => {
+    //   !hasFlag(r, FeatureNameFlags.ALIAS)
+    //   !hasFlag(r, FeatureNameFlags.DEACCENT)
+    // })
 
     val (prefPureNames, nonPrefPureNames) = 
-      pureNames.partition(r =>
+      records.partition(r =>
         (hasFlag(r, FeatureNameFlags.PREFERRED) || hasFlag(r, FeatureNameFlags.ALT_NAME)) &&
         (r.lang == "en" || hasFlag(r, FeatureNameFlags.LOCAL_LANG))
       )
