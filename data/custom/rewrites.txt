@@ -9,3 +9,4 @@ West\b|W
 Air Force Base|AFB
 Township\b|Twp,Charter Township
 kommun\b|Kommune
+Fort\b|Ft
