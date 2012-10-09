@@ -580,7 +580,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       f: GeocodeFeature,
       parents: Seq[GeocodeServingFeature],
       parse: Option[Parse],
-      numComponentsToTake: Int = 1) {
+      numParentsRequired: Int = 0) {
     // set name
     val name = bestName(f, Some(req.lang), false).map(_.name).getOrElse("")
     f.setName(name)
@@ -594,14 +594,19 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         .filter(p => {
           if (f.cc != "US" && f.cc != "CA") {
             p.feature.woeType == YahooWoeType.TOWN || 
-            p.feature.woeType == YahooWoeType.SUBURB
+            p.feature.woeType == YahooWoeType.SUBURB ||
+            (numParentsRequired > 0)
           } else {
             true
           }
         })
-        .takeRight(numComponentsToTake)
-        .toList
-
+        .takeRight(
+          if (f.cc == "US" || f.cc == "CA") {
+            numParentsRequired + 1
+          } else {
+            numParentsRequired
+          }
+        ).toList
 
     val countryAbbrev: Option[String] = if (f.cc != req.cc) {
       Some(f.cc)
@@ -837,19 +842,22 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       // happens outside this function). ie, there are 3 "Cobble Hill, NY"s. Which
       // are the names we get if we only take one parent component from each.
       // Find ambiguous geocodes, tell them to take more name component
-      // val ambiguousInterpretations: Iterable[GeocodeInterpretation] = 
-      //   interpretations.groupBy(_.feature.displayName).filter(_._2.size > 1).flatMap(_._2)
+      val ambiguousInterpretations: Iterable[GeocodeInterpretation] = 
+        interpretations.groupBy(_.feature.displayName).filter(_._2.size > 1).flatMap(_._2).toList
+      val ambiguousIdMap: Map[String, Iterable[GeocodeInterpretation]] =
+        ambiguousInterpretations.groupBy(_.feature.ids.toString)
 
-      // if (ambiguousInterpretations.size > 0) {
-      //   sortedParses.foreach(p => {
-      //     val fmatch = p(0).fmatch
-      //     val feature = p(0).fmatch.feature
-      //     val sortedParents = p(0).fmatch.scoringFeatures.parents.flatMap(id =>
-      //       parentMap.get(new ObjectId(id))).sorted(GeocodeServingFeatureOrdering)
-
-      //     if (feature.ids == 
-      //     fixFeature(feature, sortedParents, Some(p))
-      //   })
+      if (ambiguousInterpretations.size > 0) {
+        sortedParses.foreach(p => {
+          val fmatch = p(0).fmatch
+          val feature = p(0).fmatch.feature
+          ambiguousIdMap.getOrElse(feature.ids.toString, Nil).foreach(interp => {
+            val sortedParents = p(0).fmatch.scoringFeatures.parents.flatMap(id =>
+              parentMap.get(new ObjectId(id))).sorted(GeocodeServingFeatureOrdering)
+            fixFeature(interp.feature, sortedParents, Some(p), 1)
+          })
+        })
+      }
  
       generateResponse(interpretations)
     })
