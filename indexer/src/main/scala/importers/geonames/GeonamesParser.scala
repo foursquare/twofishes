@@ -275,8 +275,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       feature.foreach(f => {
         if (
           !f.featureClass.isStupid &&
-          // ADM4 is germany is things like "Berlin, Stadt"
-          !(f.featureClass.isAdmin4 && f.countryCode == "DE") &&
+          !(f.name.contains(", Stadt") && f.countryCode == "DE") &&
           (!f.featureClass.isBuilding || config.shouldParseBuildings || allowBuildings)) {
           parseFeature(f)
         }
