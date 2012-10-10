@@ -223,7 +223,7 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) {
   def longitude: Double = values.get(LONGITUDE).map(_.toDouble).get
   def countryCode: String = values.get(COUNTRY_CODE).getOrElse("XX")
   def name: String = values.getOrElse(NAME, "no name")
-  def asciiname: String = values.getOrElse(ASCIINAME, "no name")
+  def asciiname: Option[String] = values.get(ASCIINAME)
   def place: String = values.getOrElse(PLACE_NAME, "no name")
 
   def extraColumns: Map[String,String] = values.getOrElse(EXTRA, "").split("\t").flatMap(p => {
