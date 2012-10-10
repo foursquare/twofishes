@@ -242,15 +242,22 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       )
     } else {
       val validParsePairs: Seq[(Parse, ObjectId)] = parses.flatMap(parse => {
-        logger.ifDebug("checking %d fids against %s".format(fids.size, parse.map(_.fmatch.id)))
-        logger.ifDebug("these are the fids of my parse: %s".format(fids))
+        if (req.debug > 0) {
+          logger.ifDebug("checking %d fids against %s".format(fids.size, parse.map(_.fmatch.id)))
+          logger.ifDebug("these are the fids of my parse: %s".format(fids))
+        }
         fids.flatMap(fid => {
-           logger.ifDebug("checking if %s is an unused parent of %s".format(
-             fid, parse.map(_.fmatch.id)))
+          if (req.debug > 0) {
+            logger.ifDebug("checking if %s is an unused parent of %s".format(
+              fid, parse.map(_.fmatch.id)))
+          }
+
           val isValid = parse.exists(_.fmatch.scoringFeatures.parents.contains(fid)) &&
             !parse.exists(_.fmatch.id.toString == fid.toString)
           if (isValid) {
-            logger.ifDebug("HAD %s as a parent".format(fid))
+            if (req.debug > 0) {
+              logger.ifDebug("HAD %s as a parent".format(fid))
+            }
             Some((parse, fid))
           } else {
            // logger.ifDebug("wasn't")
@@ -422,10 +429,11 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         normalizedName.startsWith(matchedString)
       })
 
-      logger.ifDebug("name candidates: " + nameCandidates)
-          
       val bestNameMatch = nameCandidates.sorted(new FeatureNameComparator(lang, preferAbbrev)).headOption
-      logger.ifDebug("best name match: " + bestNameMatch)
+      if (req.debug > 1) {
+        logger.ifDebug("name candidates: " + nameCandidates)
+        logger.ifDebug("best name match: " + bestNameMatch)
+      }
       bestNameMatch.map(name => 
           (name,
             Some("<b>" + name.name.take(matchedString.size) + "</b>" + name.name.drop(matchedString.size))
@@ -553,9 +561,10 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       } {
         var performContainHackCheck = true
         if (req.autocomplete) {
-          val aName = bestNameWithMatch(aFeature.fmatch.feature, Some(req.lang), false, Some(aFeature.phrase))
-          val bName = bestNameWithMatch(bFeature.fmatch.feature, Some(req.lang), false, Some(bFeature.phrase))
-          performContainHackCheck = (aName == bName)
+          // NOTE(blackmad): don't remember why I wrote this and it's majorly slowing us down
+          // val aName = bestNameWithMatch(aFeature.fmatch.feature, Some(req.lang), false, Some(aFeature.phrase))
+          // val bName = bestNameWithMatch(bFeature.fmatch.feature, Some(req.lang), false, Some(bFeature.phrase))
+          // performContainHackCheck = (aName == bName)
         }
 
         if (performContainHackCheck &&
@@ -710,8 +719,10 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
   // 1) filter out woeRestrict mismatches
   // 2) try to filter out near dupe parses (based on formatting + latlng)
   def filterParses(parses: ParseSeq, removeLowRankingParses: Boolean): ParseSeq = {
-    logger.ifDebug("have %d parses in filterParses".format(parses.size))
-    parses.foreach(s => logger.ifDebug(s.toString))
+    if (req.debug > 0) {
+      logger.ifDebug("have %d parses in filterParses".format(parses.size))
+      parses.foreach(s => logger.ifDebug(s.toString))
+    }
 
     var goodParses = if (req.woeRestrict.size > 0) {
       parses.filter(p =>
@@ -956,9 +967,11 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
     if (req.autocomplete) {
       generateAutoParses(tokens, spaceAtEnd).flatMap(parses => {
-        parses.foreach(p => {
-          logger.ifDebug("parse ids: %s".format(p.map(_.fmatch.id)))
-        })
+        if (req.debug > 1) {
+          parses.foreach(p => {
+            logger.ifDebug("parse ids: %s".format(p.map(_.fmatch.id)))
+          })
+        }
         buildFinalParses(parses, 0)
       })
     } else {
