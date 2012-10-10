@@ -524,6 +524,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
           }
         }
 
+        modifySignal( -1 * YahooWoeTypes.getOrdering(primaryFeature.feature.woeType), "prefer smaller interpretation")
+
         logger.ifDebug("final score %s".format(signal))
         signal
       }).getOrElse(0)
