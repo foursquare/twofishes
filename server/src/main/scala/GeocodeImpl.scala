@@ -844,12 +844,16 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       // happens outside this function). ie, there are 3 "Cobble Hill, NY"s. Which
       // are the names we get if we only take one parent component from each.
       // Find ambiguous geocodes, tell them to take more name component
+      val ambiguousInterpretationsMap: Map[String, Seq[GeocodeInterpretation]] = 
+        interpretations.groupBy(_.feature.displayName).filter(_._2.size > 1)
       val ambiguousInterpretations: Iterable[GeocodeInterpretation] = 
-        interpretations.groupBy(_.feature.displayName).filter(_._2.size > 1).flatMap(_._2).toList
+        ambiguousInterpretationsMap.flatMap(_._2).toList
       val ambiguousIdMap: Map[String, Iterable[GeocodeInterpretation]] =
         ambiguousInterpretations.groupBy(_.feature.ids.toString)
 
       if (ambiguousInterpretations.size > 0) {
+        logger.ifDebug("had ambiguous interpretations")
+        ambiguousInterpretationsMap.foreach({case (k, v) => logger.ifDebug("have %d of %s".format(v.size, k)) })
         sortedParses.foreach(p => {
           val fmatch = p(0).fmatch
           val feature = p(0).fmatch.feature
