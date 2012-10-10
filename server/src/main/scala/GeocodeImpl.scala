@@ -460,12 +460,16 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         var signal = primaryFeature.scoringFeatures.population
 
         def modifySignal(value: Int, debug: String) {
-          logger.ifDebug("%s: %s + %s = %s".format(
-            debug, signal, value, signal + value))
+          if (req.debug > 0) {
+            logger.ifDebug("%s: %s + %s = %s".format(
+              debug, signal, value, signal + value))
+          }
           signal += value
         }
-
-        logger.ifDebug("Scoring %s".format(printDebugParse(parse)))
+      
+        if (req.debug > 0) {
+          logger.ifDebug("Scoring %s".format(printDebugParse(parse)))
+        }
 
         // if we have a repeated feature, downweight this like crazy
         // so st petersburg, st petersburg works, but doesn't break new york, ny
