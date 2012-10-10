@@ -198,11 +198,11 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       true
     } else {
       val most_specific = parse(0)
-      logger.ifDebug("most specific: " + most_specific)
-      logger.ifDebug("most specific: parents" + most_specific.fmatch.scoringFeatures.parents)
+      //logger.ifDebug("most specific: " + most_specific)
+      //logger.ifDebug("most specific: parents" + most_specific.fmatch.scoringFeatures.parents)
       val rest = parse.drop(1)
       rest.forall(f => {
-        logger.ifDebug("checking if %s in parents".format(f.fmatch.id))
+        //logger.ifDebug("checking if %s in parents".format(f.fmatch.id))
         f.fmatch.id == most_specific.fmatch.id ||
         most_specific.fmatch.scoringFeatures.parents.contains(f.fmatch.id)
       })
