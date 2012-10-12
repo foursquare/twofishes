@@ -9,103 +9,122 @@ import org.bson.types.ObjectId
 import scala.collection.mutable.HashMap
 
 class MockGeocodeStorageWriteService extends GeocodeStorageWriteService {
+  val nameMap = new HashMap[StoredFeatureId, List[DisplayName]]
+
   def insert(record: GeocodeRecord): Unit = {}
   def setRecordNames(id: StoredFeatureId, names: List[DisplayName]) {}
-  def addNameToRecord(name: DisplayName, id: StoredFeatureId) {}
+  def addNameToRecord(name: DisplayName, id: StoredFeatureId) {
+    if (!nameMap.contains(id)) {
+      nameMap(id) = Nil
+    }
+
+    nameMap(id) = name :: nameMap(id)
+  }
   def addBoundingBoxToRecord(id: StoredFeatureId, bbox: BoundingBox) {}
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = Nil.iterator
+  def addNameIndex(name: NameIndex) {}
 }
 
 class IndexerSpec extends Specification {
-  val store = new MockGeocodeStorageWriteService()
+  var store = new MockGeocodeStorageWriteService()
   val parser = new GeonamesParser(store)
 
+  "name deduping works" in {
+    val record = GeocodeRecord(new ObjectId(),
+      List("geonameid:1"),
+      Nil, "", 0, 0.0, 0.0,
+      List(
+        DisplayName("en", "San Francisco County", 1),
+        DisplayName("en", "San Francisco County", 1),
+        DisplayName("en", "San Francisco County", 0),
+        DisplayName("en", "San Francisco", 0)
+      ),
+      Nil, None)
+
+    val feature = record.toGeocodeServingFeature.feature
+
+    feature.names.size aka feature.names.toString mustEqual 3
+  }
+
   "rewrites work" in {
-    val names = parser.doRewrites(List("Mount Laurel", "North Bergen"))
-    names.size aka names.toString mustEqual 6
-    names must contain("Mount Laurel")
+    val (deaccentedNames, otherModifiedNames) = parser.rewriteNames(
+      List("Mount Laurel", "North Bergen"))
+    val names = deaccentedNames ++ otherModifiedNames
+    names.size aka names.toString mustEqual 4
     names must contain("Mt Laurel")
     names must contain("Mtn Laurel")
     names must contain("Mountain Laurel")
-    names must contain("North Bergen")
     names must contain("N Bergen")
   }
 
  "long rewrites work" in {
-    val names = parser.doRewrites(List("Griffiss Air Force Base"))
-    names.size aka names.toString mustEqual 2
+    val (deaccentedNames, otherModifiedNames) =
+      parser.rewriteNames(List("Griffiss Air Force Base"))
+    val names = deaccentedNames ++ otherModifiedNames
+    names.size aka names.toString mustEqual 1
     names must contain("Griffiss AFB")
-    names must contain("Griffiss Air Force Base")
   }
   
   "deletes work" in {
-    val names = parser.doDeletes(List("Cook County", "Township of Brick"))
+    val (deaccentedNames, otherModifiedNames) =
+      parser.rewriteNames(List("Cook County", "Township of Brick"))
+    val names = deaccentedNames ++ otherModifiedNames
     names.size aka names.toString mustEqual 5
     names must contain("Cook")
-    names must contain("Cook County")
     names must contain("Brick")
     names must contain("of Brick")
-    names must contain("Township of Brick")
+    names must contain("Charter Township of Brick")
+    names must contain("Twp of Brick")
   }
 
   "deletes work in practice" in {
-    val record = parser.parseFeature(
-      new GeonamesFeature(Map(
-        GeonamesFeatureColumns.LATITUDE -> "40.74",
-        GeonamesFeatureColumns.LONGITUDE -> "-74",
-        GeonamesFeatureColumns.NAME -> "Brick Township",
-        GeonamesFeatureColumns.ALTERNATENAMES -> "Township of Brick"
-      ))
+    parser.parseAlternateNamesLine(
+      "2727895\t5391997\ten\tSan Francisco County\t1", 0
     )
 
-    // Yes, this is totally awful. awful awful.
-    record.names.toList must haveTheSameElementsAs(List(
-      "brick charter township",
-      "township of brick",
-      "charter township of brick",
-      "brick township",
-      "twp of brick",
-      "brick twp",
-      "of brick",
-      "brick"
-    ))
+    val names = store.nameMap(StoredFeatureId("geonameid", "5391997"))
+    names.size mustEqual 2
+    names.exists(_.name == "San Francisco County") mustEqual true
+    names.exists(_.name == "San Francisco") mustEqual true
   }
 
-  "deletes work in practice  -- county" in {
-    val record = parser.parseFeature(
-      new GeonamesFeature(Map(
-        GeonamesFeatureColumns.LATITUDE -> "40.74",
-        GeonamesFeatureColumns.LONGITUDE -> "-74",
-        GeonamesFeatureColumns.NAME -> "San Francisco County"
-      ))
-    )
+  // "deletes work in practice  -- county" in {
+  //   val record = parser.parseFeature(
+  //     new GeonamesFeature(Map(
+  //       GeonamesFeatureColumns.LATITUDE -> "40.74",
+  //       GeonamesFeatureColumns.LONGITUDE -> "-74",
+  //       GeonamesFeatureColumns.NAME -> "San Francisco County",
+  //       GeonamesFeatureColumns.GEONAMEID -> "1"
+  //     ))
+  //   )
 
-    record.names mustEqual List(
-      "san francisco county",
-      "san francisco"
-    )
-  }
+  //   record.names mustEqual List(
+  //     "san francisco county",
+  //     "san francisco"
+  //   )
+  // }
 
-  "deaccents work" in {
-    val record = parser.parseFeature(
-      new GeonamesFeature(Map(
-        GeonamesFeatureColumns.LATITUDE -> "40.74",
-        GeonamesFeatureColumns.LONGITUDE -> "-74",
-        GeonamesFeatureColumns.NAME -> "Ōsaka"
-      ))
-    )
+  // "deaccents work" in {
+  //   val record = parser.parseFeature(
+  //     new GeonamesFeature(Map(
+  //       GeonamesFeatureColumns.LATITUDE -> "40.74",
+  //       GeonamesFeatureColumns.LONGITUDE -> "-74",
+  //       GeonamesFeatureColumns.NAME -> "Ōsaka",
+  //       GeonamesFeatureColumns.GEONAMEID -> "1"
+  //     ))
+  //   )
 
-    record.names mustEqual List(
-      "ōsaka",
-      "osaka"
-    )
+  //   record.names mustEqual List(
+  //     "ōsaka",
+  //     "osaka"
+  //   )
 
-    record.displayNames must contain(
-        DisplayName("en", "Ōsaka", false)
-    )
-    record.displayNames must contain(
-        DisplayName("alias", "Osaka", false)
-    )
-  }
+  //   record.displayNames must contain(
+  //       DisplayName("en", "Ōsaka", 0)
+  //   )
+  //   record.displayNames must contain(
+  //       DisplayName("alias", "Osaka", 0)
+  //   )
+  // }
 
 }

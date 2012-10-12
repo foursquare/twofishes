@@ -95,7 +95,7 @@ case class GeocodeRecord(
 
     val allNames = filteredNames ++ hackedNames
 
-    feature.setNames(allNames.map(name => {
+    val nameCandidates = allNames.map(name => {
       var flags: List[FeatureNameFlags] = Nil
       if (name.lang == "abbr") {
         flags ::= FeatureNameFlags.ABBREVIATION
@@ -112,7 +112,13 @@ case class GeocodeRecord(
         fname.setFlags(flags)
       }
       fname
-    }))
+    })
+
+    feature.setNames(nameCandidates
+      .groupBy(n => "%s%s%s".format(n.lang, n.name, n.flags))
+      .flatMap({case (k,v) => v.headOption})
+      .toList
+    )
 
     val scoring = new ScoringFeatures()
     boost.foreach(b => scoring.setBoost(b))
