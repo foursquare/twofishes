@@ -91,7 +91,7 @@ object GeonamesFeature extends LogHelper {
       var colMap = modifyCallback(columns.zip(parts).toMap)
 
       if (parts.size > columns.size) {
-        colMap += (EXTRA -> columns.drop(parts.size).mkString("\t"))
+        colMap += (EXTRA -> parts.drop(columns.size).mkString("\t"))
       }
 
       val feature = new GeonamesFeature(colMap)

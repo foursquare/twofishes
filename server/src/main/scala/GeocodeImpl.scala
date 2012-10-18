@@ -156,9 +156,11 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
             validParses.toList
           }
 
-        validParsesF.onSuccess(validParses => {
-          logger.ifDebug("setting %d to %s".format(cacheKey, validParses))
-        })
+        if (req.debug > 1) {
+          validParsesF.onSuccess(validParses => {
+            logger.ifDebug("setting %d to %s".format(cacheKey, validParses))
+          })
+        }
         cache(cacheKey) = validParsesF
       }
       cache(cacheKey)
