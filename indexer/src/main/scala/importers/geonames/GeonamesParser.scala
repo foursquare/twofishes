@@ -348,7 +348,6 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
           
           processNameList(originalNames, originalFlags)
           processNameList(deaccentedNames, originalFlags | FeatureNameFlags.DEACCENT.getValue)
-          println("mod names: " + allModifiedNames)
           processNameList(allModifiedNames, originalFlags | FeatureNameFlags.ALIAS.getValue)
       }
     }
