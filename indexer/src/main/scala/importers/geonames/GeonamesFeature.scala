@@ -229,7 +229,11 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) {
   def extraColumns: Map[String,String] = values.getOrElse(EXTRA, "").split("\t").flatMap(p => {
     if (p.nonEmpty) {
       val parts = p.split(";")
-      Some(parts(0) -> parts(1))
+      if (parts.size == 2) {
+        Some(parts(0) -> parts(1))
+      } else {
+        None
+      }
     } else {
       None
     }
