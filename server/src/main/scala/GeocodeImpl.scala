@@ -457,6 +457,13 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     ret
   }
 
+  def parseHasDupeFeature(p: Parse): Boolean = {
+    p.headOption.exists(primaryFeature => {
+      val rest = p.drop(1)
+      rest.exists(_.fmatch.feature.ids == primaryFeature.fmatch.feature.ids)
+    })
+  }
+
   // Comparator for parses, we score by a number of different features
   // 
   class ParseOrdering(llHint: GeocodePoint, ccHint: String) extends Ordering[Parse] {
@@ -483,7 +490,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
         // if we have a repeated feature, downweight this like crazy
         // so st petersburg, st petersburg works, but doesn't break new york, ny
-        if (rest.exists(_.fmatch.feature.ids == primaryFeature.feature.ids)) {
+        if (parseHasDupeFeature(parse)) {
           modifySignal(-100000000, "downweighting dupe-feature parse")
         }
 
@@ -507,10 +514,15 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
         // Penalize far-away things
         Option(llHint).foreach(ll => {
-          val distancePenalty = (GeoTools.getDistance(ll.lat, ll.lng,
+          val distance = GeoTools.getDistance(ll.lat, ll.lng,
               primaryFeature.feature.geometry.center.lat,
-              primaryFeature.feature.geometry.center.lng) / 100)
-          modifySignal(-distancePenalty, "distance penalty")          
+              primaryFeature.feature.geometry.center.lng)
+          val distancePenalty = (distance / 100)
+          if (distance < 2000) {
+            modifySignal(200000, "2km distance BONUS")          
+          } else {
+            modifySignal(-distancePenalty, "distance penalty")          
+          }
         })
 
         // manual boost added at indexing time
@@ -759,9 +771,11 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       ).getOrElse("")
     }})
 
-    parseMap.foreach({case(name, parseSeq) => {
-      logger.ifDebug("have %d parses for %s".format(parseSeq.size, name)) 
-    }})
+    if (req.debug > 0) {
+      parseMap.foreach({case(name, parseSeq) => {
+        logger.ifDebug("have %d parses for %s".format(parseSeq.size, name)) 
+      }})
+    }
 
     val dedupedMap = parseMap.mapValues(parsePairs => {
       // see if there's an earlier parse that's close enough,
@@ -946,9 +960,14 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       val removeLowRankingParses = (parseLength != tokens.size && parseLength == 1 && !tryHard)
 
       // filter out parses that are really the same feature
+      val parsesByMainId = parses.groupBy(_.headOption.map(_.fmatch.id))
       val actualParses = 
-        parses.groupBy(_.headOption.map(_.fmatch.id))
-          .flatMap({case (k, v) => v.sortBy(_.size).headOption}).toList
+        parsesByMainId
+          .flatMap({case (k, v) => v.sortBy(p => {
+            // prefer interpretations that are shorter and don't have reused features
+            val dupeWeight = if (parseHasDupeFeature(p)) { 10 } else { 0 }
+            p.size + dupeWeight
+          }).headOption}).toList
 
       val sortedParses = actualParses.sorted(new ParseOrdering(req.ll, req.cc))
 
