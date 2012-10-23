@@ -310,9 +310,11 @@ class OutputHFile(basepath: String) {
     val fidSize = ids.size
     ids.grouped(2000).foreach(chunk => {
       val records = MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> chunk)))
-      records.foreach(g => {
+      val idToRecord = records.map(r => (pickBestId(r), r)).toMap
+      idToRecord.keys.toList.sort(lexicalSort).foreach(gid => {
+        val g = idToRecord(gid)
         val (k, v) =
-          (pickBestId(g).getBytes("UTF-8"), serializeBytes(g, fixParentId))
+          (gid.getBytes("UTF-8"), serializeBytes(g, fixParentId))
         writer.append(k, v)
         fidCount += 1
         if (fidCount % 1000 == 0) {
