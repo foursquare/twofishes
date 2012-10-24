@@ -322,5 +322,6 @@ class OutputHFile(basepath: String) {
         }
       })
     })
+    writer.close()
   }
 }
