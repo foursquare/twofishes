@@ -175,9 +175,8 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
 
     val ids: List[StoredFeatureId] = List(adminId, geonameId).flatMap(a => a)
 
-    var displayNames = List(
-      DisplayName("en", feature.name, FeatureNameFlags.PREFERRED.getValue)
-    )
+    var displayNames: List[DisplayName] = processFeatureName(
+      feature.countryCode, "en", feature.name, true, false)
 
     feature.asciiname.foreach(asciiname => {
       if (feature.name != asciiname && asciiname.nonEmpty) {
@@ -306,6 +305,45 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     }})
   }
 
+  def processFeatureName(
+    cc: String,
+    lang: String,
+    name: String,
+    isPrefName: Boolean,
+    isShortName: Boolean): List[DisplayName] = {
+    if (lang != "post") {
+      val originalNames = List(name)
+      val (deaccentedNames, allModifiedNames) = rewriteNames(originalNames)
+
+      def buildDisplayName(name: String, flags: Int) = {
+        DisplayName(lang, name, flags)
+      }
+
+      def isLocalLang(lang: String) = 
+        countryLangMap.getOrElse(cc, Nil).contains(lang)
+
+      def processNameList(names: List[String], flags: Int): List[DisplayName] = {
+        names.map(n => {
+          var finalFlags = flags
+          if (isLocalLang(lang)) {
+            finalFlags |= FeatureNameFlags.LOCAL_LANG.getValue
+          }
+          buildDisplayName(n, finalFlags)
+        })
+      }
+
+      val originalFlags = if (isPrefName) {
+        FeatureNameFlags.PREFERRED.getValue
+      } else { 0 }
+      
+      processNameList(originalNames, originalFlags) ++
+      processNameList(deaccentedNames, originalFlags | FeatureNameFlags.DEACCENT.getValue) ++
+      processNameList(allModifiedNames, originalFlags | FeatureNameFlags.ALIAS.getValue)
+    } else {
+      Nil
+    }
+  }
+
   def parseAlternateNamesLine(line: String, index: Int) {
     val parts = line.split("\t").toList
     if (parts.size < 4) {
@@ -317,39 +355,14 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
         val isPrefName = parts.lift(4).exists(_ == "1")
         val isShortName = parts.lift(5).exists(_ == "1")
 
-        if (lang != "post") {
-          val originalNames = List(name)
-          val (deaccentedNames, allModifiedNames) = rewriteNames(originalNames)
-          val fid = StoredFeatureId(geonameIdNamespace, geonameid)
-
-          def buildDisplayName(name: String, flags: Int) = {
-            DisplayName(lang, name, flags)
-          }
-
-          val record = store.getById(fid).toList.headOption
-          def isLocalLang(lang: String) = 
-            record.exists(r => countryLangMap.getOrElse(r.cc, Nil).contains(lang))
-
-          def processNameList(names: List[String], flags: Int) = {
-            names.foreach(n => {
-              var finalFlags = flags
-              if (isLocalLang(lang)) {
-                finalFlags |= FeatureNameFlags.LOCAL_LANG.getValue
-              }
-              val dn = buildDisplayName(n, finalFlags)
-              addDisplayNameToNameIndex(dn, fid, record)
-              store.addNameToRecord(dn, fid)
-            })
-          }
-
-          val originalFlags = if (isPrefName) {
-            FeatureNameFlags.PREFERRED.getValue
-          } else { 0 }
-          
-          processNameList(originalNames, originalFlags)
-          processNameList(deaccentedNames, originalFlags | FeatureNameFlags.DEACCENT.getValue)
-          processNameList(allModifiedNames, originalFlags | FeatureNameFlags.ALIAS.getValue)
-      }
+        val fid = StoredFeatureId(geonameIdNamespace, geonameid)
+        val record = store.getById(fid).toList.headOption
+        val names = processFeatureName(
+          record.map(_.cc).getOrElse("XX"), lang, name, isPrefName, isShortName)
+        names.foreach(dn => {
+          addDisplayNameToNameIndex(dn, fid, record)
+          store.addNameToRecord(dn, fid)
+        })
     }
   }
 
