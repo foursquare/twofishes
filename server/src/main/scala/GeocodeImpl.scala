@@ -425,11 +425,18 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     }
 
     val ret = matchedStringOpt.flatMap(matchedString => {
-      val nameCandidates = f.names.filter(n => {
-        val normalizedName = NameNormalizer.normalize(n.name)
-        // logger.ifDebug("Does %s start with %s?".format(normalizedName, matchedString))
-        normalizedName.startsWith(matchedString)
+      val namesNormalized = f.names.map(n => {
+        (n, NameNormalizer.normalize(n.name))
       })
+
+      val exactMatchNameCandidates = namesNormalized.filter(_._2 == matchedString).map(_._1)
+      val prefixMatchNameCandidates = namesNormalized.filter(_._2.startsWith(matchedString)).map(_._1)
+
+      val nameCandidates = if (exactMatchNameCandidates.isEmpty) {
+        prefixMatchNameCandidates
+      } else {
+        exactMatchNameCandidates
+      }
 
       val bestNameMatch = nameCandidates.sorted(new FeatureNameComparator(lang, preferAbbrev)).headOption
       if (req.debug > 1) {
@@ -693,8 +700,6 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       ))
     }
 
-    f.names.foreach(_.unsetFlags())
-
     val parentNames = parentsToUse.map(p =>
       bestName(p.feature, Some(req.lang), true).map(_.name).getOrElse(""))
      .filterNot(parentName => {
@@ -760,15 +765,18 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
   }
 
   def dedupeParses(parses: ParseSeq): ParseSeq = {
+    val parseIndexToNameMatch: Map[Int, Option[BestNameMatch]] =
+      parses.zipWithIndex.map({case (parse, index) => {
+        (index,
+          parse.headOption.flatMap(f => 
+            // en is cheating, sorry
+            bestNameWithMatch(f.fmatch.feature, Some("en"), false, Some(f.phrase))
+          )
+        )
+      }}).toMap
+
     val parseMap: Map[String, Seq[(Parse, Int)]] = parses.zipWithIndex.groupBy({case (parse, index) => {
-      parse.headOption.flatMap(f => 
-        // en is cheating, sorry
-        if (req.autocomplete) {
-           bestNameWithMatch(f.fmatch.feature, Some("en"), false, Some(f.phrase)).map(_._1.name)
-        } else {
-           bestName(f.fmatch.feature, Some("en"), false).map(_.name)
-        }
-      ).getOrElse("")
+      parseIndexToNameMatch(index).map(_._1.name).getOrElse("")
     }})
 
     if (req.debug > 0) {
@@ -777,12 +785,21 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       }})
     }
 
+    def isAliasName(index: Int): Boolean = {
+      parseIndexToNameMatch(index).exists(_._1.flags.contains(
+        FeatureNameFlags.ALIAS))
+    }
+
     val dedupedMap = parseMap.mapValues(parsePairs => {
       // see if there's an earlier parse that's close enough,
       // if so, return false
       parsePairs.filterNot({case (parse, index) => {
         parsePairs.exists({case (otherParse, otherIndex) => {
-          otherIndex < index && parsesNear(parse, otherParse) 
+          // the logic here is that an alias name shoudl lose to an unaliased name
+          // if we don't have the clause in this line, we end up losing both nearby interps
+          ((otherIndex < index && !(isAliasName(otherIndex) && !isAliasName(index)))
+            || (!isAliasName(otherIndex) && isAliasName(index))) &&
+            parsesNear(parse, otherParse) 
         }})
       }})
     })
