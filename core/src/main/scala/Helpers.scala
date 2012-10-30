@@ -30,7 +30,8 @@ object NameNormalizer {
   def normalize(s: String): String = {
     var n = s.toLowerCase
     // remove periods and quotes
-    n = n.replaceAll("['\u2018\u2019\\.]", "")
+    // \u2013 = en-dash
+    n = n.replaceAll("['\u2018\u2019\\.\u2013]", "")
     // change all other punctuation to spaces
     n = n.replaceAll("\\p{Punct}", " ")
     n

@@ -30,3 +30,5 @@
 571473|Bryansk Oblast
 571473|Bryansk
 5141915|Union Square
+5108554|Bed-Stuy
+7177540|Boerum Hill
