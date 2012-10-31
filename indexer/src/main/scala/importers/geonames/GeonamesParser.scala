@@ -51,10 +51,13 @@ object GeonamesParser {
       }
     }
 
-    new File("data/supplemental/").listFiles.foreach(f => {
-      println("parsing supplemental file: %s".format(f))
-      parser.parseAdminFile(f.toString, allowBuildings=true)
-    })
+    val supplementalDir = new File("data/supplemental/")
+    if (supplementalDir.exists) {
+      supplementalDir.listFiles.foreach(f => {
+        println("parsing supplemental file: %s".format(f))
+        parser.parseAdminFile(f.toString, allowBuildings=true)
+      })
+    }
 
     if (config.importAlternateNames) {
       parser.parseAlternateNamesFile(

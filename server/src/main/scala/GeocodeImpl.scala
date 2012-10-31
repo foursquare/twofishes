@@ -754,11 +754,13 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     } else {
       parses
     }
+    logger.ifDebug("have %d parses after filtering types/woes/restricts".format(goodParses.size))
 
     if (removeLowRankingParses) {
       goodParses = goodParses.filter(p => p.headOption.exists(m => {
         m.fmatch.scoringFeatures.population > 50000 || p.length > 1
       }))
+      logger.ifDebug("have %d parses after removeLowRankingParses".format(goodParses.size))
     }
 
     goodParses
@@ -768,10 +770,10 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     val parseIndexToNameMatch: Map[Int, Option[BestNameMatch]] =
       parses.zipWithIndex.map({case (parse, index) => {
         (index,
-          parse.headOption.flatMap(f => 
+          parse.headOption.flatMap(f => {
             // en is cheating, sorry
             bestNameWithMatch(f.fmatch.feature, Some("en"), false, Some(f.phrase))
-          )
+          })
         )
       }}).toMap
 
@@ -781,6 +783,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
     if (req.debug > 0) {
       parseMap.foreach({case(name, parseSeq) => {
+        print("have %d parses for %s".format(parseSeq.size, name)) 
+
         logger.ifDebug("have %d parses for %s".format(parseSeq.size, name)) 
       }})
     }

@@ -62,6 +62,11 @@ class MockGeocodeStorageReadService extends GeocodeStorageFutureReadService {
     featureName.setLang("en")
     feature.setNames(List(featureName).asJava)
 
+    val fid = new FeatureId()
+    fid.setSource("test")
+    fid.setId(id.toString)
+    feature.setIds(List(fid).asJava)
+
     val scoringFeatures = new ScoringFeatures()
     scoringFeatures.setParents(parents.map(_.id).asJava)
     population.foreach(p => scoringFeatures.setPopulation(p))
@@ -70,6 +75,7 @@ class MockGeocodeStorageReadService extends GeocodeStorageFutureReadService {
     servingFeature.setScoringFeatures(scoringFeatures)
     servingFeature.setId(id.toString)
     servingFeature.setFeature(feature)
+
     nameMap(name.toLowerCase) = id :: nameMap.getOrElse(name.toLowerCase, Nil)
     idMap(id) = servingFeature
 
@@ -95,7 +101,8 @@ class GeocoderSpec extends Specification {
   def addRegoPark(store: MockGeocodeStorageReadService) = {
     val usRecord = store.addGeocode("US", Nil, 1, 2, YahooWoeType.COUNTRY)
     val nyRecord = store.addGeocode("New York", List(usRecord), 3, 4, YahooWoeType.ADMIN1)
-    val regoParkRecord = store.addGeocode("Rego Park", List(nyRecord, usRecord), 5, 6, YahooWoeType.TOWN)
+    val regoParkRecord = store.addGeocode("Rego Park", List(nyRecord, usRecord), 5, 6, YahooWoeType.TOWN,
+      population = Some(500012))
     store
   }
 
@@ -113,7 +120,8 @@ class GeocoderSpec extends Specification {
 
   def addLosAngeles(store: MockGeocodeStorageReadService) = {
     val usRecord = store.addGeocode("US", Nil, 1, 2, YahooWoeType.COUNTRY)
-    val caRecord = store.addGeocode("California", List(usRecord), 10, 11, YahooWoeType.ADMIN1)
+    val caRecord = store.addGeocode("California", List(usRecord), 10, 11, YahooWoeType.ADMIN1,
+            population = Some(5000000))
     val losAngelesRecord = store.addGeocode("Los Angeles", List(caRecord, usRecord), 12, 13, YahooWoeType.TOWN)
     store
   }
@@ -203,7 +211,9 @@ class GeocoderSpec extends Specification {
     addLosAngeles(store)
 
     val req = new GeocodeRequest("Rego Park, California")
+    req.setDebug(2)
     val r = new GeocoderImpl(store, req).geocode().apply()
+    r.interpretations must haveSize(1)
     r.interpretations.size must_== 1
     val interp = r.interpretations.asScala(0)
     interp.what must_== "rego park"
@@ -236,12 +246,9 @@ class GeocoderSpec extends Specification {
     addParisTX(store)
     addParisFrance(store)
 
-    println(store.nameMap("paris"))
-
     val req = new GeocodeRequest("Paris")
     req.setDebug(1)
     val r = new GeocoderImpl(store, req).geocode().apply()
-    println(r.debugLines.asScala.mkString("\n"))
     r.interpretations.size must_== 2 
     val interp1 = r.interpretations.asScala(0)
     interp1.what must_== ""
@@ -268,7 +275,7 @@ class GeocoderSpec extends Specification {
   "not everything after connector geocodes" in {
     val store = buildRegoPark()
 
-    val req = new GeocodeRequest("Pizza near lkjdsfjksl Rego Park, New York")
+    val req = new GeocodeRequest("Pizza near lkjdsfjksl, New York")
     val r = new GeocoderImpl(store, req).geocode().apply()
     r.interpretations.size must_== 0
   }
@@ -279,11 +286,13 @@ class GeocoderSpec extends Specification {
 
     val req = new GeocodeRequest("Rego")
     req.setAutocomplete(true)
+    req.setDebug(2)
 
-    store.getIdsByNamePrefix("rego").get().size must_== 2
+    store.getIdsByNamePrefix("rego").get() must haveSize(2)
 
     val r = new GeocoderImpl(store, req).geocode().apply()
-    r.interpretations.size must_== 2
+    r.interpretations must haveSize(2)
+
     val interp = r.interpretations.asScala(0)
   } 
 
