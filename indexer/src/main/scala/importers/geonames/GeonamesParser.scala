@@ -31,17 +31,19 @@ object GeonamesParser {
     val parser = new GeonamesParser(store)
     config = new GeonamesImporterConfig(args)
 
-
-
     if (!config.parseWorld) {
-      parser.parseAdminFile(
-        "data/downloaded/%s.txt".format(config.parseCountry))
+      val countries = config.parseCountry.split(",")
+      countries.foreach(f => {
+        parser.logger.info("Parsing %s".format(f))
+        parser.parseAdminFile(
+          "data/downloaded/%s.txt".format(f))
 
-      if (config.importPostalCodes) {
-        parser.parsePostalCodeFile(
-        "data/downloaded/zip/%s.txt".format(config.parseCountry),
-        true)
-      }
+        if (config.importPostalCodes) {
+          parser.parsePostalCodeFile(
+          "data/downloaded/zip/%s.txt".format(f),
+          true)
+        }
+      })
     } else {
       parser.parseAdminFile(
         "data/downloaded/allCountries.txt")
