@@ -77,6 +77,15 @@ class IndexerSpec extends Specification {
     names must contain("Twp of Brick")
   }
 
+  "deletes and rewrites work" in {
+    val (deaccentedNames, otherModifiedNames) =
+      parser.rewriteNames(List("Saint Ferdinand Township"))
+    val names = deaccentedNames ++ otherModifiedNames
+    names must contain("St Ferdinand")
+    names must contain("Saint Ferdinand")
+  }
+
+
   "deletes work in practice" in {
     parser.parseAlternateNamesLine(
       "2727895\t5391997\ten\tSan Francisco County\t1", 0

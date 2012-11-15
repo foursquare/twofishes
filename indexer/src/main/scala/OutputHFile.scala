@@ -38,13 +38,6 @@ class OutputHFile(basepath: String) {
   
   val maxPrefixLength = 5
 
-  val bestWoeTypes = List(
-    YahooWoeType.TOWN,
-    YahooWoeType.SUBURB,
-    YahooWoeType.ADMIN3,
-    YahooWoeType.AIRPORT
-  ).map(_.getValue)
-
   def hasFlag(record: NameIndex, flag: FeatureNameFlags) =
     (record.flags & flag.getValue) > 0
 
@@ -187,7 +180,8 @@ class OutputHFile(basepath: String) {
       YahooWoeType.TOWN,
       YahooWoeType.SUBURB,
       YahooWoeType.ADMIN3,
-      YahooWoeType.AIRPORT
+      YahooWoeType.AIRPORT,
+      YahooWoeType.COUNTRY
     ).map(_.getValue)
 
     val prefixWriter = buildV2Writer("prefix_index.hfile")

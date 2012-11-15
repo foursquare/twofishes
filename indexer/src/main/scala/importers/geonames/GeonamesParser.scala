@@ -154,16 +154,16 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     store.addNameIndex(nameIndex)
   }
 
-  def rewriteNames(allNames: List[String]): (List[String], List[String]) = {
-    val deleteModifiedNames: List[String] = allNames.flatMap(doDelete)
+  def rewriteNames(names: List[String]): (List[String], List[String]) = {
+    val deleteModifiedNames: List[String] = names.flatMap(doDelete)
 
-    val deaccentedNames = allNames.map(NameNormalizer.deaccent).filterNot(n =>
-      allNames.contains(n))
+    val deaccentedNames = names.map(NameNormalizer.deaccent).filterNot(n =>
+      names.contains(n))
 
-    val rewrittenNames = doRewrites(allNames).filterNot(n =>
-      allNames.contains(n))
+    val rewrittenNames = doRewrites((names ++ deleteModifiedNames)).filterNot(n =>
+      names.contains(n))
 
-    (deaccentedNames, deleteModifiedNames ++ rewrittenNames)
+    (deaccentedNames, (deleteModifiedNames ++ rewrittenNames).distinct)
   }
 
   def parseFeature(feature: GeonamesFeature): GeocodeRecord = {

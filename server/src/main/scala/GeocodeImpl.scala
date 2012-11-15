@@ -583,6 +583,10 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         var performContainHackCheck = true
         if (req.autocomplete) {
           // NOTE(blackmad): don't remember why I wrote this and it's majorly slowing us down
+          // I wrote this so that "united" didn't check if " United Industrial Park" was a child of "United States of America"
+          // for the completion of "United" ... this check was here for when we're deciding between "Buenos Aires" and "Buenos Aires"
+          // at different admin levels.
+          //
           // val aName = bestNameWithMatch(aFeature.fmatch.feature, Some(req.lang), false, Some(aFeature.phrase))
           // val bName = bestNameWithMatch(bFeature.fmatch.feature, Some(req.lang), false, Some(bFeature.phrase))
           // performContainHackCheck = (aName == bName)
@@ -590,7 +594,10 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
         if (performContainHackCheck &&
             aFeature.tokenStart == bFeature.tokenStart && 
-            aFeature.tokenEnd == bFeature.tokenEnd) {
+            aFeature.tokenEnd == bFeature.tokenEnd &&
+            aFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY &&
+            bFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY
+          ) {
           // if a is a parent of b, prefer b 
           if (aFeature.fmatch.scoringFeatures.parents.contains(bFeature.fmatch.id)) {
             logger.ifDebug("Preferring %s because it's a child of %s".format(printDebugParse(a), printDebugParse(b)))
@@ -757,7 +764,11 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       )
     } else if (req.autocomplete) {
       parses.filterNot(p =>
-        p.headOption.exists(f => f.fmatch.feature.woeType == YahooWoeType.COUNTRY || f.fmatch.feature.woeType == YahooWoeType.ADMIN1 || f.fmatch.feature.woeType == YahooWoeType.CONTINENT)
+        p.headOption.exists(f =>
+          f.fmatch.feature.woeType == YahooWoeType.ADMIN1 ||
+          f.fmatch.feature.woeType == YahooWoeType.CONTINENT ||
+          f.fmatch.feature.woeType == YahooWoeType.COUNTRY
+        )
       )
     } else {
       parses
@@ -791,9 +802,10 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
     if (req.debug > 0) {
       parseMap.foreach({case(name, parseSeq) => {
-        print("have %d parses for %s".format(parseSeq.size, name)) 
-
-        logger.ifDebug("have %d parses for %s".format(parseSeq.size, name)) 
+        logger.ifDebug("have %d parses for %s".format(parseSeq.size, name))
+        parseSeq.foreach(p => {
+          logger.ifDebug("%s: %s".format(name, printDebugParse(p._1)))
+        })
       }})
     }
 

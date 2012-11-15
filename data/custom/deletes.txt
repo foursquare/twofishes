@@ -5,3 +5,6 @@ District
 kraj
 Kraj
 Oblast
+Village of
+Borough of
+Town of
