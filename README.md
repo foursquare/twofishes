@@ -39,13 +39,15 @@ First time setup
 *   git clone https://github.com/foursquare/twofishes.git
 *   cd twofish
 *   ./init.sh
-*   ./download-US.sh # or ./download-world.sh
+*   If you want to download country: ./download-country.sh [ISO 3166 country code] (For example US, GB, etc)
+*   If you want to download world: ./download-world.sh
 
 Data import
 ===========
 *   mongod --dbpath /local/directory/for/output/
 *   ./init-database.sh # drops existing table and creates indexes
-*   ./sbt "indexer/run-main com.foursquare.twofishes.importers.geonames.GeonamesParser --parse_country US --hfile_basepath /output/directory/for/finished/files/" # or ./sbt "indexer/run-main com.foursquare.twofishes.importers.geonames.GeonamesParser --parse_world true --hfile_basepath /output/directory"
+*   If you want to import countries: ./sbt "indexer/run-main com.foursquare.twofishes.importers.geonames.GeonamesParser --parse_country US --hfile_basepath /output/directory/for/finished/files/" (Note that you can specify list of countries separating them by comma: US,GB,RU)
+*   If you want to import world: ./sbt "indexer/run-main com.foursquare.twofishes.importers.geonames.GeonamesParser --parse_world true --hfile_basepath /output/directory"
 
 Serving
 =======
