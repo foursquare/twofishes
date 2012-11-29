@@ -59,6 +59,9 @@ class GeocodeFetch(threading.Thread):
 
       param = line.strip()
       import urlparse
+
+      if '?' not in param:
+        param = '?' +  urllib.urlencode([('query', param)])
       params = urlparse.parse_qs(param[param.find('?')+1:])
      
       responseA = getResponse(serverA, param)
