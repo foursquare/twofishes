@@ -603,7 +603,15 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
           }
         }
       }
-      getScore(b) - getScore(a)
+
+      val scoreA = getScore(a)
+      val scoreB = getScore(b)
+      if (scoreA == scoreB) {
+        a.headOption.map(_.fmatch.feature.ids.hashCode).getOrElse(0) -
+          b.headOption.map(_.fmatch.feature.ids.hashCode).getOrElse(0)
+      } else {
+        scoreB - scoreA
+      }
     }
   }
 
