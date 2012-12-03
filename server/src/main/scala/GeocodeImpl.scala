@@ -1,6 +1,7 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
+import com.google.common.geometry.S2LatLngRect
 import com.foursquare.twofishes.Implicits._
 import com.twitter.util.{Future, FuturePool}
 import java.util.concurrent.ConcurrentHashMap
@@ -473,7 +474,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
   // Comparator for parses, we score by a number of different features
   // 
-  class ParseOrdering(llHint: GeocodePoint, ccHint: String) extends Ordering[Parse] {
+  class ParseOrdering extends Ordering[Parse] {
     var scoreMap = new scala.collection.mutable.HashMap[String, Int]
 
     // Higher is better
@@ -515,22 +516,34 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         modifySignal(-5000 * parse.length, "parse length boost")
 
         // Matching country hint is good
-        if (Option(ccHint).exists(_ == primaryFeature.feature.cc)) {
+        if (Option(req.ccHint).exists(_ == primaryFeature.feature.cc)) {
           modifySignal(10000, "country code match")
         }
 
-        // Penalize far-away things
-        Option(llHint).foreach(ll => {
-          val distance = GeoTools.getDistance(ll.lat, ll.lng,
-              primaryFeature.feature.geometry.center.lat,
-              primaryFeature.feature.geometry.center.lng)
-          val distancePenalty = (distance / 100)
-          if (distance < 2000) {
-            modifySignal(200000, "2km distance BONUS")          
-          } else {
-            modifySignal(-distancePenalty, "distance penalty")          
-          }
-        })
+        val llHint = Option(req.llHint)
+        val boundsHint = Option(req.boundsHint)
+        if (boundsHint.isDefined) {
+          boundsHint.foreach(bounds => {
+            // if you're in the bounds and the bounds are some small enough size
+            // you get a uniform boost
+            val bbox = GeoHelpers.boundingBoxToS2Rect(bounds)
+            // distance in meters of the hypotenuse
+            if (bbox.lo().getEarthDistance(bbox.hi()))
+
+        } else if(llHint.isDefined) {
+          // Penalize far-away things
+          Option(req.llHint).foreach(ll => {
+            val distance = GeoTools.getDistance(ll.lat, ll.lng,
+                primaryFeature.feature.geometry.center.lat,
+                primaryFeature.feature.geometry.center.lng)
+            val distancePenalty = (distance / 100)
+            if (distance < 2000) {
+              modifySignal(200000, "2km distance BONUS")          
+            } else {
+              modifySignal(-distancePenalty, "distance penalty")          
+            }
+          })
+        }
 
         // manual boost added at indexing time
         if (primaryFeature.scoringFeatures.boost != 0) {
@@ -863,7 +876,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     val hadConnector = connectorStart != -1
 
     // TODO: make this configurable
-    val sortedParses = parses.sorted(new ParseOrdering(req.ll, req.cc)).take(3)
+    val sortedParses = parses.sorted(new ParseOrdering).take(3)
 
     // sortedParses.foreach(p => {
     //   logger.ifDebug(printDebugParse(p))
@@ -1010,7 +1023,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
             p.size + dupeWeight
           }).headOption}).toList
 
-      val sortedParses = actualParses.sorted(new ParseOrdering(req.ll, req.cc))
+      val sortedParses = actualParses.sorted(new ParseOrdering)
 
       val filteredParses = filterParses(sortedParses, removeLowRankingParses)
       val dedupedParses = if (req.autocomplete) {

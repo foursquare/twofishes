@@ -40,6 +40,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   private static final TField AUTOCOMPLETE_FIELD_DESC = new TField("autocomplete", TType.BOOL, (short)7);
   private static final TField WOE_HINT_FIELD_DESC = new TField("woeHint", TType.LIST, (short)8);
   private static final TField WOE_RESTRICT_FIELD_DESC = new TField("woeRestrict", TType.LIST, (short)9);
+  private static final TField BOUNDS_FIELD_DESC = new TField("bounds", TType.STRUCT, (short)10);
 
   public String query;
   public String cc;
@@ -50,6 +51,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   public boolean autocomplete;
   public List<YahooWoeType> woeHint;
   public List<YahooWoeType> woeRestrict;
+  public GeocodeBoundingBox bounds;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
@@ -61,7 +63,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     DEBUG((short)6, "debug"),
     AUTOCOMPLETE((short)7, "autocomplete"),
     WOE_HINT((short)8, "woeHint"),
-    WOE_RESTRICT((short)9, "woeRestrict");
+    WOE_RESTRICT((short)9, "woeRestrict"),
+    BOUNDS((short)10, "bounds");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -94,6 +97,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
           return WOE_HINT;
         case 9: // WOE_RESTRICT
           return WOE_RESTRICT;
+        case 10: // BOUNDS
+          return BOUNDS;
         default:
           return null;
       }
@@ -162,6 +167,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     tmpMap.put(_Fields.WOE_RESTRICT, new FieldMetaData("woeRestrict", TFieldRequirementType.OPTIONAL, 
         new ListMetaData(TType.LIST, 
             new EnumMetaData(TType.ENUM, YahooWoeType.class))));
+    tmpMap.put(_Fields.BOUNDS, new FieldMetaData("bounds", TFieldRequirementType.OPTIONAL, 
+        new StructMetaData(TType.STRUCT, GeocodeBoundingBox.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeRequest.class, metaDataMap);
   }
@@ -223,6 +230,9 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       }
       this.woeRestrict = __this__woeRestrict;
     }
+    if (other.isSetBounds()) {
+      this.bounds = new GeocodeBoundingBox(other.bounds);
+    }
   }
 
   public GeocodeRequest deepCopy() {
@@ -246,6 +256,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
 
     this.woeRestrict = new ArrayList<YahooWoeType>();
 
+    this.bounds = null;
   }
 
   public String getQuery() {
@@ -491,6 +502,30 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     }
   }
 
+  public GeocodeBoundingBox getBounds() {
+    return this.bounds;
+  }
+
+  public GeocodeRequest setBounds(GeocodeBoundingBox bounds) {
+    this.bounds = bounds;
+    return this;
+  }
+
+  public void unsetBounds() {
+    this.bounds = null;
+  }
+
+  /** Returns true if field bounds is set (has been asigned a value) and false otherwise */
+  public boolean isSetBounds() {
+    return this.bounds != null;
+  }
+
+  public void setBoundsIsSet(boolean value) {
+    if (!value) {
+      this.bounds = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case QUERY:
@@ -565,6 +600,14 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       }
       break;
 
+    case BOUNDS:
+      if (value == null) {
+        unsetBounds();
+      } else {
+        setBounds((GeocodeBoundingBox)value);
+      }
+      break;
+
     }
   }
 
@@ -597,6 +640,9 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     case WOE_RESTRICT:
       return getWoeRestrict();
 
+    case BOUNDS:
+      return getBounds();
+
     }
     throw new IllegalStateException();
   }
@@ -626,6 +672,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       return isSetWoeHint();
     case WOE_RESTRICT:
       return isSetWoeRestrict();
+    case BOUNDS:
+      return isSetBounds();
     }
     throw new IllegalStateException();
   }
@@ -721,6 +769,15 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       if (!(this_present_woeRestrict && that_present_woeRestrict))
         return false;
       if (!this.woeRestrict.equals(that.woeRestrict))
+        return false;
+    }
+
+    boolean this_present_bounds = true && this.isSetBounds();
+    boolean that_present_bounds = true && that.isSetBounds();
+    if (this_present_bounds || that_present_bounds) {
+      if (!(this_present_bounds && that_present_bounds))
+        return false;
+      if (!this.bounds.equals(that.bounds))
         return false;
     }
 
@@ -830,6 +887,16 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetBounds()).compareTo(typedOther.isSetBounds());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetBounds()) {
+      lastComparison = TBaseHelper.compareTo(this.bounds, typedOther.bounds);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -903,13 +970,13 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         case 8: // WOE_HINT
           if (field.type == TType.LIST) {
             {
-              TList _list36 = iprot.readListBegin();
-              this.woeHint = new ArrayList<YahooWoeType>(_list36.size);
-              for (int _i37 = 0; _i37 < _list36.size; ++_i37)
+              TList _list40 = iprot.readListBegin();
+              this.woeHint = new ArrayList<YahooWoeType>(_list40.size);
+              for (int _i41 = 0; _i41 < _list40.size; ++_i41)
               {
-                YahooWoeType _elem38;
-                _elem38 = YahooWoeType.findByValue(iprot.readI32());
-                this.woeHint.add(_elem38);
+                YahooWoeType _elem42;
+                _elem42 = YahooWoeType.findByValue(iprot.readI32());
+                this.woeHint.add(_elem42);
               }
               iprot.readListEnd();
             }
@@ -920,16 +987,24 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         case 9: // WOE_RESTRICT
           if (field.type == TType.LIST) {
             {
-              TList _list39 = iprot.readListBegin();
-              this.woeRestrict = new ArrayList<YahooWoeType>(_list39.size);
-              for (int _i40 = 0; _i40 < _list39.size; ++_i40)
+              TList _list43 = iprot.readListBegin();
+              this.woeRestrict = new ArrayList<YahooWoeType>(_list43.size);
+              for (int _i44 = 0; _i44 < _list43.size; ++_i44)
               {
-                YahooWoeType _elem41;
-                _elem41 = YahooWoeType.findByValue(iprot.readI32());
-                this.woeRestrict.add(_elem41);
+                YahooWoeType _elem45;
+                _elem45 = YahooWoeType.findByValue(iprot.readI32());
+                this.woeRestrict.add(_elem45);
               }
               iprot.readListEnd();
             }
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 10: // BOUNDS
+          if (field.type == TType.STRUCT) {
+            this.bounds = new GeocodeBoundingBox();
+            this.bounds.read(iprot);
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -995,9 +1070,9 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         oprot.writeFieldBegin(WOE_HINT_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.I32, this.woeHint.size()));
-          for (YahooWoeType _iter42 : this.woeHint)
+          for (YahooWoeType _iter46 : this.woeHint)
           {
-            oprot.writeI32(_iter42.getValue());
+            oprot.writeI32(_iter46.getValue());
           }
           oprot.writeListEnd();
         }
@@ -1009,12 +1084,19 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         oprot.writeFieldBegin(WOE_RESTRICT_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.I32, this.woeRestrict.size()));
-          for (YahooWoeType _iter43 : this.woeRestrict)
+          for (YahooWoeType _iter47 : this.woeRestrict)
           {
-            oprot.writeI32(_iter43.getValue());
+            oprot.writeI32(_iter47.getValue());
           }
           oprot.writeListEnd();
         }
+        oprot.writeFieldEnd();
+      }
+    }
+    if (this.bounds != null) {
+      if (isSetBounds()) {
+        oprot.writeFieldBegin(BOUNDS_FIELD_DESC);
+        this.bounds.write(oprot);
         oprot.writeFieldEnd();
       }
     }
@@ -1099,6 +1181,16 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         sb.append("null");
       } else {
         sb.append(this.woeRestrict);
+      }
+      first = false;
+    }
+    if (isSetBounds()) {
+      if (!first) sb.append(", ");
+      sb.append("bounds:");
+      if (this.bounds == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.bounds);
       }
       first = false;
     }

@@ -13,7 +13,6 @@ log/*
 mongo-testdb/*
 *.pyc
 *.egg
-*.jar
 .project
 .classpath
 .#*

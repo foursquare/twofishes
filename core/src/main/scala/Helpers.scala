@@ -42,7 +42,10 @@ object NameNormalizer {
     val pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
     pattern.matcher(temp).replaceAll("");
   }
-}
+} 
+
+import com.google.common.geometry.S2LatLngRect
+import com.google.common.geometry.S2LatLng
 
 object GeoTools {
   val MetersPerMile: Double = 1609.344
@@ -50,14 +53,25 @@ object GeoTools {
   val MetersPerDegreeLatitude: Double = 111111.0
   val MetersPerDegreeLongitude: Double = 110540.0 // I'm assuming this as at the Equator
 
-  def boundsContains(bounds: GeocodeBoundingBox, ll: GeocodePoint): Boolean = {
-    val minLat = List(bounds.ne.lat, bounds.sw.lat).min
-    val maxLat = List(bounds.ne.lat, bounds.sw.lat).max
-    val minLng = List(bounds.ne.lng, bounds.sw.lng).min
-    val maxLng = List(bounds.ne.lng, bounds.sw.lng).max
+  def boundingBoxToS2Rect(bounds: GeocodeBoundingBox): S2LatLngRect = {
+    S2LatLngRect.fromPointPair(
+      S2LatLng.fromDegrees(bounds.ne.lat, bounds.ne.lng),
+      S2LatLng.fromDegrees(bounds.sw.lat, bounds.sw.lng)
+    )
+  }
 
-    ll.lat <= maxLat && ll.lat >= minLat &&
-      ll.lng <= maxLng && ll.lng >= minLng
+  def pointToS2LatLng(ll: GeocodePoint): S2LatLng = {
+    S2LatLng.fromDegrees(ll.lat, ll.lng)
+  }
+
+  def boundsContains(bounds: GeocodeBoundingBox, ll: GeocodePoint): Boolean = {
+    val rect =  boundingBoxToS2Rect(bounds)
+    val point = pointToS2LatLng(ll)
+    rect.contains(point)
+  }
+
+  def boundsIntersect(b1: GeocodeBoundingBox, b2: GeocodeBoundingBox): Boolean = {
+    boundingBoxToS2Rect(b1).intersects(boundingBoxToS2Rect(b2))
   }
 
   /**

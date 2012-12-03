@@ -34,16 +34,19 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
   private static final TField ID_FIELD_DESC = new TField("id", TType.STRING, (short)1);
   private static final TField SCORING_FEATURES_FIELD_DESC = new TField("scoringFeatures", TType.STRUCT, (short)2);
   private static final TField FEATURE_FIELD_DESC = new TField("feature", TType.STRUCT, (short)3);
+  private static final TField PARENTS_FIELD_DESC = new TField("parents", TType.LIST, (short)4);
 
   public String id;
   public ScoringFeatures scoringFeatures;
   public GeocodeFeature feature;
+  public List<GeocodeFeature> parents;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
     ID((short)1, "id"),
     SCORING_FEATURES((short)2, "scoringFeatures"),
-    FEATURE((short)3, "feature");
+    FEATURE((short)3, "feature"),
+    PARENTS((short)4, "parents");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -64,6 +67,8 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
           return SCORING_FEATURES;
         case 3: // FEATURE
           return FEATURE;
+        case 4: // PARENTS
+          return PARENTS;
         default:
           return null;
       }
@@ -114,6 +119,9 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
         new StructMetaData(TType.STRUCT, ScoringFeatures.class)));
     tmpMap.put(_Fields.FEATURE, new FieldMetaData("feature", TFieldRequirementType.DEFAULT, 
         new StructMetaData(TType.STRUCT, GeocodeFeature.class)));
+    tmpMap.put(_Fields.PARENTS, new FieldMetaData("parents", TFieldRequirementType.OPTIONAL, 
+        new ListMetaData(TType.LIST, 
+            new StructMetaData(TType.STRUCT, GeocodeFeature.class))));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeServingFeature.class, metaDataMap);
   }
@@ -145,6 +153,13 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
     if (other.isSetFeature()) {
       this.feature = new GeocodeFeature(other.feature);
     }
+    if (other.isSetParents()) {
+      List<GeocodeFeature> __this__parents = new ArrayList<GeocodeFeature>();
+      for (GeocodeFeature other_element : other.parents) {
+        __this__parents.add(new GeocodeFeature(other_element));
+      }
+      this.parents = __this__parents;
+    }
   }
 
   public GeocodeServingFeature deepCopy() {
@@ -156,6 +171,7 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
     this.id = null;
     this.scoringFeatures = null;
     this.feature = null;
+    this.parents = null;
   }
 
   public String getId() {
@@ -230,6 +246,45 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
     }
   }
 
+  public int getParentsSize() {
+    return (this.parents == null) ? 0 : this.parents.size();
+  }
+
+  public java.util.Iterator<GeocodeFeature> getParentsIterator() {
+    return (this.parents == null) ? null : this.parents.iterator();
+  }
+
+  public void addToParents(GeocodeFeature elem) {
+    if (this.parents == null) {
+      this.parents = new ArrayList<GeocodeFeature>();
+    }
+    this.parents.add(elem);
+  }
+
+  public List<GeocodeFeature> getParents() {
+    return this.parents;
+  }
+
+  public GeocodeServingFeature setParents(List<GeocodeFeature> parents) {
+    this.parents = parents;
+    return this;
+  }
+
+  public void unsetParents() {
+    this.parents = null;
+  }
+
+  /** Returns true if field parents is set (has been asigned a value) and false otherwise */
+  public boolean isSetParents() {
+    return this.parents != null;
+  }
+
+  public void setParentsIsSet(boolean value) {
+    if (!value) {
+      this.parents = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case ID:
@@ -256,6 +311,14 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
       }
       break;
 
+    case PARENTS:
+      if (value == null) {
+        unsetParents();
+      } else {
+        setParents((List<GeocodeFeature>)value);
+      }
+      break;
+
     }
   }
 
@@ -269,6 +332,9 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
 
     case FEATURE:
       return getFeature();
+
+    case PARENTS:
+      return getParents();
 
     }
     throw new IllegalStateException();
@@ -287,6 +353,8 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
       return isSetScoringFeatures();
     case FEATURE:
       return isSetFeature();
+    case PARENTS:
+      return isSetParents();
     }
     throw new IllegalStateException();
   }
@@ -328,6 +396,15 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
       if (!(this_present_feature && that_present_feature))
         return false;
       if (!this.feature.equals(that.feature))
+        return false;
+    }
+
+    boolean this_present_parents = true && this.isSetParents();
+    boolean that_present_parents = true && that.isSetParents();
+    if (this_present_parents || that_present_parents) {
+      if (!(this_present_parents && that_present_parents))
+        return false;
+      if (!this.parents.equals(that.parents))
         return false;
     }
 
@@ -377,6 +454,16 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetParents()).compareTo(typedOther.isSetParents());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetParents()) {
+      lastComparison = TBaseHelper.compareTo(this.parents, typedOther.parents);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -417,6 +504,24 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
+        case 4: // PARENTS
+          if (field.type == TType.LIST) {
+            {
+              TList _list24 = iprot.readListBegin();
+              this.parents = new ArrayList<GeocodeFeature>(_list24.size);
+              for (int _i25 = 0; _i25 < _list24.size; ++_i25)
+              {
+                GeocodeFeature _elem26;
+                _elem26 = new GeocodeFeature();
+                _elem26.read(iprot);
+                this.parents.add(_elem26);
+              }
+              iprot.readListEnd();
+            }
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -446,6 +551,20 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
       oprot.writeFieldBegin(FEATURE_FIELD_DESC);
       this.feature.write(oprot);
       oprot.writeFieldEnd();
+    }
+    if (this.parents != null) {
+      if (isSetParents()) {
+        oprot.writeFieldBegin(PARENTS_FIELD_DESC);
+        {
+          oprot.writeListBegin(new TList(TType.STRUCT, this.parents.size()));
+          for (GeocodeFeature _iter27 : this.parents)
+          {
+            _iter27.write(oprot);
+          }
+          oprot.writeListEnd();
+        }
+        oprot.writeFieldEnd();
+      }
     }
     oprot.writeFieldStop();
     oprot.writeStructEnd();
@@ -479,6 +598,16 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
       sb.append(this.feature);
     }
     first = false;
+    if (isSetParents()) {
+      if (!first) sb.append(", ");
+      sb.append("parents:");
+      if (this.parents == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.parents);
+      }
+      first = false;
+    }
     sb.append(")");
     return sb.toString();
   }
