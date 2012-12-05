@@ -64,6 +64,10 @@ object GeoTools {
     S2LatLng.fromDegrees(ll.lat, ll.lng)
   }
 
+  def S2LatLngToPoint(ll: S2LatLng): GeocodePoint = {
+    new GeocodePoint(ll.latDegrees, ll.lngDegrees)
+  }
+
   def boundsContains(bounds: GeocodeBoundingBox, ll: GeocodePoint): Boolean = {
     val rect =  boundingBoxToS2Rect(bounds)
     val point = pointToS2LatLng(ll)
