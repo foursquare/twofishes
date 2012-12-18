@@ -46,14 +46,14 @@ Data import
 ===========
 *   mongod --dbpath /local/directory/for/output/
 *   ./init-database.sh # drops existing table and creates indexes
-*   If you want to import countries: ./sbt "indexer/run-main com.foursquare.twofishes.importers.geonames.GeonamesParser --parse_country US --hfile_basepath /output/directory/for/finished/files/" (Note that you can specify list of countries separating them by comma: US,GB,RU)
-*   If you want to import world: ./sbt "indexer/run-main com.foursquare.twofishes.importers.geonames.GeonamesParser --parse_world true --hfile_basepath /output/directory"
+*   If you want to import countries: ./parse.py -c US /output/dir (Note that you can specify list of countries separating them by comma: US,GB,RU)
+*   If you want to import world: ./parse.py -w US /output/dir 
 
 Serving
 =======
-*   ./sbt  "server/run-main com.foursquare.twofishes.GeocodeFinagleServer --port 8080 --hfile_basepath /input/directory/for/finished/files/"
+*   ./serve.py -p 8080 /output/dir
 *   server should be responding to finagle-thrift on the port specified (8080 by default), and responding to http requests at the next port up: <http://localhost:8081/?query=rego+park+ny> <http://localhost:8081/static/geocoder.html#rego+park>
-*   if you want to run vanilla thrift-rpc (not finagle). use class com.foursquare.twofishes.GeocodeThriftServer instead.
+*   if you want to run vanilla thrift-rpc (not finagle). use ./sbt "server/run-main com.foursquare.twofishes.GeocodeThriftServer --port 8080 --hfile_basepath ." instead 
 NOTE: mongod is not required for serving, only index building.
 
 
