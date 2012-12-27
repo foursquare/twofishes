@@ -115,11 +115,18 @@
     function failure() {
     }
 
-     var mapUrl = 'http://{s}.tiles.mapbox.com/v3/externals.streetlevel,mapbox.open-streets-nyc/{z}/{x}/{y}.png';
-     var subdomains = ['a','b','c','d'];
+  var mqTilesAttr = 'Tiles &copy; <a href="http://www.mapquest.com/" target="_blank">MapQuest</a> <img src="http://developer.mapquest.com/content/osm/mq_logo.png" />';
 
+  L.TileLayer.MapQuestOpen.OSM = L.TileLayer.Common.extend({
+    url: 'http://otile{s}.mqcdn.com/tiles/1.0.0/{type}/{z}/{x}/{y}.png',
+    options: {
+      subdomains: '1234',
+      type: 'osm',
+      attribution: 'Map data ' + L.TileLayer.OSM_ATTR + ', ' + mqTilesAttr
+    }
+  });
      var defaults = {
-       layers: new L.TileLayer(mapUrl, {subdomains: subdomains}),
+       layers: new L.TileLayer.MapQuestOpen.OSM(),
        attributionControl: false
      }
      var opts = {}

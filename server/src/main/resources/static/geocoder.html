@@ -92,8 +92,17 @@
           sectionDiv.append(jsonDiv);
           sectionDiv.append(mapDiv);
 
+            L.TileLayer.MapQuestOpen.OSM = L.TileLayer.Common.extend({
+    url: 'http://otile{s}.mqcdn.com/tiles/1.0.0/{type}/{z}/{x}/{y}.png',
+    options: {
+      subdomains: '1234',
+      type: 'osm',
+      attribution: 'Map data ' + L.TileLayer.OSM_ATTR + ', ' + mqTilesAttr
+    }
+  });
+
           var opts = {
-            layers: new L.TileLayer(mapUrl, {subdomains: subdomains}),
+           layers: new L.TileLayer.MapQuestOpen.OSM(),
             attributionControl: false
           }
 
@@ -135,7 +144,7 @@
     function failure() {
     }
 
-     var mapUrl = 'http://{s}.tiles.mapbox.com/v3/mapbox.mapbox-streets/{z}/{x}/{y}.png';
+     var mapUrl = 'http://{s}.tiles.mapbox.com/v3/blackmad.map-yqfgdgkv/{z}/{x}/{y}.png'
      var subdomains = ['a','b','c','d'];
 
      geocode();
