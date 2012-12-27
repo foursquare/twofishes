@@ -4,7 +4,5 @@
 2648110|10000000
 # williamsburg nyc boost
 5144580|40000
-# kill "City of New York" so "New York" or "Mnahttan" wins
-7163824|-100000
 # demote Williamsburg, VA
 4793846|-14815000
