@@ -146,17 +146,7 @@ class OutputHFile(basepath: String) {
     println("sorted")
 
     def fidStringsToByteArray(fids: List[String]): Array[Byte] = {
-      val oids = fids.flatMap(fid => 
-        try {
-          fidMap.get(fid)
-        } catch {
-          case e => {
-            println("couldn't find: %s".format(fid))
-            throw e
-          }
-        }
-
-      ).toSet
+      val oids = fids.flatMap(fid => fidMap.get(fid)).toSet
       val os = new ByteArrayOutputStream(12 * oids.size)
       oids.foreach(oid =>
         os.write(oid.toByteArray)
@@ -232,28 +222,38 @@ class OutputHFile(basepath: String) {
   def serializeBytes(g: GeocodeRecord, fixParentId: IdFixer) = {
     val serializer = new TSerializer(factory);
     val f = g.toGeocodeServingFeature()
-    val parentOids = f.scoringFeatures.parents.flatMap(f => fixParentId(f))
-    f.scoringFeatures.setParents(parentOids)
+    val parents = for {
+      parent <- f.scoringFeatures.parents
+      parentId <- fixParentId(parent.relatedId)
+    } yield {
+      val relation = new GeocodeRelation(parent)
+      relation.setRelatedId(parentId)
+      relation
+    }
+    f.scoringFeatures.setParents(parents)
     serializer.serialize(f)
   }
 
-  val fidMap = new HashMap[String, ObjectId]
+  class FidMap {
+    val fidMap = new HashMap[String, Option[ObjectId]]
 
-  def buildFidMap() {
-    var fidCount = 0
-    val fidSize = FidIndexDAO.collection.count
-    val fidCursor = FidIndexDAO.find(MongoDBObject())
-    fidCursor.foreach(f => {
-      fidMap(f.fid) = f.oid
-      fidCount += 1
-      if (fidCount % 50000 == 0) {
-        println("processed %d of %d fids in memory".format(fidCount, fidSize))
+    def get(fid: String): Option[ObjectId] = {
+      if (!fidMap.contains(fid)) {
+        val oidOpt = MongoGeocodeDAO.primitiveProjection[ObjectId](
+          MongoDBObject("ids" -> fid), "_id")
+        fidMap(fid) = oidOpt
+        if (oidOpt.isEmpty) {
+          println("missing fid: %s".format(fid))
+        }
       }
-    })
+
+      fidMap.getOrElse(fid, None)
+    }
   }
 
+  val fidMap = new FidMap()
+
   def process() {
-    buildFidMap()
     writeNames()
 
     def fixParentId(fid: String) = fidMap.get(fid).map(_.toString)

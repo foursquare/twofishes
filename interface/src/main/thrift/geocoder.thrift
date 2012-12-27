@@ -105,11 +105,25 @@ struct FeatureGeometry {
   3: optional binary wkbGeometry
 }
 
+enum GeocodeRelationType {
+  PARENT = 1,
+
+  // These aren't directly in the admin hierarchy, and shouldn't be used for
+  // address formatting. TODO: come up with a better name
+  HIERARCHY = 2
+}
+
+struct GeocodeRelation {
+  1: optional GeocodeRelationType relationType,
+  2: optional string relatedId
+}
+
 // index-only data structure
 struct ScoringFeatures {
   1: optional i32 population = 0,
   2: optional i32 boost = 0,
-  3: optional list<string> parents = []
+  3: optional list<string> parents_DEPRECATED = [],
+  4: optional list<GeocodeRelation> parents = []
 }
 
 struct GeocodeFeature {

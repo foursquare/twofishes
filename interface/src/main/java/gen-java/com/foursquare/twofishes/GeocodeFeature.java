@@ -1063,14 +1063,14 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         case 6: // IDS
           if (field.type == TType.LIST) {
             {
-              TList _list8 = iprot.readListBegin();
-              this.ids = new ArrayList<FeatureId>(_list8.size);
-              for (int _i9 = 0; _i9 < _list8.size; ++_i9)
+              TList _list12 = iprot.readListBegin();
+              this.ids = new ArrayList<FeatureId>(_list12.size);
+              for (int _i13 = 0; _i13 < _list12.size; ++_i13)
               {
-                FeatureId _elem10;
-                _elem10 = new FeatureId();
-                _elem10.read(iprot);
-                this.ids.add(_elem10);
+                FeatureId _elem14;
+                _elem14 = new FeatureId();
+                _elem14.read(iprot);
+                this.ids.add(_elem14);
               }
               iprot.readListEnd();
             }
@@ -1081,14 +1081,14 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         case 7: // NAMES
           if (field.type == TType.LIST) {
             {
-              TList _list11 = iprot.readListBegin();
-              this.names = new ArrayList<FeatureName>(_list11.size);
-              for (int _i12 = 0; _i12 < _list11.size; ++_i12)
+              TList _list15 = iprot.readListBegin();
+              this.names = new ArrayList<FeatureName>(_list15.size);
+              for (int _i16 = 0; _i16 < _list15.size; ++_i16)
               {
-                FeatureName _elem13;
-                _elem13 = new FeatureName();
-                _elem13.read(iprot);
-                this.names.add(_elem13);
+                FeatureName _elem17;
+                _elem17 = new FeatureName();
+                _elem17.read(iprot);
+                this.names.add(_elem17);
               }
               iprot.readListEnd();
             }
@@ -1099,13 +1099,13 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         case 8: // ATTRIBUTION
           if (field.type == TType.LIST) {
             {
-              TList _list14 = iprot.readListBegin();
-              this.attribution = new ArrayList<String>(_list14.size);
-              for (int _i15 = 0; _i15 < _list14.size; ++_i15)
+              TList _list18 = iprot.readListBegin();
+              this.attribution = new ArrayList<String>(_list18.size);
+              for (int _i19 = 0; _i19 < _list18.size; ++_i19)
               {
-                String _elem16;
-                _elem16 = iprot.readString();
-                this.attribution.add(_elem16);
+                String _elem20;
+                _elem20 = iprot.readString();
+                this.attribution.add(_elem20);
               }
               iprot.readListEnd();
             }
@@ -1116,13 +1116,13 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         case 9: // TIMEZONES
           if (field.type == TType.LIST) {
             {
-              TList _list17 = iprot.readListBegin();
-              this.timezones = new ArrayList<String>(_list17.size);
-              for (int _i18 = 0; _i18 < _list17.size; ++_i18)
+              TList _list21 = iprot.readListBegin();
+              this.timezones = new ArrayList<String>(_list21.size);
+              for (int _i22 = 0; _i22 < _list21.size; ++_i22)
               {
-                String _elem19;
-                _elem19 = iprot.readString();
-                this.timezones.add(_elem19);
+                String _elem23;
+                _elem23 = iprot.readString();
+                this.timezones.add(_elem23);
               }
               iprot.readListEnd();
             }
@@ -1195,9 +1195,9 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         oprot.writeFieldBegin(IDS_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.STRUCT, this.ids.size()));
-          for (FeatureId _iter20 : this.ids)
+          for (FeatureId _iter24 : this.ids)
           {
-            _iter20.write(oprot);
+            _iter24.write(oprot);
           }
           oprot.writeListEnd();
         }
@@ -1209,9 +1209,9 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         oprot.writeFieldBegin(NAMES_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.STRUCT, this.names.size()));
-          for (FeatureName _iter21 : this.names)
+          for (FeatureName _iter25 : this.names)
           {
-            _iter21.write(oprot);
+            _iter25.write(oprot);
           }
           oprot.writeListEnd();
         }
@@ -1223,9 +1223,9 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         oprot.writeFieldBegin(ATTRIBUTION_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.STRING, this.attribution.size()));
-          for (String _iter22 : this.attribution)
+          for (String _iter26 : this.attribution)
           {
-            oprot.writeString(_iter22);
+            oprot.writeString(_iter26);
           }
           oprot.writeListEnd();
         }
@@ -1237,9 +1237,9 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         oprot.writeFieldBegin(TIMEZONES_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.STRING, this.timezones.size()));
-          for (String _iter23 : this.timezones)
+          for (String _iter27 : this.timezones)
           {
-            oprot.writeString(_iter23);
+            oprot.writeString(_iter27);
           }
           oprot.writeListEnd();
         }

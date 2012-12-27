@@ -123,7 +123,12 @@ case class GeocodeRecord(
     val scoring = new ScoringFeatures()
     boost.foreach(b => scoring.setBoost(b))
     population.foreach(p => scoring.setPopulation(p))
-    scoring.setParents(parents)
+    scoring.setParents(parents.map(parent => {
+      val relation = new GeocodeRelation()
+      relation.setRelationType(GeocodeRelationType.PARENT)
+      relation.setRelatedId(parent)
+      relation
+    }))
     
     val servingFeature = new GeocodeServingFeature()
     servingFeature.setId(_id.toString)

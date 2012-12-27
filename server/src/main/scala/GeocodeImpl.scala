@@ -328,7 +328,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         val isEnd = (i == tokens.size)
 
         val possibleParents = parses.flatMap(_.flatMap(_.fmatch.scoringFeatures.parents))
-          .map(id => new ObjectId(id))
+          .map(parent => new ObjectId(parent.relatedId))
 
         val fidsF: Future[Seq[ObjectId]] = 
           if (parses.size == 0) {
@@ -900,7 +900,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
     val parentIds = sortedParses.flatMap(
       _.headOption.toList.flatMap(_.fmatch.scoringFeatures.parents))
-    val parentOids = parentIds.map(i => new ObjectId(i))
+    val parentOids = parentIds.map(parent => new ObjectId(parent.relatedId))
     logger.ifDebug("parent ids: " + parentOids)
 
     // possible optimization here: add in features we already have in our parses and don't refetch them
@@ -919,8 +919,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       var interpretations = sortedParses.map(p => {
         val fmatch = p(0).fmatch
         val feature = p(0).fmatch.feature
-        val sortedParents = p(0).fmatch.scoringFeatures.parents.flatMap(id =>
-          parentMap.get(new ObjectId(id))).sorted(GeocodeServingFeatureOrdering)
+        val sortedParents = p(0).fmatch.scoringFeatures.parents.flatMap(parent =>
+          parentMap.get(new ObjectId(parent.relatedId))).sorted(GeocodeServingFeatureOrdering)
         fixFeature(feature, sortedParents, Some(p))
         val interp = new GeocodeInterpretation()
         interp.setWhat(what)
@@ -931,7 +931,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         }
         if (req.full) {
           interp.setParents(sortedParents.map(parentFeature => {
-            val sortedParentParents = parentFeature.scoringFeatures.parents.flatMap(id => parentMap.get(new ObjectId(id))).sorted
+            val sortedParentParents = parentFeature.scoringFeatures.parents.flatMap(parent =>
+              parentMap.get(new ObjectId(parent.relatedId))).sorted
             val feature = parentFeature.feature
             fixFeature(feature, sortedParentParents, None)
             feature
@@ -959,8 +960,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
           val fmatch = p(0).fmatch
           val feature = p(0).fmatch.feature
           ambiguousIdMap.getOrElse(feature.ids.toString, Nil).foreach(interp => {
-            val sortedParents = p(0).fmatch.scoringFeatures.parents.flatMap(id =>
-              parentMap.get(new ObjectId(id))).sorted(GeocodeServingFeatureOrdering)
+            val sortedParents = p(0).fmatch.scoringFeatures.parents.flatMap(parent =>
+              parentMap.get(new ObjectId(parent.relatedId))).sorted(GeocodeServingFeatureOrdering)
             fixFeature(interp.feature, sortedParents, Some(p), 2)
           })
         })
