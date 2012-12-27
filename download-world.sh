@@ -16,17 +16,6 @@ else
    rm $FILE.zip
 fi
 
-FILE=data/downloaded/alternateNames.txt
-if [ -f $FILE ];
-then
-   echo "File $FILE exists."
-else
-   curl -o $FILE.zip http://download.geonames.org/export/dump/alternateNames.zip
-   unzip $FILE.zip
-   mv alternateNames.txt $FILE
-   rm $FILE.zip
-fi
-
 FILE=data/downloaded/zip/allCountries.txt
 if [ -f $FILE ];
 then
@@ -38,11 +27,4 @@ else
    rm $FILE.zip
 fi
 
-
-FILE=data/downloaded/countryInfo.txt
-if [ -f $FILE ];
-then
-   echo "File $FILE exists."
-else
-   curl -o $FILE http://download.geonames.org/export/dump/countryInfo.txt
-fi
+source download-common.sh
