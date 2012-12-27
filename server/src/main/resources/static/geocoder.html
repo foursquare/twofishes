@@ -5,6 +5,7 @@
     <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.4.4/leaflet.ie.css" />
 <![endif]-->
 <script src="http://cdn.leafletjs.com/leaflet-0.4.4/leaflet.js"></script>
+  <script src="TileLayer.Common.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
   <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.3.1/underscore-min.js"></script>
   <style>
@@ -91,15 +92,6 @@
           sectionDiv.append('<div class="highlightedName">Interp ' + (count+1) + ': ' + feature.highlightedName + '</div>');
           sectionDiv.append(jsonDiv);
           sectionDiv.append(mapDiv);
-
-            L.TileLayer.MapQuestOpen.OSM = L.TileLayer.Common.extend({
-    url: 'http://otile{s}.mqcdn.com/tiles/1.0.0/{type}/{z}/{x}/{y}.png',
-    options: {
-      subdomains: '1234',
-      type: 'osm',
-      attribution: 'Map data ' + L.TileLayer.OSM_ATTR + ', ' + mqTilesAttr
-    }
-  });
 
           var opts = {
            layers: new L.TileLayer.MapQuestOpen.OSM(),
