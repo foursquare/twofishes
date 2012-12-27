@@ -24,3 +24,5 @@ javarebel/*
 jrebel/*
 *.sublime-workspace
 sbt-launch.jar
+*.hfile
+*.crc
