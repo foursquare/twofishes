@@ -207,7 +207,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       rest.forall(f => {
         //logger.ifDebug("checking if %s in parents".format(f.fmatch.id))
         f.fmatch.id == most_specific.fmatch.id ||
-        most_specific.fmatch.scoringFeatures.parents.contains(f.fmatch.id)
+        most_specific.fmatch.scoringFeatures.parents.map(_.relatedId).contains(f.fmatch.id)
       })
     }
   }

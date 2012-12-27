@@ -68,7 +68,12 @@ class MockGeocodeStorageReadService extends GeocodeStorageFutureReadService {
     feature.setIds(List(fid).asJava)
 
     val scoringFeatures = new ScoringFeatures()
-    scoringFeatures.setParents(parents.map(_.id).asJava)
+    scoringFeatures.setParents(parents.map(parent => {
+      val relation = new GeocodeRelation()
+      relation.setRelationType(GeocodeRelationType.PARENT)
+      relation.setRelatedId(parent.id)
+      relation
+    }).asJava)
     population.foreach(p => scoringFeatures.setPopulation(p))
 
     val servingFeature = new GeocodeServingFeature()
@@ -178,7 +183,7 @@ class GeocoderSpec extends Specification {
     val r = new GeocoderImpl(store, req).geocode().apply()
     r.interpretations.size must_== 1
     val interp = r.interpretations.asScala(0)
-    interp.what must_== ""
+    interp.what aka r.toString must_== ""
     interp.feature.geometry.center.lat must_== 5
     interp.feature.geometry.center.lng must_== 6
     interp.where must_== "rego park new york"
