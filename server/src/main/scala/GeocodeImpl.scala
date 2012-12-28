@@ -4,12 +4,14 @@ package com.foursquare.twofishes
 import com.foursquare.twofishes.util.{GeoTools, NameUtils, TwofishesLogger, NameNormalizer}
 import com.foursquare.twofishes.util.NameUtils.BestNameMatch
 import com.foursquare.twofishes.Implicits._
+import com.foursquare.twofishes.util.Lists.Implicits._
 import com.twitter.util.{Future, FuturePool}
 import java.util.concurrent.ConcurrentHashMap
 import java.util.Date
 import org.bson.types.ObjectId
 import scala.collection.JavaConversions._
 import scala.collection.mutable.{HashMap, HashSet, ListBuffer}
+import scalaj.collection.Implicits._
 
 // TODO
 // --make autocomplete faster
@@ -256,7 +258,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
               fid, parse.map(_.fmatch.id)))
           }
 
-          val isValid = parse.exists(_.fmatch.scoringFeatures.parents.contains(fid)) &&
+          val isValid = parse.exists(_.fmatch.scoringFeatures.parents.asScala.map(_.relatedId).has(fid.toString)) &&
             !parse.exists(_.fmatch.id.toString == fid.toString)
           if (isValid) {
             if (req.debug > 0) {
@@ -560,12 +562,12 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
             bFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY
           ) {
           // if a is a parent of b, prefer b 
-          if (aFeature.fmatch.scoringFeatures.parents.contains(bFeature.fmatch.id)) {
+          if (aFeature.fmatch.scoringFeatures.parents.asScala.map(_.relatedId).has(bFeature.fmatch.id)) {
             logger.ifDebug("Preferring %s because it's a child of %s".format(printDebugParse(a), printDebugParse(b)))
             return -1
           }
           // if b is a parent of a, prefer a
-          if (bFeature.fmatch.scoringFeatures.parents.contains(aFeature.fmatch.id)) {
+          if (bFeature.fmatch.scoringFeatures.parents.asScala.map(_.relatedId).has(aFeature.fmatch.id)) {
             logger.ifDebug("Preferring %s because it's a child of %s".format(printDebugParse(b), printDebugParse(a)))
             return 1
           }
