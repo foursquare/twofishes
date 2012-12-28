@@ -90,7 +90,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     def info(s: String) { println(s)}
   }
 
-  val hierarchyTable = HierarchyParser.parseHierarchy("data/downloaded/hierarchy.txt")
+  lazy val hierarchyTable = HierarchyParser.parseHierarchy("data/downloaded/hierarchy.txt")
 
   // token -> alt tokens
   val rewriteTable = new TsvHelperFileParser("data/custom/rewrites.txt",
