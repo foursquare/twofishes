@@ -1,9 +1,11 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.importers.geonames
 
+import com.foursquare.twofishes.util.NameNormalizer
 import com.foursquare.twofishes._
-import com.foursquare.twofishes.Helpers._
+import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.Implicits._
+import com.foursquare.twofishes.util.Lists.Implicits._
 import java.io.File
 import scala.collection.mutable.HashMap
 
@@ -87,6 +89,8 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     def error(s: String) { println("**ERROR** " + s)}
     def info(s: String) { println(s)}
   }
+
+  val hierarchyTable = HierarchyParser.parseHierarchy("data/downloaded/hierarchy.txt")
 
   // token -> alt tokens
   val rewriteTable = new TsvHelperFileParser("data/custom/rewrites.txt",
@@ -216,7 +220,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
 
     val boost: Option[Int] = feature.geonameid.flatMap(gid => {
       boostTable.get(gid).headOption.flatMap(boost =>
-        tryo { boost.toInt }
+        TryO { boost.toInt }
       )
     })
 
@@ -245,6 +249,11 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       }
     })
 
+    val canGeocode = feature.extraColumns.get("canGeocode").getOrElse("true").toBoolean
+
+    val hierarchyParents = hierarchyTable.getOrElse(feature.geonameid.getOrElse(""), Nil).filterNot(p =>
+      allParents.has(p))
+
     val record = GeocodeRecord(
       ids = ids,
       names = Nil,
@@ -256,7 +265,9 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       population = feature.population,
       displayNames = displayNames,
       boost = boost,
-      boundingbox = bbox
+      boundingbox = bbox,
+      relatedParents = hierarchyParents,
+      canGeocode = canGeocode
     )
 
     store.insert(record)

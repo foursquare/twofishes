@@ -123,7 +123,8 @@ struct ScoringFeatures {
   1: optional i32 population = 0,
   2: optional i32 boost = 0,
   3: optional list<string> parents_DEPRECATED = [],
-  4: optional list<GeocodeRelation> parents = []
+  4: optional list<GeocodeRelation> parents = [],
+  5: optional bool canGeocode = 1
 }
 
 struct GeocodeFeature {

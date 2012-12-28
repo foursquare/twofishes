@@ -230,6 +230,7 @@ class OutputHFile(basepath: String) {
       relation.setRelatedId(parentId)
       relation
     }
+
     f.scoringFeatures.setParents(parents)
     serializer.serialize(f)
   }

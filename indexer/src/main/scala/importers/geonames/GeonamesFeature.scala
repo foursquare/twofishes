@@ -1,8 +1,9 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.importers.geonames
 
-import com.foursquare.twofishes.Helpers._
-import com.foursquare.twofishes.{Helpers, LogHelper, YahooWoeType}
+import com.foursquare.twofishes.util.Helpers._
+import com.foursquare.twofishes.util.Helpers
+import com.foursquare.twofishes.{LogHelper, YahooWoeType}
 import org.bson.types.ObjectId
 
 object GeonamesFeatureColumns extends Enumeration {
@@ -177,8 +178,8 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) {
     values.contains(NAME) &&
     values.contains(LATITUDE) && 
     values.contains(LONGITUDE) &&
-    tryo { values(LATITUDE).toDouble }.isDefined &&
-    tryo { values(LONGITUDE).toDouble }.isDefined
+    TryO { values(LATITUDE).toDouble }.isDefined &&
+    TryO { values(LONGITUDE).toDouble }.isDefined
   }
   
   val featureClass = new GeonamesFeatureClass(values.get(FEATURE_CLASS), values.get(FEATURE_CODE))
@@ -218,7 +219,7 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) {
     ).toList
   }
 
-  def population: Option[Int] = flattryo {values.get(POPULATION).map(_.toInt)}
+  def population: Option[Int] = flatTryO {values.get(POPULATION).map(_.toInt)}
   def latitude: Double = values.get(LATITUDE).map(_.toDouble).get
   def longitude: Double = values.get(LONGITUDE).map(_.toDouble).get
   def countryCode: String = values.get(COUNTRY_CODE).getOrElse("XX")

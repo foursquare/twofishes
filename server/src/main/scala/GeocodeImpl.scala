@@ -1,7 +1,8 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
-import com.google.common.geometry.S2LatLngRect
+import com.foursquare.twofishes.util.{GeoTools, NameUtils, TwofishesLogger, NameNormalizer}
+import com.foursquare.twofishes.util.NameUtils.BestNameMatch
 import com.foursquare.twofishes.Implicits._
 import com.twitter.util.{Future, FuturePool}
 import java.util.concurrent.ConcurrentHashMap
@@ -42,7 +43,7 @@ object FeatureMatchOrdering extends Ordering[FeatureMatch] {
 
 
 class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) {
-  class MemoryLogger {
+  class MemoryLogger extends TwofishesLogger {
     val startTime = new Date()
 
     def timeSinceStart = {
@@ -375,42 +376,11 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     }
   }
 
-  // Given an optional language and an abbreviation preference, find the best name
-  // for a feature in the current context.
-  class FeatureNameComparator(lang: Option[String], preferAbbrev: Boolean) extends Ordering[FeatureName] {
-    def compare(a: FeatureName, b: FeatureName) = {
-      scoreName(b) - scoreName(a)
-    }
-
-    def scoreName(name: FeatureName): Int = {
-      var score = 0
-      if (Option(name.flags).exists(_.contains(FeatureNameFlags.PREFERRED))) {
-        score += 1
-      }
-      if (lang.exists(_ == name.lang)) {
-        score += 2
-      }
-      if (Option(name.flags).exists(_.contains(FeatureNameFlags.ABBREVIATION) && preferAbbrev)) {
-        score += 4
-      }
-      score
-    }
-  }
-
   // Another delightful hack. We don't save a pointer to the specific name we matched
   // in our inverted index, instead, if we know which tokens matched this feature,
   // we look for the name that, when normalized, matches the query substring.
   // i.e. for [New York, NY, Nueva York], if we know that we matched "neuv", we
   // look for the names that started with that.
-  def bestName(
-    f: GeocodeFeature,
-    lang: Option[String],
-    preferAbbrev: Boolean
-  ): Option[FeatureName] = {
-    f.names.sorted(new FeatureNameComparator(lang, preferAbbrev)).headOption
-  }
-
-  type BestNameMatch = (FeatureName, Option[String])
   var nameMatchMap =
     new scala.collection.mutable.HashMap[String, Option[BestNameMatch]]
 
@@ -421,48 +391,10 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     matchedStringOpt: Option[String]
   ): Option[BestNameMatch] = {
     val hashKey = "%s:%s:%s:%s".format(f.ids, lang, preferAbbrev, matchedStringOpt)
-    if (nameMatchMap.contains(hashKey)) {
-      return nameMatchMap(hashKey)
+    if (!nameMatchMap.contains(hashKey)) {
+      nameMatchMap(hashKey) = NameUtils.bestName(f, lang, preferAbbrev, matchedStringOpt, req.debug, logger)
     }
-
-    val ret = matchedStringOpt.flatMap(matchedString => {
-      val namesNormalized = f.names.map(n => {
-        (n, NameNormalizer.normalize(n.name))
-      })
-
-      val exactMatchNameCandidates = namesNormalized.filter(_._2 == matchedString).map(_._1)
-      val prefixMatchNameCandidates = namesNormalized.filter(_._2.startsWith(matchedString)).map(_._1)
-
-      val nameCandidates = if (exactMatchNameCandidates.isEmpty) {
-        prefixMatchNameCandidates
-      } else {
-        exactMatchNameCandidates
-      }
-
-      val bestNameMatch = nameCandidates.sorted(new FeatureNameComparator(lang, preferAbbrev)).headOption
-      if (req.debug > 1) {
-        logger.ifDebug("name candidates: " + nameCandidates)
-        logger.ifDebug("best name match: " + bestNameMatch)
-      }
-      bestNameMatch.map(name => 
-          (name,
-            Some("<b>" + name.name.take(matchedString.size) + "</b>" + name.name.drop(matchedString.size))
-      )) orElse {bestName(f, lang, preferAbbrev).map(name => {
-        val normalizedName = NameNormalizer.normalize(name.name)
-        val index = normalizedName.indexOf(matchedString)
-        if (index > -1) {
-          val before = name.name.take(index)
-          val matched = name.name.drop(index).take(matchedString.size)
-          val after = name.name.drop(index + matchedString.size)
-          (name, Some("%s<b>%s</b>%s".format(before, matched, after)))
-        } else {
-          (name, None)
-        }
-      })}
-    }) orElse { bestName(f, lang, preferAbbrev).map(n => (n, None)) }
-
-    nameMatchMap(hashKey) = ret
-    ret
+    nameMatchMap(hashKey)
   }
 
   def parseHasDupeFeature(p: Parse): Boolean = {
@@ -662,7 +594,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       parse: Option[Parse],
       numParentsRequired: Int = 0) {
     // set name
-    val name = bestName(f, Some(req.lang), false).map(_.name).getOrElse("")
+    val name = NameUtils.bestName(f, Some(req.lang), false).map(_.name).getOrElse("")
     f.setName(name)
 
     // Take the least specific parent, hopefully a state
@@ -745,10 +677,10 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     }
 
     val parentNames = parentsToUse.map(p =>
-      bestName(p.feature, Some(req.lang), true).map(_.name).getOrElse(""))
-     .filterNot(parentName => {
-       name == parentName
-     })
+      NameUtils.bestName(p.feature, Some(req.lang), true).map(_.name).getOrElse(""))
+       .filterNot(parentName => {
+         name == parentName
+       })
 
     f.setDisplayName((Vector(name) ++ parentNames ++ countryAbbrev.toList).mkString(", "))
   }
@@ -960,7 +892,9 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
           val fmatch = p(0).fmatch
           val feature = p(0).fmatch.feature
           ambiguousIdMap.getOrElse(feature.ids.toString, Nil).foreach(interp => {
-            val sortedParents = p(0).fmatch.scoringFeatures.parents.flatMap(parent =>
+            val sortedParents = p(0).fmatch.scoringFeatures.parents
+              .filter(_.relationType == GeocodeRelationType.PARENT)
+              .flatMap(parent =>
               parentMap.get(new ObjectId(parent.relatedId))).sorted(GeocodeServingFeatureOrdering)
             fixFeature(interp.feature, sortedParents, Some(p), 2)
           })

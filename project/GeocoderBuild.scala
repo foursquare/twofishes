@@ -72,7 +72,7 @@ object GeocoderBuild extends Build {
     settings = defaultSettings ++ assemblySettings ++ Seq(
       publishArtifact := true
     ),
-    base = file(".")) aggregate(core, interface, server, indexer)
+    base = file(".")) aggregate(util, core, interface, server, indexer)
 
   lazy val core = Project(id = "core",
       base = file("core"),
@@ -94,7 +94,7 @@ object GeocoderBuild extends Build {
           </dependencies>
         )
       )
-    ) dependsOn(interface)
+    ) dependsOn(interface, util)
 
   lazy val interface = Project(id = "interface",
       settings = defaultSettings ++ Seq(
@@ -117,7 +117,7 @@ object GeocoderBuild extends Build {
           "org.scala-tools.testing" %% "specs" % "1.6.9" % "test",
           "com.github.scopt" %% "scopt" % "2.0.0"        )
       ),
-      base = file("server")) dependsOn(core, interface)
+      base = file("server")) dependsOn(core, interface, util)
 
   lazy val indexer = Project(id = "indexer",
       base = file("indexer"),
@@ -143,5 +143,15 @@ object GeocoderBuild extends Build {
           "com.github.scopt" %% "scopt" % "2.0.0"
         )
       )
-  ) dependsOn(core)
+  ) dependsOn(core, util)
+
+  lazy val util = Project(id = "util",
+      base = file("util"),
+      settings = defaultSettings ++ Seq(
+        publishArtifact := true,
+        libraryDependencies ++= Seq(
+          "org.geotools" % "gt-shapefile" % "8.0-M1"
+        )
+      )
+    ) dependsOn(interface)
 }

@@ -42,7 +42,10 @@ case class GeocodeRecord(
   parents: List[String],
   population: Option[Int],
   boost: Option[Int] = None,
-  boundingbox: Option[BoundingBox] = None
+  boundingbox: Option[BoundingBox] = None,
+  // these will have GeocodeRelationType HIERARCHY
+  relatedParents: List[String] = Nil,
+  canGeocode: Boolean = true
 ) extends Ordered[GeocodeRecord] {
   def featureIds = ids.map(id => {
     val parts = id.split(":")
@@ -120,15 +123,26 @@ case class GeocodeRecord(
       .toList
     )
 
+    def makeParents(ids: List[String], relationType: GeocodeRelationType) = {
+      ids.map(id => {
+        val relation = new GeocodeRelation()
+        relation.setRelationType(GeocodeRelationType.PARENT)
+        relation.setRelatedId(id)
+        relation
+      })
+    }
+
     val scoring = new ScoringFeatures()
     boost.foreach(b => scoring.setBoost(b))
     population.foreach(p => scoring.setPopulation(p))
-    scoring.setParents(parents.map(parent => {
-      val relation = new GeocodeRelation()
-      relation.setRelationType(GeocodeRelationType.PARENT)
-      relation.setRelatedId(parent)
-      relation
-    }))
+    scoring.setParents(
+      makeParents(parents, GeocodeRelationType.PARENT) ++
+      makeParents(relatedParents, GeocodeRelationType.HIERARCHY)
+    )
+
+    if (!canGeocode) {
+      scoring.setCanGeocode(false)
+    }
     
     val servingFeature = new GeocodeServingFeature()
     servingFeature.setId(_id.toString)
