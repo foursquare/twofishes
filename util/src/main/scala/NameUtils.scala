@@ -24,9 +24,22 @@ object SlugBuilder {
     FormatPattern("{FEATURE}-{TOWN}-{ADMIN2}-{ADMIN1+ABBR}-{COUNTRY+ABBR}"),
     FormatPattern("{FEATURE}-{TOWN}-{ADMIN3}-{ADMIN1+ABBR}-{COUNTRY+ABBR}"),
     FormatPattern("{FEATURE}-{TOWN}-{ADMIN3}-{ADMIN2}-{ADMIN1+ABBR}-{COUNTRY+ABBR}"),
-    // FormatPattern("{AIRPORT+ABBR}"),
-    // down here so we only use it as a last resort
     FormatPattern("{FEATURE}-{COUNTRY+ABBR}")
+    // FormatPattern("{COUNTRY}"),
+    // FormatPattern("{COUNTRY}/{ADMIN1}", countries = List("US", "CA")),
+    // FormatPattern("{COUNTRY}/{ADMIN1}"),
+    // FormatPattern("{FEATURE}-{ADMIN1}-{COUNTRY}", countries = List("US", "CA")),
+    // FormatPattern("{FEATURE}-{ADMIN2}-{ADMIN1}-{COUNTRY}"),
+    // FormatPattern("{FEATURE}-{ADMIN3}-{ADMIN1}-{COUNTRY}"),
+    // FormatPattern("{FEATURE}-{ADMIN1}-{COUNTRY}"),
+    // FormatPattern("{FEATURE}-{ADMIN2}-{ADMIN1}-{COUNTRY}"),
+    // FormatPattern("{FEATURE}-{ADMIN3}-{ADMIN1}-{COUNTRY}"),
+    // FormatPattern("{FEATURE}-{ADMIN3}-{ADMIN2}-{ADMIN1}-{COUNTRY}"),
+    // FormatPattern("{FEATURE}-{TOWN}-{ADMIN1}-{COUNTRY}"),
+    // FormatPattern("{FEATURE}-{TOWN}-{ADMIN2}-{ADMIN1}-{COUNTRY}"),
+    // FormatPattern("{FEATURE}-{TOWN}-{ADMIN3}-{ADMIN1}-{COUNTRY}"),
+    // FormatPattern("{FEATURE}-{TOWN}-{ADMIN3}-{ADMIN2}-{ADMIN1}-{COUNTRY}"),
+    // FormatPattern("{FEATURE}-{COUNTRY}")
   )
 
   def normalize(s: String): String = {
@@ -179,7 +192,11 @@ trait NameUtils {
     lang: Option[String],
     preferAbbrev: Boolean
   ): Option[FeatureName] = {
-    f.names.sorted(new FeatureNameComparator(lang, preferAbbrev)).headOption
+    if (preferAbbrev && f.woeType == YahooWoeType.COUNTRY) {
+      f.names.find(n => n.name.size == 2 && Option(n.flags).exists(_.contains(FeatureNameFlags.ABBREVIATION)))
+    } else {
+      f.names.sorted(new FeatureNameComparator(lang, preferAbbrev)).headOption
+    }
   }
 
   type BestNameMatch = (FeatureName, Option[String])
