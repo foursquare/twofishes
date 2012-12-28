@@ -406,7 +406,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
   // Comparator for parses, we score by a number of different features
   // 
-  class ParseOrdering extends Ordering[Parse] {
+  class ParseOrdering(llHint: GeocodePoint, ccHint: String) extends Ordering[Parse] {
     var scoreMap = new scala.collection.mutable.HashMap[String, Int]
 
     // Higher is better
@@ -448,50 +448,22 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         modifySignal(-5000 * parse.length, "parse length boost")
 
         // Matching country hint is good
-        if (Option(req.cc).exists(_ == primaryFeature.feature.cc)) {
+        if (Option(ccHint).exists(_ == primaryFeature.feature.cc)) {
           modifySignal(10000, "country code match")
         }
 
-        def distancePenalty(ll: GeocodePoint) {
+        // Penalize far-away things
+        Option(llHint).foreach(ll => {
           val distance = GeoTools.getDistance(ll.lat, ll.lng,
               primaryFeature.feature.geometry.center.lat,
               primaryFeature.feature.geometry.center.lng)
           val distancePenalty = (distance / 100)
-          if (distance < 5000) {
-            modifySignal(200000, "5km distance BONUS")          
+          if (distance < 2000) {
+            modifySignal(200000, "2km distance BONUS")          
           } else {
             modifySignal(-distancePenalty, "distance penalty")          
           }
-        }
-
-        val llHint = Option(req.ll)
-        val boundsHint = Option(req.bounds)
-        if (boundsHint.isDefined) {
-          boundsHint.foreach(bounds => {
-            // if you're in the bounds and the bounds are some small enough size
-            // you get a uniform boost
-            val bbox = GeoTools.boundingBoxToS2Rect(bounds)
-            // distance in meters of the hypotenuse
-            // if it's smaller than looking at 1/4 of new york state, then
-            // boost everything in it by a lot
-            val bboxContainsCenter = 
-              GeoTools.boundsContains(bounds, primaryFeature.feature.geometry.center)
-            val bboxesIntersect = 
-              Option(primaryFeature.feature.geometry.bounds).map(fBounds =>
-                GeoTools.boundsIntersect(bounds, fBounds)).getOrElse(false)
-
-            if (bbox.lo().getEarthDistance(bbox.hi()) < 200 * 1000 &&
-              (bboxContainsCenter || bboxesIntersect)) {
-              modifySignal(200000, "200km bbox intersection BONUS")
-            } else {
-              // fall back to basic distance-from-center logic
-              distancePenalty(GeoTools.S2LatLngToPoint(bbox.getCenter))
-            }
-          })
-        } else if (llHint.isDefined) {
-          // Penalize far-away things
-          llHint.foreach(distancePenalty)
-        }
+        })
 
         // manual boost added at indexing time
         if (primaryFeature.scoringFeatures.boost != 0) {
@@ -824,7 +796,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     val hadConnector = connectorStart != -1
 
     // TODO: make this configurable
-    val sortedParses = parses.sorted(new ParseOrdering).take(3)
+    val sortedParses = parses.sorted(new ParseOrdering(req.ll, req.cc)).take(3)
 
     // sortedParses.foreach(p => {
     //   logger.ifDebug(printDebugParse(p))
@@ -974,7 +946,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
             p.size + dupeWeight
           }).headOption}).toList
 
-      val sortedParses = actualParses.sorted(new ParseOrdering)
+      val sortedParses = actualParses.sorted(new ParseOrdering(req.ll, req.cc))
 
       val filteredParses = filterParses(sortedParses, removeLowRankingParses)
       val dedupedParses = if (req.autocomplete) {
