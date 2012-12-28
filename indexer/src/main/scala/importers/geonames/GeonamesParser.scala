@@ -1,7 +1,7 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.importers.geonames
 
-import com.foursquare.twofishes.util.{NameNormalizer, SlugBuilder}
+import com.foursquare.twofishes.util.{NameNormalizer, SlugBuilder, NameUtils}
 import com.foursquare.twofishes._
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.Implicits._
@@ -104,7 +104,14 @@ object GeonamesParser {
     } {
       val parents = servingFeature.scoringFeatures.parents.asScala.flatMap(
         p => findParent(p.relatedId)).toList
-      val possibleSlugs = SlugBuilder.makePossibleSlugs(servingFeature.feature, parents)
+      var possibleSlugs = SlugBuilder.makePossibleSlugs(servingFeature.feature, parents)
+
+      // if a city is bigger than 2 million people, we'll attempt to use the bare city name as the slug
+      if (servingFeature.scoringFeatures.population > 2000000) {
+        possibleSlugs ++= NameUtils.bestName(servingFeature.feature, Some("en"), false).toList.map(n => SlugBuilder.normalize(n.name))
+
+      }
+
       if (!matchSlugs(id, servingFeature, possibleSlugs)) {
         var extraDigit = 1
         var slugFound = false

@@ -12,9 +12,8 @@ object SlugBuilder {
   val patterns = List( 
     FormatPattern("{COUNTRY+ABBR}"),
     FormatPattern("{COUNTRY+ABBR}/{ADMIN1+ABBR}", countries = List("US", "CA")),
-    FormatPattern("{COUNTRY+ABBR}/{ADMIN1}"), 
+    FormatPattern("{COUNTRY+ABBR}/{ADMIN1}"),
     FormatPattern("{FEATURE}-{ADMIN1+ABBR}-{COUNTRY+ABBR}", countries = List("US", "CA")),
-    FormatPattern("{FEATURE}-{COUNTRY+ABBR}", countries = List("US", "CA")),
     FormatPattern("{FEATURE}-{ADMIN2}-{ADMIN1+ABBR}-{COUNTRY+ABBR}"),
     FormatPattern("{FEATURE}-{ADMIN3}-{ADMIN1+ABBR}-{COUNTRY+ABBR}"),
     FormatPattern("{FEATURE}-{ADMIN1+ABBR}-{COUNTRY+ABBR}"),
@@ -30,16 +29,19 @@ object SlugBuilder {
     FormatPattern("{FEATURE}-{COUNTRY+ABBR}")
   )
 
+  def normalize(s: String): String = {
+    s.toLowerCase
+      .replaceAll("['\u2018\u2019\\.\u2013]", "")
+      .replaceAll("[\\p{Punct}&&[^-/]]", "")
+      .replace(" ", "-")
+  }
+
   def makePossibleSlugs(
     feature: GeocodeFeature,
     parents: List[GeocodeFeature]
   ): List[String] = {
     patterns.flatMap(p => NameFormatter.format(p, feature, parents, Some("en")))
-      .map(_.toLowerCase
-        .replaceAll("['\u2018\u2019\\.\u2013]", "")
-        .replaceAll("[\\p{Punct}&&[^-/]]", "")
-        .replace(" ", "-")
-      )
+      .map(normalize)
   }
 }
 
