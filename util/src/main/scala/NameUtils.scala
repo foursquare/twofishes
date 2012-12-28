@@ -25,6 +25,7 @@ object SlugBuilder {
     FormatPattern("{FEATURE}-{TOWN}-{ADMIN2}-{ADMIN1+ABBR}-{COUNTRY+ABBR}"),
     FormatPattern("{FEATURE}-{TOWN}-{ADMIN3}-{ADMIN1+ABBR}-{COUNTRY+ABBR}"),
     FormatPattern("{FEATURE}-{TOWN}-{ADMIN3}-{ADMIN2}-{ADMIN1+ABBR}-{COUNTRY+ABBR}"),
+    // FormatPattern("{AIRPORT+ABBR}"),
     // down here so we only use it as a last resort
     FormatPattern("{FEATURE}-{COUNTRY+ABBR}")
   )
@@ -36,7 +37,7 @@ object SlugBuilder {
     patterns.flatMap(p => NameFormatter.format(p, feature, parents, Some("en")))
       .map(_.toLowerCase
         .replaceAll("['\u2018\u2019\\.\u2013]", "")
-        .replaceAll("\\p{Punct}", "")
+        .replaceAll("[\\p{Punct}&&[^-/]]", "")
         .replace(" ", "-")
       )
   }
