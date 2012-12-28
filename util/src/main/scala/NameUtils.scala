@@ -9,6 +9,8 @@ import com.foursquare.twofishes.util
 object SlugBuilder {
   import NameFormatter.FormatPattern
 
+  // do something special with CN-14 (tibet) in the parents, ditto taiwan
+
   val patterns = List( 
     // FormatPattern("{COUNTRY+ABBR}"),
     // FormatPattern("{COUNTRY+ABBR}/{ADMIN1+ABBR}", countries = List("US", "CA")),
@@ -29,6 +31,8 @@ object SlugBuilder {
     FormatPattern("{COUNTRY}/{ADMIN1}", countries = List("US", "CA")),
     FormatPattern("{COUNTRY}/{ADMIN1}"),
     FormatPattern("{FEATURE}-{ADMIN1}-{COUNTRY}", countries = List("US", "CA")),
+    FormatPattern("{FEATURE}-{COUNTRY}"),
+    FormatPattern("{FEATURE}-{ADMIN1}-{COUNTRY}"),
     FormatPattern("{FEATURE}-{ADMIN2}-{ADMIN1}-{COUNTRY}"),
     FormatPattern("{FEATURE}-{ADMIN3}-{ADMIN1}-{COUNTRY}"),
     FormatPattern("{FEATURE}-{ADMIN1}-{COUNTRY}"),

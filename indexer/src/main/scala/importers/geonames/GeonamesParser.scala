@@ -391,7 +391,8 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       allParents.has(p))
 
     val slug = idToSlugMap.get(geonameId.toString)
-    if (slug.isEmpty) {
+    if (slug.isEmpty &&
+      List(YahooWoeType.TOWN, YahooWoeType.SUBURB, YahooWoeType.COUNTRY, YahooWoeType.ADMIN1, YahooWoeType.ADMIN2).has(feature.featureClass.woeType)) {
       missingSlugList.add(geonameId.toString)
     }
 
