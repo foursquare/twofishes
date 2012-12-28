@@ -142,8 +142,6 @@ object NameFormatter {
       } else if (tokenMatches.size == woeTokens.size) {
         var finalString = pattern.pattern
         tokenMatches.foreach(tokenMatch => {
-          println("{%s}".format(tokenMatch.woeToken.woeType.toString))
-          println(tokenMatch.name)
           finalString = tokenMatch.applyToString(finalString)
         })
 
