@@ -112,7 +112,7 @@ object GeonamesParser {
 
       }
 
-      if (!matchSlugs(id, servingFeature, possibleSlugs)) {
+      if (!matchSlugs(id, servingFeature, possibleSlugs) && possibleSlugs.nonEmpty) {
         var extraDigit = 1
         var slugFound = false
         while (!slugFound) {
