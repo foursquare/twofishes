@@ -1,13 +1,16 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.importers.geonames
 
-import com.foursquare.twofishes.util.NameNormalizer
+import com.foursquare.twofishes.util.{NameNormalizer, SlugBuilder}
 import com.foursquare.twofishes._
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.Implicits._
 import com.foursquare.twofishes.util.Lists.Implicits._
+import scala.collection.JavaConversions._
 import java.io.File
 import scala.collection.mutable.HashMap
+import scala.collection.mutable.HashSet
+import scalaj.collection.Implicits._
 
 object GeonamesParser {
   val geonameIdNamespace = "geonameid"
@@ -15,7 +18,120 @@ object GeonamesParser {
 
   var config: GeonamesImporterConfig = null
 
-  var countryLangMap = new HashMap[String, List[String]]()
+  var countryLangMap = new HashMap[String, List[String]]() 
+
+  case class SlugEntry(
+    id: String,
+    score: Int,
+    deprecated: Boolean = false,
+    permanent: Boolean = false
+  ) {
+    override def toString(): String = {
+      "%s\t%s\t%s".format(id, score, deprecated)
+    }
+  }
+
+  val idToSlugMap = new HashMap[String, String]
+  val slugEntryMap = new HashMap[String, SlugEntry]
+  var missingSlugList = new HashSet[String]
+
+  def readSlugs() {
+    // step 1 -- load existing slugs into ... memory?
+    val file = new File("data/computed/slugs.txt")
+    if (file.exists) {
+      val fileSource = scala.io.Source.fromFile(file)
+      val lines = fileSource.getLines.filterNot(_.startsWith("#"))
+      lines.map(l => {
+        val parts = l.split("\t")
+        val slug = parts(0)
+        val id = parts(1)
+        val score = parts(2).toInt
+        slugEntryMap(slug) = SlugEntry(id, score, deprecated = false, permanent = true)
+        idToSlugMap(id) = slug
+      })
+    }
+  }
+
+  // TODO: not in love with this talking directly to mongo, please fix
+  import com.novus.salat._
+  import com.novus.salat.global._
+  import com.novus.salat.annotations._
+  import com.novus.salat.dao._
+  import com.mongodb.casbah.Imports._
+  val parentMap = new HashMap[String, Option[GeocodeFeature]]
+
+  def findFeature(fid: String): Option[GeocodeServingFeature] = {
+    MongoGeocodeDAO.findOne(MongoDBObject("ids" -> fid))
+      .map(_.toGeocodeServingFeature)
+  }
+
+  def findParent(fid: String): Option[GeocodeFeature] = {
+    parentMap.getOrElseUpdate(fid, findFeature(fid).map(_.feature))
+  }
+
+  def calculateSlugScore(f: GeocodeServingFeature): Int = {
+    f.scoringFeatures.boost + f.scoringFeatures.population
+  }
+
+  def matchSlugs(id: String, servingFeature: GeocodeServingFeature, possibleSlugs: List[String]): Boolean = {
+    println("trying to generate a slug for %s".format(id))
+    possibleSlugs.foreach(slug => {
+      println("possible slug: %s".format(slug))
+      val existingSlug = slugEntryMap.get(slug)
+      val score = calculateSlugScore(servingFeature)
+      existingSlug match {
+        case Some(existing) if (!existing.permanent && score > existing.score) => {
+          val evictedId = existingSlug.get.id
+          println("evicting %s and recursing".format(evictedId))
+          slugEntryMap(slug) = SlugEntry(id, score, deprecated = false, permanent = false)
+          buildSlug(evictedId)
+          return true
+        }
+        case _ => {
+          println("picking %s".format(slug))
+          slugEntryMap(slug) = SlugEntry(id, score, deprecated = false, permanent = false)
+          return true
+        }
+      } 
+    })
+    println("failed to find any slug")
+    return false
+  }
+
+  def buildSlug(id: String) {
+    for {
+      servingFeature <- findFeature(id)
+    } {
+      val parents = servingFeature.scoringFeatures.parents.asScala.flatMap(
+        p => findParent(p.relatedId)).toList
+      val possibleSlugs = SlugBuilder.makePossibleSlugs(servingFeature.feature, parents)
+      if (!matchSlugs(id, servingFeature, possibleSlugs)) {
+        var extraDigit = 1
+        var slugFound = false
+        while (!slugFound) {
+          slugFound = matchSlugs(id, servingFeature, possibleSlugs.map(s => "%s-%d".format(s, extraDigit)))
+          extraDigit += 1
+        }
+      }
+    }
+  }
+
+  def buildMissingSlugs {
+    // step 2 -- compute slugs for records without
+    for {
+      id <- missingSlugList
+    } {
+      buildSlug(id)
+    }
+
+    // step 2a -- write slugs to features
+    // step 3 -- write new slug file
+    val p = new java.io.PrintWriter(new File("data/computed/slugs.txt"))
+    slugEntryMap.keys.toList.sorted.foreach(slug => 
+     p.println("%s\t%s".format(slug, slugEntryMap(slug)))
+    )
+    p.close()
+  }
 
   def parseCountryInfo() {
     val fileSource = scala.io.Source.fromFile(new File("data/downloaded/countryInfo.txt"))
@@ -32,6 +148,8 @@ object GeonamesParser {
     val store = new MongoGeocodeStorageService()
     val parser = new GeonamesParser(store)
     config = new GeonamesImporterConfig(args)
+
+    readSlugs()
 
     if (!config.parseWorld) {
       val countries = config.parseCountry.split(",")
@@ -76,6 +194,8 @@ object GeonamesParser {
         new BoundingBoxTsvImporter(store).parse(f.toString)
       })
     }
+
+//    buildSlugs()
 
     new OutputHFile(config.hfileBasePath).process()
 
@@ -254,6 +374,11 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     val hierarchyParents = hierarchyTable.getOrElse(feature.geonameid.getOrElse(""), Nil).filterNot(p =>
       allParents.has(p))
 
+    val slug = idToSlugMap.get(geonameId.toString)
+    if (slug.isEmpty) {
+      missingSlugList.add(geonameId.toString)
+    }
+
     val record = GeocodeRecord(
       ids = ids,
       names = Nil,
@@ -267,7 +392,8 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       boost = boost,
       boundingbox = bbox,
       relatedParents = hierarchyParents,
-      canGeocode = canGeocode
+      canGeocode = canGeocode,
+      slug = slug
     )
 
     store.insert(record)

@@ -143,6 +143,8 @@ struct GeocodeFeature {
 
   11: optional string highlightedName,
   12: optional string matchedName,
+
+  13: optional string slug
 }
 
 struct GeocodeServingFeature {

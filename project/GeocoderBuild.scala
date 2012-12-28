@@ -126,7 +126,7 @@ object GeocoderBuild extends Build {
         initialCommands := """
         import com.foursquare.twofishes.importers.geonames._
         import com.foursquare.twofishes._
-        import com.foursquare.twofishes.Helpers._
+        import com.foursquare.twofishes.util.Helpers._
         import com.foursquare.twofishes.Implicits._
         import java.io.File
 

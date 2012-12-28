@@ -20,11 +20,6 @@ case class NameIndex(
   @Key("_id") _id: ObjectId
 )
 
-case class FidIndex(
-  @Key("_id") fid: String,
-  oid: ObjectId
-)
-
 case class IdPop(
   fid: String,
   pop: Int
@@ -45,9 +40,6 @@ object MongoGeocodeDAO extends SalatDAO[GeocodeRecord, ObjectId](
 object NameIndexDAO extends SalatDAO[NameIndex, String](
   collection = MongoConnection()("geocoder")("name_index"))
 
-object FidIndexDAO extends SalatDAO[FidIndex, String](
-  collection = MongoConnection()("geocoder")("fid_index"))
-
 class MongoGeocodeStorageService extends GeocodeStorageWriteService {
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = {
     MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))))
@@ -55,10 +47,6 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
 
   def insert(record: GeocodeRecord) {
     MongoGeocodeDAO.insert(record)
-
-    record.ids.foreach(fid => {
-      FidIndexDAO.insert(FidIndex(fid, record._id))
-    })
   }
 
   def addNameToRecord(name: DisplayName, id: StoredFeatureId) {
@@ -84,4 +72,3 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
       false, false)
   }
 }
-

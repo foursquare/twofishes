@@ -45,7 +45,8 @@ case class GeocodeRecord(
   boundingbox: Option[BoundingBox] = None,
   // these will have GeocodeRelationType HIERARCHY
   relatedParents: List[String] = Nil,
-  canGeocode: Boolean = true
+  canGeocode: Boolean = true,
+  slug: Option[String] = None
 ) extends Ordered[GeocodeRecord] {
   def featureIds = ids.map(id => {
     val parts = id.split(":")
@@ -122,6 +123,8 @@ case class GeocodeRecord(
       .flatMap({case (k,v) => v.headOption})
       .toList
     )
+
+    slug.foreach(s => feature.setSlug(s))
 
     def makeParents(ids: List[String], relationType: GeocodeRelationType) = {
       ids.map(id => {
