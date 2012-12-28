@@ -19,6 +19,7 @@ object GeonamesParser {
   var config: GeonamesImporterConfig = null
 
   var countryLangMap = new HashMap[String, List[String]]() 
+  var countryNameMap = new HashMap[String, String]() 
 
   case class SlugEntry(
     id: String,
@@ -146,8 +147,10 @@ object GeonamesParser {
     lines.foreach(l => {
       val parts = l.split("\t")
       val cc = parts(0)
+      val englishName = parts(4)
       val langs = parts(15).split(",").map(l => l.split("-")(0)).toList
       countryLangMap += (cc -> langs)
+      countryNameMap += (cc -> englishName)
     })
   }
 
@@ -314,6 +317,12 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     var displayNames: List[DisplayName] = processFeatureName(
       feature.countryCode, "en", feature.name, true, false)
 
+    if (feature.featureClass.woeType == YahooWoeType.COUNTRY) {
+      val name = countryNameMap(feature.countryCode)
+      displayNames ::=
+        DisplayName("en", name, FeatureNameFlags.PREFERRED.getValue())
+    }
+        
     feature.asciiname.foreach(asciiname => {
       if (feature.name != asciiname && asciiname.nonEmpty) {
         displayNames ::=
