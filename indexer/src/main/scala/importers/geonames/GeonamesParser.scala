@@ -160,6 +160,7 @@ object GeonamesParser {
     config = new GeonamesImporterConfig(args)
 
     readSlugs()
+    parseCountryInfo()
 
     if (!config.parseWorld) {
       val countries = config.parseCountry.split(",")
