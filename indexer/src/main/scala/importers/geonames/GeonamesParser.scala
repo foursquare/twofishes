@@ -387,7 +387,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       }
     })
 
-    val canGeocode = feature.extraColumns.get("canGeocode").getOrElse("true").toBoolean
+    val canGeocode = feature.extraColumns.get("canGeocode").map(_.toInt).getOrElse(1) > 0
 
     val hierarchyParents = hierarchyTable.getOrElse(feature.geonameid.getOrElse(""), Nil).filterNot(p =>
       allParents.has(p))
