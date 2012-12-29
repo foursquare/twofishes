@@ -319,9 +319,10 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       feature.countryCode, "en", feature.name, true, false)
 
     if (feature.featureClass.woeType == YahooWoeType.COUNTRY) {
-      val name = countryNameMap(feature.countryCode)
-      displayNames ::=
-        DisplayName("en", name, FeatureNameFlags.PREFERRED.getValue())
+      countryNameMap.get(feature.countryCode).foreach(name =>
+        displayNames ::=
+          DisplayName("en", name, FeatureNameFlags.PREFERRED.getValue())
+      )
     }
         
     feature.asciiname.foreach(asciiname => {
