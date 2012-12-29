@@ -506,6 +506,11 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
           modifySignal(1, "US tie-break")
         }
 
+        // no one likes counties
+        if (primaryFeature.feature.cc == "US" && primaryFeature.feature.woeType == YahooWoeType.ADMIN2) {
+          modifySignal(-30000, "no one likes counties")
+        }
+
         // In autocomplete mode, prefer "tighter" interpretations
         // That is, prefer "<b>Rego Park</b>, <b>N</b>Y" to 
         // <b>Rego Park</b>, NY, <b>N</b>aalagaaffeqatigiit
@@ -623,7 +628,11 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         ).toList
 
     val countryAbbrev: Option[String] = if (f.cc != req.cc) {
-      Some(f.cc)
+      if (f.cc == "GB") {
+        Some("UK")
+      } else {
+        Some(f.cc)
+      }
     } else {
       None
     }
@@ -744,6 +753,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       }))
       logger.ifDebug("have %d parses after removeLowRankingParses".format(goodParses.size))
     }
+
+    goodParses = goodParses.filter(p => p.headOption.exists(m => m.fmatch.scoringFeatures.canGeocode))
 
     goodParses
   }
