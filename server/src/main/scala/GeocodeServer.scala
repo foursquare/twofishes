@@ -84,40 +84,40 @@ class GeocoderHttpService(geocoder: GeocodeServerImpl) extends Service[HttpReque
         response
       })
     } else {
-      (for {
-        queries <- params.get("query")
-        query <- queries.asScala.lift(0)
-      } yield { 
-        val request = new GeocodeRequest(query)
-        params.get("lang").foreach(_.asScala.headOption.foreach(v =>
-          request.setLang(v)))
-        params.get("cc").foreach(_.asScala.headOption.foreach(v =>
-          request.setCc(v)))
-        params.get("full").foreach(_.asScala.headOption.foreach(v =>
-          request.setFull(v.toBoolean)))
-        params.get("debug").foreach(_.asScala.headOption.foreach(v =>
-          request.setDebug(v.toInt)))
-        params.get("autocomplete").foreach(_.asScala.headOption.foreach(v =>
-          request.setAutocomplete(v.toBoolean)))
-        params.get("ll").foreach(_.asScala.headOption.foreach(v => {
-          val ll = v.split(",").toList
-          request.setLl(new GeocodePoint(ll(0).toDouble, ll(1).toDouble))
-        }))
-        params.get("woeHint").foreach(_.asScala.headOption.foreach(hintStr => {
-          val hints = hintStr.split(",").map(_.toInt).map(YahooWoeType.findByValue)
-          request.setWoeHint(hints.toList.asJava)
-        }))
-        params.get("woeRestrict").foreach(_.asScala.headOption.foreach(hintStr => {
-          val hints = hintStr.split(",").map(_.toInt).map(YahooWoeType.findByValue)
-          request.setWoeRestrict(hints.toList.asJava)
-        }))
+      val request = new GeocodeRequest()
+      params.get("query").foreach(_.asScala.headOption.foreach(request.setQuery))
+      params.get("slug").foreach(_.asScala.headOption.foreach(request.setSlug))
+      
+      params.get("lang").foreach(_.asScala.headOption.foreach(v =>
+        request.setLang(v)))
+      params.get("cc").foreach(_.asScala.headOption.foreach(v =>
+        request.setCc(v)))
+      params.get("full").foreach(_.asScala.headOption.foreach(v =>
+        request.setFull(v.toBoolean)))
+      params.get("debug").foreach(_.asScala.headOption.foreach(v =>
+        request.setDebug(v.toInt)))
+      params.get("autocomplete").foreach(_.asScala.headOption.foreach(v =>
+        request.setAutocomplete(v.toBoolean)))
+      params.get("ll").foreach(_.asScala.headOption.foreach(v => {
+        val ll = v.split(",").toList
+        request.setLl(new GeocodePoint(ll(0).toDouble, ll(1).toDouble))
+      }))
+      params.get("woeHint").foreach(_.asScala.headOption.foreach(hintStr => {
+        val hints = hintStr.split(",").map(_.toInt).map(YahooWoeType.findByValue)
+        request.setWoeHint(hints.toList.asJava)
+      }))
+      params.get("woeRestrict").foreach(_.asScala.headOption.foreach(hintStr => {
+        val hints = hintStr.split(",").map(_.toInt).map(YahooWoeType.findByValue)
+        request.setWoeRestrict(hints.toList.asJava)
+      }))
 
-        handleQuery(request)
-      }).getOrElse({
-        val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
-        Future.value(response)
-      })
+      handleQuery(request)
     }
+    // ).getOrElse({
+    //     val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
+    //     Future.value(response)
+    //   })
+    // }
   }
 }
 

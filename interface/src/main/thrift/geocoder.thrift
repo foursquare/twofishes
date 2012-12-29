@@ -170,7 +170,7 @@ struct GeocodeResponse {
 }
 
 struct GeocodeRequest {
-  1: string query,
+  1: optional string query,
 
   // country code hint -- results will be biased towards this country
   2: optional string cc
@@ -197,7 +197,10 @@ struct GeocodeRequest {
   9: optional list<YahooWoeType> woeRestrict = [],
 
   // supercedes ll for hinting, things in the box get boosted uniformly
-  10: optional GeocodeBoundingBox bounds
+  10: optional GeocodeBoundingBox bounds,
+
+  // This can be either a slug or a namespace:id featureid for now
+  11: optional string slug
 }
 
 service Geocoder {

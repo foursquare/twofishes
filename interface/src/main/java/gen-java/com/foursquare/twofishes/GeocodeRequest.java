@@ -41,6 +41,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   private static final TField WOE_HINT_FIELD_DESC = new TField("woeHint", TType.LIST, (short)8);
   private static final TField WOE_RESTRICT_FIELD_DESC = new TField("woeRestrict", TType.LIST, (short)9);
   private static final TField BOUNDS_FIELD_DESC = new TField("bounds", TType.STRUCT, (short)10);
+  private static final TField SLUG_FIELD_DESC = new TField("slug", TType.STRING, (short)11);
 
   public String query;
   public String cc;
@@ -52,6 +53,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   public List<YahooWoeType> woeHint;
   public List<YahooWoeType> woeRestrict;
   public GeocodeBoundingBox bounds;
+  public String slug;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
@@ -64,7 +66,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     AUTOCOMPLETE((short)7, "autocomplete"),
     WOE_HINT((short)8, "woeHint"),
     WOE_RESTRICT((short)9, "woeRestrict"),
-    BOUNDS((short)10, "bounds");
+    BOUNDS((short)10, "bounds"),
+    SLUG((short)11, "slug");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -99,6 +102,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
           return WOE_RESTRICT;
         case 10: // BOUNDS
           return BOUNDS;
+        case 11: // SLUG
+          return SLUG;
         default:
           return null;
       }
@@ -147,7 +152,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
     Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.QUERY, new FieldMetaData("query", TFieldRequirementType.DEFAULT, 
+    tmpMap.put(_Fields.QUERY, new FieldMetaData("query", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.STRING)));
     tmpMap.put(_Fields.CC, new FieldMetaData("cc", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.STRING)));
@@ -169,6 +174,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
             new EnumMetaData(TType.ENUM, YahooWoeType.class))));
     tmpMap.put(_Fields.BOUNDS, new FieldMetaData("bounds", TFieldRequirementType.OPTIONAL, 
         new StructMetaData(TType.STRUCT, GeocodeBoundingBox.class)));
+    tmpMap.put(_Fields.SLUG, new FieldMetaData("slug", TFieldRequirementType.OPTIONAL, 
+        new FieldValueMetaData(TType.STRING)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeRequest.class, metaDataMap);
   }
@@ -186,13 +193,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
 
     this.woeRestrict = new ArrayList<YahooWoeType>();
 
-  }
-
-  public GeocodeRequest(
-    String query)
-  {
-    this();
-    this.query = query;
   }
 
   /**
@@ -233,6 +233,9 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     if (other.isSetBounds()) {
       this.bounds = new GeocodeBoundingBox(other.bounds);
     }
+    if (other.isSetSlug()) {
+      this.slug = other.slug;
+    }
   }
 
   public GeocodeRequest deepCopy() {
@@ -257,6 +260,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     this.woeRestrict = new ArrayList<YahooWoeType>();
 
     this.bounds = null;
+    this.slug = null;
   }
 
   public String getQuery() {
@@ -526,6 +530,30 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     }
   }
 
+  public String getSlug() {
+    return this.slug;
+  }
+
+  public GeocodeRequest setSlug(String slug) {
+    this.slug = slug;
+    return this;
+  }
+
+  public void unsetSlug() {
+    this.slug = null;
+  }
+
+  /** Returns true if field slug is set (has been asigned a value) and false otherwise */
+  public boolean isSetSlug() {
+    return this.slug != null;
+  }
+
+  public void setSlugIsSet(boolean value) {
+    if (!value) {
+      this.slug = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case QUERY:
@@ -608,6 +636,14 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       }
       break;
 
+    case SLUG:
+      if (value == null) {
+        unsetSlug();
+      } else {
+        setSlug((String)value);
+      }
+      break;
+
     }
   }
 
@@ -643,6 +679,9 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     case BOUNDS:
       return getBounds();
 
+    case SLUG:
+      return getSlug();
+
     }
     throw new IllegalStateException();
   }
@@ -674,6 +713,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       return isSetWoeRestrict();
     case BOUNDS:
       return isSetBounds();
+    case SLUG:
+      return isSetSlug();
     }
     throw new IllegalStateException();
   }
@@ -778,6 +819,15 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       if (!(this_present_bounds && that_present_bounds))
         return false;
       if (!this.bounds.equals(that.bounds))
+        return false;
+    }
+
+    boolean this_present_slug = true && this.isSetSlug();
+    boolean that_present_slug = true && that.isSetSlug();
+    if (this_present_slug || that_present_slug) {
+      if (!(this_present_slug && that_present_slug))
+        return false;
+      if (!this.slug.equals(that.slug))
         return false;
     }
 
@@ -897,6 +947,16 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetSlug()).compareTo(typedOther.isSetSlug());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetSlug()) {
+      lastComparison = TBaseHelper.compareTo(this.slug, typedOther.slug);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -1009,6 +1069,13 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
+        case 11: // SLUG
+          if (field.type == TType.STRING) {
+            this.slug = iprot.readString();
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -1025,9 +1092,11 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
 
     oprot.writeStructBegin(STRUCT_DESC);
     if (this.query != null) {
-      oprot.writeFieldBegin(QUERY_FIELD_DESC);
-      oprot.writeString(this.query);
-      oprot.writeFieldEnd();
+      if (isSetQuery()) {
+        oprot.writeFieldBegin(QUERY_FIELD_DESC);
+        oprot.writeString(this.query);
+        oprot.writeFieldEnd();
+      }
     }
     if (this.cc != null) {
       if (isSetCc()) {
@@ -1100,6 +1169,13 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         oprot.writeFieldEnd();
       }
     }
+    if (this.slug != null) {
+      if (isSetSlug()) {
+        oprot.writeFieldBegin(SLUG_FIELD_DESC);
+        oprot.writeString(this.slug);
+        oprot.writeFieldEnd();
+      }
+    }
     oprot.writeFieldStop();
     oprot.writeStructEnd();
   }
@@ -1109,13 +1185,15 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     StringBuilder sb = new StringBuilder("GeocodeRequest(");
     boolean first = true;
 
-    sb.append("query:");
-    if (this.query == null) {
-      sb.append("null");
-    } else {
-      sb.append(this.query);
+    if (isSetQuery()) {
+      sb.append("query:");
+      if (this.query == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.query);
+      }
+      first = false;
     }
-    first = false;
     if (isSetCc()) {
       if (!first) sb.append(", ");
       sb.append("cc:");
@@ -1191,6 +1269,16 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         sb.append("null");
       } else {
         sb.append(this.bounds);
+      }
+      first = false;
+    }
+    if (isSetSlug()) {
+      if (!first) sb.append(", ");
+      sb.append("slug:");
+      if (this.slug == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.slug);
       }
       first = false;
     }
