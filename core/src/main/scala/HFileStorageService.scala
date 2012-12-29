@@ -11,6 +11,8 @@ import org.apache.hadoop.hbase.KeyValue.KeyComparator
 import org.apache.hadoop.hbase.io.hfile.{CacheConfig, Compression, HFile, HFileScanner}
 import org.apache.hadoop.hbase.util.Bytes._
 
+import com.twitter.util.Duration
+
 import org.apache.thrift.{TDeserializer}
 import org.apache.thrift.protocol.TBinaryProtocol
 
@@ -22,6 +24,19 @@ import scala.collection.mutable.HashMap
 class HFileStorageService(basepath: String) extends GeocodeStorageReadService {
   val nameMap = new NameIndexHFileInput(basepath)
   val oidMap = new GeocodeRecordHFileInput(basepath)
+
+  val slugFidMap = {
+    val (rv, duration) = Duration.inMilliseconds(readSlugMap())
+    println("took %s milliseconds to read id map".format(duration))
+    rv
+  }
+
+  def readSlugMap() = {
+    scala.io.Source.fromFile(new File(basepath, "id-mapping.txt")).getLines.map(l => {
+      val parts = l.split("\t")
+      (parts(0), new ObjectId(parts(1)))
+    }).toMap
+  }
 
   def getIdsByNamePrefix(name: String): Seq[ObjectId] = {
     nameMap.getPrefix(name)
@@ -39,6 +54,13 @@ class HFileStorageService(basepath: String) extends GeocodeStorageReadService {
 
   def getByObjectIds(oids: Seq[ObjectId]): Map[ObjectId, GeocodeServingFeature] = {
     oids.flatMap(oid => oidMap.get(oid).map(r => (oid -> r))).toMap
+  }
+
+  def getBySlugOrFeatureIds(ids: Seq[String]) = {
+    val oidMap = ids.flatMap(id => slugFidMap.get(id).map(oid => (oid, id))).toMap
+    getByObjectIds(oidMap.keys.toList).map({
+      case (k, v) => (oidMap(k), v)
+    })
   }
 }
 

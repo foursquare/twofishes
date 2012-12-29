@@ -254,8 +254,21 @@ class OutputHFile(basepath: String) {
 
   val fidMap = new FidMap()
 
+  def writeSlugsAndIds() {
+    val p = new java.io.PrintWriter(new File(basepath, "id-mapping.txt"))
+    MongoGeocodeDAO.find(MongoDBObject()).foreach(geocodeRecord => {
+      (geocodeRecord.slug.toList ++ geocodeRecord.ids).foreach(id => {
+        p.println("%s\t%s".format(id, geocodeRecord._id))
+      })
+    })
+    p.close()
+  }
+
   def process() {
     writeNames()
+
+    // writeSlugs + geoids?
+    
 
     def fixParentId(fid: String) = fidMap.get(fid).map(_.toString)
 
