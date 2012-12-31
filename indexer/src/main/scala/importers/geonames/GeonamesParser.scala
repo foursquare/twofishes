@@ -336,7 +336,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     if (feature.featureClass.woeType == YahooWoeType.COUNTRY) {
       countryNameMap.get(feature.countryCode).foreach(name =>
         displayNames ::=
-          DisplayName("en", name, FeatureNameFlags.PREFERRED.getValue())
+          DisplayName("en", name, FeatureNameFlags.PREFERRED.getValue() | FeatureNameFlags.COLLOQUIAL.getValue())
       )
     }
         

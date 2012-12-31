@@ -84,6 +84,8 @@ enum FeatureNameFlags {
 
   // Names coming from aliases.txt
   ALT_NAME = 32
+
+  COLLOQUIAL = 64
 }
 
 struct FeatureName {

@@ -176,6 +176,9 @@ trait NameUtils {
 
     def scoreName(name: FeatureName): Int = {
       var score = 0
+      if (Option(name.flags).exists(_.contains(FeatureNameFlags.COLLOQUIAL))) {
+        score += 10
+      }
       if (Option(name.flags).exists(_.contains(FeatureNameFlags.PREFERRED))) {
         score += 1
       }
