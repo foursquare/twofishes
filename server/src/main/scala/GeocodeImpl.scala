@@ -560,7 +560,27 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
           // performContainHackCheck = (aName == bName)
         }
 
+        def isNYCcounty(feature: FeatureMatch): Boolean = {
+          val adminIds = List(
+            "US-NY-061", // manhattan
+            "US-NY-085", // staten island
+            "US-NY-047", // bk
+            "US-NY-081", // queens,
+            "US-NY-047" // brooklyn
+          )
+
+          val ids = feature.fmatch.feature.ids.toString
+
+          val ret = feature.fmatch.feature == YahooWoeType.ADMIN2 && adminIds.exists(ids.contains)
+          if (ret) {
+            logger.ifDebug("is an nyc county, no contains check")
+          }
+          ret
+        }
+
         if (performContainHackCheck &&
+            !isNYCcounty(aFeature) &&
+            !isNYCcounty(bFeature) &&
             aFeature.tokenStart == bFeature.tokenStart && 
             aFeature.tokenEnd == bFeature.tokenEnd &&
             aFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY &&

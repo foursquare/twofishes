@@ -31,6 +31,7 @@ trait GeocodeStorageWriteService {
   def addNameToRecord(name: DisplayName, id: StoredFeatureId)
   def addNameIndex(name: NameIndex)
   def addBoundingBoxToRecord(id: StoredFeatureId, bbox: BoundingBox)
+  def addSlugToRecord(id: StoredFeatureId, slug: String)
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord]
 }
 
@@ -62,6 +63,12 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
   def addBoundingBoxToRecord(id: StoredFeatureId, bbox: BoundingBox) {
     MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))),
       MongoDBObject("$set" -> MongoDBObject("boundingbox" -> grater[BoundingBox].asDBObject(bbox))),
+      false, false)
+  }
+
+  def addSlugToRecord(id: StoredFeatureId, slug: String) {
+    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))),
+      MongoDBObject("$set" -> MongoDBObject("slug" -> slug)),
       false, false)
   }
 

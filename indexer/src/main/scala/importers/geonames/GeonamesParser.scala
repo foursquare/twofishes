@@ -126,7 +126,7 @@ object GeonamesParser {
     }
   }
 
-  def buildMissingSlugs {
+  def buildMissingSlugs() {
     // step 2 -- compute slugs for records without
     for {
       id <- missingSlugList
@@ -134,13 +134,25 @@ object GeonamesParser {
       buildSlug(id)
     }
 
-    // step 2a -- write slugs to features
     // step 3 -- write new slug file
     val p = new java.io.PrintWriter(new File("data/computed/slugs.txt"))
     slugEntryMap.keys.toList.sorted.foreach(slug => 
      p.println("%s\t%s".format(slug, slugEntryMap(slug)))
     )
     p.close()
+  }
+
+  def writeMissingSlugs(store: GeocodeStorageWriteService) {
+    for {
+      id <- missingSlugList
+      slug <- idToSlugMap.get(id)
+      val parts = id.split(":")
+      fid1 <- parts.lift(0)
+      fid2 <- parts.lift(1)
+    } {
+      val fid = StoredFeatureId(fid1, fid2)
+      store.addSlugToRecord(fid, slug)
+    }
   }
 
   def parseCountryInfo() {
@@ -208,7 +220,8 @@ object GeonamesParser {
       })
     }
 
-//    buildSlugs()
+    buildMissingSlugs()
+    writeMissingSlugs(store)
 
     new OutputHFile(config.hfileBasePath).process()
 

@@ -21,6 +21,7 @@ class MockGeocodeStorageWriteService extends GeocodeStorageWriteService {
     nameMap(id) = name :: nameMap(id)
   }
   def addBoundingBoxToRecord(id: StoredFeatureId, bbox: BoundingBox) {}
+  def addSlugToRecord(id: StoredFeatureId, slug: String) {}
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = Nil.iterator
   def addNameIndex(name: NameIndex) {}
 }
