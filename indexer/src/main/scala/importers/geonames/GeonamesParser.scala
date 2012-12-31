@@ -82,7 +82,7 @@ object GeonamesParser {
       val score = calculateSlugScore(servingFeature)
       existingSlug match {
         case Some(existing) => {
-          if (!existing.permanent && score > existing.score) 
+          if (!existing.permanent && score > existing.score) {
             val evictedId = existingSlug.get.id
             println("evicting %s and recursing".format(evictedId))
             slugEntryMap(slug) = SlugEntry(id, score, deprecated = false, permanent = false)
