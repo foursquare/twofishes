@@ -266,9 +266,7 @@ class OutputHFile(basepath: String) {
 
   def process() {
     writeNames()
-
-    // writeSlugs + geoids?
-    
+    writeSlugsAndIds()
 
     def fixParentId(fid: String) = fidMap.get(fid).map(_.toString)
 
