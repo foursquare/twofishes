@@ -564,7 +564,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
           val adminIds = List(
             "US-NY-061", // manhattan
             "US-NY-085", // staten island
-            "US-NY-047", // bk
+            "US-NY-005", // bronx
             "US-NY-081", // queens,
             "US-NY-047" // brooklyn
           )

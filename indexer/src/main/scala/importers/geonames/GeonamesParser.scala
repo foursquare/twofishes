@@ -62,8 +62,12 @@ object GeonamesParser {
   val parentMap = new HashMap[String, Option[GeocodeFeature]]
 
   def findFeature(fid: String): Option[GeocodeServingFeature] = {
-    MongoGeocodeDAO.findOne(MongoDBObject("ids" -> fid))
+    val ret = MongoGeocodeDAO.findOne(MongoDBObject("ids" -> fid))
       .map(_.toGeocodeServingFeature)
+    if (ret.isEmpty) {
+      println("couldn't find %s".format(fid))
+    }
+    ret
   }
 
   def findParent(fid: String): Option[GeocodeFeature] = {
@@ -127,6 +131,7 @@ object GeonamesParser {
   }
 
   def buildMissingSlugs() {
+    println("building missing slugs for %d fetures".format(missingSlugList.size))
     // step 2 -- compute slugs for records without
     for {
       id <- missingSlugList
@@ -135,6 +140,7 @@ object GeonamesParser {
     }
 
     // step 3 -- write new slug file
+    println("writing new slug map for %d features".format(slugEntryMap.size))
     val p = new java.io.PrintWriter(new File("data/computed/slugs.txt"))
     slugEntryMap.keys.toList.sorted.foreach(slug => 
      p.println("%s\t%s".format(slug, slugEntryMap(slug)))
@@ -220,11 +226,11 @@ object GeonamesParser {
       })
     }
 
+    println("building missing slugs")
     buildMissingSlugs()
     writeMissingSlugs(store)
 
     new OutputHFile(config.hfileBasePath).process()
-
   }
 }
 
@@ -410,7 +416,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     val slug = idToSlugMap.get(geonameId.toString)
     if (slug.isEmpty &&
       List(YahooWoeType.TOWN, YahooWoeType.SUBURB, YahooWoeType.COUNTRY, YahooWoeType.ADMIN1, YahooWoeType.ADMIN2).has(feature.featureClass.woeType)) {
-      missingSlugList.add(geonameId.toString)
+      geonameId.foreach(gid => missingSlugList.add(gid.toString))
     }
 
     val record = GeocodeRecord(

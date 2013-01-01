@@ -58,7 +58,7 @@ object SlugBuilder {
     parents: List[GeocodeFeature]
   ): List[String] = {
     patterns.flatMap(p => NameFormatter.format(p, feature, parents, Some("en")))
-      .map(normalize)
+      .map(normalize).map(NameNormalizer.deaccent)
   }
 }
 
