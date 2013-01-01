@@ -440,7 +440,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
           modifySignal(1000, "promoting feature with bounds")
         }
 
-        if (req.woeHint.contains(primaryFeature.feature.woeType)) {
+        if (req.woeHint.asScala.has(primaryFeature.feature.woeType)) {
           modifySignal(1000000,
             "woe hint matches %d".format(primaryFeature.feature.woeType.getValue))
         }
@@ -508,7 +508,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
         // no one likes counties
         if (primaryFeature.feature.cc == "US" && primaryFeature.feature.woeType == YahooWoeType.ADMIN2) {
-          modifySignal(-30000, "no one likes counties")
+          modifySignal(-30000, "no one likes counties in the US")
         }
 
         // In autocomplete mode, prefer "tighter" interpretations
@@ -579,12 +579,16 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         }
 
         if (performContainHackCheck &&
-            !isNYCcounty(aFeature) &&
-            !isNYCcounty(bFeature) &&
             aFeature.tokenStart == bFeature.tokenStart && 
             aFeature.tokenEnd == bFeature.tokenEnd &&
+            !isNYCcounty(aFeature) &&
+            !isNYCcounty(bFeature) &&
             aFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY &&
-            bFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY
+            bFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY &&
+            // if we have a hint that we want one of the types, then let the 
+            // scoring happen naturally
+            !req.woeHint.asScala.has(aFeature.fmatch.feature.woeType) &&
+            !req.woeHint.asScala.has(bFeature.fmatch.feature.woeType)
           ) {
           // if a is a parent of b, prefer b 
           if (aFeature.fmatch.scoringFeatures.parents.asScala.map(_.relatedId).has(bFeature.fmatch.id)) {
@@ -705,6 +709,10 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         n.lang == "en" ||
         namesToUse.contains(n)
       ))
+    }
+
+    if (!req.full & !req.includePolygon) {
+      f.geometry.unsetWkbGeometry()
     }
 
     val parentNames = parentsToUse.map(p =>

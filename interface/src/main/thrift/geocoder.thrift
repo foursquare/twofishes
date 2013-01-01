@@ -203,6 +203,8 @@ struct GeocodeRequest {
 
   // This can be either a slug or a namespace:id featureid for now
   11: optional string slug
+
+  12: optional bool includePolygon = 0
 }
 
 service Geocoder {

@@ -46,7 +46,8 @@ case class GeocodeRecord(
   // these will have GeocodeRelationType HIERARCHY
   relatedParents: List[String] = Nil,
   canGeocode: Boolean = true,
-  slug: Option[String] = None
+  slug: Option[String] = None,
+  polygon: Option[Array[Byte]] = None
 ) extends Ordered[GeocodeRecord] {
   def featureIds = ids.map(id => {
     val parts = id.split(":")
@@ -70,6 +71,8 @@ case class GeocodeRecord(
         new GeocodePoint(bounds.sw.lat, bounds.sw.lng)
       ))  
     )
+
+    polygon.foreach(poly => geometry.setWkbGeometry(poly))
     
     val feature = new GeocodeFeature(
       cc, geometry

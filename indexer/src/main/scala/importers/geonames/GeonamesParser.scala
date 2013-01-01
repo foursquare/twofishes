@@ -6,6 +6,8 @@ import com.foursquare.twofishes._
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.Implicits._
 import com.foursquare.twofishes.util.Lists.Implicits._
+import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
+import org.geotools.geometry.jts.JTSFactoryFinder
 import scala.collection.JavaConversions._
 import java.io.File
 import scala.collection.mutable.HashMap
@@ -35,6 +37,7 @@ object GeonamesParser {
   val idToSlugMap = new HashMap[String, String]
   val slugEntryMap = new HashMap[String, SlugEntry]
   var missingSlugList = new HashSet[String]
+  var hasPolygonList = new HashSet[String]
 
   def readSlugs() {
     // step 1 -- load existing slugs into ... memory?
@@ -242,7 +245,11 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     def info(s: String) { println(s)}
   }
 
-  lazy val hierarchyTable = HierarchyParser.parseHierarchy("data/downloaded/hierarchy.txt")
+  lazy val hierarchyTable = HierarchyParser.parseHierarchy(List(
+    "data/downloaded/hierarchy.txt",
+    "data/private/hierarchy.txt",
+    "data/custom/hierarchy.txt"
+  ))
 
   // token -> alt tokens
   val rewriteTable = new TsvHelperFileParser("data/custom/rewrites.txt",
@@ -257,6 +264,9 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     "data/private/aliases.txt")
   // geonameid --> new center
   val moveTable = new TsvHelperFileParser("data/custom/moves.txt")
+  // geonameid -> polygon
+  val polygonTable = new TsvHelperFileParser("data/custom/polygons.txt",
+    "data/private/polygons.txt")
 
   val helperTables = List(rewriteTable, boostTable, aliasTable)
 
@@ -410,10 +420,22 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
 
     val canGeocode = feature.extraColumns.get("canGeocode").map(_.toInt).getOrElse(1) > 0
 
+    val polygonExtraEntry: Option[String] = feature.extraColumns.get("polygon")
+    val polygonTableEntry: Option[String] = polygonTable.get(geonameId.get.toString).headOption
+    val polygon: Option[Array[Byte]] = for {
+      gid <- geonameId
+      polygon <- polygonExtraEntry orElse polygonTableEntry
+    } yield {
+      val wktReader = new WKTReader()
+      val wkbWriter = new WKBWriter()
+      val geom = wktReader.read(polygon)
+      wkbWriter.write(geom)
+    }
+
     val hierarchyParents = hierarchyTable.getOrElse(feature.geonameid.getOrElse(""), Nil).filterNot(p =>
       allParents.has(p))
 
-    val slug = idToSlugMap.get(geonameId.toString)
+    val slug: Option[String] = geonameId.flatMap(gid => idToSlugMap.get(gid.toString))
     if (slug.isEmpty &&
       List(YahooWoeType.TOWN, YahooWoeType.SUBURB, YahooWoeType.COUNTRY, YahooWoeType.ADMIN1, YahooWoeType.ADMIN2).has(feature.featureClass.woeType)) {
       geonameId.foreach(gid => missingSlugList.add(gid.toString))

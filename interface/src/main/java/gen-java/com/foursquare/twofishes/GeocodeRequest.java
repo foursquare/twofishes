@@ -42,6 +42,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   private static final TField WOE_RESTRICT_FIELD_DESC = new TField("woeRestrict", TType.LIST, (short)9);
   private static final TField BOUNDS_FIELD_DESC = new TField("bounds", TType.STRUCT, (short)10);
   private static final TField SLUG_FIELD_DESC = new TField("slug", TType.STRING, (short)11);
+  private static final TField INCLUDE_POLYGON_FIELD_DESC = new TField("includePolygon", TType.BOOL, (short)12);
 
   public String query;
   public String cc;
@@ -54,6 +55,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   public List<YahooWoeType> woeRestrict;
   public GeocodeBoundingBox bounds;
   public String slug;
+  public boolean includePolygon;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
@@ -67,7 +69,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     WOE_HINT((short)8, "woeHint"),
     WOE_RESTRICT((short)9, "woeRestrict"),
     BOUNDS((short)10, "bounds"),
-    SLUG((short)11, "slug");
+    SLUG((short)11, "slug"),
+    INCLUDE_POLYGON((short)12, "includePolygon");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -104,6 +107,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
           return BOUNDS;
         case 11: // SLUG
           return SLUG;
+        case 12: // INCLUDE_POLYGON
+          return INCLUDE_POLYGON;
         default:
           return null;
       }
@@ -147,7 +152,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   private static final int __FULL_ISSET_ID = 0;
   private static final int __DEBUG_ISSET_ID = 1;
   private static final int __AUTOCOMPLETE_ISSET_ID = 2;
-  private BitSet __isset_bit_vector = new BitSet(3);
+  private static final int __INCLUDEPOLYGON_ISSET_ID = 3;
+  private BitSet __isset_bit_vector = new BitSet(4);
 
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
@@ -176,6 +182,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         new StructMetaData(TType.STRUCT, GeocodeBoundingBox.class)));
     tmpMap.put(_Fields.SLUG, new FieldMetaData("slug", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.STRING)));
+    tmpMap.put(_Fields.INCLUDE_POLYGON, new FieldMetaData("includePolygon", TFieldRequirementType.OPTIONAL, 
+        new FieldValueMetaData(TType.BOOL)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeRequest.class, metaDataMap);
   }
@@ -192,6 +200,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     this.woeHint = new ArrayList<YahooWoeType>();
 
     this.woeRestrict = new ArrayList<YahooWoeType>();
+
+    this.includePolygon = false;
 
   }
 
@@ -236,6 +246,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     if (other.isSetSlug()) {
       this.slug = other.slug;
     }
+    this.includePolygon = other.includePolygon;
   }
 
   public GeocodeRequest deepCopy() {
@@ -261,6 +272,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
 
     this.bounds = null;
     this.slug = null;
+    this.includePolygon = false;
+
   }
 
   public String getQuery() {
@@ -554,6 +567,29 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     }
   }
 
+  public boolean isIncludePolygon() {
+    return this.includePolygon;
+  }
+
+  public GeocodeRequest setIncludePolygon(boolean includePolygon) {
+    this.includePolygon = includePolygon;
+    setIncludePolygonIsSet(true);
+    return this;
+  }
+
+  public void unsetIncludePolygon() {
+    __isset_bit_vector.clear(__INCLUDEPOLYGON_ISSET_ID);
+  }
+
+  /** Returns true if field includePolygon is set (has been asigned a value) and false otherwise */
+  public boolean isSetIncludePolygon() {
+    return __isset_bit_vector.get(__INCLUDEPOLYGON_ISSET_ID);
+  }
+
+  public void setIncludePolygonIsSet(boolean value) {
+    __isset_bit_vector.set(__INCLUDEPOLYGON_ISSET_ID, value);
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case QUERY:
@@ -644,6 +680,14 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       }
       break;
 
+    case INCLUDE_POLYGON:
+      if (value == null) {
+        unsetIncludePolygon();
+      } else {
+        setIncludePolygon((Boolean)value);
+      }
+      break;
+
     }
   }
 
@@ -682,6 +726,9 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     case SLUG:
       return getSlug();
 
+    case INCLUDE_POLYGON:
+      return new Boolean(isIncludePolygon());
+
     }
     throw new IllegalStateException();
   }
@@ -715,6 +762,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       return isSetBounds();
     case SLUG:
       return isSetSlug();
+    case INCLUDE_POLYGON:
+      return isSetIncludePolygon();
     }
     throw new IllegalStateException();
   }
@@ -828,6 +877,15 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       if (!(this_present_slug && that_present_slug))
         return false;
       if (!this.slug.equals(that.slug))
+        return false;
+    }
+
+    boolean this_present_includePolygon = true && this.isSetIncludePolygon();
+    boolean that_present_includePolygon = true && that.isSetIncludePolygon();
+    if (this_present_includePolygon || that_present_includePolygon) {
+      if (!(this_present_includePolygon && that_present_includePolygon))
+        return false;
+      if (this.includePolygon != that.includePolygon)
         return false;
     }
 
@@ -957,6 +1015,16 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetIncludePolygon()).compareTo(typedOther.isSetIncludePolygon());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetIncludePolygon()) {
+      lastComparison = TBaseHelper.compareTo(this.includePolygon, typedOther.includePolygon);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -1076,6 +1144,14 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
+        case 12: // INCLUDE_POLYGON
+          if (field.type == TType.BOOL) {
+            this.includePolygon = iprot.readBool();
+            setIncludePolygonIsSet(true);
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -1175,6 +1251,11 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         oprot.writeString(this.slug);
         oprot.writeFieldEnd();
       }
+    }
+    if (isSetIncludePolygon()) {
+      oprot.writeFieldBegin(INCLUDE_POLYGON_FIELD_DESC);
+      oprot.writeBool(this.includePolygon);
+      oprot.writeFieldEnd();
     }
     oprot.writeFieldStop();
     oprot.writeStructEnd();
@@ -1280,6 +1361,12 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       } else {
         sb.append(this.slug);
       }
+      first = false;
+    }
+    if (isSetIncludePolygon()) {
+      if (!first) sb.append(", ");
+      sb.append("includePolygon:");
+      sb.append(this.includePolygon);
       first = false;
     }
     sb.append(")");
