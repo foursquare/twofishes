@@ -570,8 +570,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
           )
 
           val ids = feature.fmatch.feature.ids.toString
+          val ret = feature.fmatch.feature.woeType == YahooWoeType.ADMIN2 && adminIds.exists(ids.contains)
 
-          val ret = feature.fmatch.feature == YahooWoeType.ADMIN2 && adminIds.exists(ids.contains)
           if (ret) {
             logger.ifDebug("is an nyc county, no contains check")
           }

@@ -27,7 +27,7 @@ class HFileStorageService(basepath: String) extends GeocodeStorageReadService {
 
   val slugFidMap = {
     val (rv, duration) = Duration.inMilliseconds(readSlugMap())
-    println("took %s milliseconds to read id map".format(duration))
+    println("took %s seconds to read id map".format(duration.inSeconds))
     rv
   }
 
