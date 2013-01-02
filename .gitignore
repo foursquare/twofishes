@@ -26,3 +26,4 @@ jrebel/*
 sbt-launch.jar
 *.hfile
 *.crc
+id-mapping.txt

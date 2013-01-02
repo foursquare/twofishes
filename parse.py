@@ -3,6 +3,7 @@
 import os
 import sys
 from optparse import OptionParser
+import datetime
 
 usage = "usage: %prog [options] output_directory"
 parser = OptionParser(usage = usage)
@@ -18,6 +19,8 @@ if len(args) != 1:
   sys.exit(1)
 
 basepath = args[0]
+basepath = os.path.join(basepath, str(datetime.datetime.now()).replace(' ', '-'))
+os.mkdir(basepath)
 
 if options.country:
   cmd_opts = '--parse_country %s' % options.country
