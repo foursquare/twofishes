@@ -44,7 +44,7 @@ object GeonamesParser {
     val file = new File("data/computed/slugs.txt")
     if (file.exists) {
       val fileSource = scala.io.Source.fromFile(file)
-      val lines = fileSource.getLines.filterNot(_.startsWith("#"))
+      val lines = fileSource.getLines.toList.filterNot(_.startsWith("#"))
       lines.map(l => {
         val parts = l.split("\t")
         val slug = parts(0)
@@ -54,6 +54,7 @@ object GeonamesParser {
         idToSlugMap(id) = slug
       })
     }
+    println("read %d slugs".format(slugEntryMap.size))
   }
 
   // TODO: not in love with this talking directly to mongo, please fix
@@ -182,7 +183,7 @@ object GeonamesParser {
     val parser = new GeonamesParser(store)
     config = new GeonamesImporterConfig(args)
 
-    readSlugs()
+    Helpers.duration("readSlugs") { readSlugs() }
     parseCountryInfo()
 
     if (config.importAlternateNames) {
@@ -434,7 +435,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     val canGeocode = feature.extraColumns.get("canGeocode").map(_.toInt).getOrElse(1) > 0
 
     val polygonExtraEntry: Option[String] = feature.extraColumns.get("polygon")
-    val polygonTableEntry: Option[String] = polygonTable.get(geonameId.get.toString).headOption
+    val polygonTableEntry: Option[String] = polygonTable.get(geonameId.get.toString).lastOption
     val polygon: Option[Array[Byte]] = for {
       gid <- geonameId
       polygon <- polygonExtraEntry orElse polygonTableEntry
@@ -448,7 +449,9 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     val hierarchyParents = hierarchyTable.getOrElse(feature.geonameid.getOrElse(""), Nil).filterNot(p =>
       allParents.has(p))
 
-    val slug: Option[String] = geonameId.flatMap(gid => idToSlugMap.get(gid.toString))
+    val slug: Option[String] = geonameId.flatMap(gid => {
+      idToSlugMap.get(gid.toString)
+    })
     if (slug.isEmpty &&
       List(YahooWoeType.TOWN, YahooWoeType.SUBURB, YahooWoeType.COUNTRY, YahooWoeType.ADMIN1, YahooWoeType.ADMIN2).has(feature.featureClass.woeType)) {
       geonameId.foreach(gid => missingSlugList.add(gid.toString))
@@ -523,7 +526,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
   def readAlternateNamesFile(filename: String) {
     val lines = scala.io.Source.fromFile(new File(filename)).getLines
     lines.zipWithIndex.foreach({case (line, index) => {
-      if (index % 10000 == 0) {
+      if (index % 100000 == 0) {
         logger.info("imported %d alternateNames so far".format(index))
       }
 
@@ -548,8 +551,6 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
             isShortName = isShortName
           ) :: names
       }
-
-      parseAlternateNamesLine(line, index)
     }})
   }
 
@@ -603,27 +604,27 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     }
   }
 
-  def parseAlternateNamesLine(line: String, index: Int) {
-    val parts = line.split("\t").toList
-    if (parts.size < 4) {
-        logger.error("line %d didn't have 5 parts: %s -- %s".format(index, line, parts.mkString(",")))
-      } else {
-        val geonameid = parts(1)
-        val lang = parts(2)
-        val name = parts(3)
-        val isPrefName = parts.lift(4).exists(_ == "1")
-        val isShortName = parts.lift(5).exists(_ == "1")
+  // def parseAlternateNamesLine(line: String, index: Int) {
+  //   val parts = line.split("\t").toList
+  //   if (parts.size < 4) {
+  //       logger.error("line %d didn't have 5 parts: %s -- %s".format(index, line, parts.mkString(",")))
+  //     } else {
+  //       val geonameid = parts(1)
+  //       val lang = parts(2)
+  //       val name = parts(3)
+  //       val isPrefName = parts.lift(4).exists(_ == "1")
+  //       val isShortName = parts.lift(5).exists(_ == "1")
 
-        val fid = StoredFeatureId(geonameIdNamespace, geonameid)
-        val record = store.getById(fid).toList.headOption
-        val names = processFeatureName(
-          record.map(_.cc).getOrElse("XX"), lang, name, isPrefName, isShortName)
-        names.foreach(dn => {
-          addDisplayNameToNameIndex(dn, fid, record)
-          store.addNameToRecord(dn, fid)
-        })
-    }
-  }
+  //       val fid = StoredFeatureId(geonameIdNamespace, geonameid)
+  //       val record = store.getById(fid).toList.headOption
+  //       val names = processFeatureName(
+  //         record.map(_.cc).getOrElse("XX"), lang, name, isPrefName, isShortName)
+  //       names.foreach(dn => {
+  //         addDisplayNameToNameIndex(dn, fid, record)
+  //         store.addNameToRecord(dn, fid)
+  //       })
+  //   }
+  // }
 
   def parsePreferredNames() {
     // geonameid -> lang|prefName
