@@ -267,6 +267,8 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
   // geonameid -> polygon
   val polygonTable = new TsvHelperFileParser("data/custom/polygons.txt",
     "data/private/polygons.txt")
+  // geonameid -> name to be deleted
+  val nameDeleteTable = new TsvHelperFileParser("data/custom/name-deletes.txt")
 
   val helperTables = List(rewriteTable, boostTable, aliasTable)
 
@@ -308,8 +310,12 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     nameSet.toList.filterNot(_.isEmpty)
   }
 
-  def addDisplayNameToNameIndex(dn: DisplayName, fid: StoredFeatureId, record: Option[GeocodeRecord]) = {
+  def addDisplayNameToNameIndex(dn: DisplayName, fid: StoredFeatureId, record: Option[GeocodeRecord]) {
     val name = NameNormalizer.normalize(dn.name)
+
+    if (nameDeleteTable.get(fid.toString).exists(_ == dn.name)) {
+      return
+    }
 
     val pop: Int = 
       record.flatMap(_.population).getOrElse(0) + record.flatMap(_.boost).getOrElse(0)
@@ -455,7 +461,8 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       boundingbox = bbox,
       relatedParents = hierarchyParents,
       canGeocode = canGeocode,
-      slug = slug
+      slug = slug,
+      polygon = polygon
     )
 
     store.insert(record)

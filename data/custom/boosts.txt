@@ -6,3 +6,5 @@
 5144580|40000
 # demote Williamsburg, VA
 4793846|-14815000
+# give bali the island a big boost over indian state of bali
+1650534|1000000
