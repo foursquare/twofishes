@@ -198,7 +198,7 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) {
   def makeAdminId(level: AdminLevel.Value): Option[String] = {
     if (adminCode(level).exists(_.nonEmpty)) {
       Some(
-        AdminLevel.values.filter(_ <= level).flatMap(l => adminCode(l)).mkString("-")
+        AdminLevel.values.toList.filter(_ <= level).flatMap(l => adminCode(l)).mkString("-")
       )
     } else {
       None
