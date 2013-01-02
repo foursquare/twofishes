@@ -17,7 +17,10 @@ class TsvHelperFileParser(filenames: String*) extends LogHelper {
       val lines = fileSource.getLines.filterNot(_.startsWith("#"))
 
       lines.foreach(line => {
-        val parts = line.split("\\|")
+        var parts = line.split("\\|")
+        if (line.contains("\t")) {
+          parts = line.split("\t")
+        }
         if (parts.length != 2) {
           logger.error("Broken line in %s: %s (%d parts, needs 2)".format(filename, line, parts.length))
         } else {

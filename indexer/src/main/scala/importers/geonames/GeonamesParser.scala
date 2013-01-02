@@ -1,7 +1,7 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.importers.geonames
 
-import com.foursquare.twofishes.util.{NameNormalizer, SlugBuilder, NameUtils}
+import com.foursquare.twofishes.util.{NameNormalizer, SlugBuilder, NameUtils, Helpers}
 import com.foursquare.twofishes._
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.Implicits._
@@ -185,6 +185,13 @@ object GeonamesParser {
     readSlugs()
     parseCountryInfo()
 
+    if (config.importAlternateNames) {
+      Helpers.duration("readAlternateNamesFile") {
+        parser.readAlternateNamesFile(
+          "data/downloaded/alternateNames.txt")
+      }
+    }
+
     if (!config.parseWorld) {
       val countries = config.parseCountry.split(",")
       countries.foreach(f => {
@@ -213,11 +220,6 @@ object GeonamesParser {
         println("parsing supplemental file: %s".format(f))
         parser.parseAdminFile(f.toString, allowBuildings=true)
       })
-    }
-
-    if (config.importAlternateNames) {
-      parser.parseAlternateNamesFile(
-        "data/downloaded/alternateNames.txt")
     }
 
     parser.parsePreferredNames()
@@ -388,6 +390,11 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       displayNames ::= DisplayName("en", n, FeatureNameFlags.ALT_NAME.getValue)
     )
 
+    displayNames ++= alternateNamesMap.getOrElse(geonameId.get.toString, Nil).flatMap(altName => {
+      processFeatureName(
+        feature.countryCode, altName.lang, altName.name, altName.isPrefName, altName.isShortName)
+    })
+
     // Build parents
     val extraParents: List[String] = feature.extraColumns.get("parents").toList.flatMap(_.split(",").toList)
     val parents: List[String] = feature.parents.map(p => StoredFeatureId(geonameAdminIdNamespace, p))
@@ -505,16 +512,57 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     }})
   }
 
-  def parseAlternateNamesFile(filename: String) {
+  case class AlternateNameEntry(
+    nameId: String,
+    lang: String,
+    name: String,
+    isPrefName: Boolean,
+    isShortName: Boolean
+  )
+  val alternateNamesMap = new HashMap[String, List[AlternateNameEntry]]
+  def readAlternateNamesFile(filename: String) {
     val lines = scala.io.Source.fromFile(new File(filename)).getLines
     lines.zipWithIndex.foreach({case (line, index) => {
       if (index % 10000 == 0) {
         logger.info("imported %d alternateNames so far".format(index))
       }
 
+      val parts = line.split("\t").toList
+      if (parts.size < 4) {
+          logger.error("line %d didn't have 5 parts: %s -- %s".format(index, line, parts.mkString(",")))
+        } else {
+          val nameid = parts(0)
+          val geonameid = parts(1)
+          val lang = parts(2)
+          val name = parts(3)
+          val isPrefName = parts.lift(4).exists(_ == "1")
+          val isShortName = parts.lift(5).exists(_ == "1")
+
+          val fid = StoredFeatureId(geonameIdNamespace, geonameid)
+          val names = alternateNamesMap.getOrElseUpdate(fid.toString, Nil)
+          alternateNamesMap(fid.toString) = AlternateNameEntry(
+            nameId = nameid,
+            name = name,
+            lang = lang,
+            isPrefName = isPrefName,
+            isShortName = isShortName
+          ) :: names
+      }
+
       parseAlternateNamesLine(line, index)
     }})
   }
+
+  // def parseAlternateNamesFile(filename: String) {
+  //   val lines = scala.io.Source.fromFile(new File(filename)).getLines
+  //   lines.zipWithIndex.foreach({case (line, index) => {
+  //     if (index % 10000 == 0) {
+  //       logger.info("imported %d alternateNames so far".format(index))
+  //     }
+
+  //     parseAlternateNamesLine(line, index)
+  //   }})
+  // }
 
   def processFeatureName(
     cc: String,
