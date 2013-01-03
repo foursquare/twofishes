@@ -83,29 +83,29 @@ object GeonamesParser {
   }
 
   def matchSlugs(id: String, servingFeature: GeocodeServingFeature, possibleSlugs: List[String]): Boolean = {
-    println("trying to generate a slug for %s".format(id))
+    // println("trying to generate a slug for %s".format(id))
     possibleSlugs.foreach(slug => {
-      println("possible slug: %s".format(slug))
+      // println("possible slug: %s".format(slug))
       val existingSlug = slugEntryMap.get(slug)
       val score = calculateSlugScore(servingFeature)
       existingSlug match {
         case Some(existing) => {
           if (!existing.permanent && score > existing.score) {
             val evictedId = existingSlug.get.id
-            println("evicting %s and recursing".format(evictedId))
+            // println("evicting %s and recursing".format(evictedId))
             slugEntryMap(slug) = SlugEntry(id, score, deprecated = false, permanent = false)
             buildSlug(evictedId)
             return true
           }
         }
         case _ => {
-          println("picking %s".format(slug))
+          // println("picking %s".format(slug))
           slugEntryMap(slug) = SlugEntry(id, score, deprecated = false, permanent = false)
           return true
         }
       } 
     })
-    println("failed to find any slug")
+    // println("failed to find any slug")
     return false
   }
 
@@ -138,8 +138,11 @@ object GeonamesParser {
     println("building missing slugs for %d fetures".format(missingSlugList.size))
     // step 2 -- compute slugs for records without
     for {
-      id <- missingSlugList
+      (id, index) <- missingSlugList.zipWithIndex
     } {
+      if (index % 10000) {
+        println("built %d of %d slugs".format(index, missingSlugList.size))
+      }
       buildSlug(id)
     }
 
