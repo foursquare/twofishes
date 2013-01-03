@@ -69,7 +69,7 @@ abstract class HFileInput(basepath: String, filename: String) {
   val fs = new LocalFileSystem()
   fs.initialize(URI.create("file:///"), conf)
 
-  val path = new Path(new File(basepath, filename).toString)
+  val path = new Path(new File(basepath, filename).getAbsolutePath())
   val cacheConfig = new CacheConfig(conf)
   println(cacheConfig)
   val reader = HFile.createReader(fs, path, cacheConfig)
