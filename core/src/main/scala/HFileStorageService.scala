@@ -11,7 +11,7 @@ import org.apache.hadoop.hbase.KeyValue.KeyComparator
 import org.apache.hadoop.hbase.io.hfile.{CacheConfig, Compression, HFile, HFileScanner}
 import org.apache.hadoop.hbase.util.Bytes._
 
-import com.twitter.util.Duration
+import com.twitter.util.{Duration, Future, FuturePool}
 
 import org.apache.thrift.{TDeserializer}
 import org.apache.thrift.protocol.TBinaryProtocol
@@ -25,11 +25,13 @@ class HFileStorageService(basepath: String) extends GeocodeStorageReadService {
   val nameMap = new NameIndexHFileInput(basepath)
   val oidMap = new GeocodeRecordHFileInput(basepath)
 
-  val slugFidMap = {
+  val slugFidMapFuture = FuturePool.defaultPool {
     val (rv, duration) = Duration.inMilliseconds(readSlugMap())
     println("took %s seconds to read id map".format(duration.inSeconds))
     rv
   }
+
+  lazy val slugFidMap = slugFidMapFuture.get()
 
   def readSlugMap() = {
     scala.io.Source.fromFile(new File(basepath, "id-mapping.txt")).getLines.map(l => {

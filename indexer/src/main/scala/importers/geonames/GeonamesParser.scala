@@ -115,6 +115,7 @@ object GeonamesParser {
   def buildSlug(id: String) {
     for {
       servingFeature <- findFeature(id)
+      if (servingFeature.scoringFeatures.population > 0 || servingFeature.scoringFeatures.boost > 0)
     } {
       val parents = servingFeature.scoringFeatures.parents.asScala.flatMap(
         p => findParent(p)).toList
@@ -122,7 +123,7 @@ object GeonamesParser {
 
       // if a city is bigger than 2 million people, we'll attempt to use the bare city name as the slug
       if (servingFeature.scoringFeatures.population > 2000000) {
-        possibleSlugs ++= NameUtils.bestName(servingFeature.feature, Some("en"), false).toList.map(n => SlugBuilder.normalize(n.name))
+        possibleSlugs = NameUtils.bestName(servingFeature.feature, Some("en"), false).toList.map(n => SlugBuilder.normalize(n.name)) ++ possibleSlugs
 
       }
 

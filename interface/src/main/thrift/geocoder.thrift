@@ -134,7 +134,6 @@ struct ScoringFeatures {
   1: optional i32 population = 0,
   2: optional i32 boost = 0,
   3: optional list<string> parents = [],
-  4: optional list<GeocodeRelation> relations = [],
   5: optional bool canGeocode = 1
 }
 
