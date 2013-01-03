@@ -6,6 +6,7 @@ import com.novus.salat._
 import com.novus.salat.annotations._
 import com.novus.salat.dao._
 import com.novus.salat.global._
+import com.foursquare.twofishes.util.{Hacks, NameUtils}
 
 import java.io._
 import java.net.URI
@@ -45,6 +46,69 @@ class OutputHFile(basepath: String) {
     lists.toList.flatMap(l => {
       l.sortBy(_.pop * -1)
     })
+  }
+
+  def buildChildEntries(children: Iterator[GeocodeRecord]): Iterator[ChildEntry] = {
+    for {
+      child <- children
+      val feature = child.toGeocodeServingFeature.feature
+      name <- NameUtils.bestName(feature, Some("en"), false)
+      slug <- child.slug
+    } yield {
+      var finalName = name.name
+      if (child.cc == "US" && child._woeType == YahooWoeType.TOWN.getValue) {
+        // awful hack to yank out state
+        val stateCode = child.parents.find(p => p.startsWith("gadminid") && p.split("-").size == 2).map(_.split("-")(1))
+        finalName = "%s, %s".format(name.name, stateCode)
+      }
+      new ChildEntry().setName(finalName).setSlug(slug)
+    }
+  }
+
+  def buildChildMap(
+    parentType: YahooWoeType,
+    childType: YahooWoeType,
+    limit: Int,
+    minPopulation: Int,
+    minPopulationPerCounty: Map[String, Int] = Map.empty,
+    extraChildren: Map[String, List[ChildEntry]] = Map.empty
+  ): Map[ObjectId, List[ChildEntry]] = {
+    // find all parents of parentType
+    val parents = MongoGeocodeDAO.find(MongoDBObject("_woetype" -> parentType.getValue))
+
+    parents.map(parent => {
+      val parentOid = parent._id
+      val children = MongoGeocodeDAO.find(MongoDBObject("parents" -> parentOid.toString))
+        .sort(orderBy = MongoDBObject("population" -> 1)) // sort by _id desc
+        .limit(limit)
+
+      val childEntries = buildChildEntries(children.filter(child => {
+        val population = child.population.getOrElse(0)
+        (population > minPopulation ||  minPopulationPerCounty.get(child.cc).exists(_ < population))
+      })) ++ parent.ids.flatMap(id => extraChildren.getOrElse(id, Nil))
+
+      (parentOid -> childEntries.toList)
+    }).toMap
+
+    // for each parent, find all children of childType, sorted by descending popularity
+    // trim down those records super aggressively
+  }
+
+  def buildChildMaps() {
+    val nycEntries = buildChildEntries(
+      MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> Hacks.nycBoroughIds)))
+    ).toList
+
+    val extraChildrenMap = Map(("gadminid:US" -> nycEntries))
+
+    val countryToCityMap = 
+      buildChildMap(YahooWoeType.COUNTRY, YahooWoeType.TOWN, 1000, 300000,
+        Map(("US" -> 150000)), extraChildrenMap)
+    // inject NYC boroughs here
+
+    val cityAndCountyToNeighborhoodMap = 
+      buildChildMap(YahooWoeType.TOWN, YahooWoeType.SUBURB, 1000, 0) ++
+      buildChildMap(YahooWoeType.ADMIN2, YahooWoeType.SUBURB, 1000, 0)
   }
 
   def sortRecordsByNames(records: List[NameIndex]) = {
@@ -248,7 +312,7 @@ class OutputHFile(basepath: String) {
         }
       }
 
-      fidMap.getOrElse(fid, None)
+      fidMap.getOrElseUpdate(fid, None)
     }
   }
 

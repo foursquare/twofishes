@@ -1,7 +1,7 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
-import com.foursquare.twofishes.util.{GeoTools, NameUtils, TwofishesLogger, NameNormalizer}
+import com.foursquare.twofishes.util.{GeoTools, NameUtils, Hacks, TwofishesLogger, NameNormalizer}
 import com.foursquare.twofishes.util.NameUtils.BestNameMatch
 import com.foursquare.twofishes.Implicits._
 import com.foursquare.twofishes.util.Lists.Implicits._
@@ -561,13 +561,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         }
 
         def isNYCcounty(feature: FeatureMatch): Boolean = {
-          val adminIds = List(
-            "US-NY-061", // manhattan
-            "US-NY-085", // staten island
-            "US-NY-005", // bronx
-            "US-NY-081", // queens,
-            "US-NY-047" // brooklyn
-          )
+          val adminIds = Hacks.nycBoroughIds
 
           val ids = feature.fmatch.feature.ids.toString
           val ret = feature.fmatch.feature.woeType == YahooWoeType.ADMIN2 && adminIds.exists(ids.contains)

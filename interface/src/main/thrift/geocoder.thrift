@@ -1,5 +1,10 @@
 namespace java com.foursquare.twofishes
 
+struct ChildEntry {
+  1: optional string name,
+  2: optional string slug
+}
+
 // "woe types" ie "where on earth types," these are represent various types
 // of geographic features in the world
 //
@@ -69,7 +74,7 @@ struct FeatureId {
 // These are a bit of a mishmash
 enum FeatureNameFlags {
   // A preferred name is one that is most often referred to a place
-  PREFERRED = 1,
+PREFERRED = 1,
   ABBREVIATION = 2,
 
   // a brain-dead deaccenting of a name with diacritics, rendered down to ascii

@@ -182,6 +182,9 @@ trait NameUtils {
       if (Option(name.flags).exists(_.contains(FeatureNameFlags.PREFERRED))) {
         score += 1
       }
+      if (Option(name.flags).exists(_.contains(FeatureNameFlags.ALIAS))) {
+        score -= 1
+      }
       if (lang.exists(_ == name.lang)) {
         score += 2
       }
