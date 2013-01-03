@@ -206,16 +206,16 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
   }
 
   def writeNames() {
-    val nameMap = new HashMap[String, ListBuffer[String]]
+    val nameMap = new HashMap[String, HashSet[String]]
     var nameCount = 0
     val nameSize = NameIndexDAO.collection.count
     val nameCursor = NameIndexDAO.find(MongoDBObject())
     var prefixSet = new HashSet[String]
     nameCursor.filterNot(_.name.isEmpty).foreach(n => {
       if (!nameMap.contains(n.name)) {
-        nameMap(n.name) = new ListBuffer()
+        nameMap(n.name) = new HashSet()
       }
-      nameMap(n.name).append(n.fid)
+      nameMap(n.name).add(n.fid)
       nameCount += 1
       if (nameCount % 100000 == 0) {
         println("processed %d of %d names".format(nameCount, nameSize))
