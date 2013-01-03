@@ -225,13 +225,6 @@ object GeonamesParser {
 
     parser.parsePreferredNames()
 
-    if (config.importBoundingBoxes) {
-      new File(config.boundingBoxDirectory).listFiles.toList.sorted.foreach(f => {
-        println("parsing bounding box file: %s".format(f))
-        new BoundingBoxTsvImporter(store).parse(f.toString)
-      })
-    }
-
     println("building missing slugs")
     buildMissingSlugs()
     writeMissingSlugs(store)
@@ -272,6 +265,9 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     "data/private/polygons.txt")
   // geonameid -> name to be deleted
   val nameDeleteTable = new TsvHelperFileParser("data/custom/name-deletes.txt")
+
+  val bboxTable = BoundingBoxTsvImporter.parse(
+    new File(config.boundingBoxDirectory).listFiles.toList.sorted)
 
   val helperTables = List(rewriteTable, boostTable, aliasTable)
 
@@ -419,7 +415,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
           None
         }
       }
-    })
+    }) orElse bboxTable.get(geonameId.get.toString)
 
     var lat = feature.latitude
     var lng = feature.longitude

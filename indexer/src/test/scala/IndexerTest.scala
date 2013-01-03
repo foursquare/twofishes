@@ -87,16 +87,16 @@ class IndexerSpec extends Specification {
   }
 
 
-  "deletes work in practice" in {
-    parser.parseAlternateNamesLine(
-      "2727895\t5391997\ten\tSan Francisco County\t1", 0
-    )
+  // "deletes work in practice" in {
+  //   parser.parseAlternateNamesLine(
+  //     "2727895\t5391997\ten\tSan Francisco County\t1", 0
+  //   )
 
-    val names = store.nameMap(StoredFeatureId("geonameid", "5391997"))
-    names.size mustEqual 2
-    names.exists(_.name == "San Francisco County") mustEqual true
-    names.exists(_.name == "San Francisco") mustEqual true
-  }
+  //   val names = store.nameMap(StoredFeatureId("geonameid", "5391997"))
+  //   names.size mustEqual 2
+  //   names.exists(_.name == "San Francisco County") mustEqual true
+  //   names.exists(_.name == "San Francisco") mustEqual true
+  // }
 
   // "deletes work in practice  -- county" in {
   //   val record = parser.parseFeature(
