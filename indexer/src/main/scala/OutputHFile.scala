@@ -181,7 +181,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
       val (k, v) = callback(f)
       writer.append(k, v)
       fidCount += 1
-      if (fidCount % 1000 == 0) {
+      if (fidCount % 100000 == 0) {
         println("processed %d of %d %s".format(fidCount, fidSize, filename))
       }
     })

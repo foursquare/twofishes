@@ -83,12 +83,7 @@ class MockGeocodeStorageReadService extends GeocodeStorageFutureReadService {
     feature.setIds(List(fid).asJava)
 
     val scoringFeatures = new ScoringFeatures()
-    scoringFeatures.setParents(parents.map(parent => {
-      val relation = new GeocodeRelation()
-      relation.setRelationType(GeocodeRelationType.PARENT)
-      relation.setRelatedId(parent.id)
-      relation
-    }).asJava)
+    scoringFeatures.setParents(parents.map(_.id).asJava)
     population.foreach(p => scoringFeatures.setPopulation(p))
 
     val servingFeature = new GeocodeServingFeature()
