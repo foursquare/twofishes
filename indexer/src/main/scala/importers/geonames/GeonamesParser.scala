@@ -235,7 +235,7 @@ object GeonamesParser {
     buildMissingSlugs()
     writeMissingSlugs(store)
 
-    new OutputHFile(config.hfileBasePath).process()
+    new OutputHFile(config.hfileBasePath, config.outputPrefixIndex).process()
   }
 }
 

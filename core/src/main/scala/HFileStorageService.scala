@@ -110,7 +110,8 @@ abstract class HFileInput(basepath: String, filename: String) {
 }
 
 class NameIndexHFileInput(basepath: String) extends HFileInput(basepath, "name_index.hfile") {
-  val prefixMap = new PrefixIndexHFileInput(basepath)
+  val prefixMapOpt = PrefixIndexHFileInput.readInput(basepath)
+
   def decodeObjectIds(bytes: Array[Byte]): Seq[ObjectId] = {
     0.until(bytes.length / 12).map(i => {
       new ObjectId(Arrays.copyOfRange(bytes, i * 12, (i + 1) * 12))
@@ -127,14 +128,27 @@ class NameIndexHFileInput(basepath: String) extends HFileInput(basepath, "name_i
   }
 
   def getPrefix(name: String): Seq[ObjectId] = {
-    if (name.length <= prefixMap.maxPrefixLength) {
-      prefixMap.get(name)
-    } else {
-      lookupPrefix(name).flatMap(bytes => {
-        decodeObjectIds(bytes)
-      })
+    prefixMapOpt match {
+      case Some(prefixMap) if (name.length <= prefixMap.maxPrefixLength) => {
+        prefixMap.get(name)
+      }
+      case _  => {
+        lookupPrefix(name).flatMap(bytes => {
+          decodeObjectIds(bytes)
+        })
+      }
     }
   }
+}
+
+object PrefixIndexHFileInput {
+  def readInput(basepath: String) = {
+    if (new File(basepath, "prefix_index.hfile").exists()) {
+      Some( new PrefixIndexHFileInput(basepath))
+    } else {
+      None
+    }
+  } 
 }
 
 class PrefixIndexHFileInput(basepath: String) extends HFileInput(basepath, "prefix_index.hfile") {

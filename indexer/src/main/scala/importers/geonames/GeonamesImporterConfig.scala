@@ -23,6 +23,8 @@ class GeonamesImporterConfig(args: Array[String]) {
 
   var hfileBasePath: String = null
 
+  var outputPrefixIndex: Boolean = true
+
   private val config = this
 
   val parser = 
@@ -37,6 +39,8 @@ class GeonamesImporterConfig(args: Array[String]) {
         { v: String => config.hfileBasePath = v} )
       booleanOpt("parse_alternate_names", "parse alternate names",
         { v: Boolean => config.importAlternateNames = v } )
+      booleanOpt("output_prefix_index", "wheter or not to output autocomplete acceleration index",
+        { v: Boolean => config.outputPrefixIndex = v} )
     }
 
   if (!parser.parse(args)) {

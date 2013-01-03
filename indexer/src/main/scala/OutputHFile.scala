@@ -27,7 +27,7 @@ import scala.collection.mutable.HashMap
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.ListBuffer
 
-class OutputHFile(basepath: String) {
+class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
   val blockSizeKey = "hbase.mapreduce.hfileoutputformat.blocksize"
   val compressionKey = "hfile.compression"
 
@@ -196,6 +196,15 @@ class OutputHFile(basepath: String) {
     comp.compare(a.toByteArray(), b.toByteArray()) < 0
   }
 
+  def fidStringsToByteArray(fids: List[String]): Array[Byte] = {
+    val oids = fids.flatMap(fid => fidMap.get(fid)).toSet
+    val os = new ByteArrayOutputStream(12 * oids.size)
+    oids.foreach(oid =>
+      os.write(oid.toByteArray)
+    )
+    os.toByteArray()
+  }
+
   def writeNames() {
     val nameMap = new HashMap[String, ListBuffer[String]]
     var nameCount = 0
@@ -212,9 +221,11 @@ class OutputHFile(basepath: String) {
         println("processed %d of %d names".format(nameCount, nameSize))
       }
 
-      1.to(List(maxPrefixLength, n.name.size).min).foreach(length => 
-        prefixSet.add(n.name.substring(0, length))
-      )
+      if (outputPrefixIndex) {
+        1.to(List(maxPrefixLength, n.name.size).min).foreach(length => 
+          prefixSet.add(n.name.substring(0, length))
+        )
+      }
     })
 
     val writer = buildV2Writer("name_index.hfile")
@@ -225,15 +236,6 @@ class OutputHFile(basepath: String) {
 
     println("sorted")
 
-    def fidStringsToByteArray(fids: List[String]): Array[Byte] = {
-      val oids = fids.flatMap(fid => fidMap.get(fid)).toSet
-      val os = new ByteArrayOutputStream(12 * oids.size)
-      oids.foreach(oid =>
-        os.write(oid.toByteArray)
-      )
-      os.toByteArray()
-    }
-
     sortedMap.map(n => {
       val fids = nameMap(n).toList
       writer.append(n.getBytes(), fidStringsToByteArray(fids))
@@ -241,6 +243,12 @@ class OutputHFile(basepath: String) {
     writer.close()
     println("done")
 
+    if (outputPrefixIndex) {
+      doOutputPrefixIndex(prefixSet)
+    }
+  }
+
+  def doOutputPrefixIndex(prefixSet: HashSet[String]) {
     println("sorting prefix set")
     val sortedPrefixes = prefixSet.toList.sort(lexicalSort)
     println("done sorting")

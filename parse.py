@@ -11,6 +11,11 @@ parser.add_option("-w", "--world", dest="world", action="store_true",  default=T
   help="parse world")
 parser.add_option("-c", "--country", dest="country",  default='',
   help="parse country")
+parser.add_option("--output_prefix_index", dest="output_prefix_index",  action="store_true", default=True,
+  help="output prefix hfile index to speed up autocomplete (optional)")
+parser.add_option("--nooutput_prefix_index", dest="output_prefix_index",  action="store_false",
+  help="don't output prefix hfile index to speed up autocomplete (optional)")
+parser.add_option("-n", "--dry_run", dest="dry_run",  action="store_true", default=False)
 
 (options, args) = parser.parse_args()
 
@@ -25,8 +30,15 @@ if options.country:
   cmd_opts = '--parse_country %s' % options.country
 else:
   cmd_opts = '--parse_world true'
+
+if options.output_prefix_index:
+  cmd_opts += ' --output_prefix_index true'
+else:
+  cmd_opts += ' --output_prefix_index false'
   
 cmd = './sbt "indexer/run-main com.foursquare.twofishes.importers.geonames.GeonamesParser %s --hfile_basepath %s"' % (cmd_opts, basepath)
 print(cmd)
-os.system(cmd)
+
+if not options.dry_run:
+  os.system(cmd)
 
