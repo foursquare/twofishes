@@ -14,6 +14,9 @@ import scala.collection.mutable.HashMap
 import scala.collection.mutable.HashSet
 import scalaj.collection.Implicits._
 
+// TODO
+// stop using string representations of "a:b" featureids everywhere, PLEASE
+
 object GeonamesParser {
   val geonameIdNamespace = "geonameid"
   val geonameAdminIdNamespace = "gadminid"
@@ -114,7 +117,7 @@ object GeonamesParser {
       servingFeature <- findFeature(id)
     } {
       val parents = servingFeature.scoringFeatures.parents.asScala.flatMap(
-        p => findParent(p.relatedId)).toList
+        p => findParent(p)).toList
       var possibleSlugs = SlugBuilder.makePossibleSlugs(servingFeature.feature, parents)
 
       // if a city is bigger than 2 million people, we'll attempt to use the bare city name as the slug
@@ -401,7 +404,10 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     // Build parents
     val extraParents: List[String] = feature.extraColumns.get("parents").toList.flatMap(_.split(",").toList)
     val parents: List[String] = feature.parents.map(p => StoredFeatureId(geonameAdminIdNamespace, p))
-    val allParents = parents ++ extraParents
+    var allParents: List[String] = extraParents ++ parents
+    val hierarchyParents = hierarchyTable.getOrElse(feature.geonameid.getOrElse(""), Nil).filterNot(p =>
+      parents.has(p)).map(pid => "%s:%s".format(geonameIdNamespace, pid))
+    allParents = allParents ++ hierarchyParents
 
     val boost: Option[Int] = feature.geonameid.flatMap(gid => {
       boostTable.get(gid).headOption.flatMap(boost =>
@@ -448,9 +454,6 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       wkbWriter.write(geom)
     }
 
-    val hierarchyParents = hierarchyTable.getOrElse(feature.geonameid.getOrElse(""), Nil).filterNot(p =>
-      allParents.has(p)).map(pid => "%s:%s".format(geonameIdNamespace, pid))
-
     val slug: Option[String] = geonameId.flatMap(gid => {
       idToSlugMap.get(gid.toString)
     })
@@ -471,7 +474,6 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       displayNames = displayNames,
       boost = boost,
       boundingbox = bbox,
-      relatedParents = hierarchyParents,
       canGeocode = canGeocode,
       slug = slug,
       polygon = polygon

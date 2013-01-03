@@ -315,11 +315,9 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     val f = g.toGeocodeServingFeature()
     val parents = for {
       parent <- f.scoringFeatures.parents
-      parentId <- fixParentId(parent.relatedId)
+      parentId <- fixParentId(parent)
     } yield {
-      val relation = new GeocodeRelation(parent)
-      relation.setRelatedId(parentId)
-      relation
+      parentId
     }
 
     f.scoringFeatures.setParents(parents)

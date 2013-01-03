@@ -33,22 +33,22 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
 
   private static final TField POPULATION_FIELD_DESC = new TField("population", TType.I32, (short)1);
   private static final TField BOOST_FIELD_DESC = new TField("boost", TType.I32, (short)2);
-  private static final TField PARENTS__DEPRECATED_FIELD_DESC = new TField("parents_DEPRECATED", TType.LIST, (short)3);
-  private static final TField PARENTS_FIELD_DESC = new TField("parents", TType.LIST, (short)4);
+  private static final TField PARENTS_FIELD_DESC = new TField("parents", TType.LIST, (short)3);
+  private static final TField RELATIONS_FIELD_DESC = new TField("relations", TType.LIST, (short)4);
   private static final TField CAN_GEOCODE_FIELD_DESC = new TField("canGeocode", TType.BOOL, (short)5);
 
   public int population;
   public int boost;
-  public List<String> parents_DEPRECATED;
-  public List<GeocodeRelation> parents;
+  public List<String> parents;
+  public List<GeocodeRelation> relations;
   public boolean canGeocode;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
     POPULATION((short)1, "population"),
     BOOST((short)2, "boost"),
-    PARENTS__DEPRECATED((short)3, "parents_DEPRECATED"),
-    PARENTS((short)4, "parents"),
+    PARENTS((short)3, "parents"),
+    RELATIONS((short)4, "relations"),
     CAN_GEOCODE((short)5, "canGeocode");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
@@ -68,10 +68,10 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
           return POPULATION;
         case 2: // BOOST
           return BOOST;
-        case 3: // PARENTS__DEPRECATED
-          return PARENTS__DEPRECATED;
-        case 4: // PARENTS
+        case 3: // PARENTS
           return PARENTS;
+        case 4: // RELATIONS
+          return RELATIONS;
         case 5: // CAN_GEOCODE
           return CAN_GEOCODE;
         default:
@@ -126,10 +126,10 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
         new FieldValueMetaData(TType.I32)));
     tmpMap.put(_Fields.BOOST, new FieldMetaData("boost", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.I32)));
-    tmpMap.put(_Fields.PARENTS__DEPRECATED, new FieldMetaData("parents_DEPRECATED", TFieldRequirementType.OPTIONAL, 
+    tmpMap.put(_Fields.PARENTS, new FieldMetaData("parents", TFieldRequirementType.OPTIONAL, 
         new ListMetaData(TType.LIST, 
             new FieldValueMetaData(TType.STRING))));
-    tmpMap.put(_Fields.PARENTS, new FieldMetaData("parents", TFieldRequirementType.OPTIONAL, 
+    tmpMap.put(_Fields.RELATIONS, new FieldMetaData("relations", TFieldRequirementType.OPTIONAL, 
         new ListMetaData(TType.LIST, 
             new StructMetaData(TType.STRUCT, GeocodeRelation.class))));
     tmpMap.put(_Fields.CAN_GEOCODE, new FieldMetaData("canGeocode", TFieldRequirementType.OPTIONAL, 
@@ -143,9 +143,9 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
 
     this.boost = 0;
 
-    this.parents_DEPRECATED = new ArrayList<String>();
+    this.parents = new ArrayList<String>();
 
-    this.parents = new ArrayList<GeocodeRelation>();
+    this.relations = new ArrayList<GeocodeRelation>();
 
     this.canGeocode = true;
 
@@ -159,19 +159,19 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
     __isset_bit_vector.or(other.__isset_bit_vector);
     this.population = other.population;
     this.boost = other.boost;
-    if (other.isSetParents_DEPRECATED()) {
-      List<String> __this__parents_DEPRECATED = new ArrayList<String>();
-      for (String other_element : other.parents_DEPRECATED) {
-        __this__parents_DEPRECATED.add(other_element);
-      }
-      this.parents_DEPRECATED = __this__parents_DEPRECATED;
-    }
     if (other.isSetParents()) {
-      List<GeocodeRelation> __this__parents = new ArrayList<GeocodeRelation>();
-      for (GeocodeRelation other_element : other.parents) {
-        __this__parents.add(new GeocodeRelation(other_element));
+      List<String> __this__parents = new ArrayList<String>();
+      for (String other_element : other.parents) {
+        __this__parents.add(other_element);
       }
       this.parents = __this__parents;
+    }
+    if (other.isSetRelations()) {
+      List<GeocodeRelation> __this__relations = new ArrayList<GeocodeRelation>();
+      for (GeocodeRelation other_element : other.relations) {
+        __this__relations.add(new GeocodeRelation(other_element));
+      }
+      this.relations = __this__relations;
     }
     this.canGeocode = other.canGeocode;
   }
@@ -186,9 +186,9 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
 
     this.boost = 0;
 
-    this.parents_DEPRECATED = new ArrayList<String>();
+    this.parents = new ArrayList<String>();
 
-    this.parents = new ArrayList<GeocodeRelation>();
+    this.relations = new ArrayList<GeocodeRelation>();
 
     this.canGeocode = true;
 
@@ -240,65 +240,26 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
     __isset_bit_vector.set(__BOOST_ISSET_ID, value);
   }
 
-  public int getParents_DEPRECATEDSize() {
-    return (this.parents_DEPRECATED == null) ? 0 : this.parents_DEPRECATED.size();
-  }
-
-  public java.util.Iterator<String> getParents_DEPRECATEDIterator() {
-    return (this.parents_DEPRECATED == null) ? null : this.parents_DEPRECATED.iterator();
-  }
-
-  public void addToParents_DEPRECATED(String elem) {
-    if (this.parents_DEPRECATED == null) {
-      this.parents_DEPRECATED = new ArrayList<String>();
-    }
-    this.parents_DEPRECATED.add(elem);
-  }
-
-  public List<String> getParents_DEPRECATED() {
-    return this.parents_DEPRECATED;
-  }
-
-  public ScoringFeatures setParents_DEPRECATED(List<String> parents_DEPRECATED) {
-    this.parents_DEPRECATED = parents_DEPRECATED;
-    return this;
-  }
-
-  public void unsetParents_DEPRECATED() {
-    this.parents_DEPRECATED = null;
-  }
-
-  /** Returns true if field parents_DEPRECATED is set (has been asigned a value) and false otherwise */
-  public boolean isSetParents_DEPRECATED() {
-    return this.parents_DEPRECATED != null;
-  }
-
-  public void setParents_DEPRECATEDIsSet(boolean value) {
-    if (!value) {
-      this.parents_DEPRECATED = null;
-    }
-  }
-
   public int getParentsSize() {
     return (this.parents == null) ? 0 : this.parents.size();
   }
 
-  public java.util.Iterator<GeocodeRelation> getParentsIterator() {
+  public java.util.Iterator<String> getParentsIterator() {
     return (this.parents == null) ? null : this.parents.iterator();
   }
 
-  public void addToParents(GeocodeRelation elem) {
+  public void addToParents(String elem) {
     if (this.parents == null) {
-      this.parents = new ArrayList<GeocodeRelation>();
+      this.parents = new ArrayList<String>();
     }
     this.parents.add(elem);
   }
 
-  public List<GeocodeRelation> getParents() {
+  public List<String> getParents() {
     return this.parents;
   }
 
-  public ScoringFeatures setParents(List<GeocodeRelation> parents) {
+  public ScoringFeatures setParents(List<String> parents) {
     this.parents = parents;
     return this;
   }
@@ -315,6 +276,45 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
   public void setParentsIsSet(boolean value) {
     if (!value) {
       this.parents = null;
+    }
+  }
+
+  public int getRelationsSize() {
+    return (this.relations == null) ? 0 : this.relations.size();
+  }
+
+  public java.util.Iterator<GeocodeRelation> getRelationsIterator() {
+    return (this.relations == null) ? null : this.relations.iterator();
+  }
+
+  public void addToRelations(GeocodeRelation elem) {
+    if (this.relations == null) {
+      this.relations = new ArrayList<GeocodeRelation>();
+    }
+    this.relations.add(elem);
+  }
+
+  public List<GeocodeRelation> getRelations() {
+    return this.relations;
+  }
+
+  public ScoringFeatures setRelations(List<GeocodeRelation> relations) {
+    this.relations = relations;
+    return this;
+  }
+
+  public void unsetRelations() {
+    this.relations = null;
+  }
+
+  /** Returns true if field relations is set (has been asigned a value) and false otherwise */
+  public boolean isSetRelations() {
+    return this.relations != null;
+  }
+
+  public void setRelationsIsSet(boolean value) {
+    if (!value) {
+      this.relations = null;
     }
   }
 
@@ -359,19 +359,19 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
       }
       break;
 
-    case PARENTS__DEPRECATED:
-      if (value == null) {
-        unsetParents_DEPRECATED();
-      } else {
-        setParents_DEPRECATED((List<String>)value);
-      }
-      break;
-
     case PARENTS:
       if (value == null) {
         unsetParents();
       } else {
-        setParents((List<GeocodeRelation>)value);
+        setParents((List<String>)value);
+      }
+      break;
+
+    case RELATIONS:
+      if (value == null) {
+        unsetRelations();
+      } else {
+        setRelations((List<GeocodeRelation>)value);
       }
       break;
 
@@ -394,11 +394,11 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
     case BOOST:
       return new Integer(getBoost());
 
-    case PARENTS__DEPRECATED:
-      return getParents_DEPRECATED();
-
     case PARENTS:
       return getParents();
+
+    case RELATIONS:
+      return getRelations();
 
     case CAN_GEOCODE:
       return new Boolean(isCanGeocode());
@@ -418,10 +418,10 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
       return isSetPopulation();
     case BOOST:
       return isSetBoost();
-    case PARENTS__DEPRECATED:
-      return isSetParents_DEPRECATED();
     case PARENTS:
       return isSetParents();
+    case RELATIONS:
+      return isSetRelations();
     case CAN_GEOCODE:
       return isSetCanGeocode();
     }
@@ -459,21 +459,21 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
         return false;
     }
 
-    boolean this_present_parents_DEPRECATED = true && this.isSetParents_DEPRECATED();
-    boolean that_present_parents_DEPRECATED = true && that.isSetParents_DEPRECATED();
-    if (this_present_parents_DEPRECATED || that_present_parents_DEPRECATED) {
-      if (!(this_present_parents_DEPRECATED && that_present_parents_DEPRECATED))
-        return false;
-      if (!this.parents_DEPRECATED.equals(that.parents_DEPRECATED))
-        return false;
-    }
-
     boolean this_present_parents = true && this.isSetParents();
     boolean that_present_parents = true && that.isSetParents();
     if (this_present_parents || that_present_parents) {
       if (!(this_present_parents && that_present_parents))
         return false;
       if (!this.parents.equals(that.parents))
+        return false;
+    }
+
+    boolean this_present_relations = true && this.isSetRelations();
+    boolean that_present_relations = true && that.isSetRelations();
+    if (this_present_relations || that_present_relations) {
+      if (!(this_present_relations && that_present_relations))
+        return false;
+      if (!this.relations.equals(that.relations))
         return false;
     }
 
@@ -522,22 +522,22 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetParents_DEPRECATED()).compareTo(typedOther.isSetParents_DEPRECATED());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetParents_DEPRECATED()) {
-      lastComparison = TBaseHelper.compareTo(this.parents_DEPRECATED, typedOther.parents_DEPRECATED);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
     lastComparison = Boolean.valueOf(isSetParents()).compareTo(typedOther.isSetParents());
     if (lastComparison != 0) {
       return lastComparison;
     }
     if (isSetParents()) {
       lastComparison = TBaseHelper.compareTo(this.parents, typedOther.parents);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetRelations()).compareTo(typedOther.isSetRelations());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetRelations()) {
+      lastComparison = TBaseHelper.compareTo(this.relations, typedOther.relations);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -585,16 +585,16 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
-        case 3: // PARENTS__DEPRECATED
+        case 3: // PARENTS
           if (field.type == TType.LIST) {
             {
               TList _list8 = iprot.readListBegin();
-              this.parents_DEPRECATED = new ArrayList<String>(_list8.size);
+              this.parents = new ArrayList<String>(_list8.size);
               for (int _i9 = 0; _i9 < _list8.size; ++_i9)
               {
                 String _elem10;
                 _elem10 = iprot.readString();
-                this.parents_DEPRECATED.add(_elem10);
+                this.parents.add(_elem10);
               }
               iprot.readListEnd();
             }
@@ -602,17 +602,17 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
-        case 4: // PARENTS
+        case 4: // RELATIONS
           if (field.type == TType.LIST) {
             {
               TList _list11 = iprot.readListBegin();
-              this.parents = new ArrayList<GeocodeRelation>(_list11.size);
+              this.relations = new ArrayList<GeocodeRelation>(_list11.size);
               for (int _i12 = 0; _i12 < _list11.size; ++_i12)
               {
                 GeocodeRelation _elem13;
                 _elem13 = new GeocodeRelation();
                 _elem13.read(iprot);
-                this.parents.add(_elem13);
+                this.relations.add(_elem13);
               }
               iprot.readListEnd();
             }
@@ -653,12 +653,12 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
       oprot.writeI32(this.boost);
       oprot.writeFieldEnd();
     }
-    if (this.parents_DEPRECATED != null) {
-      if (isSetParents_DEPRECATED()) {
-        oprot.writeFieldBegin(PARENTS__DEPRECATED_FIELD_DESC);
+    if (this.parents != null) {
+      if (isSetParents()) {
+        oprot.writeFieldBegin(PARENTS_FIELD_DESC);
         {
-          oprot.writeListBegin(new TList(TType.STRING, this.parents_DEPRECATED.size()));
-          for (String _iter14 : this.parents_DEPRECATED)
+          oprot.writeListBegin(new TList(TType.STRING, this.parents.size()));
+          for (String _iter14 : this.parents)
           {
             oprot.writeString(_iter14);
           }
@@ -667,12 +667,12 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
         oprot.writeFieldEnd();
       }
     }
-    if (this.parents != null) {
-      if (isSetParents()) {
-        oprot.writeFieldBegin(PARENTS_FIELD_DESC);
+    if (this.relations != null) {
+      if (isSetRelations()) {
+        oprot.writeFieldBegin(RELATIONS_FIELD_DESC);
         {
-          oprot.writeListBegin(new TList(TType.STRUCT, this.parents.size()));
-          for (GeocodeRelation _iter15 : this.parents)
+          oprot.writeListBegin(new TList(TType.STRUCT, this.relations.size()));
+          for (GeocodeRelation _iter15 : this.relations)
           {
             _iter15.write(oprot);
           }
@@ -706,16 +706,6 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
       sb.append(this.boost);
       first = false;
     }
-    if (isSetParents_DEPRECATED()) {
-      if (!first) sb.append(", ");
-      sb.append("parents_DEPRECATED:");
-      if (this.parents_DEPRECATED == null) {
-        sb.append("null");
-      } else {
-        sb.append(this.parents_DEPRECATED);
-      }
-      first = false;
-    }
     if (isSetParents()) {
       if (!first) sb.append(", ");
       sb.append("parents:");
@@ -723,6 +713,16 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
         sb.append("null");
       } else {
         sb.append(this.parents);
+      }
+      first = false;
+    }
+    if (isSetRelations()) {
+      if (!first) sb.append(", ");
+      sb.append("relations:");
+      if (this.relations == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.relations);
       }
       first = false;
     }

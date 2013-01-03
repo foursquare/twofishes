@@ -43,8 +43,6 @@ case class GeocodeRecord(
   population: Option[Int],
   boost: Option[Int] = None,
   boundingbox: Option[BoundingBox] = None,
-  // these will have GeocodeRelationType HIERARCHY
-  relatedParents: List[String] = Nil,
   canGeocode: Boolean = true,
   slug: Option[String] = None,
   polygon: Option[Array[Byte]] = None
@@ -141,10 +139,7 @@ case class GeocodeRecord(
     val scoring = new ScoringFeatures()
     boost.foreach(b => scoring.setBoost(b))
     population.foreach(p => scoring.setPopulation(p))
-    scoring.setParents(
-      makeParents(parents, GeocodeRelationType.PARENT) ++
-      makeParents(relatedParents, GeocodeRelationType.HIERARCHY)
-    )
+    scoring.setParents(parents)
 
     if (!canGeocode) {
       scoring.setCanGeocode(false)
