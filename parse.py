@@ -14,12 +14,11 @@ parser.add_option("-c", "--country", dest="country",  default='',
 
 (options, args) = parser.parse_args()
 
-if len(args) != 1:
-  parser.print_usage()
-  sys.exit(1)
-
-basepath = args[0]
+basepath = '.'
+if len(args) != 0:
+  basepath = args[0]
 basepath = os.path.join(basepath, str(datetime.datetime.now()).replace(' ', '-'))
+print "outputting index to %s" % basepath
 os.mkdir(basepath)
 
 if options.country:
