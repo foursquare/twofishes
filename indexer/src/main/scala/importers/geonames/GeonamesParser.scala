@@ -266,7 +266,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
   // geonameid -> name to be deleted
   val nameDeleteTable = new TsvHelperFileParser("data/custom/name-deletes.txt")
 
-  val bboxTable = BoundingBoxTsvImporter.parse(
+  lazy val bboxTable = BoundingBoxTsvImporter.parse(
     new File(config.boundingBoxDirectory).listFiles.toList.sorted)
 
   val helperTables = List(rewriteTable, boostTable, aliasTable)
