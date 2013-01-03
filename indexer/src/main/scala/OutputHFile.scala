@@ -95,20 +95,33 @@ class OutputHFile(basepath: String) {
   }
 
   def buildChildMaps() {
+    // inject NYC boroughs here
     val nycEntries = buildChildEntries(
       MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> Hacks.nycBoroughIds)))
     ).toList
 
     val extraChildrenMap = Map(("gadminid:US" -> nycEntries))
 
-    val countryToCityMap = 
+    val childMaps = 
       buildChildMap(YahooWoeType.COUNTRY, YahooWoeType.TOWN, 1000, 300000,
-        Map(("US" -> 150000)), extraChildrenMap)
-    // inject NYC boroughs here
-
-    val cityAndCountyToNeighborhoodMap = 
+        Map(("US" -> 150000)), extraChildrenMap) ++
       buildChildMap(YahooWoeType.TOWN, YahooWoeType.SUBURB, 1000, 0) ++
       buildChildMap(YahooWoeType.ADMIN2, YahooWoeType.SUBURB, 1000, 0)
+
+    val writer = buildV1Writer("child_map.hfile")
+
+    println("sorting")
+
+    val sortedMapKeys = childMaps.keys.toList.sort(objectIdSort)
+
+    println("sorted")
+    sortedMapKeys.foreach(k => {
+      writer.append(k.toByteArray(),
+        serializer.serialize(new ChildEntries().setEntries(childMaps(k))))
+    })
+    writer.close()
+    println("done")
+
   }
 
   def sortRecordsByNames(records: List[NameIndex]) = {
@@ -178,6 +191,9 @@ class OutputHFile(basepath: String) {
   val comp = new ByteArrayComparator()
   def lexicalSort(a: String, b: String) = {
     comp.compare(a.getBytes(), b.getBytes()) < 0
+  }
+  def objectIdSort(a: ObjectId, b: ObjectId) = {
+    comp.compare(a.toByteArray(), b.toByteArray()) < 0
   }
 
   def writeNames() {
@@ -282,9 +298,9 @@ class OutputHFile(basepath: String) {
   type IdFixer = (String) => Option[String]
 
   val factory = new TBinaryProtocol.Factory()
+  val serializer = new TSerializer(factory)
 
   def serializeBytes(g: GeocodeRecord, fixParentId: IdFixer) = {
-    val serializer = new TSerializer(factory);
     val f = g.toGeocodeServingFeature()
     val parents = for {
       parent <- f.scoringFeatures.parents

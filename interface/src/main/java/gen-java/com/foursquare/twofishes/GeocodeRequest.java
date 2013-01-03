@@ -1098,13 +1098,13 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         case 8: // WOE_HINT
           if (field.type == TType.LIST) {
             {
-              TList _list44 = iprot.readListBegin();
-              this.woeHint = new ArrayList<YahooWoeType>(_list44.size);
-              for (int _i45 = 0; _i45 < _list44.size; ++_i45)
+              TList _list48 = iprot.readListBegin();
+              this.woeHint = new ArrayList<YahooWoeType>(_list48.size);
+              for (int _i49 = 0; _i49 < _list48.size; ++_i49)
               {
-                YahooWoeType _elem46;
-                _elem46 = YahooWoeType.findByValue(iprot.readI32());
-                this.woeHint.add(_elem46);
+                YahooWoeType _elem50;
+                _elem50 = YahooWoeType.findByValue(iprot.readI32());
+                this.woeHint.add(_elem50);
               }
               iprot.readListEnd();
             }
@@ -1115,13 +1115,13 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         case 9: // WOE_RESTRICT
           if (field.type == TType.LIST) {
             {
-              TList _list47 = iprot.readListBegin();
-              this.woeRestrict = new ArrayList<YahooWoeType>(_list47.size);
-              for (int _i48 = 0; _i48 < _list47.size; ++_i48)
+              TList _list51 = iprot.readListBegin();
+              this.woeRestrict = new ArrayList<YahooWoeType>(_list51.size);
+              for (int _i52 = 0; _i52 < _list51.size; ++_i52)
               {
-                YahooWoeType _elem49;
-                _elem49 = YahooWoeType.findByValue(iprot.readI32());
-                this.woeRestrict.add(_elem49);
+                YahooWoeType _elem53;
+                _elem53 = YahooWoeType.findByValue(iprot.readI32());
+                this.woeRestrict.add(_elem53);
               }
               iprot.readListEnd();
             }
@@ -1215,9 +1215,9 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         oprot.writeFieldBegin(WOE_HINT_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.I32, this.woeHint.size()));
-          for (YahooWoeType _iter50 : this.woeHint)
+          for (YahooWoeType _iter54 : this.woeHint)
           {
-            oprot.writeI32(_iter50.getValue());
+            oprot.writeI32(_iter54.getValue());
           }
           oprot.writeListEnd();
         }
@@ -1229,9 +1229,9 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         oprot.writeFieldBegin(WOE_RESTRICT_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.I32, this.woeRestrict.size()));
-          for (YahooWoeType _iter51 : this.woeRestrict)
+          for (YahooWoeType _iter55 : this.woeRestrict)
           {
-            oprot.writeI32(_iter51.getValue());
+            oprot.writeI32(_iter55.getValue());
           }
           oprot.writeListEnd();
         }

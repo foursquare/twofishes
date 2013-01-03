@@ -588,13 +588,13 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
         case 3: // PARENTS__DEPRECATED
           if (field.type == TType.LIST) {
             {
-              TList _list4 = iprot.readListBegin();
-              this.parents_DEPRECATED = new ArrayList<String>(_list4.size);
-              for (int _i5 = 0; _i5 < _list4.size; ++_i5)
+              TList _list8 = iprot.readListBegin();
+              this.parents_DEPRECATED = new ArrayList<String>(_list8.size);
+              for (int _i9 = 0; _i9 < _list8.size; ++_i9)
               {
-                String _elem6;
-                _elem6 = iprot.readString();
-                this.parents_DEPRECATED.add(_elem6);
+                String _elem10;
+                _elem10 = iprot.readString();
+                this.parents_DEPRECATED.add(_elem10);
               }
               iprot.readListEnd();
             }
@@ -605,14 +605,14 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
         case 4: // PARENTS
           if (field.type == TType.LIST) {
             {
-              TList _list7 = iprot.readListBegin();
-              this.parents = new ArrayList<GeocodeRelation>(_list7.size);
-              for (int _i8 = 0; _i8 < _list7.size; ++_i8)
+              TList _list11 = iprot.readListBegin();
+              this.parents = new ArrayList<GeocodeRelation>(_list11.size);
+              for (int _i12 = 0; _i12 < _list11.size; ++_i12)
               {
-                GeocodeRelation _elem9;
-                _elem9 = new GeocodeRelation();
-                _elem9.read(iprot);
-                this.parents.add(_elem9);
+                GeocodeRelation _elem13;
+                _elem13 = new GeocodeRelation();
+                _elem13.read(iprot);
+                this.parents.add(_elem13);
               }
               iprot.readListEnd();
             }
@@ -658,9 +658,9 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
         oprot.writeFieldBegin(PARENTS__DEPRECATED_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.STRING, this.parents_DEPRECATED.size()));
-          for (String _iter10 : this.parents_DEPRECATED)
+          for (String _iter14 : this.parents_DEPRECATED)
           {
-            oprot.writeString(_iter10);
+            oprot.writeString(_iter14);
           }
           oprot.writeListEnd();
         }
@@ -672,9 +672,9 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
         oprot.writeFieldBegin(PARENTS_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.STRUCT, this.parents.size()));
-          for (GeocodeRelation _iter11 : this.parents)
+          for (GeocodeRelation _iter15 : this.parents)
           {
-            _iter11.write(oprot);
+            _iter15.write(oprot);
           }
           oprot.writeListEnd();
         }

@@ -157,12 +157,15 @@ object GeonamesParser {
 
   def writeMissingSlugs(store: GeocodeStorageWriteService) {
     for {
-      id <- missingSlugList
+      (id, index) <- missingSlugList.zipWithIndex
       slug <- idToSlugMap.get(id)
       val parts = id.split(":")
       fid1 <- parts.lift(0)
       fid2 <- parts.lift(1)
     } {
+      if (index % 10000 == 0) {
+        println("flushed %d of %d slug to mongo".format(index, missingSlugList.size))
+      }
       val fid = StoredFeatureId(fid1, fid2)
       store.addSlugToRecord(fid, slug)
     }
