@@ -449,7 +449,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     }
 
     val hierarchyParents = hierarchyTable.getOrElse(feature.geonameid.getOrElse(""), Nil).filterNot(p =>
-      allParents.has(p)).map(pid => "%s:%s".format(geonameIdNamespace, pid)
+      allParents.has(p)).map(pid => "%s:%s".format(geonameIdNamespace, pid))
 
     val slug: Option[String] = geonameId.flatMap(gid => {
       idToSlugMap.get(gid.toString)
