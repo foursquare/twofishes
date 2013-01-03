@@ -236,10 +236,13 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
 
     println("sorted")
 
-    sortedMap.map(n => {
+    sortedMap.zipWithIndex.map({case (n, index) => {
+      if (index % 100000 == 0) {
+        println("outputted %d of %d entries to name_index".format(index, sortedMap.size))
+      }
       val fids = nameMap(n).toList
       writer.append(n.getBytes(), fidStringsToByteArray(fids))
-    })
+    }})
     writer.close()
     println("done")
 
