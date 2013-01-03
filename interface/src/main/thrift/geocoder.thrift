@@ -5,6 +5,10 @@ struct ChildEntry {
   2: optional string slug
 }
 
+struct ChildEntries {
+  1: optional list<ChildEntry> entries
+}
+
 // "woe types" ie "where on earth types," these are represent various types
 // of geographic features in the world
 //

@@ -140,7 +140,7 @@ object GeonamesParser {
     for {
       (id, index) <- missingSlugList.zipWithIndex
     } {
-      if (index % 10000) {
+      if (index % 10000 == 0) {
         println("built %d of %d slugs".format(index, missingSlugList.size))
       }
       buildSlug(id)
