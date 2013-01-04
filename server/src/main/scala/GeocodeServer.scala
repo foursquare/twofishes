@@ -98,6 +98,10 @@ class GeocoderHttpService(geocoder: GeocodeServerImpl) extends Service[HttpReque
         request.setDebug(v.toInt)))
       params.get("autocomplete").foreach(_.asScala.headOption.foreach(v =>
         request.setAutocomplete(v.toBoolean)))
+      params.get("includePolygon").foreach(_.asScala.headOption.foreach(v =>
+        request.setAutocomplete(v.toBoolean)))
+      params.get("wktGeometry").foreach(_.asScala.headOption.foreach(v =>
+        request.setWktGeometry(v.toBoolean)))
       params.get("ll").foreach(_.asScala.headOption.foreach(v => {
         val ll = v.split(",").toList
         request.setLl(new GeocodePoint(ll(0).toDouble, ll(1).toDouble))

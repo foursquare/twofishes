@@ -113,7 +113,8 @@ struct FeatureGeometry {
 
   // "well known binary" 
   // only present if we have a polygon for this feature
-  3: optional binary wkbGeometry
+  3: optional binary wkbGeometry,
+  4: optional string wktGeometry
 }
 
 enum GeocodeRelationType {
@@ -213,6 +214,7 @@ struct GeocodeRequest {
   11: optional string slug
 
   12: optional bool includePolygon = 0
+  13: optional bool wktGeometry = 0
 }
 
 service Geocoder {

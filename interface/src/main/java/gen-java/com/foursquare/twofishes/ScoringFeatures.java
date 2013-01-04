@@ -34,13 +34,11 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
   private static final TField POPULATION_FIELD_DESC = new TField("population", TType.I32, (short)1);
   private static final TField BOOST_FIELD_DESC = new TField("boost", TType.I32, (short)2);
   private static final TField PARENTS_FIELD_DESC = new TField("parents", TType.LIST, (short)3);
-  private static final TField RELATIONS_FIELD_DESC = new TField("relations", TType.LIST, (short)4);
   private static final TField CAN_GEOCODE_FIELD_DESC = new TField("canGeocode", TType.BOOL, (short)5);
 
   public int population;
   public int boost;
   public List<String> parents;
-  public List<GeocodeRelation> relations;
   public boolean canGeocode;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
@@ -48,7 +46,6 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
     POPULATION((short)1, "population"),
     BOOST((short)2, "boost"),
     PARENTS((short)3, "parents"),
-    RELATIONS((short)4, "relations"),
     CAN_GEOCODE((short)5, "canGeocode");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
@@ -70,8 +67,6 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
           return BOOST;
         case 3: // PARENTS
           return PARENTS;
-        case 4: // RELATIONS
-          return RELATIONS;
         case 5: // CAN_GEOCODE
           return CAN_GEOCODE;
         default:
@@ -129,9 +124,6 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
     tmpMap.put(_Fields.PARENTS, new FieldMetaData("parents", TFieldRequirementType.OPTIONAL, 
         new ListMetaData(TType.LIST, 
             new FieldValueMetaData(TType.STRING))));
-    tmpMap.put(_Fields.RELATIONS, new FieldMetaData("relations", TFieldRequirementType.OPTIONAL, 
-        new ListMetaData(TType.LIST, 
-            new StructMetaData(TType.STRUCT, GeocodeRelation.class))));
     tmpMap.put(_Fields.CAN_GEOCODE, new FieldMetaData("canGeocode", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.BOOL)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
@@ -144,8 +136,6 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
     this.boost = 0;
 
     this.parents = new ArrayList<String>();
-
-    this.relations = new ArrayList<GeocodeRelation>();
 
     this.canGeocode = true;
 
@@ -166,13 +156,6 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
       }
       this.parents = __this__parents;
     }
-    if (other.isSetRelations()) {
-      List<GeocodeRelation> __this__relations = new ArrayList<GeocodeRelation>();
-      for (GeocodeRelation other_element : other.relations) {
-        __this__relations.add(new GeocodeRelation(other_element));
-      }
-      this.relations = __this__relations;
-    }
     this.canGeocode = other.canGeocode;
   }
 
@@ -187,8 +170,6 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
     this.boost = 0;
 
     this.parents = new ArrayList<String>();
-
-    this.relations = new ArrayList<GeocodeRelation>();
 
     this.canGeocode = true;
 
@@ -279,45 +260,6 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
     }
   }
 
-  public int getRelationsSize() {
-    return (this.relations == null) ? 0 : this.relations.size();
-  }
-
-  public java.util.Iterator<GeocodeRelation> getRelationsIterator() {
-    return (this.relations == null) ? null : this.relations.iterator();
-  }
-
-  public void addToRelations(GeocodeRelation elem) {
-    if (this.relations == null) {
-      this.relations = new ArrayList<GeocodeRelation>();
-    }
-    this.relations.add(elem);
-  }
-
-  public List<GeocodeRelation> getRelations() {
-    return this.relations;
-  }
-
-  public ScoringFeatures setRelations(List<GeocodeRelation> relations) {
-    this.relations = relations;
-    return this;
-  }
-
-  public void unsetRelations() {
-    this.relations = null;
-  }
-
-  /** Returns true if field relations is set (has been asigned a value) and false otherwise */
-  public boolean isSetRelations() {
-    return this.relations != null;
-  }
-
-  public void setRelationsIsSet(boolean value) {
-    if (!value) {
-      this.relations = null;
-    }
-  }
-
   public boolean isCanGeocode() {
     return this.canGeocode;
   }
@@ -367,14 +309,6 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
       }
       break;
 
-    case RELATIONS:
-      if (value == null) {
-        unsetRelations();
-      } else {
-        setRelations((List<GeocodeRelation>)value);
-      }
-      break;
-
     case CAN_GEOCODE:
       if (value == null) {
         unsetCanGeocode();
@@ -397,9 +331,6 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
     case PARENTS:
       return getParents();
 
-    case RELATIONS:
-      return getRelations();
-
     case CAN_GEOCODE:
       return new Boolean(isCanGeocode());
 
@@ -420,8 +351,6 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
       return isSetBoost();
     case PARENTS:
       return isSetParents();
-    case RELATIONS:
-      return isSetRelations();
     case CAN_GEOCODE:
       return isSetCanGeocode();
     }
@@ -465,15 +394,6 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
       if (!(this_present_parents && that_present_parents))
         return false;
       if (!this.parents.equals(that.parents))
-        return false;
-    }
-
-    boolean this_present_relations = true && this.isSetRelations();
-    boolean that_present_relations = true && that.isSetRelations();
-    if (this_present_relations || that_present_relations) {
-      if (!(this_present_relations && that_present_relations))
-        return false;
-      if (!this.relations.equals(that.relations))
         return false;
     }
 
@@ -528,16 +448,6 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
     }
     if (isSetParents()) {
       lastComparison = TBaseHelper.compareTo(this.parents, typedOther.parents);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
-    lastComparison = Boolean.valueOf(isSetRelations()).compareTo(typedOther.isSetRelations());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetRelations()) {
-      lastComparison = TBaseHelper.compareTo(this.relations, typedOther.relations);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -602,24 +512,6 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
-        case 4: // RELATIONS
-          if (field.type == TType.LIST) {
-            {
-              TList _list11 = iprot.readListBegin();
-              this.relations = new ArrayList<GeocodeRelation>(_list11.size);
-              for (int _i12 = 0; _i12 < _list11.size; ++_i12)
-              {
-                GeocodeRelation _elem13;
-                _elem13 = new GeocodeRelation();
-                _elem13.read(iprot);
-                this.relations.add(_elem13);
-              }
-              iprot.readListEnd();
-            }
-          } else { 
-            TProtocolUtil.skip(iprot, field.type);
-          }
-          break;
         case 5: // CAN_GEOCODE
           if (field.type == TType.BOOL) {
             this.canGeocode = iprot.readBool();
@@ -658,23 +550,9 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
         oprot.writeFieldBegin(PARENTS_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.STRING, this.parents.size()));
-          for (String _iter14 : this.parents)
+          for (String _iter11 : this.parents)
           {
-            oprot.writeString(_iter14);
-          }
-          oprot.writeListEnd();
-        }
-        oprot.writeFieldEnd();
-      }
-    }
-    if (this.relations != null) {
-      if (isSetRelations()) {
-        oprot.writeFieldBegin(RELATIONS_FIELD_DESC);
-        {
-          oprot.writeListBegin(new TList(TType.STRUCT, this.relations.size()));
-          for (GeocodeRelation _iter15 : this.relations)
-          {
-            _iter15.write(oprot);
+            oprot.writeString(_iter11);
           }
           oprot.writeListEnd();
         }
@@ -713,16 +591,6 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
         sb.append("null");
       } else {
         sb.append(this.parents);
-      }
-      first = false;
-    }
-    if (isSetRelations()) {
-      if (!first) sb.append(", ");
-      sb.append("relations:");
-      if (this.relations == null) {
-        sb.append("null");
-      } else {
-        sb.append(this.relations);
       }
       first = false;
     }

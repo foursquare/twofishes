@@ -43,6 +43,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   private static final TField BOUNDS_FIELD_DESC = new TField("bounds", TType.STRUCT, (short)10);
   private static final TField SLUG_FIELD_DESC = new TField("slug", TType.STRING, (short)11);
   private static final TField INCLUDE_POLYGON_FIELD_DESC = new TField("includePolygon", TType.BOOL, (short)12);
+  private static final TField WKT_GEOMETRY_FIELD_DESC = new TField("wktGeometry", TType.BOOL, (short)13);
 
   public String query;
   public String cc;
@@ -56,6 +57,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   public GeocodeBoundingBox bounds;
   public String slug;
   public boolean includePolygon;
+  public boolean wktGeometry;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
@@ -70,7 +72,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     WOE_RESTRICT((short)9, "woeRestrict"),
     BOUNDS((short)10, "bounds"),
     SLUG((short)11, "slug"),
-    INCLUDE_POLYGON((short)12, "includePolygon");
+    INCLUDE_POLYGON((short)12, "includePolygon"),
+    WKT_GEOMETRY((short)13, "wktGeometry");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -109,6 +112,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
           return SLUG;
         case 12: // INCLUDE_POLYGON
           return INCLUDE_POLYGON;
+        case 13: // WKT_GEOMETRY
+          return WKT_GEOMETRY;
         default:
           return null;
       }
@@ -153,7 +158,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   private static final int __DEBUG_ISSET_ID = 1;
   private static final int __AUTOCOMPLETE_ISSET_ID = 2;
   private static final int __INCLUDEPOLYGON_ISSET_ID = 3;
-  private BitSet __isset_bit_vector = new BitSet(4);
+  private static final int __WKTGEOMETRY_ISSET_ID = 4;
+  private BitSet __isset_bit_vector = new BitSet(5);
 
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
@@ -184,6 +190,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         new FieldValueMetaData(TType.STRING)));
     tmpMap.put(_Fields.INCLUDE_POLYGON, new FieldMetaData("includePolygon", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.BOOL)));
+    tmpMap.put(_Fields.WKT_GEOMETRY, new FieldMetaData("wktGeometry", TFieldRequirementType.OPTIONAL, 
+        new FieldValueMetaData(TType.BOOL)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeRequest.class, metaDataMap);
   }
@@ -202,6 +210,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     this.woeRestrict = new ArrayList<YahooWoeType>();
 
     this.includePolygon = false;
+
+    this.wktGeometry = false;
 
   }
 
@@ -247,6 +257,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       this.slug = other.slug;
     }
     this.includePolygon = other.includePolygon;
+    this.wktGeometry = other.wktGeometry;
   }
 
   public GeocodeRequest deepCopy() {
@@ -273,6 +284,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     this.bounds = null;
     this.slug = null;
     this.includePolygon = false;
+
+    this.wktGeometry = false;
 
   }
 
@@ -590,6 +603,29 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     __isset_bit_vector.set(__INCLUDEPOLYGON_ISSET_ID, value);
   }
 
+  public boolean isWktGeometry() {
+    return this.wktGeometry;
+  }
+
+  public GeocodeRequest setWktGeometry(boolean wktGeometry) {
+    this.wktGeometry = wktGeometry;
+    setWktGeometryIsSet(true);
+    return this;
+  }
+
+  public void unsetWktGeometry() {
+    __isset_bit_vector.clear(__WKTGEOMETRY_ISSET_ID);
+  }
+
+  /** Returns true if field wktGeometry is set (has been asigned a value) and false otherwise */
+  public boolean isSetWktGeometry() {
+    return __isset_bit_vector.get(__WKTGEOMETRY_ISSET_ID);
+  }
+
+  public void setWktGeometryIsSet(boolean value) {
+    __isset_bit_vector.set(__WKTGEOMETRY_ISSET_ID, value);
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case QUERY:
@@ -688,6 +724,14 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       }
       break;
 
+    case WKT_GEOMETRY:
+      if (value == null) {
+        unsetWktGeometry();
+      } else {
+        setWktGeometry((Boolean)value);
+      }
+      break;
+
     }
   }
 
@@ -729,6 +773,9 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     case INCLUDE_POLYGON:
       return new Boolean(isIncludePolygon());
 
+    case WKT_GEOMETRY:
+      return new Boolean(isWktGeometry());
+
     }
     throw new IllegalStateException();
   }
@@ -764,6 +811,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       return isSetSlug();
     case INCLUDE_POLYGON:
       return isSetIncludePolygon();
+    case WKT_GEOMETRY:
+      return isSetWktGeometry();
     }
     throw new IllegalStateException();
   }
@@ -886,6 +935,15 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       if (!(this_present_includePolygon && that_present_includePolygon))
         return false;
       if (this.includePolygon != that.includePolygon)
+        return false;
+    }
+
+    boolean this_present_wktGeometry = true && this.isSetWktGeometry();
+    boolean that_present_wktGeometry = true && that.isSetWktGeometry();
+    if (this_present_wktGeometry || that_present_wktGeometry) {
+      if (!(this_present_wktGeometry && that_present_wktGeometry))
+        return false;
+      if (this.wktGeometry != that.wktGeometry)
         return false;
     }
 
@@ -1025,6 +1083,16 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetWktGeometry()).compareTo(typedOther.isSetWktGeometry());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetWktGeometry()) {
+      lastComparison = TBaseHelper.compareTo(this.wktGeometry, typedOther.wktGeometry);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -1098,13 +1166,13 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         case 8: // WOE_HINT
           if (field.type == TType.LIST) {
             {
-              TList _list48 = iprot.readListBegin();
-              this.woeHint = new ArrayList<YahooWoeType>(_list48.size);
-              for (int _i49 = 0; _i49 < _list48.size; ++_i49)
+              TList _list44 = iprot.readListBegin();
+              this.woeHint = new ArrayList<YahooWoeType>(_list44.size);
+              for (int _i45 = 0; _i45 < _list44.size; ++_i45)
               {
-                YahooWoeType _elem50;
-                _elem50 = YahooWoeType.findByValue(iprot.readI32());
-                this.woeHint.add(_elem50);
+                YahooWoeType _elem46;
+                _elem46 = YahooWoeType.findByValue(iprot.readI32());
+                this.woeHint.add(_elem46);
               }
               iprot.readListEnd();
             }
@@ -1115,13 +1183,13 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         case 9: // WOE_RESTRICT
           if (field.type == TType.LIST) {
             {
-              TList _list51 = iprot.readListBegin();
-              this.woeRestrict = new ArrayList<YahooWoeType>(_list51.size);
-              for (int _i52 = 0; _i52 < _list51.size; ++_i52)
+              TList _list47 = iprot.readListBegin();
+              this.woeRestrict = new ArrayList<YahooWoeType>(_list47.size);
+              for (int _i48 = 0; _i48 < _list47.size; ++_i48)
               {
-                YahooWoeType _elem53;
-                _elem53 = YahooWoeType.findByValue(iprot.readI32());
-                this.woeRestrict.add(_elem53);
+                YahooWoeType _elem49;
+                _elem49 = YahooWoeType.findByValue(iprot.readI32());
+                this.woeRestrict.add(_elem49);
               }
               iprot.readListEnd();
             }
@@ -1148,6 +1216,14 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
           if (field.type == TType.BOOL) {
             this.includePolygon = iprot.readBool();
             setIncludePolygonIsSet(true);
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 13: // WKT_GEOMETRY
+          if (field.type == TType.BOOL) {
+            this.wktGeometry = iprot.readBool();
+            setWktGeometryIsSet(true);
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -1215,9 +1291,9 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         oprot.writeFieldBegin(WOE_HINT_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.I32, this.woeHint.size()));
-          for (YahooWoeType _iter54 : this.woeHint)
+          for (YahooWoeType _iter50 : this.woeHint)
           {
-            oprot.writeI32(_iter54.getValue());
+            oprot.writeI32(_iter50.getValue());
           }
           oprot.writeListEnd();
         }
@@ -1229,9 +1305,9 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         oprot.writeFieldBegin(WOE_RESTRICT_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.I32, this.woeRestrict.size()));
-          for (YahooWoeType _iter55 : this.woeRestrict)
+          for (YahooWoeType _iter51 : this.woeRestrict)
           {
-            oprot.writeI32(_iter55.getValue());
+            oprot.writeI32(_iter51.getValue());
           }
           oprot.writeListEnd();
         }
@@ -1255,6 +1331,11 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     if (isSetIncludePolygon()) {
       oprot.writeFieldBegin(INCLUDE_POLYGON_FIELD_DESC);
       oprot.writeBool(this.includePolygon);
+      oprot.writeFieldEnd();
+    }
+    if (isSetWktGeometry()) {
+      oprot.writeFieldBegin(WKT_GEOMETRY_FIELD_DESC);
+      oprot.writeBool(this.wktGeometry);
       oprot.writeFieldEnd();
     }
     oprot.writeFieldStop();
@@ -1367,6 +1448,12 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       if (!first) sb.append(", ");
       sb.append("includePolygon:");
       sb.append(this.includePolygon);
+      first = false;
+    }
+    if (isSetWktGeometry()) {
+      if (!first) sb.append(", ");
+      sb.append("wktGeometry:");
+      sb.append(this.wktGeometry);
       first = false;
     }
     sb.append(")");

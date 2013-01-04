@@ -6,6 +6,7 @@ import com.foursquare.twofishes.util.NameUtils.BestNameMatch
 import com.foursquare.twofishes.Implicits._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.twitter.util.{Future, FuturePool}
+import com.vividsolutions.jts.io.{WKTWriter, WKBReader}
 import java.util.concurrent.ConcurrentHashMap
 import java.util.Date
 import org.bson.types.ObjectId
@@ -710,6 +711,13 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
       if (!req.full & !req.includePolygon) {
         f.geometry.unsetWkbGeometry()
+      } else {
+        if (req.wktGeometry && f.geometry.wkbGeometry != null) {
+          val wkbReader = new WKBReader()
+          val wktWriter = new WKTWriter()
+          val geom = wkbReader.read(f.geometry.wkbGeometry.array())
+          f.geometry.setWktGeometry(wktWriter.write(geom))
+        }
       }
 
       val parentNames = parentsToUse.map(p =>

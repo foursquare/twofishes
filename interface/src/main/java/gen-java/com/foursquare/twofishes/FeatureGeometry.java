@@ -34,16 +34,19 @@ public class FeatureGeometry implements TBase<FeatureGeometry, FeatureGeometry._
   private static final TField CENTER_FIELD_DESC = new TField("center", TType.STRUCT, (short)1);
   private static final TField BOUNDS_FIELD_DESC = new TField("bounds", TType.STRUCT, (short)2);
   private static final TField WKB_GEOMETRY_FIELD_DESC = new TField("wkbGeometry", TType.STRING, (short)3);
+  private static final TField WKT_GEOMETRY_FIELD_DESC = new TField("wktGeometry", TType.STRING, (short)4);
 
   public GeocodePoint center;
   public GeocodeBoundingBox bounds;
   public ByteBuffer wkbGeometry;
+  public String wktGeometry;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
     CENTER((short)1, "center"),
     BOUNDS((short)2, "bounds"),
-    WKB_GEOMETRY((short)3, "wkbGeometry");
+    WKB_GEOMETRY((short)3, "wkbGeometry"),
+    WKT_GEOMETRY((short)4, "wktGeometry");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -64,6 +67,8 @@ public class FeatureGeometry implements TBase<FeatureGeometry, FeatureGeometry._
           return BOUNDS;
         case 3: // WKB_GEOMETRY
           return WKB_GEOMETRY;
+        case 4: // WKT_GEOMETRY
+          return WKT_GEOMETRY;
         default:
           return null;
       }
@@ -114,6 +119,8 @@ public class FeatureGeometry implements TBase<FeatureGeometry, FeatureGeometry._
         new StructMetaData(TType.STRUCT, GeocodeBoundingBox.class)));
     tmpMap.put(_Fields.WKB_GEOMETRY, new FieldMetaData("wkbGeometry", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.STRING)));
+    tmpMap.put(_Fields.WKT_GEOMETRY, new FieldMetaData("wktGeometry", TFieldRequirementType.OPTIONAL, 
+        new FieldValueMetaData(TType.STRING)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(FeatureGeometry.class, metaDataMap);
   }
@@ -142,6 +149,9 @@ public class FeatureGeometry implements TBase<FeatureGeometry, FeatureGeometry._
       this.wkbGeometry = TBaseHelper.copyBinary(other.wkbGeometry);
 ;
     }
+    if (other.isSetWktGeometry()) {
+      this.wktGeometry = other.wktGeometry;
+    }
   }
 
   public FeatureGeometry deepCopy() {
@@ -153,6 +163,7 @@ public class FeatureGeometry implements TBase<FeatureGeometry, FeatureGeometry._
     this.center = null;
     this.bounds = null;
     this.wkbGeometry = null;
+    this.wktGeometry = null;
   }
 
   public GeocodePoint getCenter() {
@@ -237,6 +248,30 @@ public class FeatureGeometry implements TBase<FeatureGeometry, FeatureGeometry._
     }
   }
 
+  public String getWktGeometry() {
+    return this.wktGeometry;
+  }
+
+  public FeatureGeometry setWktGeometry(String wktGeometry) {
+    this.wktGeometry = wktGeometry;
+    return this;
+  }
+
+  public void unsetWktGeometry() {
+    this.wktGeometry = null;
+  }
+
+  /** Returns true if field wktGeometry is set (has been asigned a value) and false otherwise */
+  public boolean isSetWktGeometry() {
+    return this.wktGeometry != null;
+  }
+
+  public void setWktGeometryIsSet(boolean value) {
+    if (!value) {
+      this.wktGeometry = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case CENTER:
@@ -263,6 +298,14 @@ public class FeatureGeometry implements TBase<FeatureGeometry, FeatureGeometry._
       }
       break;
 
+    case WKT_GEOMETRY:
+      if (value == null) {
+        unsetWktGeometry();
+      } else {
+        setWktGeometry((String)value);
+      }
+      break;
+
     }
   }
 
@@ -276,6 +319,9 @@ public class FeatureGeometry implements TBase<FeatureGeometry, FeatureGeometry._
 
     case WKB_GEOMETRY:
       return getWkbGeometry();
+
+    case WKT_GEOMETRY:
+      return getWktGeometry();
 
     }
     throw new IllegalStateException();
@@ -294,6 +340,8 @@ public class FeatureGeometry implements TBase<FeatureGeometry, FeatureGeometry._
       return isSetBounds();
     case WKB_GEOMETRY:
       return isSetWkbGeometry();
+    case WKT_GEOMETRY:
+      return isSetWktGeometry();
     }
     throw new IllegalStateException();
   }
@@ -335,6 +383,15 @@ public class FeatureGeometry implements TBase<FeatureGeometry, FeatureGeometry._
       if (!(this_present_wkbGeometry && that_present_wkbGeometry))
         return false;
       if (!this.wkbGeometry.equals(that.wkbGeometry))
+        return false;
+    }
+
+    boolean this_present_wktGeometry = true && this.isSetWktGeometry();
+    boolean that_present_wktGeometry = true && that.isSetWktGeometry();
+    if (this_present_wktGeometry || that_present_wktGeometry) {
+      if (!(this_present_wktGeometry && that_present_wktGeometry))
+        return false;
+      if (!this.wktGeometry.equals(that.wktGeometry))
         return false;
     }
 
@@ -384,6 +441,16 @@ public class FeatureGeometry implements TBase<FeatureGeometry, FeatureGeometry._
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetWktGeometry()).compareTo(typedOther.isSetWktGeometry());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetWktGeometry()) {
+      lastComparison = TBaseHelper.compareTo(this.wktGeometry, typedOther.wktGeometry);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -424,6 +491,13 @@ public class FeatureGeometry implements TBase<FeatureGeometry, FeatureGeometry._
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
+        case 4: // WKT_GEOMETRY
+          if (field.type == TType.STRING) {
+            this.wktGeometry = iprot.readString();
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -455,6 +529,13 @@ public class FeatureGeometry implements TBase<FeatureGeometry, FeatureGeometry._
       if (isSetWkbGeometry()) {
         oprot.writeFieldBegin(WKB_GEOMETRY_FIELD_DESC);
         oprot.writeBinary(this.wkbGeometry);
+        oprot.writeFieldEnd();
+      }
+    }
+    if (this.wktGeometry != null) {
+      if (isSetWktGeometry()) {
+        oprot.writeFieldBegin(WKT_GEOMETRY_FIELD_DESC);
+        oprot.writeString(this.wktGeometry);
         oprot.writeFieldEnd();
       }
     }
@@ -491,6 +572,16 @@ public class FeatureGeometry implements TBase<FeatureGeometry, FeatureGeometry._
         sb.append("null");
       } else {
         TBaseHelper.toString(this.wkbGeometry, sb);
+      }
+      first = false;
+    }
+    if (isSetWktGeometry()) {
+      if (!first) sb.append(", ");
+      sb.append("wktGeometry:");
+      if (this.wktGeometry == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.wktGeometry);
       }
       first = false;
     }
