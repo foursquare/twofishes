@@ -271,8 +271,14 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
   // geonameid --> new center
   val moveTable = new TsvHelperFileParser("data/custom/moves.txt")
   // geonameid -> polygon
-  val polygonTable = new TsvHelperFileParser(
-    new File("data/computed/polygons").listFiles.toList.sorted.map(_.toString):_*)
+  val polygonDir = Option(new File("data/computed/polygons"))
+  val polygonFiles = polygonDir.toList.flatMap(_.listFiles.toList.sorted)
+  val polygonTable: Map[String, String] = polygonFiles.flatMap(f => {
+    scala.io.Source.fromFile(f).getLines.toList.map(l => {
+      val parts = l.split("\t")
+      (parts(0) -> parts(1))
+    })  
+  }).toMap
   // geonameid -> name to be deleted
   val nameDeleteTable = new TsvHelperFileParser("data/custom/name-deletes.txt")
 
@@ -444,7 +450,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     val canGeocode = feature.extraColumns.get("canGeocode").map(_.toInt).getOrElse(1) > 0
 
     val polygonExtraEntry: Option[String] = feature.extraColumns.get("polygon")
-    val polygonTableEntry: Option[String] = polygonTable.get(geonameId.get.toString).lastOption
+    val polygonTableEntry: Option[String] = polygonTable.get(geonameId.get.toString)
     val polygon: Option[Array[Byte]] = for {
       gid <- geonameId
       polygon <- polygonExtraEntry orElse polygonTableEntry
