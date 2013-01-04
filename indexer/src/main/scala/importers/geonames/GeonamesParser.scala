@@ -451,7 +451,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
 
     val canGeocode = feature.extraColumns.get("canGeocode").map(_.toInt).getOrElse(1) > 0
 
-    val polygonExtraEntry: Option[String] = feature.extraColumns.get("polygon")
+    val polygonExtraEntry: Option[String] = feature.extraColumns.get("geometry")
     val polygonTableEntry: Option[String] = polygonTable.get(geonameId.get.toString)
     val polygon: Option[Array[Byte]] = for {
       gid <- geonameId
