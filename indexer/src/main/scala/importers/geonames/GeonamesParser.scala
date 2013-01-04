@@ -271,8 +271,8 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
   // geonameid --> new center
   val moveTable = new TsvHelperFileParser("data/custom/moves.txt")
   // geonameid -> polygon
-  val polygonTable = new TsvHelperFileParser("data/custom/polygons.txt",
-    "data/private/polygons.txt")
+  val polygonTable = new TsvHelperFileParser(
+    new File("data/computed/polygons").listFiles.toList.sorted.map(_.toString):_*)
   // geonameid -> name to be deleted
   val nameDeleteTable = new TsvHelperFileParser("data/custom/name-deletes.txt")
 
