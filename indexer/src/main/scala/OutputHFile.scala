@@ -73,8 +73,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     childType: YahooWoeType,
     limit: Int,
     minPopulation: Int,
-    minPopulationPerCounty: Map[String, Int] = Map.empty,
-    extraChildren: Map[String, List[ChildEntry]] = Map.empty
+    minPopulationPerCounty: Map[String, Int] = Map.empty
   ): Map[String, List[ChildEntry]] = {
     // find all parents of parentType
     val parents = MongoGeocodeDAO.find(MongoDBObject("_woeType" -> parentType.getValue))
@@ -89,7 +88,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
       val childEntries = buildChildEntries(children.filter(child => {
         val population = child.population.getOrElse(0)
         (population > minPopulation ||  minPopulationPerCounty.get(child.cc).exists(_ < population))
-      })) ++ parent.ids.flatMap(id => extraChildren.getOrElse(id, Nil))
+      }))
 
       (servingFeature.id -> childEntries.toList)
     }).toMap
@@ -99,16 +98,9 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
   }
 
   def buildChildMaps() {
-    // inject NYC boroughs here
-    val nycEntries = buildChildEntries(
-      MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> Hacks.nycBoroughIds)))
-    ).toList
-
-    val extraChildrenMap = Map(("gadminid:US" -> nycEntries))
-
     val childMaps = 
       buildChildMap(YahooWoeType.COUNTRY, YahooWoeType.TOWN, 1000, 300000,
-        Map(("US" -> 150000)), extraChildrenMap) ++
+        Map(("US" -> 150000))) ++
       buildChildMap(YahooWoeType.TOWN, YahooWoeType.SUBURB, 1000, 0) ++
       buildChildMap(YahooWoeType.ADMIN2, YahooWoeType.SUBURB, 1000, 0)
 
