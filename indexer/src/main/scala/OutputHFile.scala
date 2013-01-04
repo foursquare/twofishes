@@ -1,5 +1,7 @@
 package com.foursquare.twofishes
 
+import com.foursquare.twofishes.importers.geonames.GeonamesParser
+
 import com.mongodb.casbah.Imports._
 import com.mongodb.casbah.MongoConnection
 import com.novus.salat._
@@ -26,6 +28,7 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.ListBuffer
+import scalaj.collection.Implicits._
 
 class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
   val blockSizeKey = "hbase.mapreduce.hfileoutputformat.blocksize"
@@ -313,6 +316,12 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
 
   def serializeBytes(g: GeocodeRecord, fixParentId: IdFixer) = {
     val f = g.toGeocodeServingFeature()
+
+    // kill the gadminids and set the new "id" field
+    val ids = f.feature.ids.asScala.filterNot(_.source == GeonamesParser.geonameAdminIdNamespace)
+    f.feature.setIds(ids.asJava)
+    ids.headOption.foreach(id => f.feature.setId("%s:%s".format(id.source, id.id)))
+
     val parents = for {
       parent <- f.scoringFeatures.parents
       parentId <- fixParentId(parent)
