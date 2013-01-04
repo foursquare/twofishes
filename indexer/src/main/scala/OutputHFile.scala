@@ -74,7 +74,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     extraChildren: Map[String, List[ChildEntry]] = Map.empty
   ): Map[ObjectId, List[ChildEntry]] = {
     // find all parents of parentType
-    val parents = MongoGeocodeDAO.find(MongoDBObject("_woetype" -> parentType.getValue))
+    val parents = MongoGeocodeDAO.find(MongoDBObject("_woeType" -> parentType.getValue))
 
     parents.map(parent => {
       val parentOid = parent._id
