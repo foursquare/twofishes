@@ -455,9 +455,8 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     val polygonTableEntry: Option[String] = polygonTable.get(geonameId.get.toString)
     val polygon: Option[Array[Byte]] = for {
       gid <- geonameId
-      polygon <- polygonExtraEntry orElse polygonTableEntry
+      polygon <- polygonTableEntry orElse polygonExtraEntry
     } yield {
-      println("had %s geom for %s".format(gid, polygon))
       val wktReader = new WKTReader()
       val wkbWriter = new WKBWriter()
       val geom = wktReader.read(polygon)
