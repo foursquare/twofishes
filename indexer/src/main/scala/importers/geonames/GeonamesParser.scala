@@ -235,9 +235,11 @@ object GeonamesParser {
 
     parser.parsePreferredNames()
 
-    println("building missing slugs")
-    buildMissingSlugs()
-    writeMissingSlugs(store)
+    if (config.buildMissingSlugs) {
+      println("building missing slugs")
+      buildMissingSlugs()
+      writeMissingSlugs(store)  
+    }
 
     new OutputHFile(config.hfileBasePath, config.outputPrefixIndex).process()
   }
