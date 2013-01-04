@@ -276,7 +276,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
   val polygonDir = Option(new File("data/computed/polygons"))
   val polygonFiles = polygonDir.toList.flatMap(_.listFiles.toList.sorted)
   val polygonTable: Map[String, String] = polygonFiles.flatMap(f => {
-    scala.io.Source.fromFile(f).getLines.toList.map(l => {
+    scala.io.Source.fromFile(f).getLines.filterNot(_.startsWith("#")).toList.map(l => {
       val parts = l.split("\t")
       (parts(0) -> parts(1))
     })  
