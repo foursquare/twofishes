@@ -273,8 +273,8 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
   // geonameid --> new center
   val moveTable = new TsvHelperFileParser("data/custom/moves.txt")
   // geonameid -> polygon
-  val polygonDir = Option(new File("data/computed/polygons"))
-  val polygonFiles = polygonDir.toList.flatMap(_.listFiles.toList.sorted)
+  val polygonDir = new File("data/computed/polygons")
+  val polygonFiles = if (polygonDir.exists) { polygonDir.listFiles.toList.sorted } else { Nil }
   val polygonTable: Map[String, String] = polygonFiles.flatMap(f => {
     scala.io.Source.fromFile(f).getLines.filterNot(_.startsWith("#")).toList.map(l => {
       val parts = l.split("\t")
