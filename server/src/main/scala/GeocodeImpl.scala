@@ -699,15 +699,13 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       })
 
       // possibly clear names
-      if (!req.full) {
-        val names = f.names
-        f.setNames(names.filter(n => 
-          Option(n.flags).exists(_.contains(FeatureNameFlags.ABBREVIATION)) ||
-          n.lang == req.lang ||
-          n.lang == "en" ||
-          namesToUse.contains(n)
-        ))
-      }
+      val names = f.names
+      f.setNames(names.filter(n => 
+        Option(n.flags).exists(_.contains(FeatureNameFlags.ABBREVIATION)) ||
+        n.lang == req.lang ||
+        n.lang == "en" ||
+        namesToUse.contains(n)
+      ))
 
       if (!req.full & !req.includePolygon) {
         f.geometry.unsetWkbGeometry()
