@@ -75,12 +75,13 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     minPopulation: Int,
     minPopulationPerCounty: Map[String, Int] = Map.empty,
     extraChildren: Map[String, List[ChildEntry]] = Map.empty
-  ): Map[ObjectId, List[ChildEntry]] = {
+  ): Map[String, List[ChildEntry]] = {
     // find all parents of parentType
     val parents = MongoGeocodeDAO.find(MongoDBObject("_woeType" -> parentType.getValue))
 
     parents.map(parent => {
       val parentOid = parent._id
+      val servingFeature = parent.toGeocodeServingFeature
       val children = MongoGeocodeDAO.find(MongoDBObject("parents" -> parentOid.toString))
         .sort(orderBy = MongoDBObject("population" -> 1)) // sort by _id desc
         .limit(limit)
@@ -90,7 +91,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
         (population > minPopulation ||  minPopulationPerCounty.get(child.cc).exists(_ < population))
       })) ++ parent.ids.flatMap(id => extraChildren.getOrElse(id, Nil))
 
-      (parentOid -> childEntries.toList)
+      (servingFeature.id -> childEntries.toList)
     }).toMap
 
     // for each parent, find all children of childType, sorted by descending popularity
@@ -115,16 +116,34 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
 
     println("sorting")
 
-    val sortedMapKeys = childMaps.keys.toList.sort(objectIdSort)
+    val sortedMapKeys = childMaps.keys.toList.sort(lexicalSort)
 
     println("sorted")
     sortedMapKeys.foreach(k => {
-      writer.append(k.toByteArray(),
-        serializer.serialize(new ChildEntries().setEntries(childMaps(k))))
+      writer.append(
+        serializer.serialize(new ThriftStringWrapper().setStr(k.toString)),
+        serializer.serialize(new ChildEntries().setEntries(childMaps(k)))
+      )
     })
     writer.close()
     println("done")
+  }
 
+  def buildPolygonIndex() {
+    val polygons = 
+      MongoGeocodeDAO.find(MongoDBObject("polygon" -> MongoDBObject("$exists" -> true)))
+        .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id desc
+
+    val writer = buildV1Writer("polygon-features.hfile")
+
+    polygons.foreach(p => {
+      writer.append(
+        serializer.serialize(new ThriftStringWrapper().setStr(p._id.toString)),
+        serializer.serialize(p.toGeocodeServingFeature())
+      )
+    })
+
+    println("done")
   }
 
   def sortRecordsByNames(records: List[NameIndex]) = {
