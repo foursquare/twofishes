@@ -696,14 +696,10 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       if (!req.full & !req.includePolygon) {
         f.geometry.unsetWkbGeometry()
       } else {
-        println(f.geometry)
         if (req.wktGeometry && f.geometry.wkbGeometry != null) {
-          println("not null")
-          println(f.geometry.wkbGeometry.array().mkString(" "))
-          println("that was not null, trying to read")
           val wkbReader = new WKBReader()
           val wktWriter = new WKTWriter()
-          val geom = wkbReader.read(f.geometry.wkbGeometry.array())
+          val geom = wkbReader.read(f.geometry.getWkbGeometry())
           f.geometry.setWktGeometry(wktWriter.write(geom))
         }
       }
