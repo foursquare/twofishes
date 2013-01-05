@@ -101,7 +101,6 @@ object GeocoderBuild extends Build {
         publishArtifact := true,
         libraryDependencies ++= Seq(
           "org.apache.thrift" % "libthrift" % "0.8.0",
-          "com.twitter" % "finagle-thrift" % "5.3.23",
           "org.slf4j" % "slf4j-api" % "1.6.1"
         )
       ),
@@ -130,6 +129,13 @@ object GeocoderBuild extends Build {
         import com.foursquare.twofishes.Implicits._
         import java.io.File
 
+        import com.novus.salat._
+        import com.novus.salat.global._
+        import com.novus.salat.annotations._
+        import com.novus.salat.dao._
+        import com.mongodb.casbah.Imports._
+        import com.vividsolutions.jts.io._
+
         val store = new MongoGeocodeStorageService()
         val parser = new GeonamesParser(store)
         """,
@@ -150,6 +156,7 @@ object GeocoderBuild extends Build {
       settings = defaultSettings ++ Seq(
         publishArtifact := true,
         libraryDependencies ++= Seq(
+          "com.twitter" % "util-core" % "5.3.14",
           "org.geotools" % "gt-shapefile" % "8.0-M1"
         )
       )

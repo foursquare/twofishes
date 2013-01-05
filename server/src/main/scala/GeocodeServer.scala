@@ -4,7 +4,6 @@ package com.foursquare.twofishes
 import collection.JavaConverters._
 import com.twitter.finagle.builder.{ServerBuilder, Server}
 import com.twitter.finagle.http.Http
-import com.twitter.finagle.thrift.ThriftServerFramedCodec
 import com.twitter.finagle.{Service, SimpleFilter}
 import com.twitter.util.{Future, FuturePool, Throw}
 import java.io.InputStream
@@ -93,7 +92,7 @@ class GeocoderHttpService(geocoder: GeocodeRequest => Future[GeocodeResponse]) e
       params.get("autocomplete").foreach(_.asScala.headOption.foreach(v =>
         request.setAutocomplete(v.toBoolean)))
       params.get("includePolygon").foreach(_.asScala.headOption.foreach(v =>
-        request.setAutocomplete(v.toBoolean)))
+        request.setIncludePolygon(v.toBoolean)))
       params.get("wktGeometry").foreach(_.asScala.headOption.foreach(v =>
         request.setWktGeometry(v.toBoolean)))
       params.get("ll").foreach(_.asScala.headOption.foreach(v => {
