@@ -100,7 +100,7 @@ object GeocoderBuild extends Build {
       settings = defaultSettings ++ Seq(
         publishArtifact := true,
         libraryDependencies ++= Seq(
-          "thrift" % "libthrift" % "0.5.0" from "http://maven.twttr.com/org/apache/thrift/libthrift/0.5.0/libthrift-0.5.0.jar",
+          "org.apache.thrift" % "libthrift" % "0.8.0",
           "com.twitter" % "finagle-thrift" % "5.3.23",
           "org.slf4j" % "slf4j-api" % "1.6.1"
         )
