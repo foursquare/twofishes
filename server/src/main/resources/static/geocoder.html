@@ -134,8 +134,8 @@
 
           if (feature.geometry.wktGeometry) {
             var wkt = new Wkt.Wkt();
-            var geom = wkt.read(feature.geometry.wktGeometry);
-            map.addLayer(geom.toObject());
+            wkt.read(feature.geometry.wktGeometry);
+            map.addLayer(wkt.toObject());
           }
         }
       });
