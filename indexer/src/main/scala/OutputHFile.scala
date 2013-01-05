@@ -22,13 +22,19 @@ import org.apache.hadoop.hbase.io.hfile.{CacheConfig, Compression, HFile, HFileS
 import org.apache.hadoop.hbase.util.Bytes._
 
 import org.apache.thrift.TSerializer
-import org.apache.thrift.protocol.TBinaryProtocol
+import org.apache.thrift.protocol.{TProtocolFactory, TBinaryProtocol, TCompactProtocol}
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._
+
+object HFileUtil {
+  val ThriftClassValueBytes: Array[Byte] = "value.thrift.class".getBytes("UTF-8")
+  val ThriftClassKeyBytes: Array[Byte] = "key.thrift.class".getBytes("UTF-8")
+  val ThriftEncodingKeyBytes: Array[Byte] = "thrift.protocol.factory.class".getBytes("UTF-8")
+}
 
 class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
   val blockSizeKey = "hbase.mapreduce.hfileoutputformat.blocksize"
@@ -90,7 +96,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
         (population > minPopulation ||  minPopulationPerCounty.get(child.cc).exists(_ < population))
       }))
 
-      (servingFeature.id -> childEntries.toList)
+      (servingFeature.feature.id -> childEntries.toList)
     }).toMap
 
     // for each parent, find all children of childType, sorted by descending popularity
@@ -104,7 +110,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
       buildChildMap(YahooWoeType.TOWN, YahooWoeType.SUBURB, 1000, 0) ++
       buildChildMap(YahooWoeType.ADMIN2, YahooWoeType.SUBURB, 1000, 0)
 
-    val writer = buildV1Writer("child_map.hfile")
+    val writer = buildV1Writer[ThriftStringWrapper, ChildEntries]("child_map.hfile")
 
     println("sorting")
 
@@ -121,19 +127,26 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     println("done")
   }
 
-  def buildPolygonIndex() {
+  def buildPolygonIndex(groupSize: Int) {
     val polygons = 
       MongoGeocodeDAO.find(MongoDBObject("polygon" -> MongoDBObject("$exists" -> true)))
         .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id desc
 
-    val writer = buildV1Writer("polygon-features.hfile")
+    for {
+      (group, index) <- polygons.grouped(groupSize).zipWithIndex
+      p <- group
+    } {
+      val writer = buildV1Writer[ThriftStringWrapper, GeocodeServingFeature]("polygon-features-%d.hfile".format(index))
 
-    polygons.foreach(p => {
-      writer.append(
-        serializer.serialize(new ThriftStringWrapper().setStr(p._id.toString)),
-        serializer.serialize(p.toGeocodeServingFeature())
-      )
-    })
+      polygons.foreach(p => {
+        writer.append(
+          serializer.serialize(new ThriftStringWrapper().setStr(p._id.toString)),
+          serializer.serialize(p.toGeocodeServingFeature())
+        )
+      })
+      writer.close()
+      println("written %d files of %d featurs, total: %d".format(index, groupSize, index * groupSize))
+    }
 
     println("done")
   }
@@ -173,11 +186,17 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     new HFileWriterV2(conf, cconf, fs, path, blockSize, compressionAlgo, null)
   }
 
-  def buildV1Writer(filename: String) = {
+ def buildV1Writer[K: Manifest, V: Manifest](
+      filename: String,
+      thriftProtocol: TProtocolFactory = new TCompactProtocol.Factory()): HFileWriterV1 = {
     val fs = new LocalFileSystem() 
     val path = new Path(new File(basepath, filename).toString)
     fs.initialize(URI.create("file:///"), conf)
-    new HFileWriterV1(conf, cconf, fs, path, blockSize, compressionAlgo, null)
+    val writer = new HFileWriterV1(conf, cconf, fs, path, blockSize, compressionAlgo, null)
+    writer.appendFileInfo(HFileUtil.ThriftClassValueBytes, manifest[V].erasure.getName.getBytes("UTF-8"))
+    writer.appendFileInfo(HFileUtil.ThriftClassKeyBytes, manifest[K].erasure.getName.getBytes("UTF-8"))
+    writer.appendFileInfo(HFileUtil.ThriftEncodingKeyBytes, thriftProtocol.getClass.getName.getBytes("UTF-8"))
+    writer
   }
   
   def writeCollection[T <: AnyRef, K <: Any](
@@ -415,7 +434,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     def fixParentId(fid: String) = Some(gidMap.getOrElse(fid, fid))
 
     val filename = "gid-features.hfile"
-    val writer = buildV1Writer(filename)
+    val writer = buildV1Writer[ThriftStringWrapper, GeocodeServingFeature](filename)
     writer.appendFileInfo(ThriftClassValueBytes,
       classOf[GeocodeServingFeature].getName.getBytes("UTF-8"))
     writer.appendFileInfo(ThriftEncodingKeyBytes,
