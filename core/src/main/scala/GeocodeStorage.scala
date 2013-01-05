@@ -78,9 +78,11 @@ case class GeocodeRecord(
 
     feature.setWoeType(this.woeType)
 
-    feature.setIds(featureIds.map(i => {
+    feature.setIds(featureIds.filterNot(_.namespace == "gadminid").map(i => {
       new FeatureId(i.namespace, i.id)
     }))
+
+    feature.ids.headOption.foreach(id => feature.setId("%s:%s".format(id.source, id.id)))
 
     val filteredNames: List[DisplayName] = displayNames.filterNot(n => List("post", "link").contains(n.lang))
     var hackedNames: List[DisplayName] = Nil

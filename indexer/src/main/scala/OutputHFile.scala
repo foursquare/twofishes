@@ -1,7 +1,5 @@
 package com.foursquare.twofishes
 
-import com.foursquare.twofishes.importers.geonames.GeonamesParser
-
 import com.mongodb.casbah.Imports._
 import com.mongodb.casbah.MongoConnection
 import com.novus.salat._
@@ -95,7 +93,9 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
         val population = child.population.getOrElse(0)
         (population > minPopulation ||  minPopulationPerCounty.get(child.cc).exists(_ < population))
       }))
-
+      if (servingFeature.feature.id == null) {
+        println("null id: " + servingFeature)
+      }
       (servingFeature.feature.id -> childEntries.toList)
     }).toMap
 
@@ -346,11 +346,6 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
 
   def serializeBytes(g: GeocodeRecord, fixParentId: IdFixer) = {
     val f = g.toGeocodeServingFeature()
-
-    // kill the gadminids and set the new "id" field
-    val ids = f.feature.ids.asScala.filterNot(_.source == GeonamesParser.geonameAdminIdNamespace)
-    f.feature.setIds(ids.asJava)
-    ids.headOption.foreach(id => f.feature.setId("%s:%s".format(id.source, id.id)))
 
     val parents = for {
       parent <- f.scoringFeatures.parents
