@@ -99,7 +99,7 @@ class GeocoderHttpService(geocoder: GeocodeServerImpl) extends Service[HttpReque
       params.get("autocomplete").foreach(_.asScala.headOption.foreach(v =>
         request.setAutocomplete(v.toBoolean)))
       params.get("includePolygon").foreach(_.asScala.headOption.foreach(v =>
-        request.setAutocomplete(v.toBoolean)))
+        request.setIncludePolygon(v.toBoolean)))
       params.get("wktGeometry").foreach(_.asScala.headOption.foreach(v =>
         request.setWktGeometry(v.toBoolean)))
       params.get("ll").foreach(_.asScala.headOption.foreach(v => {
