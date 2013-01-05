@@ -159,11 +159,12 @@ object GeocodeThriftServer extends Application {
       println("serving vanilla thrift on port %d".format(config.thriftServerPort))
       println("serving http/json on port %d".format(config.thriftServerPort + 1))
 
+     val handleExceptions = new HandleExceptions
       ServerBuilder()
         .bindTo(new InetSocketAddress(config.thriftServerPort + 1))
         .codec(Http())
         .name("geocoder-http")
-        .build(new GeocoderHttpService(geocoder(store)))
+        .build(handleExceptions andThen new GeocoderHttpService(geocoder(store)))
 
       server.serve();     
     } catch { 
