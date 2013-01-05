@@ -55,8 +55,8 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     })
   }
 
-  def buildChildEntries(children: Iterator[GeocodeRecord]): Iterator[ChildEntry] = {
-    for {
+  def buildChildEntries(children: Iterator[GeocodeRecord]): List[ChildEntry] = {
+    (for {
       child <- children
       val feature = child.toGeocodeServingFeature.feature
       name <- NameUtils.bestName(feature, Some("en"), false)
@@ -69,7 +69,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
         finalName = "%s, %s".format(name.name, stateCode)
       }
       new ChildEntry().setName(finalName).setSlug(slug)
-    }
+    }).toList
   }
 
   def buildChildMap(
@@ -82,10 +82,9 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     // find all parents of parentType
     val parents = MongoGeocodeDAO.find(MongoDBObject("_woeType" -> parentType.getValue))
 
-    parents.map(parent => {
-      val parentOid = parent._id
+    parents.flatMap(parent => {
       val servingFeature = parent.toGeocodeServingFeature
-      val children = MongoGeocodeDAO.find(MongoDBObject("parents" -> parentOid.toString))
+      val children = MongoGeocodeDAO.find(MongoDBObject("parents" -> servingFeature.feature.id))
         .sort(orderBy = MongoDBObject("population" -> 1)) // sort by _id desc
         .limit(limit)
 
@@ -96,7 +95,12 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
       if (servingFeature.feature.id == null) {
         println("null id: " + servingFeature)
       }
-      (servingFeature.feature.id -> childEntries.toList)
+      if (childEntries.size > 0) {
+        println("found %d children for %s".format(childEntries.size, servingFeature.feature.id))
+        Some(servingFeature.feature.id -> childEntries.toList)
+      } else {
+        None
+      }
     }).toMap
 
     // for each parent, find all children of childType, sorted by descending popularity
@@ -132,21 +136,24 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
       MongoGeocodeDAO.find(MongoDBObject("polygon" -> MongoDBObject("$exists" -> true)))
         .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id desc
 
-    for {
-      (group, index) <- polygons.grouped(groupSize).zipWithIndex
-      p <- group
-    } {
-      val writer = buildV1Writer[ThriftStringWrapper, GeocodeServingFeature]("polygon-features-%d.hfile".format(index))
+    var index: Int = 0
+    var writer = buildV1Writer[ThriftStringWrapper, GeocodeServingFeature]("polygon-features-%d.hfile".format(index / groupSize))
 
-      polygons.foreach(p => {
-        writer.append(
-          serializer.serialize(new ThriftStringWrapper().setStr(p._id.toString)),
-          serializer.serialize(p.toGeocodeServingFeature())
-        )
-      })
-      writer.close()
-      println("written %d files of %d featurs, total: %d".format(index, groupSize, index * groupSize))
-    }
+    polygons.foreach(p => {
+      if (index % groupSize == 0) {
+        writer.close()
+        writer = buildV1Writer[ThriftStringWrapper, GeocodeServingFeature]("polygon-features-%d.hfile".format(index / groupSize))
+        println("written %d files of %d features, total: %d".format(index / groupSize, groupSize, index))
+      }
+
+      writer.append(
+        serializer.serialize(new ThriftStringWrapper().setStr(p._id.toString)),
+        serializer.serialize(p.toGeocodeServingFeature())
+      )
+      
+      index += 1
+    })
+    writer.close()
 
     println("done")
   }
