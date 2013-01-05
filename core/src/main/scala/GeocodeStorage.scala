@@ -45,7 +45,8 @@ case class GeocodeRecord(
   boundingbox: Option[BoundingBox] = None,
   canGeocode: Boolean = true,
   slug: Option[String] = None,
-  polygon: Option[Array[Byte]] = None
+  polygon: Option[Array[Byte]] = None,
+  hasPoly: Option[Boolean] = None
 ) extends Ordered[GeocodeRecord] {
   def featureIds = ids.map(id => {
     val parts = id.split(":")

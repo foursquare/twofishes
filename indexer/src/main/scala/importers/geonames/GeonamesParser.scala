@@ -485,7 +485,8 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       boundingbox = bbox,
       canGeocode = canGeocode,
       slug = slug,
-      polygon = polygon
+      polygon = polygon,
+      hasPoly = polygon.map(p => true)
     )
 
     store.insert(record)

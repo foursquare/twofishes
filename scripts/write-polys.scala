@@ -26,6 +26,9 @@ import com.novus.salat.dao._
     MongoGeocodeDAO.update(MongoDBObject("ids" -> id),
       MongoDBObject("$set" -> MongoDBObject("polygon" -> wkb)),
       false, false)
+    MongoGeocodeDAO.update(MongoDBObject("ids" -> id),
+      MongoDBObject("$set" -> MongoDBObject("hasPoly" -> true)),
+      false, false)
   }
 
   for { (id, poly) <- polygonTable} { addPolygonToRecord(id, poly) }
