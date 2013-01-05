@@ -115,19 +115,23 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
       buildChildMap(YahooWoeType.TOWN, YahooWoeType.SUBURB, 1000, 0) ++
       buildChildMap(YahooWoeType.ADMIN2, YahooWoeType.SUBURB, 1000, 0)
 
-    val writer = buildV1Writer[StringWrapper, ChildEntries]("child_map.hfile")
+    val writer = buildV1Writer[StringWrapper, ChildEntries]("child_map.hfile", factory)
 
     println("sorting")
 
     val sortedMapKeys = childMaps.keys.toList.sort(lexicalSort)
 
     println("sorted")
-    sortedMapKeys.foreach(k => {
-      writer.append(
-        serializer.serialize(new StringWrapper().setValue(k.toString)),
-        serializer.serialize(new ChildEntries().setEntries(childMaps(k)))
-      )
-    })
+   val comp = new ByteArrayComparator()
+
+    sortedMapKeys.map(k => {
+      (serializer.serialize(new StringWrapper().setValue(k.toString)),
+       serializer.serialize(new ChildEntries().setEntries(childMaps(k))))
+   }).toList.sortWith((a, b) => {
+     comp.compare(a._1, b._1) < 0
+   }).foreach({case (k, v) => {
+     writer.append(k, v)
+   }})
     writer.close()
     println("done")
   }
@@ -138,12 +142,12 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
         .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id desc
 
     var index: Int = 0
-    var writer = buildV1Writer[StringWrapper, GeocodeServingFeature]("polygon-features-%d.hfile".format(index / groupSize))
+    var writer = buildV1Writer[StringWrapper, GeocodeServingFeature]("polygon-features-%d.hfile".format(index / groupSize), factory)
 
     polygons.foreach(p => {
       if (index % groupSize == 0) {
         writer.close()
-        writer = buildV1Writer[StringWrapper, GeocodeServingFeature]("polygon-features-%d.hfile".format(index / groupSize))
+        writer = buildV1Writer[StringWrapper, GeocodeServingFeature]("polygon-features-%d.hfile".format(index / groupSize), factory)
         println("written %d files of %d features, total: %d".format(index / groupSize, groupSize, index))
       }
 
@@ -196,7 +200,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
 
  def buildV1Writer[K: Manifest, V: Manifest](
       filename: String,
-      thriftProtocol: TProtocolFactory = new TCompactProtocol.Factory()): HFileWriterV1 = {
+      thriftProtocol: TProtocolFactory): HFileWriterV1 = {
     val fs = new LocalFileSystem() 
     val path = new Path(new File(basepath, filename).toString)
     fs.initialize(URI.create("file:///"), conf)
@@ -349,7 +353,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
 
   type IdFixer = (String) => Option[String]
 
-  val factory = new TBinaryProtocol.Factory()
+  val factory = new TCompactProtocol.Factory()
   val serializer = new TSerializer(factory)
 
   def serializeBytes(g: GeocodeRecord, fixParentId: IdFixer) = {
@@ -437,11 +441,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     def fixParentId(fid: String) = Some(gidMap.getOrElse(fid, fid))
 
     val filename = "gid-features.hfile"
-    val writer = buildV1Writer[StringWrapper, GeocodeServingFeature](filename)
-    writer.appendFileInfo(ThriftClassValueBytes,
-      classOf[GeocodeServingFeature].getName.getBytes("UTF-8"))
-    writer.appendFileInfo(ThriftEncodingKeyBytes,
-      factory.getClass.getName.getBytes("UTF-8"))
+    val writer = buildV1Writer[StringWrapper, GeocodeServingFeature](filename, factory)
 
     var fidCount = 0
     val fidSize = ids.size

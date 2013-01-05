@@ -14,7 +14,7 @@ import org.apache.hadoop.hbase.util.Bytes._
 import com.twitter.util.{Duration, Future, FuturePool}
 
 import org.apache.thrift.{TDeserializer}
-import org.apache.thrift.protocol.TBinaryProtocol
+import org.apache.thrift.protocol.TCompactProtocol
 
 import org.bson.types.ObjectId
 
@@ -174,7 +174,7 @@ class PrefixIndexHFileInput(basepath: String) extends HFileInput(basepath, "pref
 class GeocodeRecordHFileInput(basepath: String) extends HFileInput(basepath, "features.hfile") {
   import java.io._
   def deserializeBytes(bytes: Array[Byte]) = {
-    val deserializer = new TDeserializer(new TBinaryProtocol.Factory());
+    val deserializer = new TDeserializer(new TCompactProtocol.Factory());
     val feature = new GeocodeServingFeature();
     deserializer.deserialize(feature, bytes);
     feature
