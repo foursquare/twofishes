@@ -185,8 +185,7 @@ class GeocodeRecordHFileInput(basepath: String) extends HFileInput(basepath, "fe
     lookup(buf).map(b => {
       val bytes = new Array[Byte](b.capacity())
       b.get(bytes, 0, bytes.length);
-      val ret = deserializeBytes(bytes)
-      ret
+      deserializeBytes(bytes)
     })
   }
 }

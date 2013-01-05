@@ -17,7 +17,7 @@ if len(args) != 1:
 
 basepath = args[0]
 
-cmd = './sbt "server/run-main com.foursquare.twofishes.GeocodeThriftServer --port %d --hfile_basepath %s"' % (options.port, basepath)
+cmd = './sbt "server/run-main com.foursquare.twofishes.GeocodeFinagleServer --port %d --hfile_basepath %s"' % (options.port, basepath)
 print(cmd)
 os.system(cmd)
 

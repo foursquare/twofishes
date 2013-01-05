@@ -4,6 +4,7 @@ package com.foursquare.twofishes
 import collection.JavaConverters._
 import com.twitter.finagle.builder.{ServerBuilder, Server}
 import com.twitter.finagle.http.Http
+import com.twitter.finagle.thrift.ThriftServerFramedCodec
 import com.twitter.finagle.{Service, SimpleFilter}
 import com.twitter.util.{Future, FuturePool, Throw}
 import java.io.InputStream
@@ -18,6 +19,12 @@ import org.jboss.netty.handler.codec.http._
 import org.jboss.netty.util.CharsetUtil
 import scala.collection.mutable.ListBuffer
 
+class GeocodeServerImpl(store: GeocodeStorageFutureReadService) extends Geocoder.ServiceIface {
+  def geocode(r: GeocodeRequest): Future[GeocodeResponse] = {
+    new GeocoderImpl(store, r).geocode()
+  }
+}
+
 class HandleExceptions extends SimpleFilter[HttpRequest, HttpResponse] {
   def apply(request: HttpRequest, service: Service[HttpRequest, HttpResponse]) = {
     // `handle` asynchronously handles exceptions.
@@ -31,13 +38,13 @@ class HandleExceptions extends SimpleFilter[HttpRequest, HttpResponse] {
   }
 }
 
-class GeocoderHttpService(geocoder: GeocodeRequest => Future[GeocodeResponse]) extends Service[HttpRequest, HttpResponse] {
+class GeocoderHttpService(geocoder: GeocodeServerImpl) extends Service[HttpRequest, HttpResponse] {
   val diskIoFuturePool = FuturePool(Executors.newFixedThreadPool(8))
 
   def handleQuery(request: GeocodeRequest): Future[DefaultHttpResponse] = {
     val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
 
-    geocoder(request).map(geocode => {
+    geocoder.geocode(request).map(geocode => {
       val serializer = new TSerializer(new TSimpleJSONProtocol.Factory());
       val json = serializer.toString(geocode);
 
@@ -92,7 +99,7 @@ class GeocoderHttpService(geocoder: GeocodeRequest => Future[GeocodeResponse]) e
       params.get("autocomplete").foreach(_.asScala.headOption.foreach(v =>
         request.setAutocomplete(v.toBoolean)))
       params.get("includePolygon").foreach(_.asScala.headOption.foreach(v =>
-        request.setIncludePolygon(v.toBoolean)))
+        request.setAutocomplete(v.toBoolean)))
       params.get("wktGeometry").foreach(_.asScala.headOption.foreach(v =>
         request.setWktGeometry(v.toBoolean)))
       params.get("ll").foreach(_.asScala.headOption.foreach(v => {
@@ -133,42 +140,59 @@ object ServerStore {
 }
 
 object GeocodeThriftServer extends Application {
-  def geocoder(store: GeocodeStorageFutureReadService)(request: GeocodeRequest): Future[GeocodeResponse] = {
-    new GeocoderImpl(store, request).geocode()
-  }
-
-
   class GeocodeServer(store: GeocodeStorageFutureReadService) extends Geocoder.Iface {
     override def geocode(request: GeocodeRequest): GeocodeResponse = {
-      geocoder(store)(request).get
+      new GeocoderImpl(store, request).geocode().get
     }
   }
 
   override def main(args: Array[String]) {
     try {
       val config = new GeocodeServerConfig(args)
-      val store = ServerStore.getStore(config)
 
       val serverTransport = new TServerSocket(config.thriftServerPort)
-      val processor = new Geocoder.Processor(new GeocodeServer(store))
+      val processor = new Geocoder.Processor(new GeocodeServer(ServerStore.getStore(config)))
       val protFactory = new TBinaryProtocol.Factory(true, true)
-
-      val server = new TThreadPoolServer(
-          new TThreadPoolServer.Args(serverTransport).processor(processor));
-
+      val server = new TThreadPoolServer(processor, serverTransport, protFactory)
+      
       println("serving vanilla thrift on port %d".format(config.thriftServerPort))
-      println("serving http/json on port %d".format(config.thriftServerPort + 1))
-
-     val handleExceptions = new HandleExceptions
-      ServerBuilder()
-        .bindTo(new InetSocketAddress(config.thriftServerPort + 1))
-        .codec(Http())
-        .name("geocoder-http")
-        .build(handleExceptions andThen new GeocoderHttpService(geocoder(store)))
 
       server.serve();     
     } catch { 
       case x: Exception => x.printStackTrace();
+    }
+  }
+}
+
+object GeocodeFinagleServer {
+  def main(args: Array[String]) {
+    val handleExceptions = new HandleExceptions
+
+    LogHelper.init
+
+    val config = new GeocodeServerConfig(args)
+
+    // Implement the Thrift Interface
+    val processor = new GeocodeServerImpl(ServerStore.getStore(config))
+
+    // Convert the Thrift Processor to a Finagle Service
+    val service = new Geocoder.Service(processor, new TBinaryProtocol.Factory())
+
+    println("serving finagle-thrift on port %d".format(config.thriftServerPort))
+    println("serving http/json on port %d".format(config.thriftServerPort + 1))
+
+    val server: Server = ServerBuilder()
+      .bindTo(new InetSocketAddress(config.thriftServerPort))
+      .codec(ThriftServerFramedCodec())
+      .name("geocoder")
+      .build(service)
+
+    if (config.runHttpServer) {
+      ServerBuilder()
+        .bindTo(new InetSocketAddress(config.thriftServerPort + 1))
+        .codec(Http())
+        .name("geocoder-http")
+        .build(handleExceptions andThen new GeocoderHttpService(processor))
     }
   }
 }
