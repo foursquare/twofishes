@@ -7,6 +7,7 @@ import com.novus.salat.annotations._
 import com.novus.salat.dao._
 import com.novus.salat.global._
 import com.foursquare.twofishes.util.{Hacks, NameUtils}
+import com.foursquare.base.gen.StringWrapper
 
 import java.io._
 import java.net.URI
@@ -114,7 +115,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
       buildChildMap(YahooWoeType.TOWN, YahooWoeType.SUBURB, 1000, 0) ++
       buildChildMap(YahooWoeType.ADMIN2, YahooWoeType.SUBURB, 1000, 0)
 
-    val writer = buildV1Writer[ThriftStringWrapper, ChildEntries]("child_map.hfile")
+    val writer = buildV1Writer[StringWrapper, ChildEntries]("child_map.hfile")
 
     println("sorting")
 
@@ -123,7 +124,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     println("sorted")
     sortedMapKeys.foreach(k => {
       writer.append(
-        serializer.serialize(new ThriftStringWrapper().setStr(k.toString)),
+        serializer.serialize(new StringWrapper().setValue(k.toString)),
         serializer.serialize(new ChildEntries().setEntries(childMaps(k)))
       )
     })
@@ -137,17 +138,17 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
         .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id desc
 
     var index: Int = 0
-    var writer = buildV1Writer[ThriftStringWrapper, GeocodeServingFeature]("polygon-features-%d.hfile".format(index / groupSize))
+    var writer = buildV1Writer[StringWrapper, GeocodeServingFeature]("polygon-features-%d.hfile".format(index / groupSize))
 
     polygons.foreach(p => {
       if (index % groupSize == 0) {
         writer.close()
-        writer = buildV1Writer[ThriftStringWrapper, GeocodeServingFeature]("polygon-features-%d.hfile".format(index / groupSize))
+        writer = buildV1Writer[StringWrapper, GeocodeServingFeature]("polygon-features-%d.hfile".format(index / groupSize))
         println("written %d files of %d features, total: %d".format(index / groupSize, groupSize, index))
       }
 
       writer.append(
-        serializer.serialize(new ThriftStringWrapper().setStr(p._id.toString)),
+        serializer.serialize(new StringWrapper().setValue(p._id.toString)),
         serializer.serialize(p.toGeocodeServingFeature())
       )
       
@@ -436,7 +437,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     def fixParentId(fid: String) = Some(gidMap.getOrElse(fid, fid))
 
     val filename = "gid-features.hfile"
-    val writer = buildV1Writer[ThriftStringWrapper, GeocodeServingFeature](filename)
+    val writer = buildV1Writer[StringWrapper, GeocodeServingFeature](filename)
     writer.appendFileInfo(ThriftClassValueBytes,
       classOf[GeocodeServingFeature].getName.getBytes("UTF-8"))
     writer.appendFileInfo(ThriftEncodingKeyBytes,

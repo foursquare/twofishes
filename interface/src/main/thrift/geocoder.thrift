@@ -1,9 +1,5 @@
 namespace java com.foursquare.twofishes
 
-struct ThriftStringWrapper {
-  1: optional string str
-}
-
 struct ChildEntry {
   1: optional string name,
   2: optional string slug

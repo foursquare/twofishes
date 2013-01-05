@@ -14,3 +14,5 @@ fi
 
 
 thrift --gen java -o interface/src/main/java interface/src/main/thrift/geocoder.thrift
+thrift --gen java -o interface/src/main/java interface/src/main/thrift/primitive_wrappers.thrift
+

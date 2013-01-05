@@ -33,14 +33,17 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
 
   private static final TField NAME_FIELD_DESC = new TField("name", TType.STRING, (short)1);
   private static final TField SLUG_FIELD_DESC = new TField("slug", TType.STRING, (short)2);
+  private static final TField ID_FIELD_DESC = new TField("id", TType.STRING, (short)3);
 
   public String name;
   public String slug;
+  public String id;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
     NAME((short)1, "name"),
-    SLUG((short)2, "slug");
+    SLUG((short)2, "slug"),
+    ID((short)3, "id");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -59,6 +62,8 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
           return NAME;
         case 2: // SLUG
           return SLUG;
+        case 3: // ID
+          return ID;
         default:
           return null;
       }
@@ -107,6 +112,8 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
         new FieldValueMetaData(TType.STRING)));
     tmpMap.put(_Fields.SLUG, new FieldMetaData("slug", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.STRING)));
+    tmpMap.put(_Fields.ID, new FieldMetaData("id", TFieldRequirementType.OPTIONAL, 
+        new FieldValueMetaData(TType.STRING)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(ChildEntry.class, metaDataMap);
   }
@@ -124,6 +131,9 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
     if (other.isSetSlug()) {
       this.slug = other.slug;
     }
+    if (other.isSetId()) {
+      this.id = other.id;
+    }
   }
 
   public ChildEntry deepCopy() {
@@ -134,6 +144,7 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
   public void clear() {
     this.name = null;
     this.slug = null;
+    this.id = null;
   }
 
   public String getName() {
@@ -184,6 +195,30 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
     }
   }
 
+  public String getId() {
+    return this.id;
+  }
+
+  public ChildEntry setId(String id) {
+    this.id = id;
+    return this;
+  }
+
+  public void unsetId() {
+    this.id = null;
+  }
+
+  /** Returns true if field id is set (has been asigned a value) and false otherwise */
+  public boolean isSetId() {
+    return this.id != null;
+  }
+
+  public void setIdIsSet(boolean value) {
+    if (!value) {
+      this.id = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case NAME:
@@ -202,6 +237,14 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
       }
       break;
 
+    case ID:
+      if (value == null) {
+        unsetId();
+      } else {
+        setId((String)value);
+      }
+      break;
+
     }
   }
 
@@ -212,6 +255,9 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
 
     case SLUG:
       return getSlug();
+
+    case ID:
+      return getId();
 
     }
     throw new IllegalStateException();
@@ -228,6 +274,8 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
       return isSetName();
     case SLUG:
       return isSetSlug();
+    case ID:
+      return isSetId();
     }
     throw new IllegalStateException();
   }
@@ -260,6 +308,15 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
       if (!(this_present_slug && that_present_slug))
         return false;
       if (!this.slug.equals(that.slug))
+        return false;
+    }
+
+    boolean this_present_id = true && this.isSetId();
+    boolean that_present_id = true && that.isSetId();
+    if (this_present_id || that_present_id) {
+      if (!(this_present_id && that_present_id))
+        return false;
+      if (!this.id.equals(that.id))
         return false;
     }
 
@@ -299,6 +356,16 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetId()).compareTo(typedOther.isSetId());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetId()) {
+      lastComparison = TBaseHelper.compareTo(this.id, typedOther.id);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -326,6 +393,13 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
         case 2: // SLUG
           if (field.type == TType.STRING) {
             this.slug = iprot.readString();
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 3: // ID
+          if (field.type == TType.STRING) {
+            this.id = iprot.readString();
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -359,6 +433,13 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
         oprot.writeFieldEnd();
       }
     }
+    if (this.id != null) {
+      if (isSetId()) {
+        oprot.writeFieldBegin(ID_FIELD_DESC);
+        oprot.writeString(this.id);
+        oprot.writeFieldEnd();
+      }
+    }
     oprot.writeFieldStop();
     oprot.writeStructEnd();
   }
@@ -384,6 +465,16 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
         sb.append("null");
       } else {
         sb.append(this.slug);
+      }
+      first = false;
+    }
+    if (isSetId()) {
+      if (!first) sb.append(", ");
+      sb.append("id:");
+      if (this.id == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.id);
       }
       first = false;
     }
