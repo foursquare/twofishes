@@ -167,6 +167,10 @@ trait GeocodeStorageFutureReadService {
   def getByObjectIds(ids: Seq[ObjectId]): Future[Map[ObjectId, GeocodeServingFeature]]
 
   def getBySlugOrFeatureIds(ids: Seq[String]): Future[Map[String, GeocodeServingFeature]]
+
+  def getByS2CellId(id: Long): Future[Seq[ObjectId]]
+  def getMinS2Level: Int
+  def getMaxS2Level: Int
 }
 
 class WrappedGeocodeStorageFutureReadService(underlying: GeocodeStorageReadService, future: FuturePool) extends GeocodeStorageFutureReadService {
@@ -189,6 +193,13 @@ class WrappedGeocodeStorageFutureReadService(underlying: GeocodeStorageReadServi
   def getBySlugOrFeatureIds(ids: Seq[String]): Future[Map[String, GeocodeServingFeature]] = future {
     underlying.getBySlugOrFeatureIds(ids)
   }
+  
+  def getByS2CellId(id: Long): Future[Seq[ObjectId]] = future {
+    underlying.getByS2CellId(id)
+  }
+
+  def getMinS2Level: Int = underlying.getMinS2Level
+  def getMaxS2Level: Int = underlying.getMaxS2Level
 }
 
 trait GeocodeStorageReadService {
@@ -198,4 +209,8 @@ trait GeocodeStorageReadService {
   def getByObjectIds(ids: Seq[ObjectId]): Map[ObjectId, GeocodeServingFeature]
 
   def getBySlugOrFeatureIds(ids: Seq[String]): Map[String, GeocodeServingFeature]
+
+  def getByS2CellId(id: Long): Seq[ObjectId]
+  def getMinS2Level: Int
+  def getMaxS2Level: Int
 }

@@ -1,12 +1,13 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
-import com.foursquare.twofishes.util.{GeoTools, NameUtils, Hacks, TwofishesLogger, NameNormalizer}
+import com.foursquare.twofishes.util.{GeoTools, GeometryUtils, NameUtils, Hacks, TwofishesLogger, NameNormalizer}
 import com.foursquare.twofishes.util.NameUtils.BestNameMatch
 import com.foursquare.twofishes.Implicits._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.twitter.util.{Future, FuturePool}
 import com.vividsolutions.jts.io.{WKTWriter, WKBReader}
+import com.vividsolutions.jts.geom.{Coordinate, GeometryFactory}
 import java.util.concurrent.ConcurrentHashMap
 import java.util.Date
 import org.bson.types.ObjectId
@@ -1128,5 +1129,44 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     } else {
       doNormalGeocode(parseParams)
     }
+  }
+
+  def reverseGeocode(): Future[GeocodeResponse] = {
+    val ll = Option(req.ll).getOrElse(
+      throw new Exception("missing ll for reverse geocode"))
+
+    val cellids: Seq[Long] = store.getMinS2Level.to(store.getMaxS2Level).map(level => {
+      GeometryUtils.getS2CellIdForLevel(ll.lat, ll.lng, level).id()
+    })
+
+    //
+    val featureOidsFSeq: Seq[Future[Seq[ObjectId]]] = cellids.map(store.getByS2CellId)
+    val featureOidsF: Future[Seq[ObjectId]] = Future.collect(featureOidsFSeq).map(_.flatten)
+
+    val servingFeaturesMapF: Future[Map[ObjectId, GeocodeServingFeature]] = featureOidsF.flatMap(
+      (featureOids: Seq[ObjectId]) => store.getByObjectIds(featureOids))
+    val servingFeaturesF: Future[Seq[GeocodeServingFeature]] = servingFeaturesMapF.map(_.values.toList)
+
+    // for each, check if we're really in it
+    val matchedFeatures: Future[Seq[GeocodeServingFeature]] = servingFeaturesF.map((servingFeatures: Seq[GeocodeServingFeature]) => servingFeatures.filter(f => {
+      if (f.feature.geometry.wkbGeometry != null) {
+        // not threadsafe, afaik
+        val wkbReader = new WKBReader()
+        val geomFactory = new GeometryFactory()
+        val geom = wkbReader.read(f.feature.geometry.getWkbGeometry())
+        val point = geomFactory.createPoint(
+          new Coordinate(ll.lng, ll.lat)
+        )
+        geom.contains(point)
+      } else {
+        false
+      }
+    }))
+
+    val parseParams = ParseParams()
+    val parsesF: Future[ParseSeq] = matchedFeatures.map(_.map(servingFeature =>
+      List(FeatureMatch(0, 0, "", servingFeature))))
+    parsesF.flatMap(parses => 
+      buildFinalParses(parses, 0, parseParams))
   }
 }

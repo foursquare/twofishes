@@ -23,6 +23,10 @@ class GeocodeServerImpl(store: GeocodeStorageFutureReadService) extends Geocoder
   def geocode(r: GeocodeRequest): Future[GeocodeResponse] = {
     new GeocoderImpl(store, r).geocode()
   }
+
+  def reverseGeocode(r: GeocodeRequest): Future[GeocodeResponse] = {
+    new GeocoderImpl(store, r).reverseGeocode()
+  }
 }
 
 class HandleExceptions extends SimpleFilter[HttpRequest, HttpResponse] {
@@ -143,6 +147,10 @@ object GeocodeThriftServer extends Application {
   class GeocodeServer(store: GeocodeStorageFutureReadService) extends Geocoder.Iface {
     override def geocode(request: GeocodeRequest): GeocodeResponse = {
       new GeocoderImpl(store, request).geocode().get
+    }
+
+    override def reverseGeocode(request: GeocodeRequest): GeocodeResponse = {
+      new GeocoderImpl(store, request).reverseGeocode().get
     }
   }
 

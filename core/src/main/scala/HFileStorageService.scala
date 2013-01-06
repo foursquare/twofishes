@@ -1,5 +1,7 @@
 package com.foursquare.twofishes
 
+import com.foursquare.twofishes.util.GeometryUtils
+
 import java.io._
 import java.net.URI
 import java.nio.ByteBuffer
@@ -20,10 +22,12 @@ import org.bson.types.ObjectId
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
+import scalaj.collection.Implicits._
 
 class HFileStorageService(basepath: String) extends GeocodeStorageReadService {
   val nameMap = new NameIndexHFileInput(basepath)
   val oidMap = new GeocodeRecordHFileInput(basepath)
+  val s2map = new ReverseGeocodeHFileInput(basepath)
 
   val slugFidMapFuture = FuturePool.defaultPool {
     val (rv, duration) = Duration.inMilliseconds(readSlugMap())
@@ -64,6 +68,13 @@ class HFileStorageService(basepath: String) extends GeocodeStorageReadService {
       case (k, v) => (oidMap(k), v)
     })
   }
+
+  def getByS2CellId(id: Long): Seq[ObjectId] = {
+    s2map.get(id)
+  }
+
+  def getMinS2Level: Int = s2map.minS2Level
+  def getMaxS2Level: Int = s2map.maxS2Level
 }
 
 abstract class HFileInput(basepath: String, filename: String) {
@@ -75,7 +86,7 @@ abstract class HFileInput(basepath: String, filename: String) {
   val cacheConfig = new CacheConfig(conf)
   println(cacheConfig)
   val reader = HFile.createReader(fs, path, cacheConfig)
-  reader.loadFileInfo()
+  val fileInfo = reader.loadFileInfo().asScala
 
   def lookup(key: ByteBuffer): Option[ByteBuffer] = {
     val scanner: HFileScanner = reader.getScanner(true, true)
@@ -111,14 +122,16 @@ abstract class HFileInput(basepath: String, filename: String) {
   }
 }
 
-class NameIndexHFileInput(basepath: String) extends HFileInput(basepath, "name_index.hfile") {
-  val prefixMapOpt = PrefixIndexHFileInput.readInput(basepath)
-
+trait ObjectIdReader {
   def decodeObjectIds(bytes: Array[Byte]): Seq[ObjectId] = {
     0.until(bytes.length / 12).map(i => {
       new ObjectId(Arrays.copyOfRange(bytes, i * 12, (i + 1) * 12))
     })
   }
+}
+
+class NameIndexHFileInput(basepath: String) extends HFileInput(basepath, "name_index.hfile") with ObjectIdReader {
+  val prefixMapOpt = PrefixIndexHFileInput.readInput(basepath)
 
   def get(name: String): List[ObjectId] = {
     val buf = ByteBuffer.wrap(name.getBytes())
@@ -153,16 +166,34 @@ object PrefixIndexHFileInput {
   } 
 }
 
-class PrefixIndexHFileInput(basepath: String) extends HFileInput(basepath, "prefix_index.hfile") {
+class PrefixIndexHFileInput(basepath: String) extends HFileInput(basepath, "prefix_index.hfile") with ObjectIdReader {
   val maxPrefixLength = 5 // TODO: pull from hfile metadata  
-  def decodeObjectIds(bytes: Array[Byte]): Seq[ObjectId] = {
-    0.until(bytes.length / 12).map(i => {
-      new ObjectId(Arrays.copyOfRange(bytes, i * 12, (i + 1) * 12))
-    })
-  }
 
   def get(name: String): List[ObjectId] = {
     val buf = ByteBuffer.wrap(name.getBytes())
+    lookup(buf).toList.flatMap(b => {
+      val bytes = new Array[Byte](b.capacity())
+      b.get(bytes, 0, bytes.length);
+      decodeObjectIds(bytes)
+    })
+  }
+}
+
+class ReverseGeocodeHFileInput(basepath: String) extends HFileInput(basepath, "s2_index.hfile") with ObjectIdReader {
+  def fromByteArray(bytes: Array[Byte]) = {
+    ByteBuffer.wrap(bytes).getInt()
+  } 
+
+  lazy val minS2Level = fromByteArray(fileInfo.getOrElse(
+    "minS2Level".getBytes("UTF-8"),
+    throw new Exception("missing minS2Level")))
+
+  lazy val maxS2Level = fromByteArray(fileInfo.getOrElse(
+    "maxS2Level".getBytes("UTF-8"),
+    throw new Exception("missing maxS2Level")))
+
+  def get(cellid: Long): List[ObjectId] = {
+    val buf = ByteBuffer.wrap(GeometryUtils.getBytes(cellid))
     lookup(buf).toList.flatMap(b => {
       val bytes = new Array[Byte](b.capacity())
       b.get(bytes, 0, bytes.length);
