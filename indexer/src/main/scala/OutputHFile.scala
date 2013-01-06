@@ -138,7 +138,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
 
   def buildPolygonIndex(groupSize: Int) {
     val polygons = 
-      MongoGeocodeDAO.find(MongoDBObject("polygon" -> MongoDBObject("$exists" -> true)))
+      MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
         .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id desc
 
     var index: Int = 0
