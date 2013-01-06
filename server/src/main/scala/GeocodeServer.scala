@@ -45,10 +45,19 @@ class HandleExceptions extends SimpleFilter[HttpRequest, HttpResponse] {
 class GeocoderHttpService(geocoder: GeocodeServerImpl) extends Service[HttpRequest, HttpResponse] {
   val diskIoFuturePool = FuturePool(Executors.newFixedThreadPool(8))
 
-  def handleQuery(request: GeocodeRequest): Future[DefaultHttpResponse] = {
+  def handleGeocodeQuery(request: GeocodeRequest) = 
+    handleQuery(request, geocoder.geocode)
+
+  def handleReverseGeocodeQuery(request: GeocodeRequest) = 
+    handleQuery(request, geocoder.reverseGeocode)
+
+  def handleQuery(
+      request: GeocodeRequest,
+      queryProcessor: (GeocodeRequest) => Future[GeocodeResponse]
+  ): Future[DefaultHttpResponse] = {
     val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
 
-    geocoder.geocode(request).map(geocode => {
+    queryProcessor(request).map(geocode => {
       val serializer = new TSerializer(new TSimpleJSONProtocol.Factory());
       val json = serializer.toString(geocode);
 
@@ -66,6 +75,40 @@ class GeocoderHttpService(geocoder: GeocodeServerImpl) extends Service[HttpReque
         b = is.read()
     }
     buf.toArray
+  }
+
+  def parseGeocodeRequest(params: scala.collection.mutable.Map[java.lang.String,java.util.List[java.lang.String]]): GeocodeRequest = {
+    val request = new GeocodeRequest()
+    params.get("query").foreach(_.asScala.headOption.foreach(request.setQuery))
+    params.get("slug").foreach(_.asScala.headOption.foreach(request.setSlug))
+    
+    params.get("lang").foreach(_.asScala.headOption.foreach(v =>
+      request.setLang(v)))
+    params.get("cc").foreach(_.asScala.headOption.foreach(v =>
+      request.setCc(v)))
+    params.get("full").foreach(_.asScala.headOption.foreach(v =>
+      request.setFull(v.toBoolean)))
+    params.get("debug").foreach(_.asScala.headOption.foreach(v =>
+      request.setDebug(v.toInt)))
+    params.get("autocomplete").foreach(_.asScala.headOption.foreach(v =>
+      request.setAutocomplete(v.toBoolean)))
+    params.get("includePolygon").foreach(_.asScala.headOption.foreach(v =>
+      request.setIncludePolygon(v.toBoolean)))
+    params.get("wktGeometry").foreach(_.asScala.headOption.foreach(v =>
+      request.setWktGeometry(v.toBoolean)))
+    params.get("ll").foreach(_.asScala.headOption.foreach(v => {
+      val ll = v.split(",").toList
+      request.setLl(new GeocodePoint(ll(0).toDouble, ll(1).toDouble))
+    }))
+    params.get("woeHint").foreach(_.asScala.headOption.foreach(hintStr => {
+      val hints = hintStr.split(",").map(_.toInt).map(YahooWoeType.findByValue)
+      request.setWoeHint(hints.toList.asJava)
+    }))
+    params.get("woeRestrict").foreach(_.asScala.headOption.foreach(hintStr => {
+      val hints = hintStr.split(",").map(_.toInt).map(YahooWoeType.findByValue)
+      request.setWoeRestrict(hints.toList.asJava)
+    }))
+    request
   }
 
   def apply(request: HttpRequest) = {
@@ -88,38 +131,13 @@ class GeocoderHttpService(geocoder: GeocodeServerImpl) extends Service[HttpReque
         response
       })
     } else {
-      val request = new GeocodeRequest()
-      params.get("query").foreach(_.asScala.headOption.foreach(request.setQuery))
-      params.get("slug").foreach(_.asScala.headOption.foreach(request.setSlug))
-      
-      params.get("lang").foreach(_.asScala.headOption.foreach(v =>
-        request.setLang(v)))
-      params.get("cc").foreach(_.asScala.headOption.foreach(v =>
-        request.setCc(v)))
-      params.get("full").foreach(_.asScala.headOption.foreach(v =>
-        request.setFull(v.toBoolean)))
-      params.get("debug").foreach(_.asScala.headOption.foreach(v =>
-        request.setDebug(v.toInt)))
-      params.get("autocomplete").foreach(_.asScala.headOption.foreach(v =>
-        request.setAutocomplete(v.toBoolean)))
-      params.get("includePolygon").foreach(_.asScala.headOption.foreach(v =>
-        request.setIncludePolygon(v.toBoolean)))
-      params.get("wktGeometry").foreach(_.asScala.headOption.foreach(v =>
-        request.setWktGeometry(v.toBoolean)))
-      params.get("ll").foreach(_.asScala.headOption.foreach(v => {
-        val ll = v.split(",").toList
-        request.setLl(new GeocodePoint(ll(0).toDouble, ll(1).toDouble))
-      }))
-      params.get("woeHint").foreach(_.asScala.headOption.foreach(hintStr => {
-        val hints = hintStr.split(",").map(_.toInt).map(YahooWoeType.findByValue)
-        request.setWoeHint(hints.toList.asJava)
-      }))
-      params.get("woeRestrict").foreach(_.asScala.headOption.foreach(hintStr => {
-        val hints = hintStr.split(",").map(_.toInt).map(YahooWoeType.findByValue)
-        request.setWoeRestrict(hints.toList.asJava)
-      }))
+      val request = parseGeocodeRequest(params)
 
-      handleQuery(request)
+      if (request.query == null && request.slug == null) {
+        handleReverseGeocodeQuery(request)
+      } else {
+        handleGeocodeQuery(request)
+      }
     }
     // ).getOrElse({
     //     val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
