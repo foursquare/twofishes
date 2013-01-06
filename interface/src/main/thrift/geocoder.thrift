@@ -221,4 +221,5 @@ struct GeocodeRequest {
 
 service Geocoder {
   GeocodeResponse geocode(1: GeocodeRequest r)
+  GeocodeResponse reverseGeocode(1: GeocodeRequest r)
 }

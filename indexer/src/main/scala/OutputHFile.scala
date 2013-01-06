@@ -6,8 +6,13 @@ import com.novus.salat._
 import com.novus.salat.annotations._
 import com.novus.salat.dao._
 import com.novus.salat.global._
-import com.foursquare.twofishes.util.{Hacks, NameUtils}
+
+import com.foursquare.twofishes.util.{GeometryUtils, Hacks, NameUtils}
 import com.foursquare.base.gen.StringWrapper
+
+import com.google.common.geometry.S2CellId
+
+import com.vividsolutions.jts.io.WKBReader
 
 import java.io._
 import java.net.URI
@@ -136,6 +141,44 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     println("done")
   }
 
+  def buildRevGeoIndex(groupSize: Int) {
+    val wkbReader = new WKBReader()
+
+    val records = 
+      MongoGeocodeDAO.find(MongoDBObject("polygon" -> MongoDBObject("$exists" -> true)))
+        .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id desc
+
+    val s2map = new HashMap[Array[Byte], HashSet[ObjectId]]
+
+    val minS2Level = 9
+    val maxS2Level = 18
+
+    for {
+      record <- records
+      polygon <- record.polygon
+    } {
+      val geom = wkbReader.read(polygon)
+
+      GeometryUtils.s2PolygonCovering(geom, minS2Level, maxS2Level).foreach(
+        (cellid: S2CellId) => {
+          val s2Bytes: Array[Byte] = GeometryUtils.getBytes(cellid)
+          val bucket = s2map.getOrElseUpdate(s2Bytes, new HashSet[ObjectId]())
+          bucket.add(record._id)
+        } 
+      )
+    }
+
+    val sortedMapKeys = s2map.keys.toList.sort(byteSort)
+    val writer = buildV2Writer(new File(basepath, "s2_index.hfile").toString)
+    sortedMapKeys.foreach(k => {
+      writer.append(k, oidsToByteArray(s2map(k)))
+    })
+
+    writer.appendFileInfo("minS2Level".getBytes("UTF-8"), GeometryUtils.getBytes(minS2Level))
+    writer.appendFileInfo("maxS2Level".getBytes("UTF-8"), GeometryUtils.getBytes(maxS2Level))
+    writer.close()
+  }
+
   def buildPolygonIndex(groupSize: Int) {
     val polygons = 
       MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
@@ -234,6 +277,9 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
   }
 
   val comp = new ByteArrayComparator()
+  def byteSort(a: Array[Byte], b: Array[Byte]) = {
+    comp.compare(a, b) < 0
+  }
   def lexicalSort(a: String, b: String) = {
     comp.compare(a.getBytes(), b.getBytes()) < 0
   }
@@ -242,7 +288,11 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
   }
 
   def fidStringsToByteArray(fids: List[String]): Array[Byte] = {
-    val oids = fids.flatMap(fid => fidMap.get(fid)).toSet
+    val oids: Set[ObjectId] = fids.flatMap(fid => fidMap.get(fid)).toSet
+    oidsToByteArray(oids)
+  }
+
+  def oidsToByteArray(oids: Iterable[ObjectId]): Array[Byte] = {
     val os = new ByteArrayOutputStream(12 * oids.size)
     oids.foreach(oid =>
       os.write(oid.toByteArray)
