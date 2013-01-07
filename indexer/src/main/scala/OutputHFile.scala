@@ -313,8 +313,6 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     val writer = buildV2Writer("name_index.hfile")
     nameCursor.filterNot(_.name.isEmpty).foreach(n => {
       if (lastName != n.name) {
-        println(n.name)
-        println(n.nameBytes.mkString(" "))
         if (lastName != "") {
           writer.append(n.name.getBytes(), fidStringsToByteArray(nameFids.toList))
         }
