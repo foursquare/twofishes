@@ -53,7 +53,6 @@ object GeometryUtils {
       val poly = geom.asInstanceOf[Polygon]
       val ring = poly.getExteriorRing()
       val coords = ring.getCoordinates()
-      println(coords.size)
       val builder = new S2PolygonBuilder()
       (coords ++ List(coords(0))).sliding(2).foreach(pair => {
         val p1 = pair(0)
