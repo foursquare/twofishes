@@ -49,6 +49,10 @@ class MockGeocodeStorageReadService extends GeocodeStorageFutureReadService {
     )
   }
 
+  def getByS2CellId(id: Long): Future[Seq[ObjectId]] = Future.value(Nil)
+  def getMinS2Level: Int = 0
+  def getMaxS2Level: Int = 0
+
   def addGeocode(
     name: String,
     parents: List[GeocodeServingFeature],
