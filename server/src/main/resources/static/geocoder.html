@@ -68,7 +68,7 @@
     function geocode() {
       var query = location.hash.substr(1);
       if (query.match(/^([-+]?\d{1,2}([.]\d+)?),\s*([-+]?\d{1,3}([.]\d+)?)$/)) {
-        $.getJSON('http://' + window.location.host + '/?debug=1&includePolygon=true&wktGeometry=true&query=' + query,
+        $.getJSON('http://' + window.location.host + '/?debug=1&includePolygon=true&wktGeometry=true&ll=' + query,
           success, failure);
       } else {
         $.getJSON('http://' + window.location.host + '/?debug=1&includePolygon=true&wktGeometry=true&query=' + query,
