@@ -439,11 +439,13 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       parents.has(p)).map(pid => "%s:%s".format(geonameIdNamespace, pid))
     allParents = allParents ++ hierarchyParents
 
-    val boost: Option[Int] = feature.geonameid.flatMap(gid => {
-      boostTable.get(gid).headOption.flatMap(boost =>
-        TryO { boost.toInt }
-      )
-    })
+    val boost: Option[Int] =
+      feature.extraColumns.get("boost").map(_.toInt) orElse
+      feature.geonameid.flatMap(gid => {
+        boostTable.get(gid).headOption.flatMap(boost =>
+          TryO { boost.toInt }
+        )
+      }) 
 
     val bbox = feature.extraColumns.get("bbox").flatMap(bboxStr => {
       // west, south, east, north
