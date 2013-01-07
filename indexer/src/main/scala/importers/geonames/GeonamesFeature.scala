@@ -187,7 +187,7 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) {
   def adminCode(level: AdminLevel.Value): Option[String] = {
     level match {
       case COUNTRY => values.get(COUNTRY_CODE)
-      case ADM1 => values.get(adm)
+      case ADM1 => values.get(ADMIN1_CODE)
       case ADM2 => values.get(ADMIN2_CODE)
       case ADM3 => values.get(ADMIN3_CODE)
       case ADM4 => values.get(ADMIN4_CODE)
