@@ -300,16 +300,30 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
   }
 
   def writeNames() {
-    val nameMap = new HashMap[String, HashSet[String]]
     var nameCount = 0
     val nameSize = NameIndexDAO.collection.count
     val nameCursor = NameIndexDAO.find(MongoDBObject())
+      .sort(orderBy = MongoDBObject("name" -> 1)) // sort by nameBytes asc
+
     var prefixSet = new HashSet[String]
+
+    var lastName = ""
+    var nameFids = new HashSet[String]
+
+    val writer = buildV2Writer("name_index.hfile")
     nameCursor.filterNot(_.name.isEmpty).foreach(n => {
-      if (!nameMap.contains(n.name)) {
-        nameMap(n.name) = new HashSet()
+      if (lastName != n.name) {
+        println(n.name)
+        println(n.nameBytes.mkString(" "))
+        if (lastName != "") {
+          writer.append(n.name.getBytes(), fidStringsToByteArray(nameFids.toList))
+        }
+        nameFids = new HashSet[String]
+        lastName = n.name
       }
-      nameMap(n.name).add(n.fid)
+
+      nameFids.add(n.fid)
+
       nameCount += 1
       if (nameCount % 100000 == 0) {
         println("processed %d of %d names".format(nameCount, nameSize))
@@ -321,24 +335,6 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
         )
       }
     })
-
-    val writer = buildV2Writer("name_index.hfile")
-
-    println("sorting")
-
-    val sortedMap = nameMap.keys.toList.sort(lexicalSort)
-
-    println("sorted")
-
-    sortedMap.zipWithIndex.map({case (n, index) => {
-      if (index % 100000 == 0) {
-        println("outputted %d of %d entries to name_index".format(index, sortedMap.size))
-      }
-      val fids = nameMap(n).toList
-      writer.append(n.getBytes(), fidStringsToByteArray(fids))
-    }})
-    writer.close()
-    println("done")
 
     if (outputPrefixIndex) {
       doOutputPrefixIndex(prefixSet)
