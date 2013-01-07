@@ -161,7 +161,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     println("done")
   }
 
-  def buildRevGeoIndex(groupSize: Int) {
+  def buildRevGeoIndex() {
     val wkbReader = new WKBReader()
 
     val records = 
@@ -170,7 +170,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     val s2map = new HashMap[Array[Byte], HashSet[ObjectId]]
 
     val minS2Level = 9
-    val maxS2Level = 18
+    val maxS2Level = 13
 
     for {
       record <- records
@@ -178,13 +178,17 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     } {
       val geom = wkbReader.read(polygon)
 
-      GeometryUtils.s2PolygonCovering(geom, minS2Level, maxS2Level).foreach(
-        (cellid: S2CellId) => {
-          val s2Bytes: Array[Byte] = GeometryUtils.getBytes(cellid)
-          val bucket = s2map.getOrElseUpdate(s2Bytes, new HashSet[ObjectId]())
-          bucket.add(record._id)
-        } 
-      )
+      minS2Level.to(maxS2Level).foreach(level => {
+        GeometryUtils.s2PolygonCovering(geom, minS2Level, maxS2Level).foreach(
+          (cellid: S2CellId) => {
+            if (cellid.level() != level) {
+              val s2Bytes: Array[Byte] = GeometryUtils.getBytes(cellid)
+              val bucket = s2map.getOrElseUpdate(s2Bytes, new HashSet[ObjectId]())
+              bucket.add(record._id)
+            }
+          } 
+        )
+      })
     }
 
     val sortedMapKeys = s2map.keys.toList.sort(byteSort)
@@ -422,7 +426,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
           MongoDBObject("ids" -> fid), "_id")
         fidMap(fid) = oidOpt
         if (oidOpt.isEmpty) {
-          println("missing fid: %s".format(fid))
+          //println("missing fid: %s".format(fid))
         }
       }
 
