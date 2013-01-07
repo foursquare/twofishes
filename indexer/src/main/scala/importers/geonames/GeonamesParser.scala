@@ -288,8 +288,8 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     new File("data/private/polygons")
   )
   val polygonFiles = polygonDirs.flatMap(polygonDir => {
-    if (polygonDir.exists) { polygonDir.listFiles.toList.sorted } else { Nil }
-  })
+    if (polygonDir.exists) { polygonDir.listFiles.toList } else { Nil }
+  }).sorted
   val polygonTable: Map[String, String] = polygonFiles.flatMap(f => {
     scala.io.Source.fromFile(f).getLines.filterNot(_.startsWith("#")).toList.map(l => {
       val parts = l.split("\t")
@@ -299,8 +299,14 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
   // geonameid -> name to be deleted
   val nameDeleteTable = new TsvHelperFileParser("data/custom/name-deletes.txt")
 
-  lazy val bboxTable = BoundingBoxTsvImporter.parse(
-    new File(config.boundingBoxDirectory).listFiles.toList.sorted)
+  val bboxDirs = List(
+    new File("data/computed/bboxes/"),
+    new File("data/private/bboxes/")
+  )
+  val bboxFiles = bboxDirs.flatMap(bboxDir => {
+    if (bboxDir.exists) { bboxDir.listFiles.toList } else { Nil }
+  }).sorted
+  lazy val bboxTable = BoundingBoxTsvImporter.parse(bboxFiles)
 
   val helperTables = List(rewriteTable, boostTable, aliasTable)
 
