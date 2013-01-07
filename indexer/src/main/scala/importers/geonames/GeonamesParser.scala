@@ -44,19 +44,24 @@ object GeonamesParser {
 
   def readSlugs() {
     // step 1 -- load existing slugs into ... memory?
-    val file = new File("data/computed/slugs.txt")
-    if (file.exists) {
-      val fileSource = scala.io.Source.fromFile(file)
-      val lines = fileSource.getLines.toList.filterNot(_.startsWith("#"))
-      lines.map(l => {
-        val parts = l.split("\t")
-        val slug = parts(0)
-        val id = parts(1)
-        val score = parts(2).toInt
-        slugEntryMap(slug) = SlugEntry(id, score, deprecated = false, permanent = true)
-        idToSlugMap(id) = slug
-      })
-    }
+    val files = List(
+      new File("data/computed/slugs.txt"),
+      new File("data/private/slugs.txt")
+    )
+    files.foreach(file => 
+      if (file.exists) {
+        val fileSource = scala.io.Source.fromFile(file)
+        val lines = fileSource.getLines.toList.filterNot(_.startsWith("#"))
+        lines.map(l => {
+          val parts = l.split("\t")
+          val slug = parts(0)
+          val id = parts(1)
+          val score = parts(2).toInt
+          slugEntryMap(slug) = SlugEntry(id, score, deprecated = false, permanent = true)
+          idToSlugMap(id) = slug
+        })
+      }
+    )
     println("read %d slugs".format(slugEntryMap.size))
   }
 
@@ -225,13 +230,18 @@ object GeonamesParser {
       }
     }
 
-    val supplementalDir = new File("data/supplemental/")
-    if (supplementalDir.exists) {
-      supplementalDir.listFiles.foreach(f => {
-        println("parsing supplemental file: %s".format(f))
-        parser.parseAdminFile(f.toString, allowBuildings=true)
-      })
-    }
+    val supplementalDirs = List(
+      new File("data/supplemental/"),
+      new File("data/private/features")
+    )
+    supplementalDirs.foreach(supplementalDir =>
+      if (supplementalDir.exists) {
+        supplementalDir.listFiles.foreach(f => {
+          println("parsing supplemental file: %s".format(f))
+          parser.parseAdminFile(f.toString, allowBuildings=true)
+        })
+      }
+    )
 
     parser.parsePreferredNames()
 
@@ -273,8 +283,13 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
   // geonameid --> new center
   val moveTable = new TsvHelperFileParser("data/custom/moves.txt")
   // geonameid -> polygon
-  val polygonDir = new File("data/computed/polygons")
-  val polygonFiles = if (polygonDir.exists) { polygonDir.listFiles.toList.sorted } else { Nil }
+  val polygonDirs = List(
+    new File("data/computed/polygons"),
+    new File("data/private/polygons")
+  )
+  val polygonFiles = polygonDirs.flatMap(polygonDir => {
+    if (polygonDir.exists) { polygonDir.listFiles.toList.sorted } else { Nil }
+  })
   val polygonTable: Map[String, String] = polygonFiles.flatMap(f => {
     scala.io.Source.fromFile(f).getLines.filterNot(_.startsWith("#")).toList.map(l => {
       val parts = l.split("\t")

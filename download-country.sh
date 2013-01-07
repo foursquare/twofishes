@@ -41,3 +41,4 @@ else
 fi
 
 source download-common.sh
+./extract-wiki-buildings.py $COUNTRY

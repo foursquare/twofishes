@@ -1,15 +1,24 @@
 #!/usr/bin/python
 
 import os
+import sys
 
 try:
   os.mkdir("data/downloaded")
+  os.mkdir("data/supplemental")
 except:
   pass
 
+
 alternateNames = open("data/downloaded/alternateNames.txt")
-input = open("data/downloaded/allCountries.txt")
-output = open("data/supplemental/buildings.txt", "w")
+if len(sys.argv) == 2:
+  print "building buildings for %s" % sys.argv[1]
+  input = open("data/downloaded/%s.txt" % sys.argv[1])
+else:
+  print "building buildings for the whole world"
+  input = open("data/downloaded/allCountries.txt")
+
+output = open("data//buildings.txt", "w")
 
 gidList = set()
 

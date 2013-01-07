@@ -33,6 +33,7 @@ import scala.collection.mutable.HashMap
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._
+import java.io._
 
 object HFileUtil {
   val ThriftClassValueBytes: Array[Byte] = "value.thrift.class".getBytes("UTF-8")
@@ -59,6 +60,25 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     lists.toList.flatMap(l => {
       l.sortBy(_.pop * -1)
     })
+  }
+
+  type IdFixer = (String) => Option[String]
+
+  val factory = new TCompactProtocol.Factory()
+  val serializer = new TSerializer(factory)
+
+  def serializeGeocodeRecord(g: GeocodeRecord, fixParentId: IdFixer) = {
+    val f = g.toGeocodeServingFeature()
+
+    val parents = for {
+      parent <- f.scoringFeatures.parents
+      parentId <- fixParentId(parent)
+    } yield {
+      parentId
+    }
+
+    f.scoringFeatures.setParents(parents)
+    serializer.serialize(f)
   }
 
   def buildChildEntries(children: Iterator[GeocodeRecord]): List[ChildEntry] = {
@@ -193,9 +213,10 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
         println("written %d files of %d features, total: %d".format(index / groupSize, groupSize, index))
       }
 
+
       writer.append(
         serializer.serialize(new StringWrapper().setValue(p._id.toString)),
-        serializer.serialize(p.toGeocodeServingFeature())
+        serializer.serialize(p.toGeocodeServingFeature)
       )
       
       index += 1
@@ -392,27 +413,6 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     println("done")
   }
 
-  import java.io._
-
-  type IdFixer = (String) => Option[String]
-
-  val factory = new TCompactProtocol.Factory()
-  val serializer = new TSerializer(factory)
-
-  def serializeBytes(g: GeocodeRecord, fixParentId: IdFixer) = {
-    val f = g.toGeocodeServingFeature()
-
-    val parents = for {
-      parent <- f.scoringFeatures.parents
-      parentId <- fixParentId(parent)
-    } yield {
-      parentId
-    }
-
-    f.scoringFeatures.setParents(parents)
-    serializer.serialize(f)
-  }
-
   class FidMap {
     val fidMap = new HashMap[String, Option[ObjectId]]
 
@@ -450,7 +450,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
 
     writeCollection("features.hfile",
       (g: GeocodeRecord) => 
-        (g._id.toByteArray(), serializeBytes(g, fixParentId)),
+        (g._id.toByteArray(), serializeGeocodeRecord(g, fixParentId)),
       MongoGeocodeDAO, "_id")
   }
 
@@ -494,7 +494,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
       idToRecord.keys.toList.sort(lexicalSort).foreach(gid => {
         val g = idToRecord(gid)
         val (k, v) =
-          (gid.getBytes("UTF-8"), serializeBytes(g, fixParentId))
+          (gid.getBytes("UTF-8"), serializeGeocodeRecord(g, fixParentId))
         writer.append(k, v)
         fidCount += 1
         if (fidCount % 1000 == 0) {
