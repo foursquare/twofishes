@@ -91,7 +91,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     parents.flatMap(parent => {
       val servingFeature = parent.toGeocodeServingFeature
       val children = MongoGeocodeDAO.find(MongoDBObject("parents" -> servingFeature.feature.id))
-        .sort(orderBy = MongoDBObject("population" -> 1)) // sort by _id desc
+        .sort(orderBy = MongoDBObject("population" -> -1)) // sort by population descending
         .limit(limit)
 
       val childEntries = buildChildEntries(children.filter(child => {
@@ -146,7 +146,6 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
 
     val records = 
       MongoGeocodeDAO.find(MongoDBObject("polygon" -> MongoDBObject("$exists" -> true)))
-        .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id desc
 
     val s2map = new HashMap[Array[Byte], HashSet[ObjectId]]
 
@@ -182,7 +181,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
   def buildPolygonIndex(groupSize: Int) {
     val polygons = 
       MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
-        .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id desc
+        .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
 
     var index: Int = 0
     var writer = buildV1Writer[StringWrapper, GeocodeServingFeature]("polygon-features-%d.hfile".format(index / groupSize), factory)
@@ -264,7 +263,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     var fidCount = 0
     val fidSize = dao.collection.count
     val fidCursor = dao.find(MongoDBObject())
-      .sort(orderBy = MongoDBObject(sortField -> 1)) // sort by _id desc
+      .sort(orderBy = MongoDBObject(sortField -> 1)) // sort by _id asc
     fidCursor.foreach(f => {
       val (k, v) = callback(f)
       writer.append(k, v)
