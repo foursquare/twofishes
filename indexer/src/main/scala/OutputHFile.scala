@@ -394,6 +394,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
         )
       }
     })
+<<<<<<< HEAD
 
     val writer = buildV2Writer("name_index.hfile")
 
@@ -414,6 +415,8 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     println("done")
 =======
 >>>>>>> region reverse geocoding
+=======
+>>>>>>> fix build
 
     val writer = buildV2Writer("name_index.hfile")
 
