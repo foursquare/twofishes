@@ -3,10 +3,11 @@
 package com.foursquare.twofishes.util
 
 import scala.collection.JavaConversions._
-import com.google.common.geometry.{S2CellId, S2LatLng, S2Polygon, S2PolygonBuilder, S2RegionCoverer}
+import com.google.common.geometry.{S2CellId, S2LatLng, S2Polygon, S2PolygonBuilder, S2RegionCoverer, S2LatLngRect}
 import com.vividsolutions.jts.geom.{Geometry, Polygon}
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
+import scala.collection.JavaConversions._
 
 object GeometryUtils {
   val minS2Level = 9
@@ -33,16 +34,49 @@ object GeometryUtils {
     S2CellId.fromLatLng(ll).parent(s2Level)
   }
 
-  // def s2BoundingBoxCovering(geomCollection: Geometry,
-  //     minS2Level: Int, maxS2Level: Int) = {
-  //   val envelope = geomCollection.getEnvelopeInternal()
-  //   GeoS2.rectCover(
-  //     topRight = (envelope.getMaxY(), envelope.getMaxX()),
-  //     bottomLeft = (envelope.getMinY(), envelope.getMinX()),
-  //     minLevel = minS2Level,
-  //     maxLevel = maxS2Level
-  //   )
-  // }
+  /**
+   * Returns an `Iterable` of cells that cover a rectangle.
+   */
+  def rectCover(topRight: (Double,Double), bottomLeft: (Double,Double),
+                minLevel: Int,
+                maxLevel: Int,
+                levelMod: Option[Int]):
+      Seq[com.google.common.geometry.S2CellId] = {
+    val topRightPoint = S2LatLng.fromDegrees(topRight._1, topRight._2)
+    val bottomLeftPoint = S2LatLng.fromDegrees(bottomLeft._1, bottomLeft._2)
+
+    val rect = S2LatLngRect.fromPointPair(topRightPoint, bottomLeftPoint)
+    rectCover(rect, minLevel, maxLevel, levelMod)
+  }
+
+  def rectCover(rect: S2LatLngRect,
+                minLevel: Int,
+                maxLevel: Int,
+                levelMod: Option[Int]):
+      Seq[com.google.common.geometry.S2CellId] = {
+    val coverer =  new S2RegionCoverer
+    coverer.setMinLevel(minLevel)
+    coverer.setMaxLevel(maxLevel)
+    levelMod.foreach(m => coverer.setLevelMod(m))
+
+    val coveringCells = new java.util.ArrayList[com.google.common.geometry.S2CellId]
+
+    coverer.getCovering(rect, coveringCells)
+
+    coveringCells
+  }
+
+  def s2BoundingBoxCovering(geomCollection: Geometry,
+      minS2Level: Int, maxS2Level: Int) = {
+    val envelope = geomCollection.getEnvelopeInternal()
+    rectCover(
+      topRight = (envelope.getMaxY(), envelope.getMaxX()),
+      bottomLeft = (envelope.getMinY(), envelope.getMinX()),
+      minLevel = minS2Level,
+      maxLevel = maxS2Level,
+      levelMod = None
+    )
+  }
 
   def s2Polygon(geomCollection: Geometry) = {
     val polygons: List[S2Polygon] = (for {

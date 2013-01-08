@@ -217,6 +217,9 @@ struct GeocodeRequest {
 
   12: optional bool includePolygon = 0
   13: optional bool wktGeometry = 0
+
+  // radius in meters, ll+radius is an alternative to boundingbox
+  14: optional i32 radius = 0
 }
 
 service Geocoder {
