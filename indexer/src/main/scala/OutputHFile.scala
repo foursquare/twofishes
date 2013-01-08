@@ -331,7 +331,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     os.toByteArray()
   }
 
-  def writeNamesFastAndBroken() {
+  def writeNames() {
     var nameCount = 0
     val nameSize = NameIndexDAO.collection.count
     val nameCursor = NameIndexDAO.find(MongoDBObject())
@@ -372,6 +372,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     }
   }
 
+<<<<<<< HEAD
   def writeNames() {
     val nameMap = new HashMap[String, HashSet[String]]
     var nameCount = 0
@@ -441,6 +442,8 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     }
   }
 
+=======
+>>>>>>> this name writing code was never broken. stupid me.
   def doOutputPrefixIndex(prefixSet: HashSet[String]) {
     println("sorting prefix set")
     val sortedPrefixes = prefixSet.toList.sort(lexicalSort)
