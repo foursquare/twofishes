@@ -574,12 +574,16 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
             !req.woeHint.asScala.has(bFeature.fmatch.feature.woeType)
           ) {
           // if a is a parent of b, prefer b 
-          if (aFeature.fmatch.scoringFeatures.parents.asScala.has(bFeature.fmatch.id)) {
+          if (aFeature.fmatch.scoringFeatures.parents.asScala.has(bFeature.fmatch.id) &&
+            (aFeature.fmatch.scoringFeatures.population * 1.0 / bFeature.fmatch.scoringFeatures.population) > 0.05
+          ) {
             logger.ifDebug("Preferring %s because it's a child of %s".format(printDebugParse(a), printDebugParse(b)))
             return -1
           }
           // if b is a parent of a, prefer a
-          if (bFeature.fmatch.scoringFeatures.parents.asScala.has(aFeature.fmatch.id)) {
+          if (bFeature.fmatch.scoringFeatures.parents.asScala.has(aFeature.fmatch.id) &&
+             (bFeature.fmatch.scoringFeatures.population * 1.0 / aFeature.fmatch.scoringFeatures.population) > 0.05
+            ) {
             logger.ifDebug("Preferring %s because it's a child of %s".format(printDebugParse(b), printDebugParse(a)))
             return 1
           }
@@ -848,16 +852,17 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
   // Given a set of parses, create a geocode response which has fully formed
   // versions of all the features in it (names, parents)
   def hydrateParses(
-    originalTokens: Seq[String],
-    tokens: Seq[String],
-    connectorStart: Int,
-    connectorEnd: Int,
     longest: Int,
-    parses: ParseSeq): Future[GeocodeResponse] = {
-    val hadConnector = connectorStart != -1
-
-    // TODO: make this configurable
-    val sortedParses = parses.sorted(new ParseOrdering).take(3)
+    sortedParses: ParseSeq,
+    parseParams: ParseParams
+  ): Future[GeocodeResponse] = {
+    println("rebel test")
+    val tokens = parseParams.tokens
+    val originalTokens = parseParams.originalTokens
+    val tryHard = parseParams.tryHard
+    val connectorStart = parseParams.connectorStart
+    val connectorEnd = parseParams.connectorEnd
+    val hadConnector = parseParams.hadConnector
 
     // sortedParses.foreach(p => {
     //   logger.ifDebug(printDebugParse(p))
@@ -1023,8 +1028,9 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       logger.ifDebug("deduped parse ids: %s".format(p.map(_.fmatch.id)))
     )
 
-    hydrateParses(originalTokens, tokens, connectorStart, connectorEnd,
-      parseLength, dedupedParses)
+    // TODO: make this configurable
+    val sortedDedupedParses = dedupedParses.sorted(new ParseOrdering).take(3)
+    hydrateParses(parseLength, sortedDedupedParses, parseParams)
   }
 
   def doNormalGeocode(parseParams: ParseParams) = {
@@ -1164,12 +1170,12 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     val parsesF: Future[ParseSeq] = matchedFeatures.map(_.map(servingFeature =>
       List(FeatureMatch(0, 0, "", servingFeature))))
     parsesF.flatMap(parses => 
-      buildFinalParses(parses, 0, parseParams))
+      hydrateParses(0, parses, parseParams))
   }
 
   def reverseGeocodePoint(ll: GeocodePoint): Future[GeocodeResponse] = {
     logger.ifDebug("doing point revgeo on " + ll)
-    val cellids: Seq[Long] = List(GeometryUtils.getS2CellIdForLevel(ll.lat, ll.lng, store.getMinS2Level).id())
+    val cellids: Seq[Long] = List(GeometryUtils.getS2CellIdForLevel(ll.lat, ll.lng, store.getMaxS2Level).id())
     logger.ifDebug("looking up: " + cellids.mkString(" "))
 
     val geomFactory = new GeometryFactory()
