@@ -1137,6 +1137,37 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     }
   }
 
+  class ReverseGeocodeParseOrdering extends Ordering[Parse] {
+    def compare(a: Parse, b: Parse): Int = {
+      // logger.ifDebug("Scoring %s vs %s".format(printDebugParse(a), printDebugParse(b)))
+
+      val comparisonOpt = for {
+        aFeatureMatch <- a.headOption
+        bFeatureMatch <- b.headOption
+      } yield {
+        val aServingFeature = aFeatureMatch.fmatch
+        val bServingFeature = bFeatureMatch.fmatch
+        val aWoeTypeOrder = YahooWoeTypes.getOrdering(aServingFeature.feature.woeType)
+        val bWoeTypeOrder = YahooWoeTypes.getOrdering(bServingFeature.feature.woeType)
+        if (aWoeTypeOrder != bWoeTypeOrder) {
+          bWoeTypeOrder - aWoeTypeOrder
+        } else {
+          bServingFeature.scoringFeatures.boost - 
+           aServingFeature.scoringFeatures.boost
+        }
+      }
+
+      comparisonOpt.getOrElse(0)
+    }
+  }
+
+  def featureGeometryInteresections(f: GeocodeServingFeature, otherGeom: Geometry) = {
+    val wkbReader = new WKBReader()
+    val geom = wkbReader.read(f.feature.geometry.getWkbGeometry())
+    geom.intersects(otherGeom)
+  }
+
+
   def doReverseGeocode(cellids: Seq[Long], otherGeom: Geometry) = {
     val featureOidsFSeq: Seq[Future[Seq[ObjectId]]] = cellids.map(store.getByS2CellId)
     val featureOidsF: Future[Seq[ObjectId]] = Future.collect(featureOidsFSeq).map(_.flatten)
@@ -1149,27 +1180,22 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     val matchedFeatures: Future[Seq[GeocodeServingFeature]] = servingFeaturesF.map(
       (servingFeatures: Seq[GeocodeServingFeature]) => {
       logger.ifDebug("had %d candidates".format(servingFeatures.size))
-      servingFeatures.filter(f => {
-        if (f.feature.geometry.wkbGeometry != null) {
-          // not threadsafe, afaik
-          val wkbReader = new WKBReader()
-          val geom = wkbReader.read(f.feature.geometry.getWkbGeometry())
-
-          val ret = geom.intersects(otherGeom)
-
-          logger.ifDebug("examining %s ... %s".format(f.feature.id, ret))
-          ret
-        } else {
-          false
-        }
-      })
+      for {
+        f <- servingFeatures
+        if (req.woeRestrict.isEmpty || req.woeRestrict.asScala.has(f.feature.woeType))
+        if (f.feature.geometry.wkbGeometry != null)
+        if (featureGeometryInteresections(f, otherGeom))
+      } yield (f)
     })
 
     val parseParams = ParseParams()
     val parsesF: Future[ParseSeq] = matchedFeatures.map(_.map(servingFeature =>
       List(FeatureMatch(0, 0, "", servingFeature))))
-    parsesF.flatMap(parses => 
-      hydrateParses(0, parses, parseParams))
+
+    parsesF.flatMap(parses => {
+      val sortedParses = parses.sorted(new ReverseGeocodeParseOrdering)
+      hydrateParses(0, sortedParses, parseParams)
+    })
   }
 
   def reverseGeocodePoint(ll: GeocodePoint): Future[GeocodeResponse] = {
