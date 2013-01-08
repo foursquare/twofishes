@@ -422,7 +422,13 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     nameCursor.filterNot(_.name.isEmpty).foreach(n => {
       if (lastName != n.name) {
         if (lastName != "") {
-          writer.append(n.name.getBytes(), fidStringsToByteArray(nameFids.toList))
+          println("outputting %d names for %s".format(nameFids.size, lastName))
+          writer.append(lastName.getBytes(), fidStringsToByteArray(nameFids.toList))
+          if (outputPrefixIndex) {
+            1.to(List(maxPrefixLength, lastName.size).min).foreach(length => 
+              prefixSet.add(lastName.substring(0, length))
+            )
+          }
         }
         nameFids = new HashSet[String]
         lastName = n.name
@@ -433,12 +439,6 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
       nameCount += 1
       if (nameCount % 100000 == 0) {
         println("processed %d of %d names".format(nameCount, nameSize))
-      }
-
-      if (outputPrefixIndex) {
-        1.to(List(maxPrefixLength, n.name.size).min).foreach(length => 
-          prefixSet.add(n.name.substring(0, length))
-        )
       }
     })
     writer.close()
