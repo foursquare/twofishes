@@ -1140,17 +1140,24 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     val servingFeaturesF: Future[Seq[GeocodeServingFeature]] = servingFeaturesMapF.map(_.values.toList)
 
     // for each, check if we're really in it
-    val matchedFeatures: Future[Seq[GeocodeServingFeature]] = servingFeaturesF.map((servingFeatures: Seq[GeocodeServingFeature]) => servingFeatures.filter(f => {
-      if (f.feature.geometry.wkbGeometry != null) {
-        // not threadsafe, afaik
-        val wkbReader = new WKBReader()
-        val geom = wkbReader.read(f.feature.geometry.getWkbGeometry())
+    val matchedFeatures: Future[Seq[GeocodeServingFeature]] = servingFeaturesF.map(
+      (servingFeatures: Seq[GeocodeServingFeature]) => {
+      logger.ifDebug("had %d candidates".format(servingFeatures.size))
+      servingFeatures.filter(f => {
+        if (f.feature.geometry.wkbGeometry != null) {
+          // not threadsafe, afaik
+          val wkbReader = new WKBReader()
+          val geom = wkbReader.read(f.feature.geometry.getWkbGeometry())
 
-        geom.intersects(otherGeom)
-      } else {
-        false
-      }
-    }))
+          val ret = geom.intersects(otherGeom)
+
+          logger.ifDebug("examining %s ... %s".format(f.feature.id, ret))
+          ret
+        } else {
+          false
+        }
+      })
+    })
 
     val parseParams = ParseParams()
     val parsesF: Future[ParseSeq] = matchedFeatures.map(_.map(servingFeature =>
@@ -1160,9 +1167,11 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
   }
 
   def reverseGeocodePoint(ll: GeocodePoint): Future[GeocodeResponse] = {
+    logger.ifDebug("doing point revgeo on " + ll)
     val cellids: Seq[Long] = store.getMinS2Level.to(store.getMaxS2Level).map(level => {
       GeometryUtils.getS2CellIdForLevel(ll.lat, ll.lng, level).id()
     })
+    logger.ifDebug("looking up: " + cellids.mkString(" "))
 
     val geomFactory = new GeometryFactory()
     val point = geomFactory.createPoint(
