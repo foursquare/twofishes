@@ -7,7 +7,7 @@ import com.foursquare.twofishes.Implicits._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.twitter.util.{Future, FuturePool}
 import com.vividsolutions.jts.io.{WKTWriter, WKBReader}
-import com.vividsolutions.jts.geom.{Coordinate, GeometryFactory}
+import com.vividsolutions.jts.geom.{Coordinate, GeometryFactory, Geometry}
 import java.util.concurrent.ConcurrentHashMap
 import java.util.Date
 import org.bson.types.ObjectId
@@ -1131,15 +1131,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     }
   }
 
-  def reverseGeocode(): Future[GeocodeResponse] = {
-    val ll = Option(req.ll).getOrElse(
-      throw new Exception("missing ll for reverse geocode"))
-
-    val cellids: Seq[Long] = store.getMinS2Level.to(store.getMaxS2Level).map(level => {
-      GeometryUtils.getS2CellIdForLevel(ll.lat, ll.lng, level).id()
-    })
-
-    //
+  def doReverseGeocode(cellids: Seq[Long], otherGeom: Geometry) = {
     val featureOidsFSeq: Seq[Future[Seq[ObjectId]]] = cellids.map(store.getByS2CellId)
     val featureOidsF: Future[Seq[ObjectId]] = Future.collect(featureOidsFSeq).map(_.flatten)
 
@@ -1152,12 +1144,9 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       if (f.feature.geometry.wkbGeometry != null) {
         // not threadsafe, afaik
         val wkbReader = new WKBReader()
-        val geomFactory = new GeometryFactory()
         val geom = wkbReader.read(f.feature.geometry.getWkbGeometry())
-        val point = geomFactory.createPoint(
-          new Coordinate(ll.lng, ll.lat)
-        )
-        geom.contains(point)
+
+        geom.intersects(otherGeom)
       } else {
         false
       }
@@ -1168,5 +1157,42 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       List(FeatureMatch(0, 0, "", servingFeature))))
     parsesF.flatMap(parses => 
       buildFinalParses(parses, 0, parseParams))
+  }
+
+  def reverseGeocodePoint(ll: GeocodePoint): Future[GeocodeResponse] = {
+    val cellids: Seq[Long] = store.getMinS2Level.to(store.getMaxS2Level).map(level => {
+      GeometryUtils.getS2CellIdForLevel(ll.lat, ll.lng, level).id()
+    })
+
+    val geomFactory = new GeometryFactory()
+    val point = geomFactory.createPoint(
+      new Coordinate(ll.lng, ll.lat)
+    )
+
+    doReverseGeocode(cellids, point)
+  }
+
+  def reverseGeocode(): Future[GeocodeResponse] = {
+    if (req.ll != null) {
+      if (req.bounds != null) {
+        throw new Exception("unimplemented")
+      } else {
+        reverseGeocodePoint(req.ll)
+      }
+    } else if (req.bounds != null) {
+      val s2rect = GeoTools.boundingBoxToS2Rect(req.bounds)
+      val geomFactory = new GeometryFactory()
+      val geom = geomFactory.createLinearRing(Array(
+        new Coordinate(s2rect.lng.lo, s2rect.lat.lo),
+        new Coordinate(s2rect.lng.hi, s2rect.lat.lo),
+        new Coordinate(s2rect.lng.hi, s2rect.lat.hi),
+        new Coordinate(s2rect.lng.hi, s2rect.lat.lo),
+        new Coordinate(s2rect.lng.lo, s2rect.lat.lo)
+      ))
+      val cellids = GeometryUtils.rectCover(s2rect, store.getMinS2Level, store.getMaxS2Level, None).map(_.id())
+      doReverseGeocode(cellids, geom)
+    } else {
+      throw new Exception("no bounds or ll")
+    }
   }
 }

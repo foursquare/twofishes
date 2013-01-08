@@ -44,6 +44,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   private static final TField SLUG_FIELD_DESC = new TField("slug", TType.STRING, (short)11);
   private static final TField INCLUDE_POLYGON_FIELD_DESC = new TField("includePolygon", TType.BOOL, (short)12);
   private static final TField WKT_GEOMETRY_FIELD_DESC = new TField("wktGeometry", TType.BOOL, (short)13);
+  private static final TField RADIUS_FIELD_DESC = new TField("radius", TType.I32, (short)14);
 
   public String query;
   public String cc;
@@ -58,6 +59,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   public String slug;
   public boolean includePolygon;
   public boolean wktGeometry;
+  public int radius;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
@@ -73,7 +75,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     BOUNDS((short)10, "bounds"),
     SLUG((short)11, "slug"),
     INCLUDE_POLYGON((short)12, "includePolygon"),
-    WKT_GEOMETRY((short)13, "wktGeometry");
+    WKT_GEOMETRY((short)13, "wktGeometry"),
+    RADIUS((short)14, "radius");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -114,6 +117,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
           return INCLUDE_POLYGON;
         case 13: // WKT_GEOMETRY
           return WKT_GEOMETRY;
+        case 14: // RADIUS
+          return RADIUS;
         default:
           return null;
       }
@@ -159,7 +164,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   private static final int __AUTOCOMPLETE_ISSET_ID = 2;
   private static final int __INCLUDEPOLYGON_ISSET_ID = 3;
   private static final int __WKTGEOMETRY_ISSET_ID = 4;
-  private BitSet __isset_bit_vector = new BitSet(5);
+  private static final int __RADIUS_ISSET_ID = 5;
+  private BitSet __isset_bit_vector = new BitSet(6);
 
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
@@ -192,6 +198,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         new FieldValueMetaData(TType.BOOL)));
     tmpMap.put(_Fields.WKT_GEOMETRY, new FieldMetaData("wktGeometry", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.BOOL)));
+    tmpMap.put(_Fields.RADIUS, new FieldMetaData("radius", TFieldRequirementType.OPTIONAL, 
+        new FieldValueMetaData(TType.I32)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeRequest.class, metaDataMap);
   }
@@ -212,6 +220,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     this.includePolygon = false;
 
     this.wktGeometry = false;
+
+    this.radius = 0;
 
   }
 
@@ -258,6 +268,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     }
     this.includePolygon = other.includePolygon;
     this.wktGeometry = other.wktGeometry;
+    this.radius = other.radius;
   }
 
   public GeocodeRequest deepCopy() {
@@ -286,6 +297,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     this.includePolygon = false;
 
     this.wktGeometry = false;
+
+    this.radius = 0;
 
   }
 
@@ -626,6 +639,29 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     __isset_bit_vector.set(__WKTGEOMETRY_ISSET_ID, value);
   }
 
+  public int getRadius() {
+    return this.radius;
+  }
+
+  public GeocodeRequest setRadius(int radius) {
+    this.radius = radius;
+    setRadiusIsSet(true);
+    return this;
+  }
+
+  public void unsetRadius() {
+    __isset_bit_vector.clear(__RADIUS_ISSET_ID);
+  }
+
+  /** Returns true if field radius is set (has been asigned a value) and false otherwise */
+  public boolean isSetRadius() {
+    return __isset_bit_vector.get(__RADIUS_ISSET_ID);
+  }
+
+  public void setRadiusIsSet(boolean value) {
+    __isset_bit_vector.set(__RADIUS_ISSET_ID, value);
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case QUERY:
@@ -732,6 +768,14 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       }
       break;
 
+    case RADIUS:
+      if (value == null) {
+        unsetRadius();
+      } else {
+        setRadius((Integer)value);
+      }
+      break;
+
     }
   }
 
@@ -776,6 +820,9 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     case WKT_GEOMETRY:
       return new Boolean(isWktGeometry());
 
+    case RADIUS:
+      return new Integer(getRadius());
+
     }
     throw new IllegalStateException();
   }
@@ -813,6 +860,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       return isSetIncludePolygon();
     case WKT_GEOMETRY:
       return isSetWktGeometry();
+    case RADIUS:
+      return isSetRadius();
     }
     throw new IllegalStateException();
   }
@@ -944,6 +993,15 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       if (!(this_present_wktGeometry && that_present_wktGeometry))
         return false;
       if (this.wktGeometry != that.wktGeometry)
+        return false;
+    }
+
+    boolean this_present_radius = true && this.isSetRadius();
+    boolean that_present_radius = true && that.isSetRadius();
+    if (this_present_radius || that_present_radius) {
+      if (!(this_present_radius && that_present_radius))
+        return false;
+      if (this.radius != that.radius)
         return false;
     }
 
@@ -1093,6 +1151,16 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetRadius()).compareTo(typedOther.isSetRadius());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetRadius()) {
+      lastComparison = TBaseHelper.compareTo(this.radius, typedOther.radius);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -1228,6 +1296,14 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
+        case 14: // RADIUS
+          if (field.type == TType.I32) {
+            this.radius = iprot.readI32();
+            setRadiusIsSet(true);
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -1336,6 +1412,11 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     if (isSetWktGeometry()) {
       oprot.writeFieldBegin(WKT_GEOMETRY_FIELD_DESC);
       oprot.writeBool(this.wktGeometry);
+      oprot.writeFieldEnd();
+    }
+    if (isSetRadius()) {
+      oprot.writeFieldBegin(RADIUS_FIELD_DESC);
+      oprot.writeI32(this.radius);
       oprot.writeFieldEnd();
     }
     oprot.writeFieldStop();
@@ -1454,6 +1535,12 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       if (!first) sb.append(", ");
       sb.append("wktGeometry:");
       sb.append(this.wktGeometry);
+      first = false;
+    }
+    if (isSetRadius()) {
+      if (!first) sb.append(", ");
+      sb.append("radius:");
+      sb.append(this.radius);
       first = false;
     }
     sb.append(")");
