@@ -1173,7 +1173,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     val featureOidsF: Future[Seq[ObjectId]] = Future.collect(featureOidsFSeq).map(_.flatten)
 
     val servingFeaturesMapF: Future[Map[ObjectId, GeocodeServingFeature]] = featureOidsF.flatMap(
-      (featureOids: Seq[ObjectId]) => store.getByObjectIds(featureOids))
+      (featureOids: Seq[ObjectId]) => store.getByObjectIds(featureOids.toSet.toList))
     val servingFeaturesF: Future[Seq[GeocodeServingFeature]] = servingFeaturesMapF.map(_.values.toList)
 
     // for each, check if we're really in it
