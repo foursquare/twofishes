@@ -22,7 +22,7 @@ parser.add_option("-n", "--dry_run", dest="dry_run",  action="store_true", defau
 basepath = '.'
 if len(args) != 0:
   basepath = args[0]
-basepath = os.path.join(basepath, str(datetime.datetime.now()).replace(' ', '-'))
+basepath = os.path.join(basepath, str(datetime.datetime.now()).replace(' ', '-').replace(':', '-'))
 print "outputting index to %s" % basepath
 os.mkdir(basepath)
 
