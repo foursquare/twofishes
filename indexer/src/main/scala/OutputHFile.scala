@@ -529,16 +529,19 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     p.close()
   }
 
-  def process() {
-    writeNames()
-    writeSlugsAndIds()
-
+  def writeFeatures() {
     def fixParentId(fid: String) = fidMap.get(fid).map(_.toString)
 
     writeCollection("features.hfile",
       (g: GeocodeRecord) => 
         (g._id.toByteArray(), serializeGeocodeRecord(g, fixParentId)),
       MongoGeocodeDAO, "_id")
+  }
+
+  def process() {
+    writeNames()
+    writeSlugsAndIds()
+    writeFeatures()
   }
 
   val ThriftClassValueBytes: Array[Byte] = "value.thrift.class".getBytes("UTF-8")
