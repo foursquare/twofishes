@@ -1169,9 +1169,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
   def reverseGeocodePoint(ll: GeocodePoint): Future[GeocodeResponse] = {
     logger.ifDebug("doing point revgeo on " + ll)
-    val cellids: Seq[Long] = store.getMinS2Level.to(store.getMaxS2Level).map(level => {
-      GeometryUtils.getS2CellIdForLevel(ll.lat, ll.lng, level).id()
-    })
+    val cellids: Seq[Long] = List(GeometryUtils.getS2CellIdForLevel(ll.lat, ll.lng, store.getMinS2Level).id())
     logger.ifDebug("looking up: " + cellids.mkString(" "))
 
     val geomFactory = new GeometryFactory()
