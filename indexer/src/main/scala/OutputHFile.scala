@@ -422,7 +422,6 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     nameCursor.filterNot(_.name.isEmpty).foreach(n => {
       if (lastName != n.name) {
         if (lastName != "") {
-          println("outputting %d names for %s".format(nameFids.size, lastName))
           writer.append(lastName.getBytes(), fidStringsToByteArray(nameFids.toList))
           if (outputPrefixIndex) {
             1.to(List(maxPrefixLength, lastName.size).min).foreach(length => 
