@@ -40,22 +40,34 @@
   </style>
 </head>
 <body>
-  <form id="lookupForm">
-    <input name="lookup" id="lookup"/><input type="button" id="lookupButton" name="Lookup slug or id" value="Lookup slug/id" placeholder="Lookup slug or id" width="100"/></br>
-  </form>
 
   <form id="searchForm">
     <input name="query" id="query"/><input type="button" id="search" name="Search" value="Search" placeholder="Search Geocoder" width="100"/></br>
   </form>
+
+  <form id="lookupForm">
+    <input name="lookup" id="lookup"/><input type="button" id="lookupButton" name="Lookup slug or id" value="Lookup slug/id" placeholder="Lookup slug or id" width="100"/></br>
+  </form>
+
   <div id="geocodes"></div>
   <div id="debugInfo"></div>
 
   <script>
     var statusArea = $('#geocodes');
+
+    var lookupButton = $('#lookupButton');
+    var lookupInput = $('#lookup');
+
     var queryInput = $('#query');
     var searchButton = $('#search');
     var searchForm = $('#searchForm');
     var debugInfo = $('#debugInfo');
+    lookupButton.click(function() {
+      window.location.hash = "slug=" + lookupInput.val();
+      geocode();
+      return false;
+    })
+
     searchButton.click(function() {
       window.location.hash = queryInput.val();
       geocode();
@@ -71,7 +83,12 @@
     
     function geocode() {
       var query = location.hash.substr(1);
-      if (query.match(/^([-+]?\d{1,2}([.]\d+)?),\s*([-+]?\d{1,3}([.]\d+)?)$/)) {
+
+
+      if (query.match(/.*=.*/)) {
+        $.getJSON('http://' + window.location.host + '/?debug=1&includePolygon=true&wktGeometry=true&' + query,
+          success, failure);
+      } if (query.match(/^([-+]?\d{1,2}([.]\d+)?),\s*([-+]?\d{1,3}([.]\d+)?)$/)) {
         $.getJSON('http://' + window.location.host + '/?debug=1&includePolygon=true&wktGeometry=true&ll=' + query,
           success, failure);
       } else {
