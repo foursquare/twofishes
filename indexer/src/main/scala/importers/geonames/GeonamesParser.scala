@@ -251,7 +251,11 @@ object GeonamesParser {
       writeMissingSlugs(store)  
     }
 
-    new OutputHFile(config.hfileBasePath, config.outputPrefixIndex).process()
+    val outputter = new OutputHFile(config.hfileBasePath, config.outputPrefixIndex)
+    outputter.process()
+    if (config.outputRevgeo) {
+      outputter.buildRevGeoIndex()
+    }
   }
 }
 
