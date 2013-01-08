@@ -856,7 +856,6 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     sortedParses: ParseSeq,
     parseParams: ParseParams
   ): Future[GeocodeResponse] = {
-    println("rebel test")
     val tokens = parseParams.tokens
     val originalTokens = parseParams.originalTokens
     val tryHard = parseParams.tryHard
