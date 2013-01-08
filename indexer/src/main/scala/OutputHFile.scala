@@ -173,22 +173,29 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     val maxS2Level = 13
 
     for {
-      record <- records
+      (record, index) <- records.zipWithIndex
       polygon <- record.polygon
     } {
+      println("reading poly %s".format(index))
       val geom = wkbReader.read(polygon)
 
+      var numCells = 0
+
       minS2Level.to(maxS2Level).foreach(level => {
-        GeometryUtils.s2PolygonCovering(geom, minS2Level, maxS2Level).foreach(
+        GeometryUtils.s2PolygonCovering(geom, level, level).foreach(
           (cellid: S2CellId) => {
             if (cellid.level() != level) {
+              println("generated wrong level: %d SHOULD NOT HAPPEN at %d".format(cellid.level, level))
+            } else {
               val s2Bytes: Array[Byte] = GeometryUtils.getBytes(cellid)
               val bucket = s2map.getOrElseUpdate(s2Bytes, new HashSet[ObjectId]())
               bucket.add(record._id)
+              numCells += 1
             }
           } 
         )
       })
+      println("outputted %d cells".format(numCells))
     }
 
     val sortedMapKeys = s2map.keys.toList.sort(byteSort)
@@ -359,6 +366,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
       }
     })
     writer.close()
+<<<<<<< HEAD
 
     if (outputPrefixIndex) {
       doOutputPrefixIndex(prefixSet)
@@ -405,6 +413,8 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     }})
     writer.close()
     println("done")
+=======
+>>>>>>> region reverse geocoding
 
     if (outputPrefixIndex) {
       doOutputPrefixIndex(prefixSet)
