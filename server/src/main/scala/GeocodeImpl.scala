@@ -6,6 +6,7 @@ import com.foursquare.twofishes.util.NameUtils.BestNameMatch
 import com.foursquare.twofishes.Implicits._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.twitter.util.{Future, FuturePool}
+import com.vividsolutions.jts.util.GeometricShapeFactory
 import com.vividsolutions.jts.io.{WKTWriter, WKBReader}
 import com.vividsolutions.jts.geom.{Coordinate, GeometryFactory, Geometry}
 import java.util.concurrent.ConcurrentHashMap
@@ -1183,8 +1184,15 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
   def reverseGeocode(): Future[GeocodeResponse] = {
     if (req.ll != null) {
-      if (req.bounds != null) {
-        throw new Exception("unimplemented")
+      if (req.isSetRadius) {
+        val sizeDegrees = req.radius / 111319.9
+        val gsf = new GeometricShapeFactory()
+        gsf.setSize(sizeDegrees)
+        gsf.setNumPoints(100);
+        gsf.setBase(new Coordinate(req.ll.lng, req.ll.lat));
+        val geom = gsf.createCircle()
+        val cellids = GeometryUtils.s2PolygonCovering(geom, store.getMinS2Level, store.getMaxS2Level).map(_.id())
+        doReverseGeocode(cellids, geom)
       } else {
         reverseGeocodePoint(req.ll)
       }
