@@ -394,7 +394,6 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
         )
       }
     })
-    writer.close()
 
     val writer = buildV2Writer("name_index.hfile")
 
