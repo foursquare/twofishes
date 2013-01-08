@@ -9,7 +9,7 @@ import com.novus.salat.dao._
     new File("data/computed/polygons"),
     new File("data/private/polygons")
   )
-  val polygonFiles = polygonDir.toList.flatMap(_.listFiles.toList.sorted)
+  val polygonFiles = polygonDirs.flatMap(_.listFiles.toList.sorted)
   val polygonTable: Map[String, String] = polygonFiles.flatMap(f => {
     scala.io.Source.fromFile(f).getLines.filterNot(_.startsWith("#")).toList.map(l => {
       val parts = l.split("\t")
