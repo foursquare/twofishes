@@ -1,15 +1,5 @@
 namespace java com.foursquare.twofishes
 
-struct ChildEntry {
-  1: optional string name,
-  2: optional string slug
-  3: optional string id
-}
-
-struct ChildEntries {
-  1: optional list<ChildEntry> entries
-}
-
 // "woe types" ie "where on earth types," these are represent various types
 // of geographic features in the world
 //

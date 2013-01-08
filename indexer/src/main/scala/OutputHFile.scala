@@ -8,7 +8,7 @@ import com.novus.salat.dao._
 import com.novus.salat.global._
 
 import com.foursquare.twofishes.util.{GeometryUtils, Hacks, NameUtils}
-import com.foursquare.base.gen.StringWrapper
+import com.foursquare.base.gen.{LongWrapper, ObjectIdWrapper, ObjectIdListWrapper, StringWrapper}
 
 import com.google.common.geometry.S2CellId
 
@@ -19,12 +19,14 @@ import java.net.URI
 import java.nio.ByteBuffer
 import java.util.Arrays
 
+
 import org.apache.hadoop.conf.Configuration 
 import org.apache.hadoop.fs.{LocalFileSystem, Path}
 import org.apache.hadoop.hbase.KeyValue.KeyComparator
 import org.apache.hadoop.hbase.io.hfile.{CacheConfig, Compression, HFile, HFileScanner, HFileWriterV1, HFileWriterV2}
 import org.apache.hadoop.hbase.util.Bytes._
 
+import org.apache.thrift.TBase
 import org.apache.thrift.TSerializer
 import org.apache.thrift.protocol.{TProtocolFactory, TBinaryProtocol, TCompactProtocol}
 
@@ -159,6 +161,60 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
    }})
     writer.close()
     println("done")
+  }
+
+  // please clean me up, sorry
+  def buildStandaloneRevGeoIndex() {
+    val wkbReader = new WKBReader()
+
+    val records = 
+      MongoGeocodeDAO.find(MongoDBObject("polygon" -> MongoDBObject("$exists" -> true)))
+    val ids = new HashSet[ObjectId]
+
+    val s2map = new HashMap[LongWrapper, HashSet[ObjectId]]
+
+    val minS2Level = 9
+    val maxS2Level = 13
+
+    for {
+      (record, index) <- records.zipWithIndex
+      polygon <- record.polygon
+    } {
+      val geom = wkbReader.read(polygon)
+
+      minS2Level.to(maxS2Level).foreach(level => {
+        GeometryUtils.s2PolygonCovering(geom, minS2Level, maxS2Level).foreach(
+          (cellid: S2CellId) => {
+            val wrapper = new LongWrapper()
+            wrapper.setValue(cellid.id)
+            val bucket = s2map.getOrElseUpdate(wrapper, new HashSet[ObjectId]())
+            bucket.add(record._id)
+          } 
+        )
+      })
+      ids.add(record._id)
+    }
+
+    val listWrapper = new ObjectIdListWrapper
+    val listMap: List[(Array[Byte], Array[Byte])] = s2map.toList.map({case (k, v) => {
+      (
+        serializer.serialize(k),
+        serializer.serialize(listWrapper.setValues(s2map(k).toList.map(v => ByteBuffer.wrap(v.toByteArray()))))
+      )
+    }})
+
+    val writer = buildV1Writer[LongWrapper, ObjectIdListWrapper](
+      new File(basepath, "standalone_s2_geo_index.hfile").toString, factory)
+    listMap.toList.sortWith(bytePairSort).foreach({case (k, v) => {
+      writer.append(k, v)
+    }})
+
+    writer.appendFileInfo("minS2Level".getBytes("UTF-8"), GeometryUtils.getBytes(minS2Level))
+    writer.appendFileInfo("maxS2Level".getBytes("UTF-8"), GeometryUtils.getBytes(maxS2Level))
+    writer.close()
+
+    def nullFixer(s: String) = Some(s)
+    writeGeocodeRecords("standalone_s2_feature_index.hfile", ids, nullFixer)
   }
 
   def buildRevGeoIndex() {
@@ -313,6 +369,10 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
   }
   def byteSort(a: Array[Byte], b: Array[Byte]) = {
     comp.compare(a, b) < 0
+  }
+  def bytePairSort(a: (Array[Byte], Array[Byte]),
+      b: (Array[Byte], Array[Byte])) = {
+    comp.compare(a._1, b._1) < 0
   }
   def lexicalSort(a: String, b: String) = {
     comp.compare(a.getBytes(), b.getBytes()) < 0
@@ -545,43 +605,51 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
   val ThriftClassKeyBytes: Array[Byte] = "key.thrift.class".getBytes("UTF-8")
   val ThriftEncodingKeyBytes: Array[Byte] = "thrift.protocol.factory.class".getBytes("UTF-8")
 
-  def processForGeoId() {
-    val geoCursor = MongoGeocodeDAO.find(MongoDBObject())
+  // def processForGeoId() {
+  //   val geoCursor = MongoGeocodeDAO.find(MongoDBObject())
 
-    def pickBestId(g: GeocodeRecord): String = {
-      g.ids.find(_.startsWith("geonameid")).getOrElse(g.ids(0))
-    }
+  //   def pickBestId(g: GeocodeRecord): String = {
+  //     g.ids.find(_.startsWith("geonameid")).getOrElse(g.ids(0))
+  //   }
     
-    val gidMap = new HashMap[String, String]
+  //   val gidMap = new HashMap[String, String]
 
-    val ids = MongoGeocodeDAO.find(MongoDBObject()).map(pickBestId)
-      .toList.sort(lexicalSort)
+  //   val ids = MongoGeocodeDAO.find(MongoDBObject()).map(pickBestId)
+  //     .toList.sort(lexicalSort)
 
-    geoCursor.foreach(g => {
-      if (g.ids.size > 1) {
-        val bestId = pickBestId(g)
-        g.ids.foreach(id => {
-          if (id != bestId) {
-            gidMap(id) = bestId
-          }
-        })
-      }
-    })
+  //   geoCursor.foreach(g => {
+  //     if (g.ids.size > 1) {
+  //       val bestId = pickBestId(g)
+  //       g.ids.foreach(id => {
+  //         if (id != bestId) {
+  //           gidMap(id) = bestId
+  //         }
+  //       })
+  //     }
+  //   })
 
-    def fixParentId(fid: String) = Some(gidMap.getOrElse(fid, fid))
+  //   def fixParentId(fid: String) = Some(gidMap.getOrElse(fid, fid))
+  //   val filename = "gid-features.hfile"
+  //   writeGeocodeRecords(filename, ids, fixParentId)
+  // }
 
-    val filename = "gid-features.hfile"
+  def writeGeocodeRecords(
+    filename: String,
+    unsortedIds: Iterable[ObjectId],
+    fixParentId: IdFixer
+  ) {
+    val ids = unsortedIds.toList.sort(objectIdSort)
     val writer = buildV1Writer[StringWrapper, GeocodeServingFeature](filename, factory)
 
     var fidCount = 0
     val fidSize = ids.size
     ids.grouped(2000).foreach(chunk => {
-      val records = MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> chunk)))
-      val idToRecord = records.map(r => (pickBestId(r), r)).toMap
-      idToRecord.keys.toList.sort(lexicalSort).foreach(gid => {
-        val g = idToRecord(gid)
+      val records = MongoGeocodeDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> chunk)))
+      val idToRecord = records.map(r => (r._id, r)).toMap
+      idToRecord.keys.toList.sort(objectIdSort).foreach(oid => {
+        val g = idToRecord(oid)
         val (k, v) =
-          (gid.getBytes("UTF-8"), serializeGeocodeRecord(g, fixParentId))
+          (oid.toByteArray(), serializeGeocodeRecord(g, fixParentId))
         writer.append(k, v)
         fidCount += 1
         if (fidCount % 1000 == 0) {

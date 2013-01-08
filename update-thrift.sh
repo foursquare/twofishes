@@ -12,7 +12,8 @@ if ! grep finagle `which thrift` > /dev/null; then
   exit 1
 fi
 
-
+thrift --gen java -o interface/src/main/java interface/src/main/thrift/types.thrift
 thrift --gen java -o interface/src/main/java interface/src/main/thrift/geocoder.thrift
+thrift --gen java -o interface/src/main/java interface/src/main/thrift/side_tables.thrift
 thrift --gen java -o interface/src/main/java interface/src/main/thrift/primitive_wrappers.thrift
 
