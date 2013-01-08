@@ -18,7 +18,6 @@ case class NameIndex(
   flags: Int,
   lang: String,
   @Key("_id") _id: ObjectId
-  // var nameBytes: Array[Byte] = Array.empty
 )
 
 case class IdPop(
@@ -58,14 +57,6 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
   }
 
   def addNameIndex(name: NameIndex) {
-    // val nameBytes = name.name.getBytes("UTF-8")
-    // val paddingSize = 200
-    // if (nameBytes.size > paddingSize) {
-    //   throw new Exception("nameBytes.size > %d".format(paddingSize))
-    // }
-    // val byteArray = new Array[Byte](paddingSize)
-    // System.arraycopy(nameBytes, 0, byteArray, byteArray.size - nameBytes.size, nameBytes.size)
-    // name.nameBytes = byteArray
     NameIndexDAO.insert(name)
   }
 
