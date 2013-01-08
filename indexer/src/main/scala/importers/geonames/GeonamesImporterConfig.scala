@@ -26,6 +26,7 @@ class GeonamesImporterConfig(args: Array[String]) {
   var hfileBasePath: String = null
 
   var outputPrefixIndex: Boolean = true
+  var outputRevgeo: Boolean = false
 
   private val config = this
 
@@ -43,8 +44,10 @@ class GeonamesImporterConfig(args: Array[String]) {
         { v: Boolean => config.importAlternateNames = v } )
       booleanOpt("output_prefix_index", "wheter or not to output autocomplete acceleration index",
         { v: Boolean => config.outputPrefixIndex = v} )
-     booleanOpt("build_missing_slugs", "build pretty hopefully stable slugs per feature",
+      booleanOpt("build_missing_slugs", "build pretty hopefully stable slugs per feature",
         { v: Boolean => config.buildMissingSlugs = v } )
+      booleanOpt("output_revgeo_index", "wheter or not to output s2 revgeo index",
+        { v: Boolean => config.outputRevgeo = v} )
     }
 
   if (!parser.parse(args)) {

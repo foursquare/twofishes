@@ -15,6 +15,8 @@ parser.add_option("--output_prefix_index", dest="output_prefix_index",  action="
   help="output prefix hfile index to speed up autocomplete (optional)")
 parser.add_option("--nooutput_prefix_index", dest="output_prefix_index",  action="store_false",
   help="don't output prefix hfile index to speed up autocomplete (optional)")
+parser.add_option("-r", "--output_revgeo_index", dest="output_revgeo_index",  action="store_true", default=False,
+  help="output s2 revgeo index (optional)")
 parser.add_option("-n", "--dry_run", dest="dry_run",  action="store_true", default=False)
 
 (options, args) = parser.parse_args()
