@@ -331,7 +331,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     os.toByteArray()
   }
 
-  def writeNamesFastAndBroken() {
+  def writeNames() {
     var nameCount = 0
     val nameSize = NameIndexDAO.collection.count
     val nameCursor = NameIndexDAO.find(MongoDBObject())
@@ -366,52 +366,6 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
       }
     })
     writer.close()
-
-    if (outputPrefixIndex) {
-      doOutputPrefixIndex(prefixSet)
-    }
-  }
-
-  def writeNames() {
-    val nameMap = new HashMap[String, HashSet[String]]
-    var nameCount = 0
-    val nameSize = NameIndexDAO.collection.count
-    val nameCursor = NameIndexDAO.find(MongoDBObject())
-    var prefixSet = new HashSet[String]
-    nameCursor.filterNot(_.name.isEmpty).foreach(n => {
-      if (!nameMap.contains(n.name)) {
-        nameMap(n.name) = new HashSet()
-      }
-      nameMap(n.name).add(n.fid)
-      nameCount += 1
-      if (nameCount % 100000 == 0) {
-        println("processed %d of %d names".format(nameCount, nameSize))
-      }
-
-      if (outputPrefixIndex) {
-        1.to(List(maxPrefixLength, n.name.size).min).foreach(length => 
-          prefixSet.add(n.name.substring(0, length))
-        )
-      }
-    })
-
-    val writer = buildV2Writer("name_index.hfile")
-
-    println("sorting")
-
-    val sortedMap = nameMap.keys.toList.sort(lexicalSort)
-
-    println("sorted")
-
-    sortedMap.zipWithIndex.map({case (n, index) => {
-      if (index % 100000 == 0) {
-        println("outputted %d of %d entries to name_index".format(index, sortedMap.size))
-      }
-      val fids = nameMap(n).toList
-      writer.append(n.getBytes(), fidStringsToByteArray(fids))
-    }})
-    writer.close()
-    println("done")
 
     if (outputPrefixIndex) {
       doOutputPrefixIndex(prefixSet)
