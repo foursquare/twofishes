@@ -43,4 +43,7 @@ print(cmd)
 
 if not options.dry_run:
   os.system(cmd)
+  os.unlink("latest")
+  os.symlink(basepath, "latest")
+
 
