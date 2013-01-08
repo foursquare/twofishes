@@ -335,12 +335,25 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     var nameCount = 0
     val nameSize = NameIndexDAO.collection.count
     val nameCursor = NameIndexDAO.find(MongoDBObject())
+      .sort(orderBy = MongoDBObject("name" -> 1)) // sort by nameBytes asc
+
     var prefixSet = new HashSet[String]
+
+    var lastName = ""
+    var nameFids = new HashSet[String]
+
+    val writer = buildV2Writer("name_index.hfile")
     nameCursor.filterNot(_.name.isEmpty).foreach(n => {
-      if (!nameMap.contains(n.name)) {
-        nameMap(n.name) = new HashSet()
+      if (lastName != n.name) {
+        if (lastName != "") {
+          writer.append(n.name.getBytes(), fidStringsToByteArray(nameFids.toList))
+        }
+        nameFids = new HashSet[String]
+        lastName = n.name
       }
-      nameMap(n.name).add(n.fid)
+
+      nameFids.add(n.fid)
+
       nameCount += 1
       if (nameCount % 100000 == 0) {
         println("processed %d of %d names".format(nameCount, nameSize))
