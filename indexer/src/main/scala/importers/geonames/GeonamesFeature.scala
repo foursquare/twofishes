@@ -118,6 +118,7 @@ import AdminLevel._
 class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[String]) {
   def isBuilding = featureClass.exists(_ == "S")
   def isPostalCode = featureClass.exists(_ == "Z")
+  def isSuburb = featureCode.exists(_.contains("PPLX"))
   def isCity = featureCode.exists(_.contains("PPL"))
   def isCountry = featureCode.exists(_.contains("PCL"))
   def isAdmin = adminLevel != OTHER
@@ -133,7 +134,9 @@ class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[Str
   def isAdmin4 = featureCode.exists(_ == "ADM4")
 
   def woeType: YahooWoeType = {
-    if (isContinent) {
+    if (isSuburb) {
+      YahooWoeType.SUBURB 
+    } else if (isContinent) {
       YahooWoeType.CONTINENT
     } else if (isPark) {
       YahooWoeType.PARK
