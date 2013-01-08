@@ -27,7 +27,10 @@ import scalaj.collection.Implicits._
 class HFileStorageService(basepath: String) extends GeocodeStorageReadService {
   val nameMap = new NameIndexHFileInput(basepath)
   val oidMap = new GeocodeRecordHFileInput(basepath)
-  val s2map = new ReverseGeocodeHFileInput(basepath)
+  val s2mapOpt = ReverseGeocodeHFileInput.readInput(basepath)
+  // will only be hit if we get a reverse geocode query
+  lazy val s2map = s2mapOpt.getOrElse(
+    throw new Exception("s2/revgeo index not built, please build s2_index.hfile"))
 
   val slugFidMapFuture = FuturePool.defaultPool {
     val (rv, duration) = Duration.inMilliseconds(readSlugMap())
@@ -177,6 +180,16 @@ class PrefixIndexHFileInput(basepath: String) extends HFileInput(basepath, "pref
       decodeObjectIds(bytes)
     })
   }
+}
+
+object ReverseGeocodeHFileInput {
+  def readInput(basepath: String) = {
+    if (new File(basepath, "s2_index.hfile").exists()) {
+      Some( new ReverseGeocodeHFileInput(basepath))
+    } else {
+      None
+    }
+  } 
 }
 
 class ReverseGeocodeHFileInput(basepath: String) extends HFileInput(basepath, "s2_index.hfile") with ObjectIdReader {
