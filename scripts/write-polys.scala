@@ -22,7 +22,6 @@ import com.novus.salat.dao._
 
 
   def addPolygonToRecord(id: String, wkt: String) {
-      println(wkt)
       val geom = wktReader.read(wkt)
       val wkb = wkbWriter.write(geom)
 
