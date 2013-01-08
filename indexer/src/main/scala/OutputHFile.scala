@@ -167,7 +167,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     val records = 
       MongoGeocodeDAO.find(MongoDBObject("polygon" -> MongoDBObject("$exists" -> true)))
 
-    val s2map = new HashMap[Array[Byte], HashSet[ObjectId]]
+    val s2map = new HashMap[ByteBuffer, HashSet[ObjectId]]
 
     val minS2Level = 9
     val maxS2Level = 13
@@ -188,7 +188,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
               println("generated wrong level: %d SHOULD NOT HAPPEN at %d".format(cellid.level, level))
             } else {
               val s2Bytes: Array[Byte] = GeometryUtils.getBytes(cellid)
-              val bucket = s2map.getOrElseUpdate(s2Bytes, new HashSet[ObjectId]())
+              val bucket = s2map.getOrElseUpdate(ByteBuffer.wrap(s2Bytes), new HashSet[ObjectId]())
               bucket.add(record._id)
               numCells += 1
             }
@@ -198,10 +198,10 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
       println("outputted %d cells".format(numCells))
     }
 
-    val sortedMapKeys = s2map.keys.toList.sort(byteSort)
+    val sortedMapKeys = s2map.keys.toList.sort(byteBufferSort)
     val writer = buildV2Writer(new File(basepath, "s2_index.hfile").toString)
     sortedMapKeys.foreach(k => {
-      writer.append(k, oidsToByteArray(s2map(k)))
+      writer.append(k.array(), oidsToByteArray(s2map(k)))
     })
 
     writer.appendFileInfo("minS2Level".getBytes("UTF-8"), GeometryUtils.getBytes(minS2Level))
@@ -308,6 +308,9 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
   }
 
   val comp = new ByteArrayComparator()
+  def byteBufferSort(a: ByteBuffer, b: ByteBuffer) = {
+    comp.compare(a.array(), b.array()) < 0
+  }
   def byteSort(a: Array[Byte], b: Array[Byte]) = {
     comp.compare(a, b) < 0
   }
