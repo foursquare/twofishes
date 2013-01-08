@@ -135,10 +135,23 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     // trim down those records super aggressively
   }
 
+  def buildRootMap(countryIds: Iterable[String]):  Map[String, List[ChildEntry]] = {
+    val countries = MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> countryIds.toList)))
+      .sort(orderBy = MongoDBObject("population" -> -1)) // sort by population descending
+
+    Map(
+      "" -> buildChildEntries(countries)
+    )
+  }
+
   def buildChildMaps() {
-    val childMaps = 
+    val countryToTownMap =
       buildChildMap(YahooWoeType.COUNTRY, YahooWoeType.TOWN, 1000, 300000,
-        Map(("US" -> 150000))) ++
+        Map(("US" -> 150000)))
+
+    val childMaps = 
+      buildRootMap(countryToTownMap.keys) ++
+      countryToTownMap ++
       buildChildMap(YahooWoeType.TOWN, YahooWoeType.SUBURB, 1000, 0) ++
       buildChildMap(YahooWoeType.ADMIN2, YahooWoeType.SUBURB, 1000, 0)
 
