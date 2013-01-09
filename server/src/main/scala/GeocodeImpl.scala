@@ -1139,7 +1139,6 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
   class ReverseGeocodeParseOrdering extends Ordering[Parse] {
     def compare(a: Parse, b: Parse): Int = {
-      // logger.ifDebug("Scoring %s vs %s".format(printDebugParse(a), printDebugParse(b)))
 
       val comparisonOpt = for {
         aFeatureMatch <- a.headOption
@@ -1150,10 +1149,10 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         val aWoeTypeOrder = YahooWoeTypes.getOrdering(aServingFeature.feature.woeType)
         val bWoeTypeOrder = YahooWoeTypes.getOrdering(bServingFeature.feature.woeType)
         if (aWoeTypeOrder != bWoeTypeOrder) {
-          bWoeTypeOrder - aWoeTypeOrder
+           aWoeTypeOrder - bWoeTypeOrder
         } else {
           bServingFeature.scoringFeatures.boost - 
-           aServingFeature.scoringFeatures.boost
+            aServingFeature.scoringFeatures.boost
         }
       }
 
