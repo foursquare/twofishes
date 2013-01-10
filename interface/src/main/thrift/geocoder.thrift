@@ -157,12 +157,19 @@ struct GeocodeServingFeature {
   4: optional list<GeocodeFeature> parents,
 }
 
+struct InterpretationScoringFeatures {
+  1: optional i32 population = 0,
+  2: optional bool sociallyRelevant = 0,
+  3: optional double coveringPercentage = 0.0
+}
+
 struct GeocodeInterpretation {
   1: string what,
   2: string where,
   3: GeocodeFeature feature
   4: optional list<GeocodeFeature> parents,
-  5: optional ScoringFeatures scoringFeatures,
+  5: optional ScoringFeatures scoringFeatures_DEPRECATED,
+  6: optional InterpretationScoringFeatures scores
 }
 
 struct GeocodeResponse {

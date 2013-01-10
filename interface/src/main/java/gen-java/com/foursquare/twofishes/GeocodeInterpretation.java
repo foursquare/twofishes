@@ -35,13 +35,15 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
   private static final TField WHERE_FIELD_DESC = new TField("where", TType.STRING, (short)2);
   private static final TField FEATURE_FIELD_DESC = new TField("feature", TType.STRUCT, (short)3);
   private static final TField PARENTS_FIELD_DESC = new TField("parents", TType.LIST, (short)4);
-  private static final TField SCORING_FEATURES_FIELD_DESC = new TField("scoringFeatures", TType.STRUCT, (short)5);
+  private static final TField SCORING_FEATURES__DEPRECATED_FIELD_DESC = new TField("scoringFeatures_DEPRECATED", TType.STRUCT, (short)5);
+  private static final TField SCORES_FIELD_DESC = new TField("scores", TType.STRUCT, (short)6);
 
   public String what;
   public String where;
   public GeocodeFeature feature;
   public List<GeocodeFeature> parents;
-  public ScoringFeatures scoringFeatures;
+  public ScoringFeatures scoringFeatures_DEPRECATED;
+  public InterpretationScoringFeatures scores;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
@@ -49,7 +51,8 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
     WHERE((short)2, "where"),
     FEATURE((short)3, "feature"),
     PARENTS((short)4, "parents"),
-    SCORING_FEATURES((short)5, "scoringFeatures");
+    SCORING_FEATURES__DEPRECATED((short)5, "scoringFeatures_DEPRECATED"),
+    SCORES((short)6, "scores");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -72,8 +75,10 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
           return FEATURE;
         case 4: // PARENTS
           return PARENTS;
-        case 5: // SCORING_FEATURES
-          return SCORING_FEATURES;
+        case 5: // SCORING_FEATURES__DEPRECATED
+          return SCORING_FEATURES__DEPRECATED;
+        case 6: // SCORES
+          return SCORES;
         default:
           return null;
       }
@@ -127,8 +132,10 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
     tmpMap.put(_Fields.PARENTS, new FieldMetaData("parents", TFieldRequirementType.OPTIONAL, 
         new ListMetaData(TType.LIST, 
             new StructMetaData(TType.STRUCT, GeocodeFeature.class))));
-    tmpMap.put(_Fields.SCORING_FEATURES, new FieldMetaData("scoringFeatures", TFieldRequirementType.OPTIONAL, 
+    tmpMap.put(_Fields.SCORING_FEATURES__DEPRECATED, new FieldMetaData("scoringFeatures_DEPRECATED", TFieldRequirementType.OPTIONAL, 
         new StructMetaData(TType.STRUCT, ScoringFeatures.class)));
+    tmpMap.put(_Fields.SCORES, new FieldMetaData("scores", TFieldRequirementType.OPTIONAL, 
+        new StructMetaData(TType.STRUCT, InterpretationScoringFeatures.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeInterpretation.class, metaDataMap);
   }
@@ -167,8 +174,11 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
       }
       this.parents = __this__parents;
     }
-    if (other.isSetScoringFeatures()) {
-      this.scoringFeatures = new ScoringFeatures(other.scoringFeatures);
+    if (other.isSetScoringFeatures_DEPRECATED()) {
+      this.scoringFeatures_DEPRECATED = new ScoringFeatures(other.scoringFeatures_DEPRECATED);
+    }
+    if (other.isSetScores()) {
+      this.scores = new InterpretationScoringFeatures(other.scores);
     }
   }
 
@@ -182,7 +192,8 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
     this.where = null;
     this.feature = null;
     this.parents = null;
-    this.scoringFeatures = null;
+    this.scoringFeatures_DEPRECATED = null;
+    this.scores = null;
   }
 
   public String getWhat() {
@@ -296,27 +307,51 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
     }
   }
 
-  public ScoringFeatures getScoringFeatures() {
-    return this.scoringFeatures;
+  public ScoringFeatures getScoringFeatures_DEPRECATED() {
+    return this.scoringFeatures_DEPRECATED;
   }
 
-  public GeocodeInterpretation setScoringFeatures(ScoringFeatures scoringFeatures) {
-    this.scoringFeatures = scoringFeatures;
+  public GeocodeInterpretation setScoringFeatures_DEPRECATED(ScoringFeatures scoringFeatures_DEPRECATED) {
+    this.scoringFeatures_DEPRECATED = scoringFeatures_DEPRECATED;
     return this;
   }
 
-  public void unsetScoringFeatures() {
-    this.scoringFeatures = null;
+  public void unsetScoringFeatures_DEPRECATED() {
+    this.scoringFeatures_DEPRECATED = null;
   }
 
-  /** Returns true if field scoringFeatures is set (has been asigned a value) and false otherwise */
-  public boolean isSetScoringFeatures() {
-    return this.scoringFeatures != null;
+  /** Returns true if field scoringFeatures_DEPRECATED is set (has been asigned a value) and false otherwise */
+  public boolean isSetScoringFeatures_DEPRECATED() {
+    return this.scoringFeatures_DEPRECATED != null;
   }
 
-  public void setScoringFeaturesIsSet(boolean value) {
+  public void setScoringFeatures_DEPRECATEDIsSet(boolean value) {
     if (!value) {
-      this.scoringFeatures = null;
+      this.scoringFeatures_DEPRECATED = null;
+    }
+  }
+
+  public InterpretationScoringFeatures getScores() {
+    return this.scores;
+  }
+
+  public GeocodeInterpretation setScores(InterpretationScoringFeatures scores) {
+    this.scores = scores;
+    return this;
+  }
+
+  public void unsetScores() {
+    this.scores = null;
+  }
+
+  /** Returns true if field scores is set (has been asigned a value) and false otherwise */
+  public boolean isSetScores() {
+    return this.scores != null;
+  }
+
+  public void setScoresIsSet(boolean value) {
+    if (!value) {
+      this.scores = null;
     }
   }
 
@@ -354,11 +389,19 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
       }
       break;
 
-    case SCORING_FEATURES:
+    case SCORING_FEATURES__DEPRECATED:
       if (value == null) {
-        unsetScoringFeatures();
+        unsetScoringFeatures_DEPRECATED();
       } else {
-        setScoringFeatures((ScoringFeatures)value);
+        setScoringFeatures_DEPRECATED((ScoringFeatures)value);
+      }
+      break;
+
+    case SCORES:
+      if (value == null) {
+        unsetScores();
+      } else {
+        setScores((InterpretationScoringFeatures)value);
       }
       break;
 
@@ -379,8 +422,11 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
     case PARENTS:
       return getParents();
 
-    case SCORING_FEATURES:
-      return getScoringFeatures();
+    case SCORING_FEATURES__DEPRECATED:
+      return getScoringFeatures_DEPRECATED();
+
+    case SCORES:
+      return getScores();
 
     }
     throw new IllegalStateException();
@@ -401,8 +447,10 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
       return isSetFeature();
     case PARENTS:
       return isSetParents();
-    case SCORING_FEATURES:
-      return isSetScoringFeatures();
+    case SCORING_FEATURES__DEPRECATED:
+      return isSetScoringFeatures_DEPRECATED();
+    case SCORES:
+      return isSetScores();
     }
     throw new IllegalStateException();
   }
@@ -456,12 +504,21 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
         return false;
     }
 
-    boolean this_present_scoringFeatures = true && this.isSetScoringFeatures();
-    boolean that_present_scoringFeatures = true && that.isSetScoringFeatures();
-    if (this_present_scoringFeatures || that_present_scoringFeatures) {
-      if (!(this_present_scoringFeatures && that_present_scoringFeatures))
+    boolean this_present_scoringFeatures_DEPRECATED = true && this.isSetScoringFeatures_DEPRECATED();
+    boolean that_present_scoringFeatures_DEPRECATED = true && that.isSetScoringFeatures_DEPRECATED();
+    if (this_present_scoringFeatures_DEPRECATED || that_present_scoringFeatures_DEPRECATED) {
+      if (!(this_present_scoringFeatures_DEPRECATED && that_present_scoringFeatures_DEPRECATED))
         return false;
-      if (!this.scoringFeatures.equals(that.scoringFeatures))
+      if (!this.scoringFeatures_DEPRECATED.equals(that.scoringFeatures_DEPRECATED))
+        return false;
+    }
+
+    boolean this_present_scores = true && this.isSetScores();
+    boolean that_present_scores = true && that.isSetScores();
+    if (this_present_scores || that_present_scores) {
+      if (!(this_present_scores && that_present_scores))
+        return false;
+      if (!this.scores.equals(that.scores))
         return false;
     }
 
@@ -521,12 +578,22 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetScoringFeatures()).compareTo(typedOther.isSetScoringFeatures());
+    lastComparison = Boolean.valueOf(isSetScoringFeatures_DEPRECATED()).compareTo(typedOther.isSetScoringFeatures_DEPRECATED());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetScoringFeatures()) {
-      lastComparison = TBaseHelper.compareTo(this.scoringFeatures, typedOther.scoringFeatures);
+    if (isSetScoringFeatures_DEPRECATED()) {
+      lastComparison = TBaseHelper.compareTo(this.scoringFeatures_DEPRECATED, typedOther.scoringFeatures_DEPRECATED);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetScores()).compareTo(typedOther.isSetScores());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetScores()) {
+      lastComparison = TBaseHelper.compareTo(this.scores, typedOther.scores);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -588,10 +655,18 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
-        case 5: // SCORING_FEATURES
+        case 5: // SCORING_FEATURES__DEPRECATED
           if (field.type == TType.STRUCT) {
-            this.scoringFeatures = new ScoringFeatures();
-            this.scoringFeatures.read(iprot);
+            this.scoringFeatures_DEPRECATED = new ScoringFeatures();
+            this.scoringFeatures_DEPRECATED.read(iprot);
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 6: // SCORES
+          if (field.type == TType.STRUCT) {
+            this.scores = new InterpretationScoringFeatures();
+            this.scores.read(iprot);
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -640,10 +715,17 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
         oprot.writeFieldEnd();
       }
     }
-    if (this.scoringFeatures != null) {
-      if (isSetScoringFeatures()) {
-        oprot.writeFieldBegin(SCORING_FEATURES_FIELD_DESC);
-        this.scoringFeatures.write(oprot);
+    if (this.scoringFeatures_DEPRECATED != null) {
+      if (isSetScoringFeatures_DEPRECATED()) {
+        oprot.writeFieldBegin(SCORING_FEATURES__DEPRECATED_FIELD_DESC);
+        this.scoringFeatures_DEPRECATED.write(oprot);
+        oprot.writeFieldEnd();
+      }
+    }
+    if (this.scores != null) {
+      if (isSetScores()) {
+        oprot.writeFieldBegin(SCORES_FIELD_DESC);
+        this.scores.write(oprot);
         oprot.writeFieldEnd();
       }
     }
@@ -689,13 +771,23 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
       }
       first = false;
     }
-    if (isSetScoringFeatures()) {
+    if (isSetScoringFeatures_DEPRECATED()) {
       if (!first) sb.append(", ");
-      sb.append("scoringFeatures:");
-      if (this.scoringFeatures == null) {
+      sb.append("scoringFeatures_DEPRECATED:");
+      if (this.scoringFeatures_DEPRECATED == null) {
         sb.append("null");
       } else {
-        sb.append(this.scoringFeatures);
+        sb.append(this.scoringFeatures_DEPRECATED);
+      }
+      first = false;
+    }
+    if (isSetScores()) {
+      if (!first) sb.append(", ");
+      sb.append("scores:");
+      if (this.scores == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.scores);
       }
       first = false;
     }

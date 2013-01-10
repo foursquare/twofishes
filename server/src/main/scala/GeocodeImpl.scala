@@ -5,7 +5,7 @@ import com.foursquare.twofishes.util.{GeoTools, GeometryUtils, NameUtils, Hacks,
 import com.foursquare.twofishes.util.NameUtils.BestNameMatch
 import com.foursquare.twofishes.Implicits._
 import com.foursquare.twofishes.util.Lists.Implicits._
-import com.twitter.util.{Future, FuturePool}
+import com.twitter.util.{Duration, Future, FuturePool}
 import com.vividsolutions.jts.util.GeometricShapeFactory
 import com.vividsolutions.jts.io.{WKTWriter, WKBReader}
 import com.vividsolutions.jts.geom.{Coordinate, GeometryFactory, Geometry}
@@ -895,9 +895,11 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         interp.setWhat(what)
         interp.setWhere(where)
         interp.setFeature(feature)
-        if (req.debug > 0) {
-          interp.setScoringFeatures(fmatch.scoringFeatures)
-        }
+
+        val scores = new InterpretationScoringFeatures()
+        scores.setPopulation(fmatch.scoringFeatures.population)
+        interp.setScores(scores)
+
         if (req.full) {
           interp.setParents(sortedParents.map(parentFeature => {
             val sortedParentParents = parentFeature.scoringFeatures.parents.flatMap(parent =>
@@ -1160,12 +1162,21 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     }
   }
 
-  def featureGeometryInteresections(f: GeocodeServingFeature, otherGeom: Geometry) = {
-    val wkbReader = new WKBReader()
-    val geom = wkbReader.read(f.feature.geometry.getWkbGeometry())
-    geom.intersects(otherGeom)
+  def logDuration[T](what: String)(f: => T): T = {
+    val (rv, duration) = Duration.inNanoseconds(f)
+    if (req.debug > 0) {
+      logger.ifDebug(what + " in %s µs / %s ms".format(duration.inMicroseconds, duration.inMilliseconds))
+    }
+    rv
   }
 
+  def featureGeometryInteresections(f: GeocodeServingFeature, otherGeom: Geometry) = {
+    logDuration("intersecting with %s".format(f.feature.names(0))) {
+      val wkbReader = new WKBReader()
+      val geom = wkbReader.read(f.feature.geometry.getWkbGeometry())
+      geom.intersects(otherGeom)
+    }
+  }
 
   def doReverseGeocode(cellids: Seq[Long], otherGeom: Geometry) = {
     val featureOidsFSeq: Seq[Future[Seq[ObjectId]]] = cellids.map(store.getByS2CellId)
