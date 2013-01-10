@@ -13,21 +13,32 @@ import org.geotools.feature.simple.SimpleFeatureTypeImpl
 import org.opengis.feature.`type`.{AttributeDescriptor, AttributeType}
 import scalaj.collection.Imports._
 
-object ShapefileSimplifier{
+case class SimplifierOptions(
+  outputSingleFeatureCellsWithGeometry: Boolean = false
+)
+
+object SimplifierOptions {
+  val Default = SimplifierOptions(
+    outputSingleFeatureCellsWithGeometry = false
+  )
+}
+
+object ShapefileSimplifier {
   val defaultLevels = Array(40,2,2,2)
 
   object Coords extends Enumeration {
       type Coords = Value
       val BottomLeft, BottomRight, TopRight, TopLeft = Value
   }
+}
 
+class ShapefileSimplifier(options: SimplifierOptions = SimplifierOptions.Default) {
+  import ShapefileSimplifier._
 
   def simplify(node: ShapeTrieNode, levels: Array[Int]) = {
     gridifyList(node)
 
     def gridifyList(node: ShapeTrieNode): Unit = {
-
-
       val nLongs = levels(node.nodeLevel)
       val nLats = levels(node.nodeLevel)
       val longChunk = node.nodeBounds.width/nLongs
@@ -126,7 +137,14 @@ object ShapefileSimplifier{
     
     def enumerateFeatures(cell: ShapeTrieNode, path: String): Unit = cell.keyValue match {
       // if leaf (no subgrid or sublist), use shape
-      case Some(tz) => cell.subList.foreach(keyShape => addFeature(keyShape.shape, keyShape.keyValue.get, path))
+      // this code would output a full cell if it only had one feature
+      // but for our code, we want to output
+      //  case Some(tz) => addFeature(cell.shape, tz, path)
+      case Some(tz) => if (options.outputSingleFeatureCellsWithGeometry) {
+        cell.subList.foreach(keyShape => addFeature(keyShape.shape, keyShape.keyValue.get, path))
+      } else {
+        addFeature(cell.shape, tz, path)
+      }
       case None => 
         cell.subGrid match {
           case Some(grid) => {

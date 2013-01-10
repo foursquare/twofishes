@@ -7,7 +7,7 @@ import com.novus.salat.annotations._
 import com.novus.salat.dao._
 import com.novus.salat.global._
 
-import com.foursquare.geo.{ShapefileSimplifier, ShapefileGeo}
+import com.foursquare.geo.{SimplifierOptions, ShapefileSimplifier, ShapefileGeo}
 
 import org.geotools.data.DataUtilities
 import org.geotools.data.DefaultTransaction
@@ -53,7 +53,8 @@ class BuildPolygonShapefile(basepath: String) {
     println("writing to " + tmpOutputFilename)
     writeCollection(coll, tmpOutputFilename)
     println("simplifying to " + simplifiedOutputFilename)
-    ShapefileSimplifier.doSimplification(
+    new ShapefileSimplifier(SimplifierOptions(
+      outputSingleFeatureCellsWithGeometry=true)).doSimplification(
       new File(tmpOutputFilename),
       new File(simplifiedOutputFilename),
       "id",
