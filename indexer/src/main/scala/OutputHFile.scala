@@ -34,7 +34,10 @@ import scala.collection.mutable.HashMap
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._
+
 import java.io._
+
+import com.twitter.util.Duration
 
 object HFileUtil {
   val ThriftClassValueBytes: Array[Byte] = "value.thrift.class".getBytes("UTF-8")
@@ -180,48 +183,46 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     val wkbReader = new WKBReader()
 
     val records = 
-      MongoGeocodeDAO.find(MongoDBObject("polygon" -> MongoDBObject("$exists" -> true)))
+      MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
     val ids = new HashSet[ObjectId]
-    val total = MongoGeocodeDAO.count(MongoDBObject("polygon" -> MongoDBObject("$exists" -> true)))
+    val total = MongoGeocodeDAO.count(MongoDBObject("hasPoly" -> true))
 
-    val s2map = new HashMap[LongWrapper, HashSet[ObjectId]]
+    val s2map = new HashMap[Long, HashSet[ObjectId]]
 
     val minS2Level = 9
     val maxS2Level = 13
 
+    var index = 0
     for {
-      (record, index) <- records.zipWithIndex
+      record <- records
       polygon <- record.polygon
     } {
       val geom = wkbReader.read(polygon)
 
-      minS2Level.to(maxS2Level).foreach(level => {
-        GeometryUtils.s2PolygonCovering(geom, minS2Level, maxS2Level).foreach(
-          (cellid: S2CellId) => {
-            val wrapper = new LongWrapper()
-            wrapper.setValue(cellid.id)
-            val bucket = s2map.getOrElseUpdate(wrapper, new HashSet[ObjectId]())
-            bucket.add(record._id)
-          } 
-        )
-      })
+      GeometryUtils.s2PolygonCovering(geom, minS2Level, maxS2Level).foreach(
+        (cellid: S2CellId) => {
+          val bucket = s2map.getOrElseUpdate(cellid.id, new HashSet[ObjectId]())
+          bucket.add(record._id)
+        } 
+      )
       if (index % 1000 == 0) {
-        println("computed cover for %d of %d (%.2f%%) polys".format(index, total, index*1.0/total))
-
+        println("computed cover for %d of %d (%.2f%%) polys".format(index, total, index*100.0/total))
       }
+      index += 1
       ids.add(record._id)
     }
 
-    println("outputting s2 map")
+    println("sorting s2 map of %s keys".format(s2map.size))
     val listWrapper = new ObjectIdListWrapper
     val listMap: List[(Array[Byte], Array[Byte])] = s2map.toList.map({case (k, v) => {
       (
-        serializer.serialize(k),
+        serializer.serialize(new LongWrapper().setValue(k)),
         serializer.serialize(listWrapper.setValues(s2map(k).toList.map(v => ByteBuffer.wrap(v.toByteArray()))))
       )
     }})
 
-    println("outputting feature map")
+    print("serializing s2map")
+
     val writer = buildV1Writer[LongWrapper, ObjectIdListWrapper](
       new File(basepath, "standalone_s2_geo_index.hfile").toString, factory)
     listMap.toList.sortWith(bytePairSort).foreach({case (k, v) => {
@@ -232,6 +233,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     writer.appendFileInfo("maxS2Level".getBytes("UTF-8"), GeometryUtils.getBytes(maxS2Level))
     writer.close()
 
+    println("outputting feature map")
     def nullFixer(s: String) = Some(s)
     writeGeocodeRecords("standalone_s2_feature_index.hfile", ids, nullFixer)
   }
@@ -298,7 +300,6 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
         writer = buildV1Writer[StringWrapper, GeocodeServingFeature]("polygon-features-%d.hfile".format(index / groupSize), factory)
         println("written %d files of %d features, total: %d".format(index / groupSize, groupSize, index))
       }
-
 
       writer.append(
         serializer.serialize(new StringWrapper().setValue(p._id.toString)),
