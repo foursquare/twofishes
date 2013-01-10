@@ -588,7 +588,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     fixParentId: IdFixer
   ) {
     val ids = unsortedIds.toList.sort(objectIdSort)
-    val writer = buildV1Writer[StringWrapper, GeocodeServingFeature](filename, factory)
+    val writer = buildV1Writer[ObjectIdWrapper, GeocodeServingFeature](filename, factory)
 
     var fidCount = 0
     val fidSize = ids.size
@@ -598,7 +598,8 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
       idToRecord.keys.toList.sort(objectIdSort).foreach(oid => {
         val g = idToRecord(oid)
         val (k, v) =
-          (oid.toByteArray(), serializeGeocodeRecord(g, fixParentId))
+          (serializer.serialize(new ObjectIdWrapper().setValue(oid.toByteArray)),
+           serializeGeocodeRecord(g, fixParentId))
         writer.append(k, v)
         fidCount += 1
         if (fidCount % 1000 == 0) {
