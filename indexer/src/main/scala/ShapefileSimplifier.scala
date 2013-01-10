@@ -1,8 +1,7 @@
 // Copyright 2011 Foursquare Labs Inc. All Rights Reserved.
 
-package com.foursquare.batch
+package com.foursquare.geo
 
-import com.foursquare.geo.ShapefileGeo
 import com.foursquare.geo.ShapefileGeo.{GeoBounds, ShapeLeafNode, ShapeTrieNode}
 import com.vividsolutions.jts.geom.{Coordinate, Geometry}
 import java.io.File
@@ -89,7 +88,7 @@ object ShapefileSimplifier{
         if (cell.subList.length > 0){
           val headVal = cell.subList.head.keyValue
           val same = cell.subList.forall(e => e.keyValue == headVal)
-          if (same) {
+          if (false && same) {
             compacted += 1
             cell.subList = cell.subList.head :: Nil
           }
@@ -127,7 +126,7 @@ object ShapefileSimplifier{
     
     def enumerateFeatures(cell: ShapeTrieNode, path: String): Unit = cell.keyValue match {
       // if leaf (no subgrid or sublist), use shape
-      case Some(tz) => addFeature(cell.shape, tz, path)
+      case Some(tz) => cell.subList.foreach(keyShape => addFeature(keyShape.shape, keyShape.keyValue.get, path))
       case None => 
         cell.subGrid match {
           case Some(grid) => {
@@ -247,6 +246,7 @@ object ShapefileSimplifier{
                         newKeyAttribute: Option[String]){
     val simplifiedKeyAttribute = newKeyAttribute.getOrElse(keyAttribute)
     val originalSource = getFeatureSource(original)
+    
     val world = loadOriginal(originalSource, keyAttribute, keyMap)
     simplify(world, levels)
 

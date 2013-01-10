@@ -151,7 +151,8 @@ object GeocoderBuild extends Build {
       settings = defaultSettings ++ Seq(
         publishArtifact := true,
         libraryDependencies ++= Seq(
-          "org.geotools" % "gt-shapefile" % "8.0-M1"
+          "org.geotools" % "gt-shapefile" % "8.0-M1",
+          "org.geotools" % "gt-epsg-hsql" % "8.0-M1"
         )
       )
     ) dependsOn(interface)

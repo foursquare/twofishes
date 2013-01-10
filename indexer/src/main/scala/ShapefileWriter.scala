@@ -7,6 +7,8 @@ import com.novus.salat.annotations._
 import com.novus.salat.dao._
 import com.novus.salat.global._
 
+import com.foursquare.geo.{ShapefileSimplifier, ShapefileGeo}
+
 import org.geotools.data.DataUtilities
 import org.geotools.data.DefaultTransaction
 import org.geotools.data.Transaction
@@ -29,17 +31,36 @@ import org.opengis.feature.simple.SimpleFeatureType
 
 import com.vividsolutions.jts.geom.Coordinate
 import com.vividsolutions.jts.geom.GeometryFactory
-import com.vividsolutions.jts.geom.Point
 
 import scalaj.collection.Imports._
 
-
 import java.io.File
-object BuildPolygonShapefile {
+class BuildPolygonShapefile(basepath: String) {
   val TYPE: SimpleFeatureType = DataUtilities.createType("Location",
     "location:MultiPolygon:srid=4326," + // <- the geometry attribute: Point type
     "id:String" // <- a String attribute
   )
+
+  val tmpOutputFilename = "polys.shp"
+  val simplifiedOutputFilename = "polys_simplified.shp"
+
+  def testLoadRevgeo(filename: String) {
+    ShapefileGeo.load(new File(simplifiedOutputFilename), "id", None, "")
+  }
+
+  def outputSimplified() {
+    val coll = buildCollection()
+    println("writing to " + tmpOutputFilename)
+    writeCollection(coll, tmpOutputFilename)
+    println("simplifying to " + simplifiedOutputFilename)
+    ShapefileSimplifier.doSimplification(
+      new File(tmpOutputFilename),
+      new File(simplifiedOutputFilename),
+      "id",
+      ShapefileSimplifier.defaultLevels,
+      None,
+      None)
+  }
 
   def writeCollection(collection: SimpleFeatureCollection, filename: String) {
       val newFile = new File(filename);
@@ -76,10 +97,8 @@ object BuildPolygonShapefile {
         } finally {
             transaction.close();
         }
-        System.exit(0); // success!
       } else {
         System.out.println(typeName + " does not support read/write access");
-        System.exit(1);
       }
     }
 

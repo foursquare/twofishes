@@ -27,3 +27,9 @@ sbt-launch.jar
 *.hfile
 *.crc
 id-mapping.txt
+*.dbf
+*.fix
+*.prj
+*.shx
+*.shp
+*.qix
