@@ -19,7 +19,6 @@ import java.net.URI
 import java.nio.ByteBuffer
 import java.util.Arrays
 
-
 import org.apache.hadoop.conf.Configuration 
 import org.apache.hadoop.fs.{LocalFileSystem, Path}
 import org.apache.hadoop.hbase.KeyValue.KeyComparator
@@ -183,6 +182,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
     val records = 
       MongoGeocodeDAO.find(MongoDBObject("polygon" -> MongoDBObject("$exists" -> true)))
     val ids = new HashSet[ObjectId]
+    val total = MongoGeocodeDAO.count(MongoDBObject("polygon" -> MongoDBObject("$exists" -> true)))
 
     val s2map = new HashMap[LongWrapper, HashSet[ObjectId]]
 
@@ -205,9 +205,14 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
           } 
         )
       })
+      if (index % 1000 == 0) {
+        println("computed cover for %d of %d (%.2f%%) polys".format(index, total, index*1.0/total))
+
+      }
       ids.add(record._id)
     }
 
+    println("outputting s2 map")
     val listWrapper = new ObjectIdListWrapper
     val listMap: List[(Array[Byte], Array[Byte])] = s2map.toList.map({case (k, v) => {
       (
@@ -216,6 +221,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
       )
     }})
 
+    println("outputting feature map")
     val writer = buildV1Writer[LongWrapper, ObjectIdListWrapper](
       new File(basepath, "standalone_s2_geo_index.hfile").toString, factory)
     listMap.toList.sortWith(bytePairSort).foreach({case (k, v) => {
