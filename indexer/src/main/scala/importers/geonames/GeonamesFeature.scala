@@ -201,7 +201,7 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) {
   def makeAdminId(level: AdminLevel.Value): Option[String] = {
     if (adminCode(level).exists(_.nonEmpty)) {
       Some(
-        AdminLevel.values.toList.filter(_ <= level).flatMap(l => adminCode(l)).mkString("-")
+        AdminLevel.values.toList.filter(_ <= level).flatMap(l => adminCode(l)).mkString(".")
       )
     } else {
       None
@@ -219,7 +219,7 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) {
   def parents: List[String] = {
     AdminLevel.values.filter(_ < featureClass.adminLevel).flatMap(l =>
       makeAdminId(l)
-    ).toList.filterNot(_.contains("-00"))
+    ).toList.filterNot(_.contains(".00"))
   }
 
   def population: Option[Int] = flatTryO {values.get(POPULATION).map(_.toInt)}
