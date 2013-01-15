@@ -45,7 +45,7 @@ object ShapefileGeo {
     * Also, there is a limited number of levels.  When the deepest level is
     * reached, all remaining shapes are placed on the list and independently
     * queried.*/
-  class ShapeTrieNode(level: Int, bounds: GeoBounds) extends KeyShape {
+  class ShapeTrieNode(level: Int, bounds: GeoBounds, alwaysCheckGeometry: Boolean) extends KeyShape {
     def shape =
       geometryFactory.toGeometry(new Envelope(
         bounds.minLong, bounds.minLong + bounds.width, bounds.minLat, bounds.minLat + bounds.height))
@@ -57,7 +57,8 @@ object ShapefileGeo {
     /** Some if all elems at level have same key value.
         Avoids unecessary point-in-plane computation */
     def keyValue: Option[String] = subList.length match {
-      case 1 => Some(subList.head.keyValue.get)
+      // however, if the poly is identical to the box, we should do this
+      case 1 if !alwaysCheckGeometry => Some(subList.head.keyValue.get)
       case _ => None
     }
 
@@ -71,8 +72,11 @@ object ShapefileGeo {
 
     // NOTE: order here is lat, long to comply with other interfaces,
     // Whereas GeoTools is mostly long, lat
-    def getNearest(geoLat: Double, geoLong: Double, fudger: Option[Fudger] = None): Option[String] = keyValue match {
-      case Some(keyValue) => Some(keyValue)
+    def getNearest(geoLat: Double, geoLong: Double, fudger: Option[Fudger] = None): Option[String] =
+      getNearestList(geoLat, geoLong, fudger).headOption
+
+    def getNearestList(geoLat: Double, geoLong: Double, fudger: Option[Fudger] = None): List[String] = keyValue match {
+      case Some(keyValue) => List(keyValue)
       case None => subGrid match {
         case Some(grid) => { 
           val longIdx = math.max(0, math.min(subGridSize._1 - 1, 
@@ -81,12 +85,17 @@ object ShapefileGeo {
             math.floor((geoLat  - bounds.minLat )/(bounds.height/subGridSize._2)).toInt))
 
           // RECURSE
-          grid(longIdx)(latIdx).getNearest(geoLat, geoLong, fudger)// Note: Lat, Long
+          grid(longIdx)(latIdx).getNearestList(geoLat, geoLong, fudger)// Note: Lat, Long
         }
         case None => {
           val point = geometryFactory.createPoint(new Coordinate(geoLong, geoLat))
-          subList.find(keyShape => keyShape.shape.covers(point)).map(_.keyValue.get).
-            orElse(fudger.map(_.fudge(geoLat, geoLong, this)).getOrElse(None))
+          val ret = subList.filter(keyShape => keyShape.shape.covers(point)).map(_.keyValue.get)
+          if (ret.isEmpty) {
+            // fudgers might want to start returning lists
+            fudger.flatMap(_.fudge(geoLat, geoLong, this)).toList
+          } else {
+            ret
+          }
         }
       }
     }
@@ -102,7 +111,7 @@ object ShapefileGeo {
           new ShapeTrieNode(level+1, GeoBounds( bounds.minLong + longChunk * iLong, 
                                                bounds.minLat + latChunk * iLat,
                                                longChunk,
-                                               latChunk)))
+                                               latChunk), alwaysCheckGeometry))
         subGrid = Some(grid)
       }
     }
@@ -124,7 +133,12 @@ object ShapefileGeo {
   
 
   // Loads in a shape file, simplifying if necessary
-  def load(file: File, keyAttribute: String, validValues: Option[Set[String]], defaultValue: String): ShapeTrieNode = {
+  def load(
+    file: File,
+    keyAttribute: String,
+    validValues: Option[Set[String]],
+    defaultValue: String,
+    alwaysCheckGeometry: Boolean): ShapeTrieNode = {
 
    // Converts "12,13;20,22;" into (12,13) :: (20,22)
    def parseIndex(path: String): List[(Int,Int)] = {
@@ -163,7 +177,7 @@ object ShapefileGeo {
                               GeoBounds(bounds.getMinX, 
                                         bounds.getMinY, 
                                         bounds.getWidth, 
-                                        bounds.getHeight))
+                                        bounds.getHeight), alwaysCheckGeometry)
 
     
     // would love to do toScala here, but though it looks like an iterator

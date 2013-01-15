@@ -442,7 +442,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
 
     def fixParent(p: String): Option[String] = {
       adminIdMap.get(p) orElse {
-        println("missing admin lookup for %s".format(p))
+        //println("missing admin lookup for %s".format(p))
         None
       }
     }

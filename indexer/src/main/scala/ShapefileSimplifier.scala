@@ -215,7 +215,7 @@ object ShapefileSimplifier{
     val world = new ShapeTrieNode( 0, GeoBounds(bounds.getMinX, 
                                                 bounds.getMinY, 
                                                 bounds.getWidth, 
-                                                bounds.getHeight))
+                                                bounds.getHeight), true)
     val iterator = featureSource.getFeatures.features
 
     try{

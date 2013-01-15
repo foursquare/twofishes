@@ -9,6 +9,7 @@ import com.novus.salat.global._
 
 import com.foursquare.twofishes.util.{GeometryUtils, Hacks, NameUtils}
 import com.foursquare.base.gen.{LongWrapper, ObjectIdWrapper, ObjectIdListWrapper, StringWrapper}
+import com.foursquare.batch.ShapefileSimplifier
 
 import com.google.common.geometry.S2CellId
 
@@ -238,6 +239,22 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     println("outputting feature map")
     def nullFixer(s: String) = Some(s)
     writeGeocodeRecords("standalone_s2_feature_index.hfile", ids, nullFixer)
+  }
+
+  // please clean me up, sorry
+  def buildStandaloneRevGeoShapeIndex() {
+    val wkbReader = new WKBReader()
+
+    val tmpFileName = "polygons-full.shp"
+    BuildPolygonShapefile.buildAndWriteCollection(tmpFileName)
+    ShapefileSimplifier.doSimplification(
+      new File("polygons-full.shp"),
+      new File("polygons-simplified.shp"),
+      "id",
+      ShapefileSimplifier.defaultLevels,
+      None,
+      None
+    )
   }
 
   def buildRevGeoIndex() {

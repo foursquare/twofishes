@@ -39,6 +39,10 @@ object BuildPolygonShapefile {
     "id:String" // <- a String attribute
   )
 
+  def buildAndWriteCollection(filename: String) {
+    writeCollection(buildCollection(), filename)
+  }
+
   def writeCollection(collection: SimpleFeatureCollection, filename: String) {
       val newFile = new File(filename);
       
@@ -100,12 +104,11 @@ object BuildPolygonShapefile {
 
       var multiPolygon = geom
       if (geom.isInstanceOf[Polygon]) {
-        println("converting polygon to multipolygon")
         multiPolygon = new MultiPolygon(Array(geom.asInstanceOf[Polygon]), geomFactory)
       }
 
       featureBuilder.add(multiPolygon)
-      featureBuilder.add(record.toGeocodeServingFeature.id)
+      featureBuilder.add(record.toGeocodeServingFeature.feature.id + "," + record._woeType.toString)
       val feature = featureBuilder.buildFeature(null)
       collection.add(feature)
     }
