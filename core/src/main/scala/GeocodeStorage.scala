@@ -93,9 +93,9 @@ case class GeocodeRecord(
 
     feature.setWoeType(this.woeType)
 
-    // feature.setIds(featureIds.filterNot(_.namespace == "gadminid").map(i => {
-    //   new FeatureId(i.namespace, i.id)
-    // }))
+    feature.setIds(featureIds.filterNot(_.namespace == "gadminid").map(i => {
+      new FeatureId(i.namespace, i.id)
+    }))
 
     feature.ids.headOption.foreach(id => feature.setId("%s:%s".format(id.source, id.id)))
 
