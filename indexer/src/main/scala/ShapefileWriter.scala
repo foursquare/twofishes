@@ -89,9 +89,11 @@ object BuildPolygonShapefile {
     val featureBuilder = new SimpleFeatureBuilder(TYPE)
     val collection = FeatureCollections.newCollection()
 
+    val total = MongoGeocodeDAO.count(MongoDBObject("hasPoly" -> true))
+
+
     val records = 
-      MongoGeocodeDAO.find(MongoDBObject("polygon" -> MongoDBObject("$exists" -> true)))
-      .limit(100)
+      MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
 
     val geomFactory = new GeometryFactory()
     val wkbReader = new WKBReader()
@@ -105,6 +107,10 @@ object BuildPolygonShapefile {
       var multiPolygon = geom
       if (geom.isInstanceOf[Polygon]) {
         multiPolygon = new MultiPolygon(Array(geom.asInstanceOf[Polygon]), geomFactory)
+      }
+
+      if (index % 10000 == 0) {
+        println("outputted %d of %d (%.2f%%)".format(index, total, index*100.0/total))
       }
 
       featureBuilder.add(multiPolygon)
