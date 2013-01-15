@@ -21,10 +21,17 @@ for row in reader:
   fcode = row[7]
   countryCode = row[8]
   adminIds = [countryCode] + row[10:14]
+  adminIds = [a for a in adminIds if a]
 
-  if fclass == 'A':
-    adminId = '.'.join([a for a in adminIds if a])
-    outputRow = [adminId, name, asciiname, geonameid]
-    writer.writerow(outputRow)
+  validFeatureCodes = ['ADM1', 'ADM2', 'ADM3', 'ADM4']
+
+  if fclass == 'A' and fcode in validFeatureCodes:
+    adminLevel = int(fcode[3])
+    adminId = '.'.join(adminIds)
+    if adminLevel != (len(adminIds) - 1):
+      print "didn't have enough adminids for %s %s @ %s %s" % (geonameid, name, fcode, adminId)
+    else:
+      outputRow = [adminId, name, asciiname, geonameid]
+      writer.writerow(outputRow)
 
 
