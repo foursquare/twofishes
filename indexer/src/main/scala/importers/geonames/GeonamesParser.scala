@@ -187,7 +187,7 @@ object GeonamesParser {
 
   def parseAdminInfoFile(filename: String) {
     // adm1, name, name, geonameid
-    val fileSource = scala.io.Source.fromFile(new File("./data/downloaded/", filename))
+    val fileSource = scala.io.Source.fromFile(new File(filename))
     val lines = fileSource.getLines.filterNot(_.startsWith("#"))
     lines.foreach(l => {
       val parts = l.split("\t")
@@ -217,7 +217,7 @@ object GeonamesParser {
       val countries = config.parseCountry.split(",")
       countries.foreach(f => {
         parser.logger.info("Parsing %s".format(f))
-        parseAdminInfoFile("adminCodes-%s.txt".format(f))
+        parseAdminInfoFile("data/computed/adminCodes-%s.txt".format(f))
         parser.parseAdminFile(
           "data/downloaded/%s.txt".format(f))
 
@@ -228,7 +228,7 @@ object GeonamesParser {
         }
       })
     } else {
-      parseAdminInfoFile("adminCodes.txt")
+      parseAdminInfoFile("data/computed/adminCodes.txt")
       parser.parseAdminFile(
         "data/downloaded/allCountries.txt")
       if (config.importPostalCodes) {
