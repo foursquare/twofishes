@@ -25,20 +25,10 @@ object GeonamesParser {
 
   var countryLangMap = new HashMap[String, List[String]]() 
   var countryNameMap = new HashMap[String, String]() 
-
-  case class SlugEntry(
-    id: String,
-    score: Int,
-    deprecated: Boolean = false,
-    permanent: Boolean = false
-  ) {
-    override def toString(): String = {
-      "%s\t%s\t%s".format(id, score, deprecated)
-    }
-  }
+  var adminIdMap = new HashMap[String, String]() 
 
   val idToSlugMap = new HashMap[String, String]
-  val slugEntryMap = new HashMap[String, SlugEntry]
+  val slugEntryMap = new SlugEntryMap
   var missingSlugList = new HashSet[String]
   var hasPolygonList = new HashSet[String]
 
@@ -188,10 +178,25 @@ object GeonamesParser {
       val cc = parts(0)
       val englishName = parts(4)
       val langs = parts(15).split(",").map(l => l.split("-")(0)).toList
+      val geonameid = parts(16)
       countryLangMap += (cc -> langs)
       countryNameMap += (cc -> englishName)
+      adminIdMap += ((geonameAdminIdNamespace + ":" + cc) -> (geonameIdNamespace + ":" + geonameid))
     })
   }
+
+  def parseAdminInfoFile(filename: String) {
+    // adm1, name, name, geonameid
+    val fileSource = scala.io.Source.fromFile(new File("./data/downloaded/", filename))
+    val lines = fileSource.getLines.filterNot(_.startsWith("#"))
+    lines.foreach(l => {
+      val parts = l.split("\t")
+      val admCode = parts(0).replace(".", "-")
+      val geonameid = parts(3)
+      adminIdMap += ((geonameAdminIdNamespace + ":" + admCode) -> (geonameIdNamespace + ":" + geonameid))
+    })
+  }
+
 
   def main(args: Array[String]) {
     val store = new MongoGeocodeStorageService()
@@ -212,6 +217,7 @@ object GeonamesParser {
       val countries = config.parseCountry.split(",")
       countries.foreach(f => {
         parser.logger.info("Parsing %s".format(f))
+        parseAdminInfoFile("adminCodes-%s.txt".format(f))
         parser.parseAdminFile(
           "data/downloaded/%s.txt".format(f))
 
@@ -222,6 +228,7 @@ object GeonamesParser {
         }
       })
     } else {
+      parseAdminInfoFile("adminCodes.txt")
       parser.parseAdminFile(
         "data/downloaded/allCountries.txt")
       if (config.importPostalCodes) {
@@ -251,7 +258,7 @@ object GeonamesParser {
       writeMissingSlugs(store)  
     }
 
-    val outputter = new OutputHFile(config.hfileBasePath, config.outputPrefixIndex)
+    val outputter = new OutputHFile(config.hfileBasePath, config.outputPrefixIndex, slugEntryMap)
     outputter.process()
     if (config.outputRevgeo) {
       outputter.buildRevGeoIndex()
@@ -435,9 +442,17 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
         feature.countryCode, altName.lang, altName.name, altName.isPrefName, altName.isShortName)
     })
 
+    def fixParent(p: String): Option[String] = {
+      adminIdMap.get(p) orElse {
+        println("missing admin lookup for %s".format(p))
+        None
+      }
+    }
+
     // Build parents
     val extraParents: List[String] = feature.extraColumns.get("parents").toList.flatMap(_.split(",").toList)
-    val parents: List[String] = feature.parents.map(p => StoredFeatureId(geonameAdminIdNamespace, p))
+    val parents: List[String] =
+      feature.parents.flatMap(fixParent).map(p => StoredFeatureId(geonameAdminIdNamespace, p))
     var allParents: List[String] = extraParents ++ parents
     val hierarchyParents = hierarchyTable.getOrElse(feature.geonameid.getOrElse(""), Nil).filterNot(p =>
       parents.has(p)).map(pid => "%s:%s".format(geonameIdNamespace, pid))

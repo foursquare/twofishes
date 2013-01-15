@@ -1,5 +1,6 @@
 .DS_Store
 lib_managed
+data/computed/*
 project*/boot/*
 project*/build/target/*
 project*/plugins/project/*

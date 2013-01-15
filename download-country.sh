@@ -40,5 +40,6 @@ else
    rm $FILE.zip
 fi
 
-source download-common.sh
-./extract-wiki-buildings.py $COUNTRY
+source scripts/download-common.sh
+./scripts/extract-wiki-buildings.py $COUNTRY
+./scripts/extract-adm.py $COUNTRY

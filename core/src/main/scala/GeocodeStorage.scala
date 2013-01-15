@@ -4,10 +4,24 @@ package com.foursquare.twofishes
 import com.twitter.util.{Future, FuturePool}
 import org.bson.types.ObjectId
 import scala.collection.JavaConversions._
+import scala.collection.mutable.HashMap
 
 object Implicits {
   implicit def fidToString(fid: StoredFeatureId): String = fid.toString
   implicit def fidListToString(fids: List[StoredFeatureId]): List[String] = fids.map(_.toString)
+}
+
+class SlugEntryMap extends HashMap[String, SlugEntry]
+
+case class SlugEntry(
+  id: String,
+  score: Int,
+  deprecated: Boolean = false,
+  permanent: Boolean = false
+) {
+  override def toString(): String = {
+    "%s\t%s\t%s".format(id, score, deprecated)
+  }
 }
 
 case class DisplayName(
@@ -79,9 +93,9 @@ case class GeocodeRecord(
 
     feature.setWoeType(this.woeType)
 
-    feature.setIds(featureIds.filterNot(_.namespace == "gadminid").map(i => {
-      new FeatureId(i.namespace, i.id)
-    }))
+    // feature.setIds(featureIds.filterNot(_.namespace == "gadminid").map(i => {
+    //   new FeatureId(i.namespace, i.id)
+    // }))
 
     feature.ids.headOption.foreach(id => feature.setId("%s:%s".format(id.source, id.id)))
 

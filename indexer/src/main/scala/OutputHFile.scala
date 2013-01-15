@@ -45,7 +45,7 @@ object HFileUtil {
   val ThriftEncodingKeyBytes: Array[Byte] = "thrift.protocol.factory.class".getBytes("UTF-8")
 }
 
-class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
+class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: SlugEntryMap) {
   val blockSizeKey = "hbase.mapreduce.hfileoutputformat.blocksize"
   val compressionKey = "hfile.compression"
 
@@ -114,7 +114,9 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
 
     parents.flatMap(parent => {
       val servingFeature = parent.toGeocodeServingFeature
-      val children = MongoGeocodeDAO.find(MongoDBObject("parents" -> servingFeature.feature.id))
+      val children = MongoGeocodeDAO.find(MongoDBObject("parents" -> servingFeature.feature.id,
+        "_woeType" -> childType.getValue
+        ))
         .sort(orderBy = MongoDBObject("population" -> -1)) // sort by population descending
         .limit(limit)
 
@@ -528,11 +530,16 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean) {
 
   def writeSlugsAndIds() {
     val p = new java.io.PrintWriter(new File(basepath, "id-mapping.txt"))
+    slugEntryMap.foreach({case (slug, entry) => {
+      p.println("%s\t%s".format(slug, entry.id))
+    }})
+
     MongoGeocodeDAO.find(MongoDBObject()).foreach(geocodeRecord => {
-      (geocodeRecord.slug.toList ++ geocodeRecord.ids).foreach(id => {
+      geocodeRecord.ids.foreach(id => {
         p.println("%s\t%s".format(id, geocodeRecord._id))
       })
     })
+
     p.close()
   }
 

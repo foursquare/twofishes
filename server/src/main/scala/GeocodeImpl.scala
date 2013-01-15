@@ -17,6 +17,11 @@ import scala.collection.mutable.{HashMap, HashSet, ListBuffer}
 import scalaj.collection.Implicits._
 
 // TODO
+// cover %age
+// adminid lookup
+// deprecated slug output
+
+// TODO
 // --make autocomplete faster
 // --save name-hit in the index
 // --start treating Parse like an object, stop using headOption
@@ -30,7 +35,7 @@ case class FeatureMatch(
   tokenEnd: Int,
   phrase: String,
   fmatch: GeocodeServingFeature
-)  
+)
 
 // Sort a list of features, smallest to biggest
 object GeocodeServingFeatureOrdering extends Ordering[GeocodeServingFeature] {
@@ -46,53 +51,37 @@ object FeatureMatchOrdering extends Ordering[FeatureMatch] {
   }
 }
 
+// I should really do this with shadow types :-(
+case class SortedParse(
+  fmatches: Seq[FeatureMatch]
+)
 
-class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) {
-  class MemoryLogger extends TwofishesLogger {
-    val startTime = new Date()
+trait MaybeSorted
+trait Sorted extends MaybeSorted
+trait Unsorted extends MaybeSorted
 
-    def timeSinceStart = {
-      new Date().getTime() - startTime.getTime()
-    }
+// Parse = one particular interpretation of the query
+case class Parse[T <: MaybeSorted](
+  fmatches: Seq[FeatureMatch]
+) extends Seq[FeatureMatch] {
+  def apply(i: Int) = fmatches(i)
+  def iterator = fmatches.iterator
+  def length = fmatches.length
 
-    val lines: ListBuffer[String] = new ListBuffer()
+  def getSorted: Parse[Sorted] =
+    Parse[Sorted](fmatches.sorted(FeatureMatchOrdering))
 
-    def ifDebug(s: => String, level: Int = 0) {
-      if (level >= 0 && req.debug >= level) {
-        lines.append("%d: %s".format(timeSinceStart, s))
-      }
-    }
+  def addFeature(f: FeatureMatch) = Parse[Unsorted](fmatches ++ List(f))
 
-    def getLines: List[String] = lines.toList
 
-    def toOutput(): String = lines.mkString("<br>\n");
+  var hasScoringFeatures = false
+  lazy val scoringFeatures = {
+    hasScoringFeatures = true
+    new InterpretationScoringFeatures()
   }
+}
 
-  val logger = new MemoryLogger
-
-  // I should really do this with shadow types :-(
-  case class SortedParse(
-    fmatches: Seq[FeatureMatch]
-  )
-
-  trait MaybeSorted
-  trait Sorted extends MaybeSorted
-  trait Unsorted extends MaybeSorted
-
-  // Parse = one particular interpretation of the query
-  case class Parse[T <: MaybeSorted](
-    fmatches: Seq[FeatureMatch]
-  ) extends Seq[FeatureMatch] {
-    def apply(i: Int) = fmatches(i)
-    def iterator = fmatches.iterator
-    def length = fmatches.length
-
-    def getSorted: Parse[Sorted] =
-      Parse[Sorted](fmatches.sorted(FeatureMatchOrdering))
-
-    def addFeature(f: FeatureMatch) = Parse[Unsorted](fmatches ++ List(f))
-  }
-
+trait GeocoderImplTypes {
   val NullParse = Parse[Sorted](Nil)
   // ParseSeq = multiple interpretations
   type ParseSeq = Seq[Parse[Unsorted]]
@@ -101,6 +90,30 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
   // ParseCache = a table to save our previous parses from the left-most
   // side of the string.
   type ParseCache = ConcurrentHashMap[Int, Future[SortedParseSeq]]
+}
+
+class MemoryLogger(req: GeocodeRequest) extends TwofishesLogger {
+  val startTime = new Date()
+
+  def timeSinceStart = {
+    new Date().getTime() - startTime.getTime()
+  }
+
+  val lines: ListBuffer[String] = new ListBuffer()
+
+  def ifDebug(s: => String, level: Int = 0) {
+    if (level >= 0 && req.debug >= level) {
+      lines.append("%d: %s".format(timeSinceStart, s))
+    }
+  }
+
+  def getLines: List[String] = lines.toList
+
+  def toOutput(): String = lines.mkString("<br>\n");
+}
+
+class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) extends GeocoderImplTypes {
+  val logger = new MemoryLogger(req)
 
   /*
     The basic algorithm works like this

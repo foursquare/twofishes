@@ -27,5 +27,6 @@ else
    rm $FILE.zip
 fi
 
-source download-common.sh
-./extract-wiki-buildings.py
+source scripts/download-common.sh
+./scripts/extract-wiki-buildings.py
+./scripts/extract-adm.py

@@ -29,10 +29,8 @@ import org.opengis.feature.simple.SimpleFeatureType
 
 import com.vividsolutions.jts.geom.Coordinate
 import com.vividsolutions.jts.geom.GeometryFactory
-import com.vividsolutions.jts.geom.Point
 
 import scalaj.collection.Imports._
-
 
 import java.io.File
 object BuildPolygonShapefile {
