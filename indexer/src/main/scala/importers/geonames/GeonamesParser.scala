@@ -19,7 +19,6 @@ import scalaj.collection.Implicits._
 
 object GeonamesParser {
   val geonameIdNamespace = "geonameid"
-  val geonameAdminIdNamespace = "gadminid"
 
   var config: GeonamesImporterConfig = null
 
@@ -181,7 +180,7 @@ object GeonamesParser {
       val geonameid = parts(16)
       countryLangMap += (cc -> langs)
       countryNameMap += (cc -> englishName)
-      adminIdMap += ((geonameAdminIdNamespace + ":" + cc) -> (geonameIdNamespace + ":" + geonameid))
+      adminIdMap += (cc -> geonameid)
     })
   }
 
@@ -191,9 +190,9 @@ object GeonamesParser {
     val lines = fileSource.getLines.filterNot(_.startsWith("#"))
     lines.foreach(l => {
       val parts = l.split("\t")
-      val admCode = parts(0).replace(".", "-")
+      val admCode = parts(0)
       val geonameid = parts(3)
-      adminIdMap += ((geonameAdminIdNamespace + ":" + admCode) -> (geonameIdNamespace + ":" + geonameid))
+      adminIdMap += (admCode -> geonameid)
     })
   }
 
@@ -389,7 +388,6 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
 
   def parseFeature(feature: GeonamesFeature): GeocodeRecord = {
     // Build ids
-    val adminId = feature.adminId.map(id => StoredFeatureId(geonameAdminIdNamespace, id))
     val geonameId = feature.geonameid.map(id => {
       if (id.contains(":")) {
         val parts = id.split(":")
@@ -399,7 +397,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       }
     })
 
-    val ids: List[StoredFeatureId] = List(adminId, geonameId).flatMap(a => a)
+    val ids: List[StoredFeatureId] = List(geonameId).flatMap(a => a)
 
     var displayNames: List[DisplayName] = processFeatureName(
       feature.countryCode, "en", feature.name, true, false)
@@ -452,7 +450,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     // Build parents
     val extraParents: List[String] = feature.extraColumns.get("parents").toList.flatMap(_.split(",").toList)
     val parents: List[String] =
-      feature.parents.flatMap(fixParent).map(p => StoredFeatureId(geonameAdminIdNamespace, p))
+      feature.parents.flatMap(fixParent).map(p => StoredFeatureId(geonameIdNamespace, p))
     var allParents: List[String] = extraParents ++ parents
     val hierarchyParents = hierarchyTable.getOrElse(feature.geonameid.getOrElse(""), Nil).filterNot(p =>
       parents.has(p)).map(pid => "%s:%s".format(geonameIdNamespace, pid))
