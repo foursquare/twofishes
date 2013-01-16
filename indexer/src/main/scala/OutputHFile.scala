@@ -92,6 +92,8 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
       val feature = child.toGeocodeServingFeature.feature
       name <- NameUtils.bestName(feature, Some("en"), false)
       slug <- child.slug
+      // hack because we're setting the boost of poorly-known neighborhoods to < 0
+      if (child._woeType != YahooWoeType.SUBURB.getValue || child.boost.getOrElse(0) >= 0)
     } yield {
       var finalName = name.name
       if (child.cc == "US" && child._woeType == YahooWoeType.TOWN.getValue) {
@@ -157,6 +159,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     val childMaps = 
       buildRootMap(countryToTownMap.keys) ++
       countryToTownMap ++
+      buildChildMap(YahooWoeType.ADMIN1, YahooWoeType.TOWN, 1000, 300000) ++
       buildChildMap(YahooWoeType.TOWN, YahooWoeType.SUBURB, 1000, 0) ++
       buildChildMap(YahooWoeType.ADMIN2, YahooWoeType.SUBURB, 1000, 0)
 
