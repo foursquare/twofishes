@@ -100,6 +100,7 @@ object BuildPolygonShapefile {
 
     for {
       (record, index) <- records.zipWithIndex
+      if (record.woeType != YahooWoeType.ADMIN2)
       polygon <- record.polygon
     } {
       val geom = wkbReader.read(polygon)
