@@ -159,8 +159,7 @@ struct GeocodeServingFeature {
 
 struct InterpretationScoringFeatures {
   1: optional i32 population = 0,
-  2: optional bool sociallyRelevant = 0,
-  3: optional double coveringPercentage = 0.0
+  2: optional double coverPercentage = 0.0
 }
 
 struct GeocodeInterpretation {
@@ -217,6 +216,12 @@ struct GeocodeRequest {
 
   // radius in meters, ll+radius is an alternative to boundingbox
   14: optional i32 radius = 0
+
+  // in area revgeo mode, whether or not to bother giving overlap %age
+  15: optional bool calculateCoverage = 0
+
+  // If set to <= 0, means unlimited in revgeo, and ~3 in geocode or autocomplete
+  16: optional i32 maxInterpretations = 0
 }
 
 service Geocoder {

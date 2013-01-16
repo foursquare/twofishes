@@ -94,6 +94,8 @@ class GeocoderHttpService(geocoder: GeocodeServerImpl) extends Service[HttpReque
       request.setAutocomplete(v.toBoolean)))
     params.get("includePolygon").foreach(_.asScala.headOption.foreach(v =>
       request.setIncludePolygon(v.toBoolean)))
+    params.get("calculateCoverage").foreach(_.asScala.headOption.foreach(v =>
+      request.setCalculateCoverage(v.toBoolean)))
     params.get("wktGeometry").foreach(_.asScala.headOption.foreach(v =>
       request.setWktGeometry(v.toBoolean)))
     params.get("ll").foreach(_.asScala.headOption.foreach(v => {
@@ -108,6 +110,11 @@ class GeocoderHttpService(geocoder: GeocodeServerImpl) extends Service[HttpReque
       val hints = hintStr.split(",").map(_.toInt).map(YahooWoeType.findByValue)
       request.setWoeRestrict(hints.toList.asJava)
     }))
+    params.get("radius").foreach(_.asScala.headOption.foreach(v =>
+      request.setRadius(v.toInt)))
+    params.get("maxInterpretations").foreach(_.asScala.headOption.foreach(v =>
+      request.setMaxInterpretations(v.toInt)))
+
     request
   }
 

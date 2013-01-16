@@ -32,18 +32,15 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
   private static final TStruct STRUCT_DESC = new TStruct("InterpretationScoringFeatures");
 
   private static final TField POPULATION_FIELD_DESC = new TField("population", TType.I32, (short)1);
-  private static final TField SOCIALLY_RELEVANT_FIELD_DESC = new TField("sociallyRelevant", TType.BOOL, (short)2);
-  private static final TField COVERING_PERCENTAGE_FIELD_DESC = new TField("coveringPercentage", TType.DOUBLE, (short)3);
+  private static final TField COVER_PERCENTAGE_FIELD_DESC = new TField("coverPercentage", TType.DOUBLE, (short)2);
 
   public int population;
-  public boolean sociallyRelevant;
-  public double coveringPercentage;
+  public double coverPercentage;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
     POPULATION((short)1, "population"),
-    SOCIALLY_RELEVANT((short)2, "sociallyRelevant"),
-    COVERING_PERCENTAGE((short)3, "coveringPercentage");
+    COVER_PERCENTAGE((short)2, "coverPercentage");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -60,10 +57,8 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
       switch(fieldId) {
         case 1: // POPULATION
           return POPULATION;
-        case 2: // SOCIALLY_RELEVANT
-          return SOCIALLY_RELEVANT;
-        case 3: // COVERING_PERCENTAGE
-          return COVERING_PERCENTAGE;
+        case 2: // COVER_PERCENTAGE
+          return COVER_PERCENTAGE;
         default:
           return null;
       }
@@ -105,18 +100,15 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
 
   // isset id assignments
   private static final int __POPULATION_ISSET_ID = 0;
-  private static final int __SOCIALLYRELEVANT_ISSET_ID = 1;
-  private static final int __COVERINGPERCENTAGE_ISSET_ID = 2;
-  private BitSet __isset_bit_vector = new BitSet(3);
+  private static final int __COVERPERCENTAGE_ISSET_ID = 1;
+  private BitSet __isset_bit_vector = new BitSet(2);
 
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
     Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
     tmpMap.put(_Fields.POPULATION, new FieldMetaData("population", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.I32)));
-    tmpMap.put(_Fields.SOCIALLY_RELEVANT, new FieldMetaData("sociallyRelevant", TFieldRequirementType.OPTIONAL, 
-        new FieldValueMetaData(TType.BOOL)));
-    tmpMap.put(_Fields.COVERING_PERCENTAGE, new FieldMetaData("coveringPercentage", TFieldRequirementType.OPTIONAL, 
+    tmpMap.put(_Fields.COVER_PERCENTAGE, new FieldMetaData("coverPercentage", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.DOUBLE)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(InterpretationScoringFeatures.class, metaDataMap);
@@ -125,9 +117,7 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
   public InterpretationScoringFeatures() {
     this.population = 0;
 
-    this.sociallyRelevant = false;
-
-    this.coveringPercentage = 0;
+    this.coverPercentage = 0;
 
   }
 
@@ -138,8 +128,7 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
     __isset_bit_vector.clear();
     __isset_bit_vector.or(other.__isset_bit_vector);
     this.population = other.population;
-    this.sociallyRelevant = other.sociallyRelevant;
-    this.coveringPercentage = other.coveringPercentage;
+    this.coverPercentage = other.coverPercentage;
   }
 
   public InterpretationScoringFeatures deepCopy() {
@@ -150,9 +139,7 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
   public void clear() {
     this.population = 0;
 
-    this.sociallyRelevant = false;
-
-    this.coveringPercentage = 0;
+    this.coverPercentage = 0;
 
   }
 
@@ -179,50 +166,27 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
     __isset_bit_vector.set(__POPULATION_ISSET_ID, value);
   }
 
-  public boolean isSociallyRelevant() {
-    return this.sociallyRelevant;
+  public double getCoverPercentage() {
+    return this.coverPercentage;
   }
 
-  public InterpretationScoringFeatures setSociallyRelevant(boolean sociallyRelevant) {
-    this.sociallyRelevant = sociallyRelevant;
-    setSociallyRelevantIsSet(true);
+  public InterpretationScoringFeatures setCoverPercentage(double coverPercentage) {
+    this.coverPercentage = coverPercentage;
+    setCoverPercentageIsSet(true);
     return this;
   }
 
-  public void unsetSociallyRelevant() {
-    __isset_bit_vector.clear(__SOCIALLYRELEVANT_ISSET_ID);
+  public void unsetCoverPercentage() {
+    __isset_bit_vector.clear(__COVERPERCENTAGE_ISSET_ID);
   }
 
-  /** Returns true if field sociallyRelevant is set (has been asigned a value) and false otherwise */
-  public boolean isSetSociallyRelevant() {
-    return __isset_bit_vector.get(__SOCIALLYRELEVANT_ISSET_ID);
+  /** Returns true if field coverPercentage is set (has been asigned a value) and false otherwise */
+  public boolean isSetCoverPercentage() {
+    return __isset_bit_vector.get(__COVERPERCENTAGE_ISSET_ID);
   }
 
-  public void setSociallyRelevantIsSet(boolean value) {
-    __isset_bit_vector.set(__SOCIALLYRELEVANT_ISSET_ID, value);
-  }
-
-  public double getCoveringPercentage() {
-    return this.coveringPercentage;
-  }
-
-  public InterpretationScoringFeatures setCoveringPercentage(double coveringPercentage) {
-    this.coveringPercentage = coveringPercentage;
-    setCoveringPercentageIsSet(true);
-    return this;
-  }
-
-  public void unsetCoveringPercentage() {
-    __isset_bit_vector.clear(__COVERINGPERCENTAGE_ISSET_ID);
-  }
-
-  /** Returns true if field coveringPercentage is set (has been asigned a value) and false otherwise */
-  public boolean isSetCoveringPercentage() {
-    return __isset_bit_vector.get(__COVERINGPERCENTAGE_ISSET_ID);
-  }
-
-  public void setCoveringPercentageIsSet(boolean value) {
-    __isset_bit_vector.set(__COVERINGPERCENTAGE_ISSET_ID, value);
+  public void setCoverPercentageIsSet(boolean value) {
+    __isset_bit_vector.set(__COVERPERCENTAGE_ISSET_ID, value);
   }
 
   public void setFieldValue(_Fields field, Object value) {
@@ -235,19 +199,11 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
       }
       break;
 
-    case SOCIALLY_RELEVANT:
+    case COVER_PERCENTAGE:
       if (value == null) {
-        unsetSociallyRelevant();
+        unsetCoverPercentage();
       } else {
-        setSociallyRelevant((Boolean)value);
-      }
-      break;
-
-    case COVERING_PERCENTAGE:
-      if (value == null) {
-        unsetCoveringPercentage();
-      } else {
-        setCoveringPercentage((Double)value);
+        setCoverPercentage((Double)value);
       }
       break;
 
@@ -259,11 +215,8 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
     case POPULATION:
       return new Integer(getPopulation());
 
-    case SOCIALLY_RELEVANT:
-      return new Boolean(isSociallyRelevant());
-
-    case COVERING_PERCENTAGE:
-      return new Double(getCoveringPercentage());
+    case COVER_PERCENTAGE:
+      return new Double(getCoverPercentage());
 
     }
     throw new IllegalStateException();
@@ -278,10 +231,8 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
     switch (field) {
     case POPULATION:
       return isSetPopulation();
-    case SOCIALLY_RELEVANT:
-      return isSetSociallyRelevant();
-    case COVERING_PERCENTAGE:
-      return isSetCoveringPercentage();
+    case COVER_PERCENTAGE:
+      return isSetCoverPercentage();
     }
     throw new IllegalStateException();
   }
@@ -308,21 +259,12 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
         return false;
     }
 
-    boolean this_present_sociallyRelevant = true && this.isSetSociallyRelevant();
-    boolean that_present_sociallyRelevant = true && that.isSetSociallyRelevant();
-    if (this_present_sociallyRelevant || that_present_sociallyRelevant) {
-      if (!(this_present_sociallyRelevant && that_present_sociallyRelevant))
+    boolean this_present_coverPercentage = true && this.isSetCoverPercentage();
+    boolean that_present_coverPercentage = true && that.isSetCoverPercentage();
+    if (this_present_coverPercentage || that_present_coverPercentage) {
+      if (!(this_present_coverPercentage && that_present_coverPercentage))
         return false;
-      if (this.sociallyRelevant != that.sociallyRelevant)
-        return false;
-    }
-
-    boolean this_present_coveringPercentage = true && this.isSetCoveringPercentage();
-    boolean that_present_coveringPercentage = true && that.isSetCoveringPercentage();
-    if (this_present_coveringPercentage || that_present_coveringPercentage) {
-      if (!(this_present_coveringPercentage && that_present_coveringPercentage))
-        return false;
-      if (this.coveringPercentage != that.coveringPercentage)
+      if (this.coverPercentage != that.coverPercentage)
         return false;
     }
 
@@ -352,22 +294,12 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetSociallyRelevant()).compareTo(typedOther.isSetSociallyRelevant());
+    lastComparison = Boolean.valueOf(isSetCoverPercentage()).compareTo(typedOther.isSetCoverPercentage());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetSociallyRelevant()) {
-      lastComparison = TBaseHelper.compareTo(this.sociallyRelevant, typedOther.sociallyRelevant);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
-    lastComparison = Boolean.valueOf(isSetCoveringPercentage()).compareTo(typedOther.isSetCoveringPercentage());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetCoveringPercentage()) {
-      lastComparison = TBaseHelper.compareTo(this.coveringPercentage, typedOther.coveringPercentage);
+    if (isSetCoverPercentage()) {
+      lastComparison = TBaseHelper.compareTo(this.coverPercentage, typedOther.coverPercentage);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -397,18 +329,10 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
-        case 2: // SOCIALLY_RELEVANT
-          if (field.type == TType.BOOL) {
-            this.sociallyRelevant = iprot.readBool();
-            setSociallyRelevantIsSet(true);
-          } else { 
-            TProtocolUtil.skip(iprot, field.type);
-          }
-          break;
-        case 3: // COVERING_PERCENTAGE
+        case 2: // COVER_PERCENTAGE
           if (field.type == TType.DOUBLE) {
-            this.coveringPercentage = iprot.readDouble();
-            setCoveringPercentageIsSet(true);
+            this.coverPercentage = iprot.readDouble();
+            setCoverPercentageIsSet(true);
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -433,14 +357,9 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
       oprot.writeI32(this.population);
       oprot.writeFieldEnd();
     }
-    if (isSetSociallyRelevant()) {
-      oprot.writeFieldBegin(SOCIALLY_RELEVANT_FIELD_DESC);
-      oprot.writeBool(this.sociallyRelevant);
-      oprot.writeFieldEnd();
-    }
-    if (isSetCoveringPercentage()) {
-      oprot.writeFieldBegin(COVERING_PERCENTAGE_FIELD_DESC);
-      oprot.writeDouble(this.coveringPercentage);
+    if (isSetCoverPercentage()) {
+      oprot.writeFieldBegin(COVER_PERCENTAGE_FIELD_DESC);
+      oprot.writeDouble(this.coverPercentage);
       oprot.writeFieldEnd();
     }
     oprot.writeFieldStop();
@@ -457,16 +376,10 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
       sb.append(this.population);
       first = false;
     }
-    if (isSetSociallyRelevant()) {
+    if (isSetCoverPercentage()) {
       if (!first) sb.append(", ");
-      sb.append("sociallyRelevant:");
-      sb.append(this.sociallyRelevant);
-      first = false;
-    }
-    if (isSetCoveringPercentage()) {
-      if (!first) sb.append(", ");
-      sb.append("coveringPercentage:");
-      sb.append(this.coveringPercentage);
+      sb.append("coverPercentage:");
+      sb.append(this.coverPercentage);
       first = false;
     }
     sb.append(")");

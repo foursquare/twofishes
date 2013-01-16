@@ -8,7 +8,7 @@ import com.foursquare.twofishes.util.Lists.Implicits._
 import com.twitter.util.{Duration, Future, FuturePool}
 import com.vividsolutions.jts.util.GeometricShapeFactory
 import com.vividsolutions.jts.io.{WKTWriter, WKBReader}
-import com.vividsolutions.jts.geom.{Coordinate, GeometryFactory, Geometry}
+import com.vividsolutions.jts.geom.{Coordinate, CoordinateSequence, CoordinateSequenceFilter, Geometry, GeometryFactory}
 import java.util.concurrent.ConcurrentHashMap
 import java.util.Date
 import org.bson.types.ObjectId
@@ -73,12 +73,7 @@ case class Parse[T <: MaybeSorted](
 
   def addFeature(f: FeatureMatch) = Parse[Unsorted](fmatches ++ List(f))
 
-
-  var hasScoringFeatures = false
-  lazy val scoringFeatures = {
-    hasScoringFeatures = true
-    new InterpretationScoringFeatures()
-  }
+  val scoringFeatures = new InterpretationScoringFeatures()
 }
 
 trait GeocoderImplTypes {
@@ -936,7 +931,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         interp.setWhere(where)
         interp.setFeature(feature)
 
-        val scores = new InterpretationScoringFeatures()
+        val scores = p.scoringFeatures
         scores.setPopulation(fmatch.scoringFeatures.population)
         interp.setScores(scores)
 
@@ -1059,10 +1054,17 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     val sortedParses = actualParses.sorted(new ParseOrdering)
 
     val filteredParses = filterParses(sortedParses, removeLowRankingParses)
-    val dedupedParses = if (req.autocomplete) {
-      dedupeParses(filteredParses.take(6)).take(3)
+
+    val maxInterpretations = if (req.maxInterpretations <= 0) {
+      3
     } else {
-      dedupeParses(filteredParses.take(3))
+      req.maxInterpretations
+    }
+
+    val dedupedParses = if (req.autocomplete) {
+      dedupeParses(filteredParses.take(maxInterpretations * 2)).take(maxInterpretations)
+    } else {
+      dedupeParses(filteredParses.take(maxInterpretations))
     }
     logger.ifDebug("%d parses after deduping".format(dedupedParses.size))
     dedupedParses.foreach(p =>
@@ -1213,8 +1215,16 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     logDuration("intersecting with %s".format(f.feature.names(0))) {
       val wkbReader = new WKBReader()
       val geom = wkbReader.read(f.feature.geometry.getWkbGeometry())
-      geom.intersects(otherGeom)
+      (geom, geom.intersects(otherGeom))
     }
+  }
+
+  def computeCoverage(
+    featureGeometry: Geometry,
+    requestGeometry: Geometry
+  ): Double = {
+    val intersection = featureGeometry.intersection(requestGeometry)
+    math.min(1, intersection.getArea() / requestGeometry.getArea())
   }
 
   def doReverseGeocode(cellids: Seq[Long], otherGeom: Geometry) = {
@@ -1226,23 +1236,34 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     val servingFeaturesF: Future[Seq[GeocodeServingFeature]] = servingFeaturesMapF.map(_.values.toList)
 
     // for each, check if we're really in it
-    val matchedFeatures: Future[Seq[GeocodeServingFeature]] = servingFeaturesF.map(
+    val parsesF: Future[SortedParseSeq] = servingFeaturesF.map(
       (servingFeatures: Seq[GeocodeServingFeature]) => {
       logger.ifDebug("had %d candidates".format(servingFeatures.size))
       for {
         f <- servingFeatures
         if (req.woeRestrict.isEmpty || req.woeRestrict.asScala.has(f.feature.woeType))
         if (f.feature.geometry.wkbGeometry != null)
-        if (featureGeometryInteresections(f, otherGeom))
-      } yield (f)
+        val (geom, intersects) = featureGeometryInteresections(f, otherGeom)
+        if intersects
+      } yield {
+        val parse = Parse[Sorted](List(FeatureMatch(0, 0, "", f)))
+        if (req.calculateCoverage) {
+          parse.scoringFeatures.setCoverPercentage(computeCoverage(geom, otherGeom))
+        }
+        parse
+      }
     })
 
     val parseParams = ParseParams()
-    val parsesF: Future[SortedParseSeq] = matchedFeatures.map(_.map(servingFeature =>
-      Parse[Sorted](List(FeatureMatch(0, 0, "", servingFeature)))))
 
     parsesF.flatMap(parses => {
-      val sortedParses = parses.map(_.getSorted).sorted(new ReverseGeocodeParseOrdering)
+      val maxInterpretations = if (req.maxInterpretations <= 0) {
+        parses.size  
+      } else {
+        req.maxInterpretations
+      }
+
+      val sortedParses = parses.map(_.getSorted).sorted(new ReverseGeocodeParseOrdering).take(maxInterpretations)
       hydrateParses(0, sortedParses, parseParams)
     })
   }

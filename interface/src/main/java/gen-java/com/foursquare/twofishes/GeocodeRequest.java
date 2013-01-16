@@ -45,6 +45,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   private static final TField INCLUDE_POLYGON_FIELD_DESC = new TField("includePolygon", TType.BOOL, (short)12);
   private static final TField WKT_GEOMETRY_FIELD_DESC = new TField("wktGeometry", TType.BOOL, (short)13);
   private static final TField RADIUS_FIELD_DESC = new TField("radius", TType.I32, (short)14);
+  private static final TField CALCULATE_COVERAGE_FIELD_DESC = new TField("calculateCoverage", TType.BOOL, (short)15);
+  private static final TField MAX_INTERPRETATIONS_FIELD_DESC = new TField("maxInterpretations", TType.I32, (short)16);
 
   public String query;
   public String cc;
@@ -60,6 +62,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   public boolean includePolygon;
   public boolean wktGeometry;
   public int radius;
+  public boolean calculateCoverage;
+  public int maxInterpretations;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
@@ -76,7 +80,9 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     SLUG((short)11, "slug"),
     INCLUDE_POLYGON((short)12, "includePolygon"),
     WKT_GEOMETRY((short)13, "wktGeometry"),
-    RADIUS((short)14, "radius");
+    RADIUS((short)14, "radius"),
+    CALCULATE_COVERAGE((short)15, "calculateCoverage"),
+    MAX_INTERPRETATIONS((short)16, "maxInterpretations");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -119,6 +125,10 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
           return WKT_GEOMETRY;
         case 14: // RADIUS
           return RADIUS;
+        case 15: // CALCULATE_COVERAGE
+          return CALCULATE_COVERAGE;
+        case 16: // MAX_INTERPRETATIONS
+          return MAX_INTERPRETATIONS;
         default:
           return null;
       }
@@ -165,7 +175,9 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   private static final int __INCLUDEPOLYGON_ISSET_ID = 3;
   private static final int __WKTGEOMETRY_ISSET_ID = 4;
   private static final int __RADIUS_ISSET_ID = 5;
-  private BitSet __isset_bit_vector = new BitSet(6);
+  private static final int __CALCULATECOVERAGE_ISSET_ID = 6;
+  private static final int __MAXINTERPRETATIONS_ISSET_ID = 7;
+  private BitSet __isset_bit_vector = new BitSet(8);
 
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
@@ -200,6 +212,10 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         new FieldValueMetaData(TType.BOOL)));
     tmpMap.put(_Fields.RADIUS, new FieldMetaData("radius", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.I32)));
+    tmpMap.put(_Fields.CALCULATE_COVERAGE, new FieldMetaData("calculateCoverage", TFieldRequirementType.OPTIONAL, 
+        new FieldValueMetaData(TType.BOOL)));
+    tmpMap.put(_Fields.MAX_INTERPRETATIONS, new FieldMetaData("maxInterpretations", TFieldRequirementType.OPTIONAL, 
+        new FieldValueMetaData(TType.I32)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeRequest.class, metaDataMap);
   }
@@ -222,6 +238,10 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     this.wktGeometry = false;
 
     this.radius = 0;
+
+    this.calculateCoverage = false;
+
+    this.maxInterpretations = 0;
 
   }
 
@@ -269,6 +289,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     this.includePolygon = other.includePolygon;
     this.wktGeometry = other.wktGeometry;
     this.radius = other.radius;
+    this.calculateCoverage = other.calculateCoverage;
+    this.maxInterpretations = other.maxInterpretations;
   }
 
   public GeocodeRequest deepCopy() {
@@ -299,6 +321,10 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     this.wktGeometry = false;
 
     this.radius = 0;
+
+    this.calculateCoverage = false;
+
+    this.maxInterpretations = 0;
 
   }
 
@@ -662,6 +688,52 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     __isset_bit_vector.set(__RADIUS_ISSET_ID, value);
   }
 
+  public boolean isCalculateCoverage() {
+    return this.calculateCoverage;
+  }
+
+  public GeocodeRequest setCalculateCoverage(boolean calculateCoverage) {
+    this.calculateCoverage = calculateCoverage;
+    setCalculateCoverageIsSet(true);
+    return this;
+  }
+
+  public void unsetCalculateCoverage() {
+    __isset_bit_vector.clear(__CALCULATECOVERAGE_ISSET_ID);
+  }
+
+  /** Returns true if field calculateCoverage is set (has been asigned a value) and false otherwise */
+  public boolean isSetCalculateCoverage() {
+    return __isset_bit_vector.get(__CALCULATECOVERAGE_ISSET_ID);
+  }
+
+  public void setCalculateCoverageIsSet(boolean value) {
+    __isset_bit_vector.set(__CALCULATECOVERAGE_ISSET_ID, value);
+  }
+
+  public int getMaxInterpretations() {
+    return this.maxInterpretations;
+  }
+
+  public GeocodeRequest setMaxInterpretations(int maxInterpretations) {
+    this.maxInterpretations = maxInterpretations;
+    setMaxInterpretationsIsSet(true);
+    return this;
+  }
+
+  public void unsetMaxInterpretations() {
+    __isset_bit_vector.clear(__MAXINTERPRETATIONS_ISSET_ID);
+  }
+
+  /** Returns true if field maxInterpretations is set (has been asigned a value) and false otherwise */
+  public boolean isSetMaxInterpretations() {
+    return __isset_bit_vector.get(__MAXINTERPRETATIONS_ISSET_ID);
+  }
+
+  public void setMaxInterpretationsIsSet(boolean value) {
+    __isset_bit_vector.set(__MAXINTERPRETATIONS_ISSET_ID, value);
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case QUERY:
@@ -776,6 +848,22 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       }
       break;
 
+    case CALCULATE_COVERAGE:
+      if (value == null) {
+        unsetCalculateCoverage();
+      } else {
+        setCalculateCoverage((Boolean)value);
+      }
+      break;
+
+    case MAX_INTERPRETATIONS:
+      if (value == null) {
+        unsetMaxInterpretations();
+      } else {
+        setMaxInterpretations((Integer)value);
+      }
+      break;
+
     }
   }
 
@@ -823,6 +911,12 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     case RADIUS:
       return new Integer(getRadius());
 
+    case CALCULATE_COVERAGE:
+      return new Boolean(isCalculateCoverage());
+
+    case MAX_INTERPRETATIONS:
+      return new Integer(getMaxInterpretations());
+
     }
     throw new IllegalStateException();
   }
@@ -862,6 +956,10 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       return isSetWktGeometry();
     case RADIUS:
       return isSetRadius();
+    case CALCULATE_COVERAGE:
+      return isSetCalculateCoverage();
+    case MAX_INTERPRETATIONS:
+      return isSetMaxInterpretations();
     }
     throw new IllegalStateException();
   }
@@ -1002,6 +1100,24 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       if (!(this_present_radius && that_present_radius))
         return false;
       if (this.radius != that.radius)
+        return false;
+    }
+
+    boolean this_present_calculateCoverage = true && this.isSetCalculateCoverage();
+    boolean that_present_calculateCoverage = true && that.isSetCalculateCoverage();
+    if (this_present_calculateCoverage || that_present_calculateCoverage) {
+      if (!(this_present_calculateCoverage && that_present_calculateCoverage))
+        return false;
+      if (this.calculateCoverage != that.calculateCoverage)
+        return false;
+    }
+
+    boolean this_present_maxInterpretations = true && this.isSetMaxInterpretations();
+    boolean that_present_maxInterpretations = true && that.isSetMaxInterpretations();
+    if (this_present_maxInterpretations || that_present_maxInterpretations) {
+      if (!(this_present_maxInterpretations && that_present_maxInterpretations))
+        return false;
+      if (this.maxInterpretations != that.maxInterpretations)
         return false;
     }
 
@@ -1161,6 +1277,26 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetCalculateCoverage()).compareTo(typedOther.isSetCalculateCoverage());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetCalculateCoverage()) {
+      lastComparison = TBaseHelper.compareTo(this.calculateCoverage, typedOther.calculateCoverage);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetMaxInterpretations()).compareTo(typedOther.isSetMaxInterpretations());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetMaxInterpretations()) {
+      lastComparison = TBaseHelper.compareTo(this.maxInterpretations, typedOther.maxInterpretations);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -1304,6 +1440,22 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
+        case 15: // CALCULATE_COVERAGE
+          if (field.type == TType.BOOL) {
+            this.calculateCoverage = iprot.readBool();
+            setCalculateCoverageIsSet(true);
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 16: // MAX_INTERPRETATIONS
+          if (field.type == TType.I32) {
+            this.maxInterpretations = iprot.readI32();
+            setMaxInterpretationsIsSet(true);
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -1417,6 +1569,16 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     if (isSetRadius()) {
       oprot.writeFieldBegin(RADIUS_FIELD_DESC);
       oprot.writeI32(this.radius);
+      oprot.writeFieldEnd();
+    }
+    if (isSetCalculateCoverage()) {
+      oprot.writeFieldBegin(CALCULATE_COVERAGE_FIELD_DESC);
+      oprot.writeBool(this.calculateCoverage);
+      oprot.writeFieldEnd();
+    }
+    if (isSetMaxInterpretations()) {
+      oprot.writeFieldBegin(MAX_INTERPRETATIONS_FIELD_DESC);
+      oprot.writeI32(this.maxInterpretations);
       oprot.writeFieldEnd();
     }
     oprot.writeFieldStop();
@@ -1541,6 +1703,18 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       if (!first) sb.append(", ");
       sb.append("radius:");
       sb.append(this.radius);
+      first = false;
+    }
+    if (isSetCalculateCoverage()) {
+      if (!first) sb.append(", ");
+      sb.append("calculateCoverage:");
+      sb.append(this.calculateCoverage);
+      first = false;
+    }
+    if (isSetMaxInterpretations()) {
+      if (!first) sb.append(", ");
+      sb.append("maxInterpretations:");
+      sb.append(this.maxInterpretations);
       first = false;
     }
     sb.append(")");
