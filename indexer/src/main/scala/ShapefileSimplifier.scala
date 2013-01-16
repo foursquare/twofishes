@@ -70,8 +70,28 @@ object ShapefileSimplifier{
           val cell = node.subGrid.get(longIdx)(latIdx)
           // Note: may not actually intersect because the shape's envelope is an
           // over approximation of the shape.  We may have found a nook
-          if (cell.shape.intersects(keyShape.shape)) {
-            cell.subList ::= new ShapeLeafNode(keyShape.keyValue.get, cell.shape.intersection(keyShape.shape))
+
+          val validKeyShape = if (keyShape.shape.isValid()) {
+            keyShape.shape
+          } else {
+            keyShape.shape.buffer(0)
+          }
+
+          try {
+            if (cell.shape.intersects(validKeyShape)) {
+              cell.subList ::= new ShapeLeafNode(keyShape.keyValue.get, cell.shape.intersection(validKeyShape))
+            }
+          } catch {
+            case e => {
+              println(cell.shape)
+              println(cell.shape.isValid())
+              println(keyShape)
+              println(keyShape.shape)
+              println(keyShape.shape.isValid())
+              println(keyShape.shape.buffer(0))
+              println(keyShape.shape.buffer(0).isValid())
+              throw e
+            }
           }
         }
       })
