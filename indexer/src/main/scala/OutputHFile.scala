@@ -86,6 +86,17 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     serializer.serialize(f)
   }
 
+  val stateCache = new HashMap[List[String], Option[String]]
+  def findStateName(parents: List[String]) = {
+    stateCache.getOrElseUpdate(parents, {
+      val features = MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> parents.toList),
+        "_woeType" -> YahooWoeType.ADMIN1.getValue))
+      features.map(_.toGeocodeServingFeature).flatMap(sf => 
+        NameUtils.bestName(sf.feature, None, preferAbbrev = true)
+      ).map(_.name).toList.headOption
+    })
+  }
+
   def buildChildEntries(children: Iterator[GeocodeRecord]): List[ChildEntry] = {
     (for {
       child <- children
@@ -98,8 +109,13 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
       var finalName = name.name
       if (child.cc == "US" && child._woeType == YahooWoeType.TOWN.getValue) {
         // awful hack to yank out state
-        val stateCode = child.parents.find(p => p.startsWith("gadminid") && p.split("-").size == 2).map(_.split("-")(1))
-        finalName = "%s, %s".format(name.name, stateCode)
+        findStateName(child.parents) match {
+          case Some(stateCode) => finalName = "%s, %s".format(name.name, stateCode)
+          case None => {
+            println("failed to find state parents for: " + feature.id)
+            println(child.parents)
+          }
+        }
       }
       new ChildEntry().setName(finalName).setSlug(slug).setWoeType(child.woeType)
     }).toList
