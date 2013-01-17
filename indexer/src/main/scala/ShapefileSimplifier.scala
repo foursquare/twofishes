@@ -113,56 +113,47 @@ class ShapefileSimplifier(options: SimplifierOptions = SimplifierOptions.Default
       // is roughly linear to the number of points in the shape, so it speeds the
       // contains() operation sigificantly.
       node.subList.foreach(keyShape => {
-        // optimization to only consider intersecting cells within the shape's bounding box.
-        val boundingBox = keyShape.shape.getEnvelope
         foreachOverNodeCells(shapeOpt = Some(keyShape.shape))(cell => {
           // Note: The cell may not actually intersect with the shape because
-          // the shape's envelope is an over approximation of the shape.  We
-          // may have found a nook in the shape.
+          // we're foreach'ing over an over-approximation of the shape.  We may
+          // have found a nook in the shape.
           if (cell.shape.intersects(keyShape.shape)) {
             cell.subList ::= new ShapeLeafNode(keyShape.keyValue.get, cell.shape.intersection(keyShape.shape))
           }
         })
       })
 
-      // If the cell is half-covered by shapes, but all those shapes share an
-      // attribute and we're okay with throwing away our leaf-node geometries,
-      // just expand the cell out to be one square with the attribute.
-      foreachOverNodeCells()(cell => {
-        cell.subList.headOption.flatMap(_.keyValue).foreach(kv => {
-          if (!options.outputSingleFeatureCellsWithGeometry &&
-              cell.subList.forall(_.keyValue == Some(kv))) {
-            cell.subList = List(new ShapeLeafNode(kv, cell.shape))
-          }
+      // If the lowest-level cell is half-covered by shapes, but all those
+      // shapes share an attribute and we're okay with throwing away our
+      // leaf-node geometries, just expand the cell out to be one square with
+      // the attribute. We do this here because then we can collapse 4
+      // lowest-level sub-squares to be a second-from-lowest sub-square below.
+      if (node.nodeLevel == (levels.length - 1)) {
+        foreachOverNodeCells()(cell => {
+          cell.subList.headOption.flatMap(_.keyValue).foreach(kv => {
+            if (!options.outputSingleFeatureCellsWithGeometry &&
+                cell.subList.forall(_.keyValue == Some(kv))) {
+              cell.subList = List(new ShapeLeafNode(kv, cell.shape))
+            }
+          })
         })
-      })
+      }
 
       val oneSubCell = node.subGrid.get.apply(0).apply(0)
       // Compress shapes in the case where there is only one active attribute
-      // in the subgrid. The rules are different depending on whether we want
-      // to preserve the geometries of these shapes. If we do, then we can only
-      // collapse when the cell shape and subshapes are the same, and the same
-      // is true of the children. (Basically, when we're in a big landmass and
-      // we just want to collapse 4 sub-squares into one big square.) If we're
-      // okay with throwing away the leaf node's geometries, then we can
-      // aggressively collapse up as long as all the attributes are the same.
-      if (options.outputSingleFeatureCellsWithGeometry &&
-          oneSubCell.keyValue.isDefined &&
-          node.subList.forall(_.shape.covers(node.shape)) &&
+      // in the subgrid. We only collapse when the cell shape and subshapes are
+      // the same, and the same is true of the children. (Basically, when we
+      // just want to collapse 4 sub-squares into one big square.)
+      if (oneSubCell.keyValue.isDefined &&
+          node.keyValue == oneSubCell.keyValue &&
           node.subGrid.get.forall(_.forall(cell =>
             cell.keyValue == oneSubCell.keyValue &&
             cell.subList.forall(_.shape.covers(cell.shape))))) {
-        // This is the interior-landmass case, where we want to collapse 4
-        // sub-squares into one big square.
         node.subGrid = None
-      } else if (!options.outputSingleFeatureCellsWithGeometry &&
-                 oneSubCell.keyValue.isDefined &&
-                 node.subGrid.get.forall(_.forall(cell =>
-                   cell.keyValue == oneSubCell.keyValue))) {
-        node.subGrid = None
+        node.subList = List(new ShapeLeafNode(oneSubCell.keyValue.get, node.shape))
       } else {
         node.subList = Nil
-        // Gridify each of the children.
+        // Gridify each of the children that isn't just one attribute.
         foreachOverNodeCells()(cell => {
           cell.subList match {
             case Nil =>
@@ -176,6 +167,9 @@ class ShapefileSimplifier(options: SimplifierOptions = SimplifierOptions.Default
                 // points in the list is greater than some threshold
                 gridifyList(cell)
               } else {
+                // If we're at the lowest level, then we're not going to
+                // recurse, but we can still simplify the polygon by smoothing
+                // it out.
                 cell.subList = cell.subList.map(shape =>
                   if (shape.shape.getNumPoints > options.thresholdForPolygonSimplification) {
                     val newShape =

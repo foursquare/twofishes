@@ -56,8 +56,9 @@ object ShapefileGeo {
 
     /** Some if all elems at level have same key value.
         Avoids unecessary point-in-plane computation */
-    def keyValue: Option[String] = subList.length match {
-      case 1 => Some(subList.head.keyValue.get)
+    def keyValue: Option[String] = subList match {
+      case x :: Nil => x.keyValue
+      case x :: rest if rest.forall(_.keyValue == x.keyValue) => x.keyValue
       case _ => None
     }
 
