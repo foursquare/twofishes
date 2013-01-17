@@ -101,7 +101,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
         val stateCode = child.parents.find(p => p.startsWith("gadminid") && p.split("-").size == 2).map(_.split("-")(1))
         finalName = "%s, %s".format(name.name, stateCode)
       }
-      new ChildEntry().setName(finalName).setSlug(slug)
+      new ChildEntry().setName(finalName).setSlug(slug).setWoeType(child.woeType)
     }).toList
   }
 

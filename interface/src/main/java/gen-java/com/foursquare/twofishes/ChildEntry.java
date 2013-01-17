@@ -34,16 +34,27 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
   private static final TField NAME_FIELD_DESC = new TField("name", TType.STRING, (short)1);
   private static final TField SLUG_FIELD_DESC = new TField("slug", TType.STRING, (short)2);
   private static final TField ID_FIELD_DESC = new TField("id", TType.STRING, (short)3);
+  private static final TField WOE_TYPE_FIELD_DESC = new TField("woeType", TType.I32, (short)4);
 
   public String name;
   public String slug;
   public String id;
+  /**
+   * 
+   * @see com.foursquare.twofishes.YahooWoeType
+   */
+  public com.foursquare.twofishes.YahooWoeType woeType;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
     NAME((short)1, "name"),
     SLUG((short)2, "slug"),
-    ID((short)3, "id");
+    ID((short)3, "id"),
+    /**
+     * 
+     * @see com.foursquare.twofishes.YahooWoeType
+     */
+    WOE_TYPE((short)4, "woeType");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -64,6 +75,8 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
           return SLUG;
         case 3: // ID
           return ID;
+        case 4: // WOE_TYPE
+          return WOE_TYPE;
         default:
           return null;
       }
@@ -114,6 +127,8 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
         new FieldValueMetaData(TType.STRING)));
     tmpMap.put(_Fields.ID, new FieldMetaData("id", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.STRING)));
+    tmpMap.put(_Fields.WOE_TYPE, new FieldMetaData("woeType", TFieldRequirementType.OPTIONAL, 
+        new EnumMetaData(TType.ENUM, com.foursquare.twofishes.YahooWoeType.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(ChildEntry.class, metaDataMap);
   }
@@ -134,6 +149,9 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
     if (other.isSetId()) {
       this.id = other.id;
     }
+    if (other.isSetWoeType()) {
+      this.woeType = other.woeType;
+    }
   }
 
   public ChildEntry deepCopy() {
@@ -145,6 +163,7 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
     this.name = null;
     this.slug = null;
     this.id = null;
+    this.woeType = null;
   }
 
   public String getName() {
@@ -219,6 +238,38 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
     }
   }
 
+  /**
+   * 
+   * @see com.foursquare.twofishes.YahooWoeType
+   */
+  public com.foursquare.twofishes.YahooWoeType getWoeType() {
+    return this.woeType;
+  }
+
+  /**
+   * 
+   * @see com.foursquare.twofishes.YahooWoeType
+   */
+  public ChildEntry setWoeType(com.foursquare.twofishes.YahooWoeType woeType) {
+    this.woeType = woeType;
+    return this;
+  }
+
+  public void unsetWoeType() {
+    this.woeType = null;
+  }
+
+  /** Returns true if field woeType is set (has been asigned a value) and false otherwise */
+  public boolean isSetWoeType() {
+    return this.woeType != null;
+  }
+
+  public void setWoeTypeIsSet(boolean value) {
+    if (!value) {
+      this.woeType = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case NAME:
@@ -245,6 +296,14 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
       }
       break;
 
+    case WOE_TYPE:
+      if (value == null) {
+        unsetWoeType();
+      } else {
+        setWoeType((com.foursquare.twofishes.YahooWoeType)value);
+      }
+      break;
+
     }
   }
 
@@ -258,6 +317,9 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
 
     case ID:
       return getId();
+
+    case WOE_TYPE:
+      return getWoeType();
 
     }
     throw new IllegalStateException();
@@ -276,6 +338,8 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
       return isSetSlug();
     case ID:
       return isSetId();
+    case WOE_TYPE:
+      return isSetWoeType();
     }
     throw new IllegalStateException();
   }
@@ -317,6 +381,15 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
       if (!(this_present_id && that_present_id))
         return false;
       if (!this.id.equals(that.id))
+        return false;
+    }
+
+    boolean this_present_woeType = true && this.isSetWoeType();
+    boolean that_present_woeType = true && that.isSetWoeType();
+    if (this_present_woeType || that_present_woeType) {
+      if (!(this_present_woeType && that_present_woeType))
+        return false;
+      if (!this.woeType.equals(that.woeType))
         return false;
     }
 
@@ -366,6 +439,16 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetWoeType()).compareTo(typedOther.isSetWoeType());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetWoeType()) {
+      lastComparison = TBaseHelper.compareTo(this.woeType, typedOther.woeType);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -400,6 +483,13 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
         case 3: // ID
           if (field.type == TType.STRING) {
             this.id = iprot.readString();
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 4: // WOE_TYPE
+          if (field.type == TType.I32) {
+            this.woeType = com.foursquare.twofishes.YahooWoeType.findByValue(iprot.readI32());
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -440,6 +530,13 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
         oprot.writeFieldEnd();
       }
     }
+    if (this.woeType != null) {
+      if (isSetWoeType()) {
+        oprot.writeFieldBegin(WOE_TYPE_FIELD_DESC);
+        oprot.writeI32(this.woeType.getValue());
+        oprot.writeFieldEnd();
+      }
+    }
     oprot.writeFieldStop();
     oprot.writeStructEnd();
   }
@@ -475,6 +572,16 @@ public class ChildEntry implements TBase<ChildEntry, ChildEntry._Fields>, java.i
         sb.append("null");
       } else {
         sb.append(this.id);
+      }
+      first = false;
+    }
+    if (isSetWoeType()) {
+      if (!first) sb.append(", ");
+      sb.append("woeType:");
+      if (this.woeType == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.woeType);
       }
       first = false;
     }
