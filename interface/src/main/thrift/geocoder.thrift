@@ -159,7 +159,8 @@ struct GeocodeServingFeature {
 
 struct InterpretationScoringFeatures {
   1: optional i32 population = 0,
-  2: optional double coverPercentage = 0.0
+  2: optional double percentOfRequestCovered = 0.0,
+  3: optional double percentOfFeatureCovered = 0.0
 }
 
 struct GeocodeInterpretation {
@@ -222,6 +223,9 @@ struct GeocodeRequest {
 
   // If set to <= 0, means unlimited in revgeo, and ~3 in geocode or autocomplete
   16: optional i32 maxInterpretations = 0
+
+  // if set, then restrict to features where the source in one of the ids is in the list
+  17: optional list<string> allowedSources
 }
 
 service Geocoder {

@@ -47,6 +47,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   private static final TField RADIUS_FIELD_DESC = new TField("radius", TType.I32, (short)14);
   private static final TField CALCULATE_COVERAGE_FIELD_DESC = new TField("calculateCoverage", TType.BOOL, (short)15);
   private static final TField MAX_INTERPRETATIONS_FIELD_DESC = new TField("maxInterpretations", TType.I32, (short)16);
+  private static final TField ALLOWED_SOURCES_FIELD_DESC = new TField("allowedSources", TType.LIST, (short)17);
 
   public String query;
   public String cc;
@@ -64,6 +65,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   public int radius;
   public boolean calculateCoverage;
   public int maxInterpretations;
+  public List<String> allowedSources;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
@@ -82,7 +84,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     WKT_GEOMETRY((short)13, "wktGeometry"),
     RADIUS((short)14, "radius"),
     CALCULATE_COVERAGE((short)15, "calculateCoverage"),
-    MAX_INTERPRETATIONS((short)16, "maxInterpretations");
+    MAX_INTERPRETATIONS((short)16, "maxInterpretations"),
+    ALLOWED_SOURCES((short)17, "allowedSources");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -129,6 +132,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
           return CALCULATE_COVERAGE;
         case 16: // MAX_INTERPRETATIONS
           return MAX_INTERPRETATIONS;
+        case 17: // ALLOWED_SOURCES
+          return ALLOWED_SOURCES;
         default:
           return null;
       }
@@ -216,6 +221,9 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         new FieldValueMetaData(TType.BOOL)));
     tmpMap.put(_Fields.MAX_INTERPRETATIONS, new FieldMetaData("maxInterpretations", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.I32)));
+    tmpMap.put(_Fields.ALLOWED_SOURCES, new FieldMetaData("allowedSources", TFieldRequirementType.OPTIONAL, 
+        new ListMetaData(TType.LIST, 
+            new FieldValueMetaData(TType.STRING))));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeRequest.class, metaDataMap);
   }
@@ -291,6 +299,13 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     this.radius = other.radius;
     this.calculateCoverage = other.calculateCoverage;
     this.maxInterpretations = other.maxInterpretations;
+    if (other.isSetAllowedSources()) {
+      List<String> __this__allowedSources = new ArrayList<String>();
+      for (String other_element : other.allowedSources) {
+        __this__allowedSources.add(other_element);
+      }
+      this.allowedSources = __this__allowedSources;
+    }
   }
 
   public GeocodeRequest deepCopy() {
@@ -326,6 +341,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
 
     this.maxInterpretations = 0;
 
+    this.allowedSources = null;
   }
 
   public String getQuery() {
@@ -734,6 +750,45 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     __isset_bit_vector.set(__MAXINTERPRETATIONS_ISSET_ID, value);
   }
 
+  public int getAllowedSourcesSize() {
+    return (this.allowedSources == null) ? 0 : this.allowedSources.size();
+  }
+
+  public java.util.Iterator<String> getAllowedSourcesIterator() {
+    return (this.allowedSources == null) ? null : this.allowedSources.iterator();
+  }
+
+  public void addToAllowedSources(String elem) {
+    if (this.allowedSources == null) {
+      this.allowedSources = new ArrayList<String>();
+    }
+    this.allowedSources.add(elem);
+  }
+
+  public List<String> getAllowedSources() {
+    return this.allowedSources;
+  }
+
+  public GeocodeRequest setAllowedSources(List<String> allowedSources) {
+    this.allowedSources = allowedSources;
+    return this;
+  }
+
+  public void unsetAllowedSources() {
+    this.allowedSources = null;
+  }
+
+  /** Returns true if field allowedSources is set (has been asigned a value) and false otherwise */
+  public boolean isSetAllowedSources() {
+    return this.allowedSources != null;
+  }
+
+  public void setAllowedSourcesIsSet(boolean value) {
+    if (!value) {
+      this.allowedSources = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case QUERY:
@@ -864,6 +919,14 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       }
       break;
 
+    case ALLOWED_SOURCES:
+      if (value == null) {
+        unsetAllowedSources();
+      } else {
+        setAllowedSources((List<String>)value);
+      }
+      break;
+
     }
   }
 
@@ -917,6 +980,9 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     case MAX_INTERPRETATIONS:
       return new Integer(getMaxInterpretations());
 
+    case ALLOWED_SOURCES:
+      return getAllowedSources();
+
     }
     throw new IllegalStateException();
   }
@@ -960,6 +1026,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       return isSetCalculateCoverage();
     case MAX_INTERPRETATIONS:
       return isSetMaxInterpretations();
+    case ALLOWED_SOURCES:
+      return isSetAllowedSources();
     }
     throw new IllegalStateException();
   }
@@ -1118,6 +1186,15 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       if (!(this_present_maxInterpretations && that_present_maxInterpretations))
         return false;
       if (this.maxInterpretations != that.maxInterpretations)
+        return false;
+    }
+
+    boolean this_present_allowedSources = true && this.isSetAllowedSources();
+    boolean that_present_allowedSources = true && that.isSetAllowedSources();
+    if (this_present_allowedSources || that_present_allowedSources) {
+      if (!(this_present_allowedSources && that_present_allowedSources))
+        return false;
+      if (!this.allowedSources.equals(that.allowedSources))
         return false;
     }
 
@@ -1297,6 +1374,16 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetAllowedSources()).compareTo(typedOther.isSetAllowedSources());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetAllowedSources()) {
+      lastComparison = TBaseHelper.compareTo(this.allowedSources, typedOther.allowedSources);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -1456,6 +1543,23 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
+        case 17: // ALLOWED_SOURCES
+          if (field.type == TType.LIST) {
+            {
+              TList _list46 = iprot.readListBegin();
+              this.allowedSources = new ArrayList<String>(_list46.size);
+              for (int _i47 = 0; _i47 < _list46.size; ++_i47)
+              {
+                String _elem48;
+                _elem48 = iprot.readString();
+                this.allowedSources.add(_elem48);
+              }
+              iprot.readListEnd();
+            }
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -1519,9 +1623,9 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         oprot.writeFieldBegin(WOE_HINT_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.I32, this.woeHint.size()));
-          for (YahooWoeType _iter46 : this.woeHint)
+          for (YahooWoeType _iter49 : this.woeHint)
           {
-            oprot.writeI32(_iter46.getValue());
+            oprot.writeI32(_iter49.getValue());
           }
           oprot.writeListEnd();
         }
@@ -1533,9 +1637,9 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         oprot.writeFieldBegin(WOE_RESTRICT_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.I32, this.woeRestrict.size()));
-          for (YahooWoeType _iter47 : this.woeRestrict)
+          for (YahooWoeType _iter50 : this.woeRestrict)
           {
-            oprot.writeI32(_iter47.getValue());
+            oprot.writeI32(_iter50.getValue());
           }
           oprot.writeListEnd();
         }
@@ -1580,6 +1684,20 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       oprot.writeFieldBegin(MAX_INTERPRETATIONS_FIELD_DESC);
       oprot.writeI32(this.maxInterpretations);
       oprot.writeFieldEnd();
+    }
+    if (this.allowedSources != null) {
+      if (isSetAllowedSources()) {
+        oprot.writeFieldBegin(ALLOWED_SOURCES_FIELD_DESC);
+        {
+          oprot.writeListBegin(new TList(TType.STRING, this.allowedSources.size()));
+          for (String _iter51 : this.allowedSources)
+          {
+            oprot.writeString(_iter51);
+          }
+          oprot.writeListEnd();
+        }
+        oprot.writeFieldEnd();
+      }
     }
     oprot.writeFieldStop();
     oprot.writeStructEnd();
@@ -1715,6 +1833,16 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       if (!first) sb.append(", ");
       sb.append("maxInterpretations:");
       sb.append(this.maxInterpretations);
+      first = false;
+    }
+    if (isSetAllowedSources()) {
+      if (!first) sb.append(", ");
+      sb.append("allowedSources:");
+      if (this.allowedSources == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.allowedSources);
+      }
       first = false;
     }
     sb.append(")");

@@ -62,18 +62,17 @@ trait Unsorted extends MaybeSorted
 
 // Parse = one particular interpretation of the query
 case class Parse[T <: MaybeSorted](
-  fmatches: Seq[FeatureMatch]
+  fmatches: Seq[FeatureMatch],
+  scoringFeatures: InterpretationScoringFeatures = new InterpretationScoringFeatures()
 ) extends Seq[FeatureMatch] {
   def apply(i: Int) = fmatches(i)
   def iterator = fmatches.iterator
   def length = fmatches.length
 
   def getSorted: Parse[Sorted] =
-    Parse[Sorted](fmatches.sorted(FeatureMatchOrdering))
+    Parse[Sorted](fmatches.sorted(FeatureMatchOrdering), scoringFeatures)
 
   def addFeature(f: FeatureMatch) = Parse[Unsorted](fmatches ++ List(f))
-
-  val scoringFeatures = new InterpretationScoringFeatures()
 }
 
 trait GeocoderImplTypes {
@@ -815,6 +814,13 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
     goodParses = goodParses.filter(p => p.headOption.exists(m => m.fmatch.scoringFeatures.canGeocode))
 
+    if (req.isSetAllowedSources()) {
+      val allowedSources = req.allowedSources.asScala
+      goodParses = goodParses.filter(p =>
+        p.headOption.exists(_.fmatch.feature.ids.exists(i => allowedSources.has(i.source)))
+      )
+    }
+
     goodParses
   }
 
@@ -1248,7 +1254,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       } yield {
         val parse = Parse[Sorted](List(FeatureMatch(0, 0, "", f)))
         if (req.calculateCoverage) {
-          parse.scoringFeatures.setCoverPercentage(computeCoverage(geom, otherGeom))
+          parse.scoringFeatures.setPercentOfRequestCovered(computeCoverage(geom, otherGeom))
+          parse.scoringFeatures.setPercentOfFeatureCovered(computeCoverage(otherGeom, geom))
         }
         parse
       }

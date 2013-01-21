@@ -114,6 +114,9 @@ class GeocoderHttpService(geocoder: GeocodeServerImpl) extends Service[HttpReque
       request.setRadius(v.toInt)))
     params.get("maxInterpretations").foreach(_.asScala.headOption.foreach(v =>
       request.setMaxInterpretations(v.toInt)))
+    params.get("allowedSources").foreach(_.asScala.headOption.foreach(str => {
+      request.setAllowedSources(str.split(",").toList.asJava)
+    }))
 
     request
   }

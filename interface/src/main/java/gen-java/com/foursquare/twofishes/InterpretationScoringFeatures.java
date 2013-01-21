@@ -32,15 +32,18 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
   private static final TStruct STRUCT_DESC = new TStruct("InterpretationScoringFeatures");
 
   private static final TField POPULATION_FIELD_DESC = new TField("population", TType.I32, (short)1);
-  private static final TField COVER_PERCENTAGE_FIELD_DESC = new TField("coverPercentage", TType.DOUBLE, (short)2);
+  private static final TField PERCENT_OF_REQUEST_COVERED_FIELD_DESC = new TField("percentOfRequestCovered", TType.DOUBLE, (short)2);
+  private static final TField PERCENT_OF_FEATURE_COVERED_FIELD_DESC = new TField("percentOfFeatureCovered", TType.DOUBLE, (short)3);
 
   public int population;
-  public double coverPercentage;
+  public double percentOfRequestCovered;
+  public double percentOfFeatureCovered;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
     POPULATION((short)1, "population"),
-    COVER_PERCENTAGE((short)2, "coverPercentage");
+    PERCENT_OF_REQUEST_COVERED((short)2, "percentOfRequestCovered"),
+    PERCENT_OF_FEATURE_COVERED((short)3, "percentOfFeatureCovered");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -57,8 +60,10 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
       switch(fieldId) {
         case 1: // POPULATION
           return POPULATION;
-        case 2: // COVER_PERCENTAGE
-          return COVER_PERCENTAGE;
+        case 2: // PERCENT_OF_REQUEST_COVERED
+          return PERCENT_OF_REQUEST_COVERED;
+        case 3: // PERCENT_OF_FEATURE_COVERED
+          return PERCENT_OF_FEATURE_COVERED;
         default:
           return null;
       }
@@ -100,15 +105,18 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
 
   // isset id assignments
   private static final int __POPULATION_ISSET_ID = 0;
-  private static final int __COVERPERCENTAGE_ISSET_ID = 1;
-  private BitSet __isset_bit_vector = new BitSet(2);
+  private static final int __PERCENTOFREQUESTCOVERED_ISSET_ID = 1;
+  private static final int __PERCENTOFFEATURECOVERED_ISSET_ID = 2;
+  private BitSet __isset_bit_vector = new BitSet(3);
 
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
     Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
     tmpMap.put(_Fields.POPULATION, new FieldMetaData("population", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.I32)));
-    tmpMap.put(_Fields.COVER_PERCENTAGE, new FieldMetaData("coverPercentage", TFieldRequirementType.OPTIONAL, 
+    tmpMap.put(_Fields.PERCENT_OF_REQUEST_COVERED, new FieldMetaData("percentOfRequestCovered", TFieldRequirementType.OPTIONAL, 
+        new FieldValueMetaData(TType.DOUBLE)));
+    tmpMap.put(_Fields.PERCENT_OF_FEATURE_COVERED, new FieldMetaData("percentOfFeatureCovered", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.DOUBLE)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(InterpretationScoringFeatures.class, metaDataMap);
@@ -117,7 +125,9 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
   public InterpretationScoringFeatures() {
     this.population = 0;
 
-    this.coverPercentage = 0;
+    this.percentOfRequestCovered = 0;
+
+    this.percentOfFeatureCovered = 0;
 
   }
 
@@ -128,7 +138,8 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
     __isset_bit_vector.clear();
     __isset_bit_vector.or(other.__isset_bit_vector);
     this.population = other.population;
-    this.coverPercentage = other.coverPercentage;
+    this.percentOfRequestCovered = other.percentOfRequestCovered;
+    this.percentOfFeatureCovered = other.percentOfFeatureCovered;
   }
 
   public InterpretationScoringFeatures deepCopy() {
@@ -139,7 +150,9 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
   public void clear() {
     this.population = 0;
 
-    this.coverPercentage = 0;
+    this.percentOfRequestCovered = 0;
+
+    this.percentOfFeatureCovered = 0;
 
   }
 
@@ -166,27 +179,50 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
     __isset_bit_vector.set(__POPULATION_ISSET_ID, value);
   }
 
-  public double getCoverPercentage() {
-    return this.coverPercentage;
+  public double getPercentOfRequestCovered() {
+    return this.percentOfRequestCovered;
   }
 
-  public InterpretationScoringFeatures setCoverPercentage(double coverPercentage) {
-    this.coverPercentage = coverPercentage;
-    setCoverPercentageIsSet(true);
+  public InterpretationScoringFeatures setPercentOfRequestCovered(double percentOfRequestCovered) {
+    this.percentOfRequestCovered = percentOfRequestCovered;
+    setPercentOfRequestCoveredIsSet(true);
     return this;
   }
 
-  public void unsetCoverPercentage() {
-    __isset_bit_vector.clear(__COVERPERCENTAGE_ISSET_ID);
+  public void unsetPercentOfRequestCovered() {
+    __isset_bit_vector.clear(__PERCENTOFREQUESTCOVERED_ISSET_ID);
   }
 
-  /** Returns true if field coverPercentage is set (has been asigned a value) and false otherwise */
-  public boolean isSetCoverPercentage() {
-    return __isset_bit_vector.get(__COVERPERCENTAGE_ISSET_ID);
+  /** Returns true if field percentOfRequestCovered is set (has been asigned a value) and false otherwise */
+  public boolean isSetPercentOfRequestCovered() {
+    return __isset_bit_vector.get(__PERCENTOFREQUESTCOVERED_ISSET_ID);
   }
 
-  public void setCoverPercentageIsSet(boolean value) {
-    __isset_bit_vector.set(__COVERPERCENTAGE_ISSET_ID, value);
+  public void setPercentOfRequestCoveredIsSet(boolean value) {
+    __isset_bit_vector.set(__PERCENTOFREQUESTCOVERED_ISSET_ID, value);
+  }
+
+  public double getPercentOfFeatureCovered() {
+    return this.percentOfFeatureCovered;
+  }
+
+  public InterpretationScoringFeatures setPercentOfFeatureCovered(double percentOfFeatureCovered) {
+    this.percentOfFeatureCovered = percentOfFeatureCovered;
+    setPercentOfFeatureCoveredIsSet(true);
+    return this;
+  }
+
+  public void unsetPercentOfFeatureCovered() {
+    __isset_bit_vector.clear(__PERCENTOFFEATURECOVERED_ISSET_ID);
+  }
+
+  /** Returns true if field percentOfFeatureCovered is set (has been asigned a value) and false otherwise */
+  public boolean isSetPercentOfFeatureCovered() {
+    return __isset_bit_vector.get(__PERCENTOFFEATURECOVERED_ISSET_ID);
+  }
+
+  public void setPercentOfFeatureCoveredIsSet(boolean value) {
+    __isset_bit_vector.set(__PERCENTOFFEATURECOVERED_ISSET_ID, value);
   }
 
   public void setFieldValue(_Fields field, Object value) {
@@ -199,11 +235,19 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
       }
       break;
 
-    case COVER_PERCENTAGE:
+    case PERCENT_OF_REQUEST_COVERED:
       if (value == null) {
-        unsetCoverPercentage();
+        unsetPercentOfRequestCovered();
       } else {
-        setCoverPercentage((Double)value);
+        setPercentOfRequestCovered((Double)value);
+      }
+      break;
+
+    case PERCENT_OF_FEATURE_COVERED:
+      if (value == null) {
+        unsetPercentOfFeatureCovered();
+      } else {
+        setPercentOfFeatureCovered((Double)value);
       }
       break;
 
@@ -215,8 +259,11 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
     case POPULATION:
       return new Integer(getPopulation());
 
-    case COVER_PERCENTAGE:
-      return new Double(getCoverPercentage());
+    case PERCENT_OF_REQUEST_COVERED:
+      return new Double(getPercentOfRequestCovered());
+
+    case PERCENT_OF_FEATURE_COVERED:
+      return new Double(getPercentOfFeatureCovered());
 
     }
     throw new IllegalStateException();
@@ -231,8 +278,10 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
     switch (field) {
     case POPULATION:
       return isSetPopulation();
-    case COVER_PERCENTAGE:
-      return isSetCoverPercentage();
+    case PERCENT_OF_REQUEST_COVERED:
+      return isSetPercentOfRequestCovered();
+    case PERCENT_OF_FEATURE_COVERED:
+      return isSetPercentOfFeatureCovered();
     }
     throw new IllegalStateException();
   }
@@ -259,12 +308,21 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
         return false;
     }
 
-    boolean this_present_coverPercentage = true && this.isSetCoverPercentage();
-    boolean that_present_coverPercentage = true && that.isSetCoverPercentage();
-    if (this_present_coverPercentage || that_present_coverPercentage) {
-      if (!(this_present_coverPercentage && that_present_coverPercentage))
+    boolean this_present_percentOfRequestCovered = true && this.isSetPercentOfRequestCovered();
+    boolean that_present_percentOfRequestCovered = true && that.isSetPercentOfRequestCovered();
+    if (this_present_percentOfRequestCovered || that_present_percentOfRequestCovered) {
+      if (!(this_present_percentOfRequestCovered && that_present_percentOfRequestCovered))
         return false;
-      if (this.coverPercentage != that.coverPercentage)
+      if (this.percentOfRequestCovered != that.percentOfRequestCovered)
+        return false;
+    }
+
+    boolean this_present_percentOfFeatureCovered = true && this.isSetPercentOfFeatureCovered();
+    boolean that_present_percentOfFeatureCovered = true && that.isSetPercentOfFeatureCovered();
+    if (this_present_percentOfFeatureCovered || that_present_percentOfFeatureCovered) {
+      if (!(this_present_percentOfFeatureCovered && that_present_percentOfFeatureCovered))
+        return false;
+      if (this.percentOfFeatureCovered != that.percentOfFeatureCovered)
         return false;
     }
 
@@ -294,12 +352,22 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetCoverPercentage()).compareTo(typedOther.isSetCoverPercentage());
+    lastComparison = Boolean.valueOf(isSetPercentOfRequestCovered()).compareTo(typedOther.isSetPercentOfRequestCovered());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetCoverPercentage()) {
-      lastComparison = TBaseHelper.compareTo(this.coverPercentage, typedOther.coverPercentage);
+    if (isSetPercentOfRequestCovered()) {
+      lastComparison = TBaseHelper.compareTo(this.percentOfRequestCovered, typedOther.percentOfRequestCovered);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetPercentOfFeatureCovered()).compareTo(typedOther.isSetPercentOfFeatureCovered());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetPercentOfFeatureCovered()) {
+      lastComparison = TBaseHelper.compareTo(this.percentOfFeatureCovered, typedOther.percentOfFeatureCovered);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -329,10 +397,18 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
-        case 2: // COVER_PERCENTAGE
+        case 2: // PERCENT_OF_REQUEST_COVERED
           if (field.type == TType.DOUBLE) {
-            this.coverPercentage = iprot.readDouble();
-            setCoverPercentageIsSet(true);
+            this.percentOfRequestCovered = iprot.readDouble();
+            setPercentOfRequestCoveredIsSet(true);
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 3: // PERCENT_OF_FEATURE_COVERED
+          if (field.type == TType.DOUBLE) {
+            this.percentOfFeatureCovered = iprot.readDouble();
+            setPercentOfFeatureCoveredIsSet(true);
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -357,9 +433,14 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
       oprot.writeI32(this.population);
       oprot.writeFieldEnd();
     }
-    if (isSetCoverPercentage()) {
-      oprot.writeFieldBegin(COVER_PERCENTAGE_FIELD_DESC);
-      oprot.writeDouble(this.coverPercentage);
+    if (isSetPercentOfRequestCovered()) {
+      oprot.writeFieldBegin(PERCENT_OF_REQUEST_COVERED_FIELD_DESC);
+      oprot.writeDouble(this.percentOfRequestCovered);
+      oprot.writeFieldEnd();
+    }
+    if (isSetPercentOfFeatureCovered()) {
+      oprot.writeFieldBegin(PERCENT_OF_FEATURE_COVERED_FIELD_DESC);
+      oprot.writeDouble(this.percentOfFeatureCovered);
       oprot.writeFieldEnd();
     }
     oprot.writeFieldStop();
@@ -376,10 +457,16 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
       sb.append(this.population);
       first = false;
     }
-    if (isSetCoverPercentage()) {
+    if (isSetPercentOfRequestCovered()) {
       if (!first) sb.append(", ");
-      sb.append("coverPercentage:");
-      sb.append(this.coverPercentage);
+      sb.append("percentOfRequestCovered:");
+      sb.append(this.percentOfRequestCovered);
+      first = false;
+    }
+    if (isSetPercentOfFeatureCovered()) {
+      if (!first) sb.append(", ");
+      sb.append("percentOfFeatureCovered:");
+      sb.append(this.percentOfFeatureCovered);
       first = false;
     }
     sb.append(")");
