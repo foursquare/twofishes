@@ -478,7 +478,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         }
 
         if (req.woeHint.asScala.has(primaryFeature.feature.woeType)) {
-          modifySignal(1000000,
+          modifySignal(50000000,
             "woe hint matches %d".format(primaryFeature.feature.woeType.getValue))
         }
 
