@@ -30,6 +30,7 @@ object SlugBuilder {
     FormatPattern("{COUNTRY}"),
     FormatPattern("{COUNTRY}/{ADMIN1}", countries = List("US", "CA")),
     FormatPattern("{COUNTRY}/{ADMIN1}"),
+    FormatPattern("{FEATURE}-{ADMIN1}", countries = List("US", "CA")),
     FormatPattern("{FEATURE}-{ADMIN1}-{COUNTRY}", countries = List("US", "CA")),
     FormatPattern("{FEATURE}-{COUNTRY}"),
     FormatPattern("{FEATURE}-{ADMIN1}-{COUNTRY}"),

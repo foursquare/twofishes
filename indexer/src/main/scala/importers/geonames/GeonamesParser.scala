@@ -119,9 +119,8 @@ object GeonamesParser {
       var possibleSlugs = SlugBuilder.makePossibleSlugs(servingFeature.feature, parents)
 
       // if a city is bigger than 2 million people, we'll attempt to use the bare city name as the slug
-      if (servingFeature.scoringFeatures.population > 2000000) {
+      if (servingFeature.scoringFeatures.population > 2000000 && servingFeature.feature.cc != "US") {
         possibleSlugs = NameUtils.bestName(servingFeature.feature, Some("en"), false).toList.map(n => SlugBuilder.normalize(n.name)) ++ possibleSlugs
-
       }
 
       if (!matchSlugs(id, servingFeature, possibleSlugs) && possibleSlugs.nonEmpty) {
