@@ -134,6 +134,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     parents.flatMap(parent => {
       val servingFeature = parent.toGeocodeServingFeature
       val children = MongoGeocodeDAO.find(MongoDBObject("parents" -> servingFeature.feature.id,
+        "hasPoly" -> true,
         "_woeType" -> childType.getValue
         ))
         .sort(orderBy = MongoDBObject("population" -> -1)) // sort by population descending

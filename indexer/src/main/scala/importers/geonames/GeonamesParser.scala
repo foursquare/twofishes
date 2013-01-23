@@ -1,11 +1,14 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.importers.geonames
 
+import com.foursquare.geo.shapes.ShapefileIterator
+import com.foursquare.geo.shapes.FsqSimpleFeatureImplicits._
 import com.foursquare.twofishes.util.{NameNormalizer, SlugBuilder, NameUtils, Helpers}
 import com.foursquare.twofishes._
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.Implicits._
 import com.foursquare.twofishes.util.Lists.Implicits._
+import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
 import org.geotools.geometry.jts.JTSFactoryFinder
 import scala.collection.JavaConversions._
@@ -266,11 +269,42 @@ object GeonamesParser {
 }
 
 import GeonamesParser._
-
 class GeonamesParser(store: GeocodeStorageWriteService) {
   object logger {
     def error(s: String) { println("**ERROR** " + s)}
     def info(s: String) { println(s)}
+  }
+
+  def loadPolygons(): Map[String, Geometry] = {
+    val polygonDirs = List(
+      new File("data/computed/polygons"),
+      new File("data/private/polygons")
+    )
+    val polygonFiles = polygonDirs.flatMap(polygonDir => {
+      if (polygonDir.exists) { polygonDir.listFiles.toList } else { Nil }
+    }).sorted
+
+    val wktReader = new WKTReader()
+    polygonFiles.flatMap(f => {
+      val extension = f.getName().split(".").lift(1).getOrElse("")
+      val shapeFileExtensions = List("shx", "dbf", "prj", "xml")
+
+      if (extension == "shp") {
+        for {
+          shp <- new ShapefileIterator(f)
+          geoid <- shp.propMap.get("fs_geoid")
+          geom <- shp.geometry
+        } yield { (geoid -> geom) }
+      } else if (shapeFileExtensions.has(extension)) {
+        // do nothing, shapefile aux file
+        Nil
+      } else {
+        scala.io.Source.fromFile(f).getLines.filterNot(_.startsWith("#")).toList.map(l => {
+          val parts = l.split("\t")
+          (parts(0) -> wktReader.read(parts(1))) 
+        })
+      }
+    }).toMap
   }
 
   lazy val hierarchyTable = HierarchyParser.parseHierarchy(List(
@@ -293,19 +327,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
   // geonameid --> new center
   val moveTable = new TsvHelperFileParser("data/custom/moves.txt")
   // geonameid -> polygon
-  val polygonDirs = List(
-    new File("data/computed/polygons"),
-    new File("data/private/polygons")
-  )
-  val polygonFiles = polygonDirs.flatMap(polygonDir => {
-    if (polygonDir.exists) { polygonDir.listFiles.toList } else { Nil }
-  }).sorted
-  val polygonTable: Map[String, String] = polygonFiles.flatMap(f => {
-    scala.io.Source.fromFile(f).getLines.filterNot(_.startsWith("#")).toList.map(l => {
-      val parts = l.split("\t")
-      (parts(0) -> parts(1))
-    })  
-  }).toMap
+  val polygonTable: Map[String, Geometry] = loadPolygons() 
   // geonameid -> name to be deleted
   val nameDeleteTable = new TsvHelperFileParser("data/custom/name-deletes.txt")
 
@@ -323,6 +345,9 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
   def logUnusedHelperEntries {
     helperTables.foreach(_.logUnused)
   }
+
+  val wkbWriter = new WKBWriter()
+  val wktReader = new WKTReader() 
 
   def doRewrites(names: List[String]): List[String] = {
     val nameSet = new scala.collection.mutable.HashSet[String]()
@@ -491,17 +516,12 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
 
     val canGeocode = feature.extraColumns.get("canGeocode").map(_.toInt).getOrElse(1) > 0
 
-    val polygonExtraEntry: Option[String] = feature.extraColumns.get("geometry")
-    val polygonTableEntry: Option[String] = polygonTable.get(geonameId.get.toString)
-    val polygon: Option[Array[Byte]] = for {
-      gid <- geonameId
-      polygon <- polygonTableEntry orElse polygonExtraEntry
-    } yield {
-      val wktReader = new WKTReader()
-      val wkbWriter = new WKBWriter()
-      val geom = wktReader.read(polygon)
-      wkbWriter.write(geom)
-    }
+    val polygonExtraEntry: Option[Geometry] = feature.extraColumns.get("geometry").map(polygon => {
+      wktReader.read(polygon)
+    })
+    val polygonTableEntry: Option[Geometry] = polygonTable.get(geonameId.get.toString)
+    val polygon: Option[Array[Byte]] = (polygonTableEntry orElse polygonExtraEntry).map(geom =>
+      wkbWriter.write(geom))
 
     val slug: Option[String] = geonameId.flatMap(gid => {
       idToSlugMap.get(gid.toString)
