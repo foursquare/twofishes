@@ -24,7 +24,9 @@ import java.util.Arrays
 import org.apache.hadoop.conf.Configuration 
 import org.apache.hadoop.fs.{LocalFileSystem, Path}
 import org.apache.hadoop.hbase.KeyValue.KeyComparator
-import org.apache.hadoop.hbase.io.hfile.{CacheConfig, Compression, HFile, HFileScanner, HFileWriterV1, HFileWriterV2}
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.hadoop.hbase.io.hfile.{Compression, HFile}
 import org.apache.hadoop.hbase.util.Bytes._
 
 import org.apache.thrift.TBase
@@ -55,7 +57,6 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
   val compressionAlgo = Compression.Algorithm.NONE.getName
 
   val conf = new Configuration()
-  val cconf = new CacheConfig(conf)
   
   val maxPrefixLength = 5
 
@@ -390,7 +391,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     subMaps.foreach(_._2.join)
 
     val sortedMapKeys = subMaps.flatMap(_._1.keys).toList.sort(byteBufferSort)
-    val writer = buildV2Writer(new File(basepath, "s2_index.hfile").toString)
+    val writer = buildBasicV1Writer(new File(basepath, "s2_index.hfile").toString, factory)
     sortedMapKeys.foreach(k => {
       val cells = subMaps.flatMap(_._1.get(k).map(_.toList).getOrElse(Nil))
       val cellGeometries = new CellGeometries().setCells(cells)
@@ -460,23 +461,29 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     ).sort(orderBy = MongoDBObject("pop" -> -1)).limit(limit)
   }
 
-  def buildV2Writer(filename: String) = {
+  def buildBasicV1Writer(filename: String,
+                         thriftProtocol: TProtocolFactory): HFile.Writer = {
     val fs = new LocalFileSystem() 
     val path = new Path(new File(basepath, filename).toString)
     fs.initialize(URI.create("file:///"), conf)
-    new HFileWriterV2(conf, cconf, fs, path, blockSize, compressionAlgo, null)
+    val hadoopConfiguration: Configuration = new Configuration()
+
+    val writer = new HFile.Writer(
+      fs,
+      path,
+      blockSize,
+      compressionAlgo,
+      null /* Will cause the right comparator to be chosen */)
+    writer.appendFileInfo(HFileUtil.ThriftEncodingKeyBytes, thriftProtocol.getClass.getName.getBytes("UTF-8"))
+    writer
   }
 
  def buildV1Writer[K: Manifest, V: Manifest](
       filename: String,
-      thriftProtocol: TProtocolFactory): HFileWriterV1 = {
-    val fs = new LocalFileSystem() 
-    val path = new Path(new File(basepath, filename).toString)
-    fs.initialize(URI.create("file:///"), conf)
-    val writer = new HFileWriterV1(conf, cconf, fs, path, blockSize, compressionAlgo, null)
+      thriftProtocol: TProtocolFactory): HFile.Writer = {
+    val writer = buildBasicV1Writer(filename, thriftProtocol)
     writer.appendFileInfo(HFileUtil.ThriftClassValueBytes, manifest[V].erasure.getName.getBytes("UTF-8"))
     writer.appendFileInfo(HFileUtil.ThriftClassKeyBytes, manifest[K].erasure.getName.getBytes("UTF-8"))
-    writer.appendFileInfo(HFileUtil.ThriftEncodingKeyBytes, thriftProtocol.getClass.getName.getBytes("UTF-8"))
     writer
   }
   
@@ -486,7 +493,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     dao: SalatDAO[T, K],
     sortField: String
   ) {
-    val writer = buildV2Writer(filename)
+    val writer = buildBasicV1Writer(filename, factory)
     var fidCount = 0
     val fidSize = dao.collection.count
     val fidCursor = dao.find(MongoDBObject())
@@ -544,7 +551,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     var lastName = ""
     var nameFids = new HashSet[String]
 
-    val writer = buildV2Writer("name_index.hfile")
+    val writer = buildBasicV1Writer("name_index.hfile", factory)
     nameCursor.filterNot(_.name.isEmpty).foreach(n => {
       if (lastName != n.name) {
         if (lastName != "") {
@@ -587,7 +594,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
       YahooWoeType.COUNTRY
     ).map(_.getValue)
 
-    val prefixWriter = buildV2Writer("prefix_index.hfile")
+    val prefixWriter = buildBasicV1Writer("prefix_index.hfile", factory)
     val numPrefixes = sortedPrefixes.size
     for {
       (prefix, index) <- sortedPrefixes.zipWithIndex

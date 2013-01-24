@@ -16,7 +16,7 @@ class SlugEntryMap extends HashMap[String, SlugEntry]
 case class SlugEntry(
   id: String,
   score: Int,
-  deprecated: Boolean = false,
+  var deprecated: Boolean = false,
   permanent: Boolean = false
 ) {
   override def toString(): String = {
