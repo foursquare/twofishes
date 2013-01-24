@@ -10,7 +10,7 @@ import java.util.Arrays
 import org.apache.hadoop.conf.Configuration 
 import org.apache.hadoop.fs.{LocalFileSystem, Path}
 import org.apache.hadoop.hbase.KeyValue.KeyComparator
-import org.apache.hadoop.hbase.io.hfile.{CacheConfig, Compression, HFile, HFileScanner}
+import org.apache.hadoop.hbase.io.hfile.{Compression, HFile, HFileScanner}
 import org.apache.hadoop.hbase.util.Bytes._
 
 import com.twitter.util.{Duration, Future, FuturePool}
@@ -86,9 +86,7 @@ abstract class HFileInput(basepath: String, filename: String) {
   fs.initialize(URI.create("file:///"), conf)
 
   val path = new Path(new File(basepath, filename).getAbsolutePath())
-  val cacheConfig = new CacheConfig(conf)
-  println(cacheConfig)
-  val reader = HFile.createReader(fs, path, cacheConfig)
+  val reader = new HFile.Reader(fs, path, null, true)
   val fileInfo = reader.loadFileInfo().asScala
 
   def lookup(key: ByteBuffer): Option[ByteBuffer] = {
