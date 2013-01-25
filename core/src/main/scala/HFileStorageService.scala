@@ -27,6 +27,7 @@ import scalaj.collection.Implicits._
 class HFileStorageService(basepath: String) extends GeocodeStorageReadService {
   val nameMap = new NameIndexHFileInput(basepath)
   val oidMap = new GeocodeRecordHFileInput(basepath)
+  val geomMap = new GeometryHFileInput(basepath)
   val s2mapOpt = ReverseGeocodeHFileInput.readInput(basepath)
   // will only be hit if we get a reverse geocode query
   lazy val s2map = s2mapOpt.getOrElse(
@@ -72,8 +73,12 @@ class HFileStorageService(basepath: String) extends GeocodeStorageReadService {
     })
   }
 
-  def getByS2CellId(id: Long): Seq[ObjectId] = {
+  def getByS2CellId(id: Long): Seq[CellGeometry] = {
     s2map.get(id)
+  }
+
+  def getPolygonByObjectId(id: ObjectId): Option[Array[Byte]] = {
+    geomMap.get(id)
   }
 
   def getMinS2Level: Int = s2map.minS2Level
@@ -109,6 +114,7 @@ abstract class HFileInput(basepath: String, filename: String) {
       scanner.next()
     }
 
+
     val ret: ListBuffer[Array[Byte]] = new ListBuffer()
 
     // I hate to encode this logic here, but I don't really want to thread it
@@ -122,6 +128,12 @@ abstract class HFileInput(basepath: String, filename: String) {
     }
 
     ret
+  }
+
+  def deserializeBytes[T <: org.apache.thrift.TBase[_ <: org.apache.thrift.TBase[_, _], _ <: org.apache.thrift.TFieldIdEnum]](struct: T, bytes: Array[Byte]): T = {
+    val deserializer = new TDeserializer(new TCompactProtocol.Factory());
+    deserializer.deserialize(struct, bytes);
+    struct
   }
 }
 
@@ -205,31 +217,36 @@ class ReverseGeocodeHFileInput(basepath: String) extends HFileInput(basepath, "s
     "maxS2Level".getBytes("UTF-8"),
     throw new Exception("missing maxS2Level")))
 
-  def get(cellid: Long): List[ObjectId] = {
+  def get(cellid: Long): List[CellGeometry] = {
     val buf = ByteBuffer.wrap(GeometryUtils.getBytes(cellid))
     lookup(buf).toList.flatMap(b => {
       val bytes = new Array[Byte](b.capacity())
+      b.get(bytes, 0, bytes.length)
+      val geometries = new CellGeometries()
+      deserializeBytes(geometries, bytes)
+      geometries.cells
+    })
+  }
+}
+
+class GeometryHFileInput(basepath: String) extends HFileInput(basepath, "geometry.hfile") {  
+  def get(oid: ObjectId): Option[Array[Byte]] = {
+    val buf = ByteBuffer.wrap(oid.toByteArray())
+    lookup(buf).map(b => {
+      val bytes = new Array[Byte](b.capacity())
       b.get(bytes, 0, bytes.length);
-      decodeObjectIds(bytes)
+      bytes
     })
   }
 }
 
 class GeocodeRecordHFileInput(basepath: String) extends HFileInput(basepath, "features.hfile") {
-  import java.io._
-  def deserializeBytes(bytes: Array[Byte]) = {
-    val deserializer = new TDeserializer(new TCompactProtocol.Factory());
-    val feature = new GeocodeServingFeature();
-    deserializer.deserialize(feature, bytes);
-    feature
-  }
-
   def get(oid: ObjectId): Option[GeocodeServingFeature] = {
     val buf = ByteBuffer.wrap(oid.toByteArray())
     lookup(buf).map(b => {
       val bytes = new Array[Byte](b.capacity())
       b.get(bytes, 0, bytes.length);
-      deserializeBytes(bytes)
+      deserializeBytes(new GeocodeServingFeature(), bytes)
     })
   }
 }

@@ -10,10 +10,11 @@ import com.novus.salat.global._
 import com.foursquare.twofishes.util.{GeometryUtils, Hacks, NameUtils}
 import com.foursquare.base.gen.{LongWrapper, ObjectIdWrapper, ObjectIdListWrapper, StringWrapper}
 import com.foursquare.batch.ShapefileSimplifier
+import com.foursquare.geo.shapes.ShapefileS2Util
 
 import com.google.common.geometry.S2CellId
 
-import com.vividsolutions.jts.io.WKBReader
+import com.vividsolutions.jts.io.{WKBReader, WKBWriter}
 
 import java.io._
 import java.net.URI
@@ -277,13 +278,38 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     )
   }
 
+  def buildPolygonIndex() {
+    val polygons = 
+      MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
+        .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
+
+    var index: Int = 0
+    // these types are a lie
+    var writer = buildV1Writer[StringWrapper, GeocodeServingFeature]("geometry.hfile", factory)
+
+    for {
+      (featureRecord, index) <- polygons.zipWithIndex
+      polygon <- featureRecord.polygon
+    } {
+      if (index % 1000 == 0) {
+        println("outputted %d polys so far".format(index))
+      } 
+      writer.append(
+        featureRecord._id.toByteArray(),
+        polygon)
+    }
+    writer.close()
+
+    println("done")
+  }
+
   def buildRevGeoIndex() {
     val wkbReader = new WKBReader()
+    val wkbWriter = new WKBWriter()
 
-    val records = 
-      MongoGeocodeDAO.find(MongoDBObject("polygon" -> MongoDBObject("$exists" -> true)))
+    val records = MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
 
-    val s2map = new HashMap[ByteBuffer, HashSet[ObjectId]]
+    val s2map = new HashMap[ByteBuffer, HashSet[CellGeometry]]
 
     val minS2Level = 9
     val maxS2Level = 13
@@ -304,8 +330,12 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
               println("generated wrong level: %d SHOULD NOT HAPPEN at %d".format(cellid.level, level))
             } else {
               val s2Bytes: Array[Byte] = GeometryUtils.getBytes(cellid)
-              val bucket = s2map.getOrElseUpdate(ByteBuffer.wrap(s2Bytes), new HashSet[ObjectId]())
-              bucket.add(record._id)
+              val bucket = s2map.getOrElseUpdate(ByteBuffer.wrap(s2Bytes), new HashSet[CellGeometry]())
+              val cellGeometry = new CellGeometry()
+              cellGeometry.setWkbGeometry(wkbWriter.write(ShapefileS2Util.clipGeometryToCell(geom, cellid)))
+              cellGeometry.setWoeType(record.woeType)
+              cellGeometry.setOid(record._id.toByteArray())
+              bucket.add(cellGeometry)
               numCells += 1
             }
           } 
@@ -317,15 +347,18 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     val sortedMapKeys = s2map.keys.toList.sort(byteBufferSort)
     val writer = buildV2Writer(new File(basepath, "s2_index.hfile").toString)
     sortedMapKeys.foreach(k => {
-      writer.append(k.array(), oidsToByteArray(s2map(k)))
+      val cellGeometries = new CellGeometries().setCells(s2map(k).toList)
+      writer.append(k.array(), serializer.serialize(cellGeometries))
     })
 
     writer.appendFileInfo("minS2Level".getBytes("UTF-8"), GeometryUtils.getBytes(minS2Level))
     writer.appendFileInfo("maxS2Level".getBytes("UTF-8"), GeometryUtils.getBytes(maxS2Level))
     writer.close()
+
+    buildPolygonIndex()
   }
 
-  def buildPolygonIndex(groupSize: Int) {
+  def buildPolygonFeatureIndex(groupSize: Int) {
     val polygons = 
       MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
         .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc

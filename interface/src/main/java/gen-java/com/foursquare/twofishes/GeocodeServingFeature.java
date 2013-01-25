@@ -507,14 +507,14 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
         case 4: // PARENTS
           if (field.type == TType.LIST) {
             {
-              TList _list24 = iprot.readListBegin();
-              this.parents = new ArrayList<GeocodeFeature>(_list24.size);
-              for (int _i25 = 0; _i25 < _list24.size; ++_i25)
+              TList _list28 = iprot.readListBegin();
+              this.parents = new ArrayList<GeocodeFeature>(_list28.size);
+              for (int _i29 = 0; _i29 < _list28.size; ++_i29)
               {
-                GeocodeFeature _elem26;
-                _elem26 = new GeocodeFeature();
-                _elem26.read(iprot);
-                this.parents.add(_elem26);
+                GeocodeFeature _elem30;
+                _elem30 = new GeocodeFeature();
+                _elem30.read(iprot);
+                this.parents.add(_elem30);
               }
               iprot.readListEnd();
             }
@@ -557,9 +557,9 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
         oprot.writeFieldBegin(PARENTS_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.STRUCT, this.parents.size()));
-          for (GeocodeFeature _iter27 : this.parents)
+          for (GeocodeFeature _iter31 : this.parents)
           {
-            _iter27.write(oprot);
+            _iter31.write(oprot);
           }
           oprot.writeListEnd();
         }

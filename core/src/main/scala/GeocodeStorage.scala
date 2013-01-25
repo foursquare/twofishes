@@ -182,7 +182,9 @@ trait GeocodeStorageFutureReadService {
 
   def getBySlugOrFeatureIds(ids: Seq[String]): Future[Map[String, GeocodeServingFeature]]
 
-  def getByS2CellId(id: Long): Future[Seq[ObjectId]]
+  def getByS2CellId(id: Long): Future[Seq[CellGeometry]]
+  def getPolygonByObjectId(id: ObjectId): Future[Option[Array[Byte]]]
+
   def getMinS2Level: Int
   def getMaxS2Level: Int
 }
@@ -208,8 +210,12 @@ class WrappedGeocodeStorageFutureReadService(underlying: GeocodeStorageReadServi
     underlying.getBySlugOrFeatureIds(ids)
   }
   
-  def getByS2CellId(id: Long): Future[Seq[ObjectId]] = future {
+  def getByS2CellId(id: Long): Future[Seq[CellGeometry]] = future {
     underlying.getByS2CellId(id)
+  }
+  
+  def getPolygonByObjectId(id: ObjectId): Future[Option[Array[Byte]]] = future {
+    underlying.getPolygonByObjectId(id)
   }
 
   def getMinS2Level: Int = underlying.getMinS2Level
@@ -224,7 +230,8 @@ trait GeocodeStorageReadService {
 
   def getBySlugOrFeatureIds(ids: Seq[String]): Map[String, GeocodeServingFeature]
 
-  def getByS2CellId(id: Long): Seq[ObjectId]
   def getMinS2Level: Int
   def getMaxS2Level: Int
+  def getByS2CellId(id: Long): Seq[CellGeometry]
+  def getPolygonByObjectId(id: ObjectId): Option[Array[Byte]]
 }

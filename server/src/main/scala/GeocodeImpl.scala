@@ -895,7 +895,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
   def hydrateParses(
     longest: Int,
     sortedParses: SortedParseSeq,
-    parseParams: ParseParams
+    parseParams: ParseParams,
+    polygonMapF: Future[Map[ObjectId, Array[Byte]]]
   ): Future[GeocodeResponse] = {
     val tokens = parseParams.tokens
     val originalTokens = parseParams.originalTokens
@@ -914,7 +915,10 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     logger.ifDebug("parent ids: " + parentOids)
 
     // possible optimization here: add in features we already have in our parses and don't refetch them
-    store.getByObjectIds(parentOids).map(parentMap => {
+    for {
+      parentMap <- store.getByObjectIds(parentOids)
+      polygonMap <- polygonMapF
+    } yield {
       logger.ifDebug(parentMap.toString)
 
       val what = if (hadConnector) {
@@ -940,6 +944,9 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         val scores = p.scoringFeatures
         scores.setPopulation(fmatch.scoringFeatures.population)
         interp.setScores(scores)
+
+        polygonMap.get(new ObjectId(fmatch.id)).foreach(wkb =>
+          feature.geometry.setWkbGeometry(wkb))
 
         if (req.full) {
           interp.setParents(sortedParents.map(parentFeature => {
@@ -981,7 +988,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       }
  
       generateResponse(interpretations)
-    })
+    }
   }
 
   def geocode(): Future[GeocodeResponse] = {
@@ -1079,7 +1086,9 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
     // TODO: make this configurable
     val sortedDedupedParses: SortedParseSeq = dedupedParses.sorted(new ParseOrdering).take(3)
-    hydrateParses(parseLength, sortedDedupedParses, parseParams)
+    val polygonMapF: Future[Map[ObjectId, Array[Byte]]] = getPolygonMap(
+      Future.value(sortedDedupedParses.map(p => new ObjectId(p(0).fmatch.id))))
+    hydrateParses(parseLength, sortedDedupedParses, parseParams, polygonMapF)
   }
 
   def doNormalGeocode(parseParams: ParseParams) = {
@@ -1217,10 +1226,10 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     rv
   }
 
-  def featureGeometryInteresections(f: GeocodeServingFeature, otherGeom: Geometry) = {
-    logDuration("intersecting with %s".format(f.feature.names(0))) {
+  def featureGeometryInteresections(wkbGeometry: Array[Byte], otherGeom: Geometry) = {
+    logDuration("intersecting") {
       val wkbReader = new WKBReader()
-      val geom = wkbReader.read(f.feature.geometry.getWkbGeometry())
+      val geom = wkbReader.read(wkbGeometry)
       (geom, geom.intersects(otherGeom))
     }
   }
@@ -1233,33 +1242,64 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     math.min(1, intersection.getArea() / requestGeometry.getArea())
   }
 
+  def getPolygonMap(featureOidsF: Future[Seq[ObjectId]]): Future[Map[ObjectId, Array[Byte]]]  = {
+    if (req.calculateCoverage || req.includePolygon) {
+      val polygonMapSeqF: Future[Seq[Option[(ObjectId, Array[Byte])]]] = featureOidsF.flatMap((featureOids: Seq[ObjectId]) => {
+        Future.collect(
+          for {
+            oid <- featureOids
+          } yield {
+            store.getPolygonByObjectId(oid).map(_.map(polygon => (oid -> polygon)))
+          }
+        )
+      })
+      polygonMapSeqF.map(_.flatten.toMap)
+    } else {
+      Future.value(Map.empty)    
+    }
+  }
+
   def doReverseGeocode(cellids: Seq[Long], otherGeom: Geometry) = {
-    val featureOidsFSeq: Seq[Future[Seq[ObjectId]]] = cellids.map(store.getByS2CellId)
-    val featureOidsF: Future[Seq[ObjectId]] = Future.collect(featureOidsFSeq).map(_.flatten)
+    val cellGeometriesSeqF: Future[Seq[CellGeometry]] = 
+      Future.collect(cellids.map(store.getByS2CellId)).map(_.flatten)
+
+    val featureOidsF: Future[Seq[ObjectId]] = cellGeometriesSeqF.map(
+      (cellGeometries: Seq[CellGeometry]) => {
+      logger.ifDebug("had %d candidates".format(cellGeometries.size))
+      for {
+        cellGeometry <- cellGeometries
+        if (req.woeRestrict.isEmpty || req.woeRestrict.asScala.has(cellGeometry.woeType))
+        if (cellGeometry.wkbGeometry != null)
+        val (geom, intersects) = featureGeometryInteresections(cellGeometry.getWkbGeometry(), otherGeom)
+        if intersects
+      } yield {
+        new ObjectId(cellGeometry.getOid())
+      }
+    })
 
     val servingFeaturesMapF: Future[Map[ObjectId, GeocodeServingFeature]] = featureOidsF.flatMap(
       (featureOids: Seq[ObjectId]) => store.getByObjectIds(featureOids.toSet.toList))
-    val servingFeaturesF: Future[Seq[GeocodeServingFeature]] = servingFeaturesMapF.map(_.values.toList)
 
+    // need to get polygons if we need to calculate coverage
+    val polygonMapF: Future[Map[ObjectId, Array[Byte]]] = getPolygonMap(featureOidsF) 
+    val wkbReader = new WKBReader()
     // for each, check if we're really in it
-    val parsesF: Future[SortedParseSeq] = servingFeaturesF.map(
-      (servingFeatures: Seq[GeocodeServingFeature]) => {
-      logger.ifDebug("had %d candidates".format(servingFeatures.size))
-      for {
-        f <- servingFeatures
-        if (req.woeRestrict.isEmpty || req.woeRestrict.asScala.has(f.feature.woeType))
-        if (f.feature.geometry.wkbGeometry != null)
-        val (geom, intersects) = featureGeometryInteresections(f, otherGeom)
-        if intersects
-      } yield {
+    val parsesF: Future[SortedParseSeq] = for {
+      servingFeaturesMap <- servingFeaturesMapF
+      polygonMap <- polygonMapF
+    } yield {
+      servingFeaturesMap.map({ case (oid, f) => {
         val parse = Parse[Sorted](List(FeatureMatch(0, 0, "", f)))
         if (req.calculateCoverage) {
-          parse.scoringFeatures.setPercentOfRequestCovered(computeCoverage(geom, otherGeom))
-          parse.scoringFeatures.setPercentOfFeatureCovered(computeCoverage(otherGeom, geom))
+          polygonMap.get(oid).foreach(wkb => {
+            val geom = wkbReader.read(wkb)
+            parse.scoringFeatures.setPercentOfRequestCovered(computeCoverage(geom, otherGeom))
+            parse.scoringFeatures.setPercentOfFeatureCovered(computeCoverage(otherGeom, geom))
+          })
         }
         parse
-      }
-    })
+      }}).toList
+    }
 
     val parseParams = ParseParams()
 
@@ -1271,7 +1311,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       }
 
       val sortedParses = parses.map(_.getSorted).sorted(new ReverseGeocodeParseOrdering).take(maxInterpretations)
-      hydrateParses(0, sortedParses, parseParams)
+      hydrateParses(0, sortedParses, parseParams, polygonMapF)
     })
   }
 
