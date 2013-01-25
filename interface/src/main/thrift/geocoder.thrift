@@ -51,6 +51,16 @@ enum YahooWoeType {
   STREET = 100
 }
 
+struct CellGeometry {
+  1: optional binary oid,
+  2: optional binary wkbGeometry,
+  3: optional YahooWoeType woeType,
+}
+
+struct CellGeometries {
+  1: optional list<CellGeometry> cells
+}
+
 struct GeocodePoint {
   1: double lat,
   2: double lng
