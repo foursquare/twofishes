@@ -567,9 +567,12 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
 
   def writeSlugsAndIds() {
     val p = new java.io.PrintWriter(new File(basepath, "id-mapping.txt"))
-    slugEntryMap.foreach({case (slug, entry) => {
-      p.println("%s\t%s".format(slug, entry.id))
-    }})
+    for {
+      (slug, entry) <- slugEntryMap
+      oid <- fidMap.get(entry.id)
+    } {
+      p.println("%s\t%s".format(slug, oid))
+    }
 
     MongoGeocodeDAO.find(MongoDBObject()).foreach(geocodeRecord => {
       geocodeRecord.ids.foreach(id => {

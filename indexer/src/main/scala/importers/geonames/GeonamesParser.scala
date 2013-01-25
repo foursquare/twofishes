@@ -49,8 +49,11 @@ object GeonamesParser {
           val slug = parts(0)
           val id = parts(1)
           val score = parts(2).toInt
-          slugEntryMap(slug) = SlugEntry(id, score, deprecated = false, permanent = true)
-          idToSlugMap(id) = slug
+          val deprecated = parts(3).toBoolean
+          slugEntryMap(slug) = SlugEntry(id, score, deprecated = deprecated, permanent = true)
+          if (!deprecated) {
+            idToSlugMap(id) = slug
+          }
         })
       }
     )
@@ -82,7 +85,7 @@ object GeonamesParser {
     f.scoringFeatures.boost + f.scoringFeatures.population
   }
 
-  def matchSlugs(id: String, servingFeature: GeocodeServingFeature, possibleSlugs: List[String]): Boolean = {
+  def matchSlugs(id: String, servingFeature: GeocodeServingFeature, possibleSlugs: List[String]): Option[String] = {
     // println("trying to generate a slug for %s".format(id))
     possibleSlugs.foreach(slug => {
       // println("possible slug: %s".format(slug))
@@ -95,21 +98,25 @@ object GeonamesParser {
             // println("evicting %s and recursing".format(evictedId))
             slugEntryMap(slug) = SlugEntry(id, score, deprecated = false, permanent = false)
             buildSlug(evictedId)
-            return true
+            return Some(slug)
           }
         }
         case _ => {
           // println("picking %s".format(slug))
           slugEntryMap(slug) = SlugEntry(id, score, deprecated = false, permanent = false)
-          return true
+          return Some(slug)
         }
       } 
     })
     // println("failed to find any slug")
-    return false
+    return None
   }
 
   def buildSlug(id: String) {
+    val oldSlug = idToSlugMap.get(id)
+    val oldEntry = oldSlug.map(slug => slugEntryMap(slug))
+    var newSlug: Option[String] = None
+          
     for {
       servingFeature <- findFeature(id)
       if (servingFeature.scoringFeatures.population > 0 || servingFeature.scoringFeatures.boost > 0)
@@ -119,18 +126,24 @@ object GeonamesParser {
       var possibleSlugs = SlugBuilder.makePossibleSlugs(servingFeature.feature, parents)
 
       // if a city is bigger than 2 million people, we'll attempt to use the bare city name as the slug
+      // unless it's the US, where I'd rather have consistency of always doing city-state
       if (servingFeature.scoringFeatures.population > 2000000 && servingFeature.feature.cc != "US") {
         possibleSlugs = NameUtils.bestName(servingFeature.feature, Some("en"), false).toList.map(n => SlugBuilder.normalize(n.name)) ++ possibleSlugs
       }
 
-      if (!matchSlugs(id, servingFeature, possibleSlugs) && possibleSlugs.nonEmpty) {
+      newSlug = matchSlugs(id, servingFeature, possibleSlugs)
+      if (newSlug.isEmpty && possibleSlugs.nonEmpty) {
         var extraDigit = 1
         var slugFound = false
-        while (!slugFound) {
-          slugFound = matchSlugs(id, servingFeature, possibleSlugs.map(s => "%s-%d".format(s, extraDigit)))
+        while (!newSlug.isEmpty) {
+          newSlug = matchSlugs(id, servingFeature, possibleSlugs.map(s => "%s-%d".format(s, extraDigit)))
           extraDigit += 1
         }
       }
+    }
+    if (newSlug != oldSlug) {
+      println("deprecating old slug for %s %s -> %s".format(id, oldSlug, newSlug.getOrElse("newslug")))
+      oldEntry.map(_.deprecated = true)
     }
   }
 
