@@ -309,19 +309,19 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     rv
   }
 
-  def buildRevGeoIndex() {
-    val wkbReader = new WKBReader()
-    val wkbWriter = new WKBWriter()
-
+  def buildRevGeoIndex() { 
     val minS2Level = 9
     val maxS2Level = 13
     val levelMod = 2
 
-    val ids = MongoGeocodeDAO.primitiveProjection[ObjectId](MongoDBObject("hasPoly" -> true), "_id")
+    val ids = MongoGeocodeDAO.primitiveProjections[ObjectId](MongoDBObject("hasPoly" -> true), "_id").toList
     val numThreads = 10
-    val subMaps = 1.to(numThreads).map(offset => {
+    val subMaps = 0.until(numThreads).toList.map(offset => {
       val s2map = new HashMap[ByteBuffer, HashSet[CellGeometry]]    
       val thread = new Thread(new Runnable {
+        val wkbReader = new WKBReader()
+        val wkbWriter = new WKBWriter()
+
         def calculateCoverForRecord(record: GeocodeRecord) {
           for {
             polygon <- record.polygon
@@ -360,17 +360,20 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
         }
 
         def run() {
-          ids.zipWithIndex.filter(_._2 % offset == 0).grouped(2000).foreach(chunk => {
+          println("thread: %d".format(offset))
+          println("seeing %d ids".format(ids.size))
+          println("filtering to %d ids on %d".format(ids.zipWithIndex.filter(i => (i._2 % numThreads) == offset).size, offset))
+          ids.zipWithIndex.filter(i => (i._2 % numThreads) == offset).grouped(2000).foreach(chunk => {
             val records = MongoGeocodeDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> chunk.map(_._1))))
             records.foreach(calculateCoverForRecord)
           })
         }
       })
+      thread.start
       (s2map, thread)
     })
 
     // wait until everything finishes
-    subMaps.foreach(_._2.start)
     subMaps.foreach(_._2.join)
 
     val sortedMapKeys = subMaps.flatMap(_._1.keys).toList.sort(byteBufferSort)
@@ -385,7 +388,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     writer.appendFileInfo("maxS2Level".getBytes("UTF-8"), GeometryUtils.getBytes(maxS2Level))
     writer.close()
 
-    buildPolygonIndex()
+    // buildPolygonIndex()
   }
 
   def buildPolygonFeatureIndex(groupSize: Int) {
