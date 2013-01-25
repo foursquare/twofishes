@@ -313,53 +313,71 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     val wkbReader = new WKBReader()
     val wkbWriter = new WKBWriter()
 
-    val records = MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
-
-    val s2map = new HashMap[ByteBuffer, HashSet[CellGeometry]]
-
     val minS2Level = 9
     val maxS2Level = 13
     val levelMod = 2
 
-    for {
-      (record, index) <- records.zipWithIndex
-      polygon <- record.polygon
-    } {
-      println("reading poly %s".format(index))
-      val geom = wkbReader.read(polygon)
+    val ids = MongoGeocodeDAO.primitiveProjection[ObjectId](MongoDBObject("hasPoly" -> true), "_id")
+    val numThreads = 10
+    val subMaps = 1.to(numThreads).map(offset => {
+      val s2map = new HashMap[ByteBuffer, HashSet[CellGeometry]]    
+      val thread = new Thread(new Runnable {
+        def calculateCoverForRecord(record: GeocodeRecord) {
+          for {
+            polygon <- record.polygon
+          } {
+            //println("reading poly %s".format(index))
+            val geom = wkbReader.read(polygon)
 
-      var numCells = 0
+            var numCells = 0
 
-      for {
-        level <- minS2Level.to(maxS2Level)
-        if (level - minS2Level) % levelMod == 0
-      } {
-        logDuration("generating covering at level %s".format(level)) {
-          GeometryUtils.s2PolygonCovering(geom, level, level).foreach(
-            (cellid: S2CellId) => {
-              if (cellid.level() != level) {
-                println("generated wrong level: %d SHOULD NOT HAPPEN at %d".format(cellid.level, level))
-              } else {
-                val s2Bytes: Array[Byte] = GeometryUtils.getBytes(cellid)
-                val bucket = s2map.getOrElseUpdate(ByteBuffer.wrap(s2Bytes), new HashSet[CellGeometry]())
-                val cellGeometry = new CellGeometry()
-                cellGeometry.setWkbGeometry(wkbWriter.write(ShapefileS2Util.clipGeometryToCell(geom, cellid)))
-                cellGeometry.setWoeType(record.woeType)
-                cellGeometry.setOid(record._id.toByteArray())
-                bucket.add(cellGeometry)
-                numCells += 1
+            for {
+              level <- minS2Level.to(maxS2Level)
+              if (level - minS2Level) % levelMod == 0
+            } {
+              logDuration("generating covering at level %s".format(level)) {
+                GeometryUtils.s2PolygonCovering(geom, level, level).foreach(
+                  (cellid: S2CellId) => {
+                    if (cellid.level() != level) {
+                      println("generated wrong level: %d SHOULD NOT HAPPEN at %d".format(cellid.level, level))
+                    } else {
+                      val s2Bytes: Array[Byte] = GeometryUtils.getBytes(cellid)
+                      val bucket = s2map.getOrElseUpdate(ByteBuffer.wrap(s2Bytes), new HashSet[CellGeometry]())
+                      val cellGeometry = new CellGeometry()
+                      cellGeometry.setWkbGeometry(wkbWriter.write(ShapefileS2Util.clipGeometryToCell(geom, cellid)))
+                      cellGeometry.setWoeType(record.woeType)
+                      cellGeometry.setOid(record._id.toByteArray())
+                      bucket.add(cellGeometry)
+                      numCells += 1
+                    }
+                  } 
+                )
               }
-            } 
-          )
-        }
-      }
-      println("outputted %d cells".format(numCells))
-    }
+            }
 
-    val sortedMapKeys = s2map.keys.toList.sort(byteBufferSort)
+            println("outputted %d cells".format(numCells))
+          }
+        }
+
+        def run() {
+          ids.zipWithIndex.filter(_._2 % offset == 0).grouped(2000).foreach(chunk => {
+            val records = MongoGeocodeDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> chunk.map(_._1))))
+            records.foreach(calculateCoverForRecord)
+          })
+        }
+      })
+      (s2map, thread)
+    })
+
+    // wait until everything finishes
+    subMaps.foreach(_._2.start)
+    subMaps.foreach(_._2.join)
+
+    val sortedMapKeys = subMaps.flatMap(_._1.keys).toList.sort(byteBufferSort)
     val writer = buildV2Writer(new File(basepath, "s2_index.hfile").toString)
     sortedMapKeys.foreach(k => {
-      val cellGeometries = new CellGeometries().setCells(s2map(k).toList)
+      val cells = subMaps.flatMap(_._1.get(k).map(_.toList).getOrElse(Nil))
+      val cellGeometries = new CellGeometries().setCells(cells)
       writer.append(k.array(), serializer.serialize(cellGeometries))
     })
 
