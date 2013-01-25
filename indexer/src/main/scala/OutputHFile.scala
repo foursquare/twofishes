@@ -303,6 +303,12 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     println("done")
   }
 
+  def logDuration[T](what: String)(f: => T): T = {
+    val (rv, duration) = Duration.inNanoseconds(f)
+    println(what + " in %s µs / %s ms".format(duration.inMicroseconds, duration.inMilliseconds))
+    rv
+  }
+
   def buildRevGeoIndex() {
     val wkbReader = new WKBReader()
     val wkbWriter = new WKBWriter()
@@ -312,7 +318,8 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     val s2map = new HashMap[ByteBuffer, HashSet[CellGeometry]]
 
     val minS2Level = 9
-    val maxS2Level = 13
+    val maxS2Level = 15
+    val levelMod = 2
 
     for {
       (record, index) <- records.zipWithIndex
@@ -323,24 +330,29 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
 
       var numCells = 0
 
-      minS2Level.to(maxS2Level).foreach(level => {
-        GeometryUtils.s2PolygonCovering(geom, level, level).foreach(
-          (cellid: S2CellId) => {
-            if (cellid.level() != level) {
-              println("generated wrong level: %d SHOULD NOT HAPPEN at %d".format(cellid.level, level))
-            } else {
-              val s2Bytes: Array[Byte] = GeometryUtils.getBytes(cellid)
-              val bucket = s2map.getOrElseUpdate(ByteBuffer.wrap(s2Bytes), new HashSet[CellGeometry]())
-              val cellGeometry = new CellGeometry()
-              cellGeometry.setWkbGeometry(wkbWriter.write(ShapefileS2Util.clipGeometryToCell(geom, cellid)))
-              cellGeometry.setWoeType(record.woeType)
-              cellGeometry.setOid(record._id.toByteArray())
-              bucket.add(cellGeometry)
-              numCells += 1
-            }
-          } 
-        )
-      })
+      for {
+        level <- minS2Level.to(maxS2Level)
+        if (level - minS2Level) % levelMod == 0
+      } {
+        logDuration("generating covering at level %s".format(level)) {
+          GeometryUtils.s2PolygonCovering(geom, level, level).foreach(
+            (cellid: S2CellId) => {
+              if (cellid.level() != level) {
+                println("generated wrong level: %d SHOULD NOT HAPPEN at %d".format(cellid.level, level))
+              } else {
+                val s2Bytes: Array[Byte] = GeometryUtils.getBytes(cellid)
+                val bucket = s2map.getOrElseUpdate(ByteBuffer.wrap(s2Bytes), new HashSet[CellGeometry]())
+                val cellGeometry = new CellGeometry()
+                cellGeometry.setWkbGeometry(wkbWriter.write(ShapefileS2Util.clipGeometryToCell(geom, cellid)))
+                cellGeometry.setWoeType(record.woeType)
+                cellGeometry.setOid(record._id.toByteArray())
+                bucket.add(cellGeometry)
+                numCells += 1
+              }
+            } 
+          )
+        }
+      }
       println("outputted %d cells".format(numCells))
     }
 
