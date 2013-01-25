@@ -318,7 +318,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     val s2map = new HashMap[ByteBuffer, HashSet[CellGeometry]]
 
     val minS2Level = 9
-    val maxS2Level = 15
+    val maxS2Level = 13
     val levelMod = 2
 
     for {
