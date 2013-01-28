@@ -12,6 +12,7 @@ import org.apache.hadoop.fs.{LocalFileSystem, Path}
 import org.apache.hadoop.hbase.KeyValue.KeyComparator
 import org.apache.hadoop.hbase.io.hfile.{Compression, HFile, HFileScanner}
 import org.apache.hadoop.hbase.util.Bytes._
+import org.apache.thrift.TBaseHelper
 
 import com.twitter.util.{Duration, Future, FuturePool}
 
@@ -186,8 +187,7 @@ class PrefixIndexHFileInput(basepath: String) extends HFileInput(basepath, "pref
   def get(name: String): List[ObjectId] = {
     val buf = ByteBuffer.wrap(name.getBytes())
     lookup(buf).toList.flatMap(b => {
-      val bytes = new Array[Byte](b.capacity())
-      b.get(bytes, 0, bytes.length);
+      val bytes = TBaseHelper.byteBufferToByteArray(b)
       decodeObjectIds(bytes)
     })
   }
@@ -223,8 +223,7 @@ class ReverseGeocodeHFileInput(basepath: String) extends HFileInput(basepath, "s
   def get(cellid: Long): List[CellGeometry] = {
     val buf = ByteBuffer.wrap(GeometryUtils.getBytes(cellid))
     lookup(buf).toList.flatMap(b => {
-      val bytes = new Array[Byte](b.capacity())
-      b.get(bytes, 0, bytes.length)
+      val bytes = TBaseHelper.byteBufferToByteArray(b)
       val geometries = new CellGeometries()
       deserializeBytes(geometries, bytes)
       geometries.cells
@@ -236,9 +235,7 @@ class GeometryHFileInput(basepath: String) extends HFileInput(basepath, "geometr
   def get(oid: ObjectId): Option[Array[Byte]] = {
     val buf = ByteBuffer.wrap(oid.toByteArray())
     lookup(buf).map(b => {
-      val bytes = new Array[Byte](b.capacity())
-      b.get(bytes, 0, bytes.length);
-      bytes
+      TBaseHelper.byteBufferToByteArray(b)
     })
   }
 }
@@ -247,8 +244,7 @@ class GeocodeRecordHFileInput(basepath: String) extends HFileInput(basepath, "fe
   def get(oid: ObjectId): Option[GeocodeServingFeature] = {
     val buf = ByteBuffer.wrap(oid.toByteArray())
     lookup(buf).map(b => {
-      val bytes = new Array[Byte](b.capacity())
-      b.get(bytes, 0, bytes.length);
+      val bytes = TBaseHelper.byteBufferToByteArray(b)
       deserializeBytes(new GeocodeServingFeature(), bytes)
     })
   }
