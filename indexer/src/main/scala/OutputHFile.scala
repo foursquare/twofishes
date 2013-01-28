@@ -403,7 +403,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     writer.appendFileInfo("levelMod".getBytes("UTF-8"), GeometryUtils.getBytes(levelMod))
     writer.close()
 
-    // buildPolygonIndex()
+    buildPolygonIndex()
   }
 
   def buildPolygonFeatureIndex(groupSize: Int) {
