@@ -310,12 +310,12 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
   }
 
   def buildRevGeoIndex() { 
-    val minS2Level = 9
-    val maxS2Level = 13
+    val minS2Level = 8
+    val maxS2Level = 12
     val levelMod = 2
 
     val ids = MongoGeocodeDAO.primitiveProjections[ObjectId](MongoDBObject("hasPoly" -> true), "_id").toList
-    val numThreads = 10
+    val numThreads = 5
     val subMaps = 0.until(numThreads).toList.map(offset => {
       val s2map = new HashMap[ByteBuffer, HashSet[CellGeometry]]    
       val thread = new Thread(new Runnable {
@@ -333,7 +333,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
 
             for {
               level <- minS2Level.to(maxS2Level)
-              if (level - minS2Level) % levelMod == 0
+              if ((level - minS2Level) % levelMod) == 0
             } {
               logDuration("generating covering at level %s".format(level)) {
                 GeometryUtils.s2PolygonCovering(geom, level, level).foreach(
@@ -344,7 +344,8 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
                       val s2Bytes: Array[Byte] = GeometryUtils.getBytes(cellid)
                       val bucket = s2map.getOrElseUpdate(ByteBuffer.wrap(s2Bytes), new HashSet[CellGeometry]())
                       val cellGeometry = new CellGeometry()
-                      cellGeometry.setWkbGeometry(wkbWriter.write(ShapefileS2Util.clipGeometryToCell(geom, cellid)))
+                      val clippedGeom = ShapefileS2Util.clipGeometryToCell(geom.buffer(0), cellid)
+                      cellGeometry.setWkbGeometry(wkbWriter.write(clippedGeom))
                       cellGeometry.setWoeType(record.woeType)
                       cellGeometry.setOid(record._id.toByteArray())
                       bucket.add(cellGeometry)
@@ -363,8 +364,8 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
           println("thread: %d".format(offset))
           println("seeing %d ids".format(ids.size))
           println("filtering to %d ids on %d".format(ids.zipWithIndex.filter(i => (i._2 % numThreads) == offset).size, offset))
-          ids.zipWithIndex.filter(i => (i._2 % numThreads) == offset).grouped(2000).foreach(chunk => {
-            val records = MongoGeocodeDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> chunk.map(_._1))))
+          ids.zipWithIndex.filter(i => (i._2 % numThreads) == offset).grouped(200).foreach(chunk => {
+            val records = MongoGeocodeDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> chunk.map(_._1)))).toList
             records.foreach(calculateCoverForRecord)
           })
         }
@@ -386,6 +387,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
 
     writer.appendFileInfo("minS2Level".getBytes("UTF-8"), GeometryUtils.getBytes(minS2Level))
     writer.appendFileInfo("maxS2Level".getBytes("UTF-8"), GeometryUtils.getBytes(maxS2Level))
+    writer.appendFileInfo("levelMod".getBytes("UTF-8"), GeometryUtils.getBytes(levelMod))
     writer.close()
 
     // buildPolygonIndex()

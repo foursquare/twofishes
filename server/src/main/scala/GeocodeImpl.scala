@@ -1143,8 +1143,12 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
   def doSlugGeocode(slug: String): Future[GeocodeResponse] = {
     val parseParams = ParseParams()
-    
-    val featureMap = store.getBySlugOrFeatureIds(List(slug))()
+
+    val featureMap: Map[String, GeocodeServingFeature]  = if (ObjectId.isValid(slug)) {
+      store.getByObjectIds(List(new ObjectId(slug))).map(_.map({case (key, value) => (key.toString, value)}).toMap)()
+    } else {
+      store.getBySlugOrFeatureIds(List(slug))()
+    }
 
     // a parse is still a seq of featurematch, bleh
     val parse = Parse[Sorted](featureMap.get(slug).map(servingFeature => {
@@ -1226,12 +1230,10 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     rv
   }
 
-  def featureGeometryInteresections(wkbGeometry: Array[Byte], otherGeom: Geometry) = {
-    logDuration("intersecting") {
-      val wkbReader = new WKBReader()
-      val geom = wkbReader.read(wkbGeometry)
-      (geom, geom.intersects(otherGeom))
-    }
+  def featureGeometryIntersections(wkbGeometry: Array[Byte], otherGeom: Geometry) = {
+    val wkbReader = new WKBReader()
+    val geom = wkbReader.read(wkbGeometry)
+    (geom, geom.intersects(otherGeom))
   }
 
   def computeCoverage(
@@ -1265,15 +1267,20 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
     val featureOidsF: Future[Seq[ObjectId]] = cellGeometriesSeqF.map(
       (cellGeometries: Seq[CellGeometry]) => {
-      logger.ifDebug("had %d candidates".format(cellGeometries.size))
+      if (req.debug > 0) {
+        logger.ifDebug("had %d candidates".format(cellGeometries.size))
+      }
       for {
         cellGeometry <- cellGeometries
         if (req.woeRestrict.isEmpty || req.woeRestrict.asScala.has(cellGeometry.woeType))
         if (cellGeometry.wkbGeometry != null)
-        val (geom, intersects) = featureGeometryInteresections(cellGeometry.getWkbGeometry(), otherGeom)
+        val oid = new ObjectId(cellGeometry.getOid())
+        val (geom, intersects) = logDuration("intersecting %s".format(oid)) {
+          featureGeometryIntersections(cellGeometry.getWkbGeometry(), otherGeom)
+        }
         if intersects
       } yield {
-        new ObjectId(cellGeometry.getOid())
+        oid
       }
     })
 
@@ -1316,7 +1323,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
   }
 
   def reverseGeocodePoint(ll: GeocodePoint): Future[GeocodeResponse] = {
-    logger.ifDebug("doing point revgeo on " + ll)
+    logger.ifDebug("doing point revgeo on %s at level %s".format(ll, store.getMaxS2Level))
     val cellids: Seq[Long] = List(GeometryUtils.getS2CellIdForLevel(ll.lat, ll.lng, store.getMaxS2Level).id())
     logger.ifDebug("looking up: " + cellids.mkString(" "))
 
