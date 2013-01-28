@@ -1,28 +1,23 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.util.GeometryUtils
-
+import com.twitter.util.{Duration, FuturePool}
 import java.io._
 import java.net.URI
 import java.nio.ByteBuffer
 import java.util.Arrays
-
-import org.apache.hadoop.conf.Configuration 
+import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{LocalFileSystem, Path}
-import org.apache.hadoop.hbase.KeyValue.KeyComparator
-import org.apache.hadoop.hbase.io.hfile.{Compression, HFile, HFileScanner}
+import org.apache.hadoop.hbase.io.hfile.{HFile, HFileScanner}
 import org.apache.hadoop.hbase.util.Bytes._
 import org.apache.thrift.TBaseHelper
 
 import com.twitter.util.{Duration, Future, FuturePool}
 
-import org.apache.thrift.{TDeserializer}
+import org.apache.thrift.TDeserializer
 import org.apache.thrift.protocol.TCompactProtocol
-
 import org.bson.types.ObjectId
-
 import scala.collection.JavaConversions._
-import scala.collection.mutable.HashMap
 import scalaj.collection.Implicits._
 
 class HFileStorageService(basepath: String) extends GeocodeStorageReadService {
@@ -106,7 +101,7 @@ abstract class HFileInput(basepath: String, filename: String) {
   }
 
   import scala.collection.mutable.ListBuffer
-  
+
   def lookupPrefix(key: String, minPrefixRatio: Double = 0.5): Seq[Array[Byte]] = {
     val scanner: HFileScanner = reader.getScanner(true, true)
     scanner.seekTo(key.getBytes())

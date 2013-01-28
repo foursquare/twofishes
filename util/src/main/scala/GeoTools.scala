@@ -1,8 +1,7 @@
 package com.foursquare.twofishes.util
 
 import com.foursquare.twofishes._
-import com.google.common.geometry.S2LatLngRect
-import com.google.common.geometry.S2LatLng
+import com.google.common.geometry.{S2LatLng, S2LatLngRect}
 
 object GeoTools {
   val MetersPerMile: Double = 1609.344

@@ -1,19 +1,19 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
-import com.foursquare.twofishes.util.{GeoTools, GeometryUtils, NameUtils, Hacks, TwofishesLogger, NameNormalizer}
-import com.foursquare.twofishes.util.NameUtils.BestNameMatch
 import com.foursquare.twofishes.Implicits._
+import com.foursquare.twofishes.util.{GeoTools, GeometryUtils, NameNormalizer, NameUtils, TwofishesLogger}
 import com.foursquare.twofishes.util.Lists.Implicits._
-import com.twitter.util.{Duration, Future, FuturePool}
+import com.foursquare.twofishes.util.NameUtils.BestNameMatch
+import com.twitter.util.{Duration, Future}
+import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory}
+import com.vividsolutions.jts.io.{WKBReader, WKTWriter}
 import com.vividsolutions.jts.util.GeometricShapeFactory
-import com.vividsolutions.jts.io.{WKTWriter, WKBReader}
-import com.vividsolutions.jts.geom.{Coordinate, CoordinateSequence, CoordinateSequenceFilter, Geometry, GeometryFactory}
-import java.util.concurrent.ConcurrentHashMap
 import java.util.Date
+import java.util.concurrent.ConcurrentHashMap
 import org.bson.types.ObjectId
 import scala.collection.JavaConversions._
-import scala.collection.mutable.{HashMap, HashSet, ListBuffer}
+import scala.collection.mutable.{HashMap, ListBuffer}
 import scalaj.collection.Implicits._
 
 // TODO

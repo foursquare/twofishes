@@ -1,10 +1,7 @@
 package com.foursquare.twofishes.util
 
-import scala.collection.{IterableLike, SeqLike, SetLike, TraversableLike}
-import scala.collection.generic.{CanBuildFrom, GenericCompanion, GenericSetTemplate, GenericTraversableTemplate,
-    MapFactory}
-import scala.collection.immutable.{ListMap, VectorBuilder}
-import scala.collection.mutable.{ArraySeq, Builder}
+import scala.collection.TraversableLike
+import scala.collection.generic.GenericTraversableTemplate
 
 object Lists {
   trait Implicits {

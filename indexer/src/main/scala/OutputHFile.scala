@@ -1,47 +1,29 @@
 package com.foursquare.twofishes
 
+import com.foursquare.base.gen.{LongWrapper, ObjectIdListWrapper, ObjectIdWrapper, StringWrapper}
+import com.foursquare.batch.ShapefileSimplifier
+import com.foursquare.geo.shapes.ShapefileS2Util
+import com.foursquare.twofishes.util.{GeometryUtils, NameUtils}
+import com.google.common.geometry.S2CellId
 import com.mongodb.casbah.Imports._
-import com.mongodb.casbah.MongoConnection
 import com.novus.salat._
 import com.novus.salat.annotations._
 import com.novus.salat.dao._
 import com.novus.salat.global._
-
-import com.foursquare.twofishes.util.{GeometryUtils, Hacks, NameUtils}
-import com.foursquare.base.gen.{LongWrapper, ObjectIdWrapper, ObjectIdListWrapper, StringWrapper}
-import com.foursquare.batch.ShapefileSimplifier
-import com.foursquare.geo.shapes.ShapefileS2Util
-
-import com.google.common.geometry.S2CellId
-
+import com.twitter.util.Duration
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter}
-
 import java.io._
 import java.net.URI
 import java.nio.ByteBuffer
-import java.util.Arrays
-
-import org.apache.hadoop.conf.Configuration 
-import org.apache.hadoop.fs.{LocalFileSystem, Path}
-import org.apache.hadoop.hbase.KeyValue.KeyComparator
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.hadoop.fs.{LocalFileSystem, Path}
 import org.apache.hadoop.hbase.io.hfile.{Compression, HFile}
 import org.apache.hadoop.hbase.util.Bytes._
-
-import org.apache.thrift.TBase
 import org.apache.thrift.TSerializer
-import org.apache.thrift.protocol.{TProtocolFactory, TBinaryProtocol, TCompactProtocol}
-
+import org.apache.thrift.protocol.{TCompactProtocol, TProtocolFactory}
 import scala.collection.JavaConversions._
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.HashSet
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{HashMap, HashSet}
 import scalaj.collection.Implicits._
-
-import java.io._
-
-import com.twitter.util.Duration
 
 object HFileUtil {
   val ThriftClassValueBytes: Array[Byte] = "value.thrift.class".getBytes("UTF-8")
@@ -392,6 +374,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
 
     val sortedMapKeys = subMaps.flatMap(_._1.keys).toList.sort(byteBufferSort)
     val writer = buildBasicV1Writer("s2_index.hfile", factory)
+>>>>>>> resort imports!!!!!!
     sortedMapKeys.foreach(k => {
       val cells = subMaps.flatMap(_._1.get(k).map(_.toList).getOrElse(Nil))
       val cellGeometries = new CellGeometries().setCells(cells)

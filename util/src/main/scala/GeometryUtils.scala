@@ -2,11 +2,9 @@
 
 package com.foursquare.twofishes.util
 
-import scala.collection.JavaConversions._
-import com.google.common.geometry.{S2CellId, S2LatLng, S2Polygon, S2PolygonBuilder, S2RegionCoverer, S2LatLngRect}
+import com.google.common.geometry.{S2CellId, S2LatLng, S2LatLngRect, S2Polygon, S2PolygonBuilder, S2RegionCoverer}
 import com.vividsolutions.jts.geom.{Geometry, Polygon}
-import java.io.ByteArrayOutputStream
-import java.io.DataOutputStream
+import java.io.{ByteArrayOutputStream, DataOutputStream}
 import scala.collection.JavaConversions._
 
 object GeometryUtils {

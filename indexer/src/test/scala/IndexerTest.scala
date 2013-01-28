@@ -1,11 +1,10 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes
 
-import com.foursquare.twofishes.importers.geonames._
-import com.twitter.util.Future
 import collection.JavaConverters._
-import org.specs2.mutable._
+import com.foursquare.twofishes.importers.geonames._
 import org.bson.types.ObjectId
+import org.specs2.mutable._
 import scala.collection.mutable.HashMap
 
 class MockGeocodeStorageWriteService extends GeocodeStorageWriteService {

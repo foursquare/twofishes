@@ -1,10 +1,8 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.importers.geonames
 
-import com.foursquare.twofishes.util.Helpers._
-import com.foursquare.twofishes.util.Helpers
 import com.foursquare.twofishes.{LogHelper, YahooWoeType}
-import org.bson.types.ObjectId
+import com.foursquare.twofishes.util.Helpers._
 
 object GeonamesFeatureColumns extends Enumeration {
    type GeonamesFeatureColumns = Value

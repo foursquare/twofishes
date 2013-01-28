@@ -2,18 +2,18 @@
 package com.foursquare.twofishes
 
 import collection.JavaConverters._
-import com.twitter.finagle.builder.{ServerBuilder, Server}
+import com.twitter.finagle.{Service, SimpleFilter}
+import com.twitter.finagle.builder.{Server, ServerBuilder}
 import com.twitter.finagle.http.Http
 import com.twitter.finagle.thrift.ThriftServerFramedCodec
-import com.twitter.finagle.{Service, SimpleFilter}
-import com.twitter.util.{Future, FuturePool, Throw}
+import com.twitter.util.{Future, FuturePool}
 import java.io.InputStream
 import java.net.InetSocketAddress
 import java.util.concurrent.Executors
+import org.apache.thrift.TSerializer
 import org.apache.thrift.protocol.{TBinaryProtocol, TSimpleJSONProtocol}
 import org.apache.thrift.server.TThreadPoolServer
 import org.apache.thrift.transport.TServerSocket
-import org.apache.thrift.TSerializer
 import org.jboss.netty.buffer.ChannelBuffers
 import org.jboss.netty.handler.codec.http._
 import org.jboss.netty.util.CharsetUtil
