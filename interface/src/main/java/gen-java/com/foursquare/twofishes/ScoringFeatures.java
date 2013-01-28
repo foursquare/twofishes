@@ -498,13 +498,13 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
         case 3: // PARENTS
           if (field.type == TType.LIST) {
             {
-              TList _list8 = iprot.readListBegin();
-              this.parents = new ArrayList<String>(_list8.size);
-              for (int _i9 = 0; _i9 < _list8.size; ++_i9)
+              TList _list4 = iprot.readListBegin();
+              this.parents = new ArrayList<String>(_list4.size);
+              for (int _i5 = 0; _i5 < _list4.size; ++_i5)
               {
-                String _elem10;
-                _elem10 = iprot.readString();
-                this.parents.add(_elem10);
+                String _elem6;
+                _elem6 = iprot.readString();
+                this.parents.add(_elem6);
               }
               iprot.readListEnd();
             }
@@ -550,9 +550,9 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
         oprot.writeFieldBegin(PARENTS_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.STRING, this.parents.size()));
-          for (String _iter11 : this.parents)
+          for (String _iter7 : this.parents)
           {
-            oprot.writeString(_iter11);
+            oprot.writeString(_iter7);
           }
           oprot.writeListEnd();
         }

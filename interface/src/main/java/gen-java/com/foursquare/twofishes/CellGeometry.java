@@ -34,14 +34,16 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
   private static final TField OID_FIELD_DESC = new TField("oid", TType.STRING, (short)1);
   private static final TField WKB_GEOMETRY_FIELD_DESC = new TField("wkbGeometry", TType.STRING, (short)2);
   private static final TField WOE_TYPE_FIELD_DESC = new TField("woeType", TType.I32, (short)3);
+  private static final TField FULL_FIELD_DESC = new TField("full", TType.BOOL, (short)4);
 
   public ByteBuffer oid;
   public ByteBuffer wkbGeometry;
   /**
    * 
-   * @see YahooWoeType
+   * @see com.foursquare.twofishes.YahooWoeType
    */
-  public YahooWoeType woeType;
+  public com.foursquare.twofishes.YahooWoeType woeType;
+  public boolean full;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
@@ -49,9 +51,10 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
     WKB_GEOMETRY((short)2, "wkbGeometry"),
     /**
      * 
-     * @see YahooWoeType
+     * @see com.foursquare.twofishes.YahooWoeType
      */
-    WOE_TYPE((short)3, "woeType");
+    WOE_TYPE((short)3, "woeType"),
+    FULL((short)4, "full");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -72,6 +75,8 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
           return WKB_GEOMETRY;
         case 3: // WOE_TYPE
           return WOE_TYPE;
+        case 4: // FULL
+          return FULL;
         default:
           return null;
       }
@@ -112,6 +117,8 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
   }
 
   // isset id assignments
+  private static final int __FULL_ISSET_ID = 0;
+  private BitSet __isset_bit_vector = new BitSet(1);
 
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
@@ -121,7 +128,9 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
     tmpMap.put(_Fields.WKB_GEOMETRY, new FieldMetaData("wkbGeometry", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.STRING)));
     tmpMap.put(_Fields.WOE_TYPE, new FieldMetaData("woeType", TFieldRequirementType.OPTIONAL, 
-        new EnumMetaData(TType.ENUM, YahooWoeType.class)));
+        new EnumMetaData(TType.ENUM, com.foursquare.twofishes.YahooWoeType.class)));
+    tmpMap.put(_Fields.FULL, new FieldMetaData("full", TFieldRequirementType.OPTIONAL, 
+        new FieldValueMetaData(TType.BOOL)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(CellGeometry.class, metaDataMap);
   }
@@ -133,6 +142,8 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
    * Performs a deep copy on <i>other</i>.
    */
   public CellGeometry(CellGeometry other) {
+    __isset_bit_vector.clear();
+    __isset_bit_vector.or(other.__isset_bit_vector);
     if (other.isSetOid()) {
       this.oid = TBaseHelper.copyBinary(other.oid);
 ;
@@ -144,6 +155,7 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
     if (other.isSetWoeType()) {
       this.woeType = other.woeType;
     }
+    this.full = other.full;
   }
 
   public CellGeometry deepCopy() {
@@ -155,6 +167,8 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
     this.oid = null;
     this.wkbGeometry = null;
     this.woeType = null;
+    setFullIsSet(false);
+    this.full = false;
   }
 
   public byte[] getOid() {
@@ -227,17 +241,17 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
 
   /**
    * 
-   * @see YahooWoeType
+   * @see com.foursquare.twofishes.YahooWoeType
    */
-  public YahooWoeType getWoeType() {
+  public com.foursquare.twofishes.YahooWoeType getWoeType() {
     return this.woeType;
   }
 
   /**
    * 
-   * @see YahooWoeType
+   * @see com.foursquare.twofishes.YahooWoeType
    */
-  public CellGeometry setWoeType(YahooWoeType woeType) {
+  public CellGeometry setWoeType(com.foursquare.twofishes.YahooWoeType woeType) {
     this.woeType = woeType;
     return this;
   }
@@ -255,6 +269,29 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
     if (!value) {
       this.woeType = null;
     }
+  }
+
+  public boolean isFull() {
+    return this.full;
+  }
+
+  public CellGeometry setFull(boolean full) {
+    this.full = full;
+    setFullIsSet(true);
+    return this;
+  }
+
+  public void unsetFull() {
+    __isset_bit_vector.clear(__FULL_ISSET_ID);
+  }
+
+  /** Returns true if field full is set (has been asigned a value) and false otherwise */
+  public boolean isSetFull() {
+    return __isset_bit_vector.get(__FULL_ISSET_ID);
+  }
+
+  public void setFullIsSet(boolean value) {
+    __isset_bit_vector.set(__FULL_ISSET_ID, value);
   }
 
   public void setFieldValue(_Fields field, Object value) {
@@ -279,7 +316,15 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
       if (value == null) {
         unsetWoeType();
       } else {
-        setWoeType((YahooWoeType)value);
+        setWoeType((com.foursquare.twofishes.YahooWoeType)value);
+      }
+      break;
+
+    case FULL:
+      if (value == null) {
+        unsetFull();
+      } else {
+        setFull((Boolean)value);
       }
       break;
 
@@ -296,6 +341,9 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
 
     case WOE_TYPE:
       return getWoeType();
+
+    case FULL:
+      return new Boolean(isFull());
 
     }
     throw new IllegalStateException();
@@ -314,6 +362,8 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
       return isSetWkbGeometry();
     case WOE_TYPE:
       return isSetWoeType();
+    case FULL:
+      return isSetFull();
     }
     throw new IllegalStateException();
   }
@@ -355,6 +405,15 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
       if (!(this_present_woeType && that_present_woeType))
         return false;
       if (!this.woeType.equals(that.woeType))
+        return false;
+    }
+
+    boolean this_present_full = true && this.isSetFull();
+    boolean that_present_full = true && that.isSetFull();
+    if (this_present_full || that_present_full) {
+      if (!(this_present_full && that_present_full))
+        return false;
+      if (this.full != that.full)
         return false;
     }
 
@@ -404,6 +463,16 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetFull()).compareTo(typedOther.isSetFull());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetFull()) {
+      lastComparison = TBaseHelper.compareTo(this.full, typedOther.full);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -437,7 +506,15 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
           break;
         case 3: // WOE_TYPE
           if (field.type == TType.I32) {
-            this.woeType = YahooWoeType.findByValue(iprot.readI32());
+            this.woeType = com.foursquare.twofishes.YahooWoeType.findByValue(iprot.readI32());
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 4: // FULL
+          if (field.type == TType.BOOL) {
+            this.full = iprot.readBool();
+            setFullIsSet(true);
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -478,6 +555,11 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
         oprot.writeFieldEnd();
       }
     }
+    if (isSetFull()) {
+      oprot.writeFieldBegin(FULL_FIELD_DESC);
+      oprot.writeBool(this.full);
+      oprot.writeFieldEnd();
+    }
     oprot.writeFieldStop();
     oprot.writeStructEnd();
   }
@@ -514,6 +596,12 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
       } else {
         sb.append(this.woeType);
       }
+      first = false;
+    }
+    if (isSetFull()) {
+      if (!first) sb.append(", ");
+      sb.append("full:");
+      sb.append(this.full);
       first = false;
     }
     sb.append(")");

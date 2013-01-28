@@ -11,7 +11,7 @@ import scalaj.collection.Imports._
 object ShapefileS2Util {
   def clipGeometryToCell(
     geom: Geometry,
-    cellid: S2CellId): Geometry = {
+    cellid: S2CellId): (Geometry, Boolean) = {
     val cell= new S2Cell(cellid)
 
    val geomFactory = new GeometryFactory()
@@ -26,6 +26,6 @@ object ShapefileS2Util {
     val holes: Array[LinearRing] = null // use LinearRing[] to represent holes
     val cellPolygon = geomFactory.createPolygon(ring, holes)
 
-    cellPolygon.intersection(geom)
+    (cellPolygon.intersection(geom), cellPolygon.contains(geom))
   }
 }

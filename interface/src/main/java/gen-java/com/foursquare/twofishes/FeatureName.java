@@ -499,13 +499,13 @@ public class FeatureName implements TBase<FeatureName, FeatureName._Fields>, jav
         case 3: // FLAGS
           if (field.type == TType.LIST) {
             {
-              TList _list4 = iprot.readListBegin();
-              this.flags = new ArrayList<FeatureNameFlags>(_list4.size);
-              for (int _i5 = 0; _i5 < _list4.size; ++_i5)
+              TList _list0 = iprot.readListBegin();
+              this.flags = new ArrayList<FeatureNameFlags>(_list0.size);
+              for (int _i1 = 0; _i1 < _list0.size; ++_i1)
               {
-                FeatureNameFlags _elem6;
-                _elem6 = FeatureNameFlags.findByValue(iprot.readI32());
-                this.flags.add(_elem6);
+                FeatureNameFlags _elem2;
+                _elem2 = FeatureNameFlags.findByValue(iprot.readI32());
+                this.flags.add(_elem2);
               }
               iprot.readListEnd();
             }
@@ -550,9 +550,9 @@ public class FeatureName implements TBase<FeatureName, FeatureName._Fields>, jav
         oprot.writeFieldBegin(FLAGS_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.I32, this.flags.size()));
-          for (FeatureNameFlags _iter7 : this.flags)
+          for (FeatureNameFlags _iter3 : this.flags)
           {
-            oprot.writeI32(_iter7.getValue());
+            oprot.writeI32(_iter3.getValue());
           }
           oprot.writeListEnd();
         }

@@ -344,8 +344,12 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
                       val s2Bytes: Array[Byte] = GeometryUtils.getBytes(cellid)
                       val bucket = s2map.getOrElseUpdate(ByteBuffer.wrap(s2Bytes), new HashSet[CellGeometry]())
                       val cellGeometry = new CellGeometry()
-                      val clippedGeom = ShapefileS2Util.clipGeometryToCell(geom.buffer(0), cellid)
-                      cellGeometry.setWkbGeometry(wkbWriter.write(clippedGeom))
+                      val (clippedGeom, isContained) = ShapefileS2Util.clipGeometryToCell(geom.buffer(0), cellid)
+                      if (isContained) {
+                        cellGeometry.setFull(true)
+                      } else {
+                        cellGeometry.setWkbGeometry(wkbWriter.write(clippedGeom))
+                      }
                       cellGeometry.setWoeType(record.woeType)
                       cellGeometry.setOid(record._id.toByteArray())
                       bucket.add(cellGeometry)
@@ -364,9 +368,17 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
           println("thread: %d".format(offset))
           println("seeing %d ids".format(ids.size))
           println("filtering to %d ids on %d".format(ids.zipWithIndex.filter(i => (i._2 % numThreads) == offset).size, offset))
+
+          var doneCount = 0
+
           ids.zipWithIndex.filter(i => (i._2 % numThreads) == offset).grouped(200).foreach(chunk => {
             val records = MongoGeocodeDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> chunk.map(_._1)))).toList
             records.foreach(calculateCoverForRecord)
+
+            doneCount += chunk.size
+            if (doneCount % 1000 == 0) {
+              println("Thread %d finished %d of %d %.2f".format(offset, doneCount, ids.size, doneCount * 100.0 / ids.size))
+            }
           })
         }
       })
