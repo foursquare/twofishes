@@ -2,15 +2,11 @@
 
 package com.foursquare.geo.shapes
 
-import com.vividsolutions.jts.geom.{Coordinate, Envelope, Geometry}
-import java.io.{File, Serializable}
+import com.vividsolutions.jts.geom.Geometry
+import java.io.File
 import java.nio.charset.Charset
-import org.geotools.data.{DataStoreFactorySpi, FileDataStore}
 import org.geotools.data.shapefile.ShapefileDataStore
-import org.geotools.data.shapefile.ShapefileDataStoreFactory
 import org.opengis.feature.simple.SimpleFeature
-import org.geotools.data.simple.{SimpleFeatureIterator, SimpleFeatureSource}
-import org.geotools.geometry.jts.JTSFactoryFinder
 import scalaj.collection.Imports._
 
 object FsqSimpleFeatureImplicits {

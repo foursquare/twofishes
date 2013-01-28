@@ -1,12 +1,12 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes
 
-import scala.collection.JavaConverters._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.twitter.util.Future
-import org.specs2.mutable._
-import scala.collection.mutable.HashMap
 import org.bson.types.ObjectId
+import org.specs2.mutable._
+import scala.collection.JavaConverters._
+import scala.collection.mutable.HashMap
 
 
 class MockGeocodeStorageReadService extends GeocodeStorageFutureReadService {

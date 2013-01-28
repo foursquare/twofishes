@@ -1,9 +1,7 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes
 
-import com.twitter.logging.Logger
-import com.twitter.logging.config._
-import com.twitter.logging.config.ConsoleHandlerConfig
+import com.twitter.logging.config.{ConsoleHandlerConfig, _}
 
 object LogHelper {
   def init() {

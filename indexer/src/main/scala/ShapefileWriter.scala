@@ -1,38 +1,21 @@
 package com.foursquare.twofishes
 
 import com.mongodb.casbah.Imports._
-import com.mongodb.casbah.MongoConnection
 import com.novus.salat._
 import com.novus.salat.annotations._
 import com.novus.salat.dao._
 import com.novus.salat.global._
-
-import org.geotools.data.DataUtilities
-import org.geotools.data.DefaultTransaction
-import org.geotools.data.Transaction
-import org.geotools.data.shapefile.ShapefileDataStore
-import org.geotools.data.shapefile.ShapefileDataStoreFactory
-import org.geotools.data.simple.SimpleFeatureCollection
-import org.geotools.data.simple.SimpleFeatureSource
-import org.geotools.data.simple.SimpleFeatureStore
+import com.vividsolutions.jts.geom.{GeometryFactory, MultiPolygon, Polygon}
+import com.vividsolutions.jts.io.WKBReader
+import java.io.File
+import org.geotools.data.{DataUtilities, DefaultTransaction}
+import org.geotools.data.shapefile.{ShapefileDataStore, ShapefileDataStoreFactory}
+import org.geotools.data.simple.{SimpleFeatureCollection, SimpleFeatureStore}
 import org.geotools.feature.FeatureCollections
 import org.geotools.feature.simple.SimpleFeatureBuilder
-import org.geotools.feature.simple.SimpleFeatureTypeBuilder
-import com.vividsolutions.jts.geom.{Coordinate, GeometryFactory, Geometry}
-import com.vividsolutions.jts.geom.Polygon
-import com.vividsolutions.jts.geom.MultiPolygon
-import com.vividsolutions.jts.io.{WKTWriter, WKBReader}
-import org.geotools.geometry.jts.JTSFactoryFinder
 import org.geotools.referencing.crs.DefaultGeographicCRS
-import org.opengis.feature.simple.SimpleFeature
 import org.opengis.feature.simple.SimpleFeatureType
-
-import com.vividsolutions.jts.geom.Coordinate
-import com.vividsolutions.jts.geom.GeometryFactory
-
 import scalaj.collection.Imports._
-
-import java.io.File
 object BuildPolygonShapefile {
   val TYPE: SimpleFeatureType = DataUtilities.createType("Location",
     "location:MultiPolygon:srid=4326," + // <- the geometry attribute: Point type

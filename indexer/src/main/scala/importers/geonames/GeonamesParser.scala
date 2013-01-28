@@ -1,20 +1,18 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.importers.geonames
 
-import com.foursquare.geo.shapes.ShapefileIterator
 import com.foursquare.geo.shapes.FsqSimpleFeatureImplicits._
-import com.foursquare.twofishes.util.{NameNormalizer, SlugBuilder, NameUtils, Helpers}
-import com.foursquare.twofishes._
-import com.foursquare.twofishes.util.Helpers._
+import com.foursquare.geo.shapes.ShapefileIterator
 import com.foursquare.twofishes.Implicits._
+import com.foursquare.twofishes._
+import com.foursquare.twofishes.util.{Helpers, NameNormalizer, NameUtils, SlugBuilder}
+import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
-import org.geotools.geometry.jts.JTSFactoryFinder
-import scala.collection.JavaConversions._
 import java.io.File
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.HashSet
+import scala.collection.JavaConversions._
+import scala.collection.mutable.{HashMap, HashSet}
 import scalaj.collection.Implicits._
 
 // TODO
@@ -61,11 +59,11 @@ object GeonamesParser {
   }
 
   // TODO: not in love with this talking directly to mongo, please fix
+  import com.mongodb.casbah.Imports._
   import com.novus.salat._
-  import com.novus.salat.global._
   import com.novus.salat.annotations._
   import com.novus.salat.dao._
-  import com.mongodb.casbah.Imports._
+  import com.novus.salat.global._
   val parentMap = new HashMap[String, Option[GeocodeFeature]]
 
   def findFeature(fid: String): Option[GeocodeServingFeature] = {

@@ -1,10 +1,9 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.util
 
-import com.foursquare.twofishes.{FeatureName, FeatureNameFlags, GeocodeFeature, YahooWoeType}
+import com.foursquare.twofishes.{FeatureName, FeatureNameFlags, GeocodeFeature, YahooWoeType, util}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import scala.collection.JavaConversions._
-import com.foursquare.twofishes.util
 
 object SlugBuilder {
   import NameFormatter.FormatPattern
