@@ -187,6 +187,7 @@ trait GeocodeStorageFutureReadService {
 
   def getMinS2Level: Int
   def getMaxS2Level: Int
+  def getLevelMod: Int
 }
 
 class WrappedGeocodeStorageFutureReadService(underlying: GeocodeStorageReadService, future: FuturePool) extends GeocodeStorageFutureReadService {
@@ -220,6 +221,7 @@ class WrappedGeocodeStorageFutureReadService(underlying: GeocodeStorageReadServi
 
   def getMinS2Level: Int = underlying.getMinS2Level
   def getMaxS2Level: Int = underlying.getMaxS2Level
+  def getLevelMod: Int = underlying.getLevelMod
 }
 
 trait GeocodeStorageReadService {
@@ -232,6 +234,7 @@ trait GeocodeStorageReadService {
 
   def getMinS2Level: Int
   def getMaxS2Level: Int
+  def getLevelMod: Int
   def getByS2CellId(id: Long): Seq[CellGeometry]
   def getPolygonByObjectId(id: ObjectId): Option[Array[Byte]]
 }

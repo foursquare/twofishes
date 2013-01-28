@@ -104,11 +104,14 @@ object GeometryUtils {
   }
 
   def s2PolygonCovering(geomCollection: Geometry, 
-      minS2Level: Int, maxS2Level: Int) = {
+      minS2Level: Int,
+      maxS2Level: Int,
+      levelMod: Option[Int] = None) = {
     val s2poly = s2Polygon(geomCollection)
     val coverer =  new S2RegionCoverer
     coverer.setMinLevel(minS2Level)
-    coverer.setMaxLevel(maxS2Level)
+    coverer.setMaxLevel(maxS2Level)   
+    levelMod.foreach(m => coverer.setLevelMod(m))
     val coveringCells = new java.util.ArrayList[com.google.common.geometry.S2CellId]
     coverer.getCovering(s2poly, coveringCells)
     coveringCells
