@@ -83,6 +83,7 @@ class HFileStorageService(basepath: String) extends GeocodeStorageReadService {
 
   def getMinS2Level: Int = s2map.minS2Level
   def getMaxS2Level: Int = s2map.maxS2Level
+  override  def getLevelMod: Int = s2map.levelMod
 }
 
 abstract class HFileInput(basepath: String, filename: String) {
@@ -216,6 +217,10 @@ class ReverseGeocodeHFileInput(basepath: String) extends HFileInput(basepath, "s
   lazy val maxS2Level = fromByteArray(fileInfo.getOrElse(
     "maxS2Level".getBytes("UTF-8"),
     throw new Exception("missing maxS2Level")))
+
+  lazy val levelMod = fromByteArray(fileInfo.getOrElse(
+    "levelMod".getBytes("UTF-8"),
+    throw new Exception("missing levelMod")))
 
   def get(cellid: Long): List[CellGeometry] = {
     val buf = ByteBuffer.wrap(GeometryUtils.getBytes(cellid))

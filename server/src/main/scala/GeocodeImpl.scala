@@ -1270,18 +1270,25 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       if (req.debug > 0) {
         logger.ifDebug("had %d candidates".format(cellGeometries.size))
       }
-      for {
+      (for {
         cellGeometry <- cellGeometries
         if (req.woeRestrict.isEmpty || req.woeRestrict.asScala.has(cellGeometry.woeType))
         if (cellGeometry.wkbGeometry != null)
-        val oid = new ObjectId(cellGeometry.getOid())
-        val (geom, intersects) = logDuration("intersecting %s".format(oid)) {
-          featureGeometryIntersections(cellGeometry.getWkbGeometry(), otherGeom)
-        }
-        if intersects
       } yield {
-        oid
-      }
+        val oid = new ObjectId(cellGeometry.getOid())
+        if (cellGeometry.isFull) {
+          Some(oid)
+        } else {
+          val (geom, intersects) = logDuration("intersecting %s".format(oid)) {
+            featureGeometryIntersections(cellGeometry.getWkbGeometry(), otherGeom)
+          }
+          if (intersects) {
+            Some(oid)
+          } else {
+            None
+          }
+        }
+      }).flatten
     })
 
     val servingFeaturesMapF: Future[Map[ObjectId, GeocodeServingFeature]] = featureOidsF.flatMap(
@@ -1344,7 +1351,12 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         gsf.setNumPoints(100);
         gsf.setBase(new Coordinate(req.ll.lng, req.ll.lat));
         val geom = gsf.createCircle()
-        val cellids = GeometryUtils.s2PolygonCovering(geom, store.getMinS2Level, store.getMaxS2Level).map(_.id())
+        val cellids = GeometryUtils.s2PolygonCovering(
+          geom,
+          store.getMinS2Level,
+          store.getMaxS2Level,
+          Some(store.getLevelMod)
+        ).map(_.id())
         doReverseGeocode(cellids, geom)
       } else {
         reverseGeocodePoint(req.ll)
@@ -1359,7 +1371,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         new Coordinate(s2rect.lng.hi, s2rect.lat.lo),
         new Coordinate(s2rect.lng.lo, s2rect.lat.lo)
       ))
-      val cellids = GeometryUtils.rectCover(s2rect, store.getMinS2Level, store.getMaxS2Level, None).map(_.id())
+      val cellids = GeometryUtils.rectCover(s2rect, store.getMinS2Level, store.getMaxS2Level,
+        Some(store.getLevelMod)).map(_.id())
       doReverseGeocode(cellids, geom)
     } else {
       throw new Exception("no bounds or ll")
