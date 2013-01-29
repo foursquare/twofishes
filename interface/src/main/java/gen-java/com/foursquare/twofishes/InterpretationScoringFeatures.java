@@ -31,17 +31,14 @@ import org.apache.thrift.protocol.*;
 public class InterpretationScoringFeatures implements TBase<InterpretationScoringFeatures, InterpretationScoringFeatures._Fields>, java.io.Serializable, Cloneable {
   private static final TStruct STRUCT_DESC = new TStruct("InterpretationScoringFeatures");
 
-  private static final TField POPULATION_FIELD_DESC = new TField("population", TType.I32, (short)1);
   private static final TField PERCENT_OF_REQUEST_COVERED_FIELD_DESC = new TField("percentOfRequestCovered", TType.DOUBLE, (short)2);
   private static final TField PERCENT_OF_FEATURE_COVERED_FIELD_DESC = new TField("percentOfFeatureCovered", TType.DOUBLE, (short)3);
 
-  public int population;
   public double percentOfRequestCovered;
   public double percentOfFeatureCovered;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
-    POPULATION((short)1, "population"),
     PERCENT_OF_REQUEST_COVERED((short)2, "percentOfRequestCovered"),
     PERCENT_OF_FEATURE_COVERED((short)3, "percentOfFeatureCovered");
 
@@ -58,8 +55,6 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
      */
     public static _Fields findByThriftId(int fieldId) {
       switch(fieldId) {
-        case 1: // POPULATION
-          return POPULATION;
         case 2: // PERCENT_OF_REQUEST_COVERED
           return PERCENT_OF_REQUEST_COVERED;
         case 3: // PERCENT_OF_FEATURE_COVERED
@@ -104,16 +99,13 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
   }
 
   // isset id assignments
-  private static final int __POPULATION_ISSET_ID = 0;
-  private static final int __PERCENTOFREQUESTCOVERED_ISSET_ID = 1;
-  private static final int __PERCENTOFFEATURECOVERED_ISSET_ID = 2;
-  private BitSet __isset_bit_vector = new BitSet(3);
+  private static final int __PERCENTOFREQUESTCOVERED_ISSET_ID = 0;
+  private static final int __PERCENTOFFEATURECOVERED_ISSET_ID = 1;
+  private BitSet __isset_bit_vector = new BitSet(2);
 
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
     Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.POPULATION, new FieldMetaData("population", TFieldRequirementType.OPTIONAL, 
-        new FieldValueMetaData(TType.I32)));
     tmpMap.put(_Fields.PERCENT_OF_REQUEST_COVERED, new FieldMetaData("percentOfRequestCovered", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.DOUBLE)));
     tmpMap.put(_Fields.PERCENT_OF_FEATURE_COVERED, new FieldMetaData("percentOfFeatureCovered", TFieldRequirementType.OPTIONAL, 
@@ -123,8 +115,6 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
   }
 
   public InterpretationScoringFeatures() {
-    this.population = 0;
-
     this.percentOfRequestCovered = 0;
 
     this.percentOfFeatureCovered = 0;
@@ -137,7 +127,6 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
   public InterpretationScoringFeatures(InterpretationScoringFeatures other) {
     __isset_bit_vector.clear();
     __isset_bit_vector.or(other.__isset_bit_vector);
-    this.population = other.population;
     this.percentOfRequestCovered = other.percentOfRequestCovered;
     this.percentOfFeatureCovered = other.percentOfFeatureCovered;
   }
@@ -148,35 +137,10 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
 
   @Override
   public void clear() {
-    this.population = 0;
-
     this.percentOfRequestCovered = 0;
 
     this.percentOfFeatureCovered = 0;
 
-  }
-
-  public int getPopulation() {
-    return this.population;
-  }
-
-  public InterpretationScoringFeatures setPopulation(int population) {
-    this.population = population;
-    setPopulationIsSet(true);
-    return this;
-  }
-
-  public void unsetPopulation() {
-    __isset_bit_vector.clear(__POPULATION_ISSET_ID);
-  }
-
-  /** Returns true if field population is set (has been asigned a value) and false otherwise */
-  public boolean isSetPopulation() {
-    return __isset_bit_vector.get(__POPULATION_ISSET_ID);
-  }
-
-  public void setPopulationIsSet(boolean value) {
-    __isset_bit_vector.set(__POPULATION_ISSET_ID, value);
   }
 
   public double getPercentOfRequestCovered() {
@@ -227,14 +191,6 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
 
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
-    case POPULATION:
-      if (value == null) {
-        unsetPopulation();
-      } else {
-        setPopulation((Integer)value);
-      }
-      break;
-
     case PERCENT_OF_REQUEST_COVERED:
       if (value == null) {
         unsetPercentOfRequestCovered();
@@ -256,9 +212,6 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
 
   public Object getFieldValue(_Fields field) {
     switch (field) {
-    case POPULATION:
-      return new Integer(getPopulation());
-
     case PERCENT_OF_REQUEST_COVERED:
       return new Double(getPercentOfRequestCovered());
 
@@ -276,8 +229,6 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
     }
 
     switch (field) {
-    case POPULATION:
-      return isSetPopulation();
     case PERCENT_OF_REQUEST_COVERED:
       return isSetPercentOfRequestCovered();
     case PERCENT_OF_FEATURE_COVERED:
@@ -298,15 +249,6 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
   public boolean equals(InterpretationScoringFeatures that) {
     if (that == null)
       return false;
-
-    boolean this_present_population = true && this.isSetPopulation();
-    boolean that_present_population = true && that.isSetPopulation();
-    if (this_present_population || that_present_population) {
-      if (!(this_present_population && that_present_population))
-        return false;
-      if (this.population != that.population)
-        return false;
-    }
 
     boolean this_present_percentOfRequestCovered = true && this.isSetPercentOfRequestCovered();
     boolean that_present_percentOfRequestCovered = true && that.isSetPercentOfRequestCovered();
@@ -342,16 +284,6 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
     int lastComparison = 0;
     InterpretationScoringFeatures typedOther = (InterpretationScoringFeatures)other;
 
-    lastComparison = Boolean.valueOf(isSetPopulation()).compareTo(typedOther.isSetPopulation());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetPopulation()) {
-      lastComparison = TBaseHelper.compareTo(this.population, typedOther.population);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
     lastComparison = Boolean.valueOf(isSetPercentOfRequestCovered()).compareTo(typedOther.isSetPercentOfRequestCovered());
     if (lastComparison != 0) {
       return lastComparison;
@@ -389,14 +321,6 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
         break;
       }
       switch (field.id) {
-        case 1: // POPULATION
-          if (field.type == TType.I32) {
-            this.population = iprot.readI32();
-            setPopulationIsSet(true);
-          } else { 
-            TProtocolUtil.skip(iprot, field.type);
-          }
-          break;
         case 2: // PERCENT_OF_REQUEST_COVERED
           if (field.type == TType.DOUBLE) {
             this.percentOfRequestCovered = iprot.readDouble();
@@ -428,11 +352,6 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
     validate();
 
     oprot.writeStructBegin(STRUCT_DESC);
-    if (isSetPopulation()) {
-      oprot.writeFieldBegin(POPULATION_FIELD_DESC);
-      oprot.writeI32(this.population);
-      oprot.writeFieldEnd();
-    }
     if (isSetPercentOfRequestCovered()) {
       oprot.writeFieldBegin(PERCENT_OF_REQUEST_COVERED_FIELD_DESC);
       oprot.writeDouble(this.percentOfRequestCovered);
@@ -452,13 +371,7 @@ public class InterpretationScoringFeatures implements TBase<InterpretationScorin
     StringBuilder sb = new StringBuilder("InterpretationScoringFeatures(");
     boolean first = true;
 
-    if (isSetPopulation()) {
-      sb.append("population:");
-      sb.append(this.population);
-      first = false;
-    }
     if (isSetPercentOfRequestCovered()) {
-      if (!first) sb.append(", ");
       sb.append("percentOfRequestCovered:");
       sb.append(this.percentOfRequestCovered);
       first = false;

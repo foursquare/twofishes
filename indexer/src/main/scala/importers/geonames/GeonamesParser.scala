@@ -14,6 +14,8 @@ import java.io.File
 import scala.collection.JavaConversions._
 import scala.collection.mutable.{HashMap, HashSet}
 import scalaj.collection.Implicits._
+import org.opengis.feature.simple.SimpleFeature
+
 
 // TODO
 // stop using string representations of "a:b" featureids everywhere, PLEASE
@@ -31,6 +33,14 @@ object GeonamesParser {
   val slugEntryMap = new SlugEntryMap
   var missingSlugList = new HashSet[String]
   var hasPolygonList = new HashSet[String]
+
+  val naturalEarthPopulatedPlacesMap: Map[String, SimpleFeature] = {
+    new ShapefileIterator("data/downloaded/ne_10m_populated_places_simple.shp").flatMap(f => {
+      f.propMap.get("geonameid").map(id => {
+        (id, f)
+      })
+    }).toMap
+  }
 
   def readSlugs() {
     // step 1 -- load existing slugs into ... memory?
@@ -528,6 +538,26 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       geonameId.foreach(gid => missingSlugList.add(gid.toString))
     }
 
+    val attributes = naturalEarthPopulatedPlacesMap.get(feature.geonameid.getOrElse("")).map(feature => {
+      val attr = new GeocodeFeatureAttributes()
+      feature.propMap.get("adm0cap").foreach(v => 
+        attr.setAdm0cap(v == "1")
+      )
+      feature.propMap.get("adm1cap").foreach(v => 
+        attr.setAdm1cap(v == "1")
+      )
+      feature.propMap.get("scalerank").foreach(v => 
+        attr.setScalerank(v.toInt)
+      )
+      feature.propMap.get("natscale").foreach(v => 
+        attr.setNatscale(v.toInt)
+      )
+      feature.propMap.get("labelrank").foreach(v => 
+        attr.setLabelrank(v.toInt)
+      )
+      attr
+    })
+
     val record = GeocodeRecord(
       ids = ids,
       names = Nil,
@@ -545,6 +575,8 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       polygon = polygon,
       hasPoly = polygon.map(p => true)
     )
+
+    record.setAttributes(attributes)
 
     store.insert(record)
 

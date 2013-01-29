@@ -942,7 +942,6 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         interp.setFeature(feature)
 
         val scores = p.scoringFeatures
-        scores.setPopulation(fmatch.scoringFeatures.population)
         interp.setScores(scores)
 
         polygonMap.get(new ObjectId(fmatch.id)).foreach(wkb =>

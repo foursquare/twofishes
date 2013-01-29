@@ -5,6 +5,9 @@ import com.twitter.util.{Future, FuturePool}
 import org.bson.types.ObjectId
 import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
+import org.apache.thrift.TDeserializer
+import org.apache.thrift.TSerializer
+import org.apache.thrift.protocol.TCompactProtocol
 
 object Implicits {
   implicit def fidToString(fid: StoredFeatureId): String = fid.toString
@@ -60,8 +63,28 @@ case class GeocodeRecord(
   canGeocode: Boolean = true,
   slug: Option[String] = None,
   polygon: Option[Array[Byte]] = None,
-  hasPoly: Option[Boolean] = None
+  hasPoly: Option[Boolean] = None,
+  var attributes: Option[Array[Byte]] = None
 ) extends Ordered[GeocodeRecord] {
+  val factory = new TCompactProtocol.Factory()
+  val serializer = new TSerializer(factory)
+  val deserializer = new TDeserializer(factory)
+
+  def setAttributes(attr: Option[GeocodeFeatureAttributes]) {
+    attributes = attr.map(a => serializer.serialize(a))
+  }
+
+  def getAttributes(): Option[GeocodeFeatureAttributes] = {
+    if (attributes.nonEmpty || population.nonEmpty) {
+      val attr = new GeocodeFeatureAttributes()
+      attributes.map(b => deserializer.deserialize(attr, b))
+      population.foreach(p => attr.setPopulation(p))
+      Some(attr)
+    } else {
+      None
+    }
+  }
+
   def featureIds = ids.map(id => {
     val parts = id.split(":")
     StoredFeatureId(parts(0), parts(1))
@@ -157,6 +180,8 @@ case class GeocodeRecord(
     boost.foreach(b => scoring.setBoost(b))
     population.foreach(p => scoring.setPopulation(p))
     scoring.setParents(parents)
+
+    getAttributes().foreach(a => feature.setAttributes(a))
 
     if (!canGeocode) {
       scoring.setCanGeocode(false)

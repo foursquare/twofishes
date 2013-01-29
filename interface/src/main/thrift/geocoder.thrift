@@ -121,6 +121,15 @@ struct GeocodeRelation {
   2: optional string relatedId
 }
 
+struct GeocodeFeatureAttributes {
+  1: optional bool adm0cap = 0,
+  2: optional bool adm1cap = 0,
+  3: optional i32 scalerank = 0,
+  4: optional i32 labelrank = 0,
+  5: optional i32 natscale = 0,
+  6: optional i32 population = 0
+}
+
 // index-only data structure
 struct ScoringFeatures {
   1: optional i32 population = 0,
@@ -146,8 +155,10 @@ struct GeocodeFeature {
   11: optional string highlightedName,
   12: optional string matchedName,
 
-  13: optional string slug
-  14: optional string id
+  13: optional string slug,
+  14: optional string id,
+
+  15: optional GeocodeFeatureAttributes attributes
 }
 
 struct GeocodeServingFeature {
@@ -158,7 +169,7 @@ struct GeocodeServingFeature {
 }
 
 struct InterpretationScoringFeatures {
-  1: optional i32 population = 0,
+//  1: optional i32 population = 0,
   2: optional double percentOfRequestCovered = 0.0,
   3: optional double percentOfFeatureCovered = 0.0
 }

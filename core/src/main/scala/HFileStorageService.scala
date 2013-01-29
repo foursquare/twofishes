@@ -146,8 +146,7 @@ class NameIndexHFileInput(basepath: String) extends HFileInput(basepath, "name_i
   def get(name: String): List[ObjectId] = {
     val buf = ByteBuffer.wrap(name.getBytes())
     lookup(buf).toList.flatMap(b => {
-      val bytes = new Array[Byte](b.capacity())
-      b.get(bytes, 0, bytes.length);
+      val bytes = TBaseHelper.byteBufferToByteArray(b)
       decodeObjectIds(bytes)
     })
   }
