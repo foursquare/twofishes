@@ -37,7 +37,7 @@ object GeonamesParser {
   val naturalEarthPopulatedPlacesMap: Map[Int, SimpleFeature] = {
     new ShapefileIterator("data/downloaded/ne_10m_populated_places_simple.shp").flatMap(f => {
       f.propMap.get("geonameid").map(id => {
-        (id.toInt, f)
+        (id.toDouble.toInt, f)
       })
     }).toMap
   }
