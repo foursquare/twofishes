@@ -49,7 +49,7 @@ if [ -f $file ];
 then
    echo "file $file exists."
 else
-   echo curl -L -o data/downloaded/ne_10m_populated_places_simple.zip http://www.naturalearthdata.com/http//www.naturalearthdata.com/download/10m/cultural/ne_10m_populated_places_simple.zip
+   curl -L -o data/downloaded/ne_10m_populated_places_simple.zip http://www.naturalearthdata.com/http//www.naturalearthdata.com/download/10m/cultural/ne_10m_populated_places_simple.zip
    unzip -d data/downloaded/ data/downloaded/ne_10m_populated_places_simple.zip 
    rm data/downloaded/ne_10m_populated_places_simple.zip
 fi
