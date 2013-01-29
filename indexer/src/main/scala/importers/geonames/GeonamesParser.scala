@@ -34,10 +34,10 @@ object GeonamesParser {
   var missingSlugList = new HashSet[String]
   var hasPolygonList = new HashSet[String]
 
-  val naturalEarthPopulatedPlacesMap: Map[String, SimpleFeature] = {
+  val naturalEarthPopulatedPlacesMap: Map[Int, SimpleFeature] = {
     new ShapefileIterator("data/downloaded/ne_10m_populated_places_simple.shp").flatMap(f => {
       f.propMap.get("geonameid").map(id => {
-        (id, f)
+        (id.toInt, f)
       })
     }).toMap
   }
@@ -538,7 +538,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       geonameId.foreach(gid => missingSlugList.add(gid.toString))
     }
 
-    val attributes = naturalEarthPopulatedPlacesMap.get(feature.geonameid.getOrElse("")).map(feature => {
+    val attributes = naturalEarthPopulatedPlacesMap.get(feature.geonameid.getOrElse("-1").toInt).map(feature => {
       val attr = new GeocodeFeatureAttributes()
       feature.propMap.get("adm0cap").foreach(v => 
         attr.setAdm0cap(v == "1")
