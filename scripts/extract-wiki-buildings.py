@@ -18,7 +18,7 @@ else:
   print "building buildings for the whole world"
   input = open("data/downloaded/allCountries.txt")
 
-output = open("data//buildings.txt", "w")
+output = open("data/supplemental/buildings.txt", "w")
 
 gidList = set()
 
