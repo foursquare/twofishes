@@ -44,6 +44,7 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
   private static final TField MATCHED_NAME_FIELD_DESC = new TField("matchedName", TType.STRING, (short)12);
   private static final TField SLUG_FIELD_DESC = new TField("slug", TType.STRING, (short)13);
   private static final TField ID_FIELD_DESC = new TField("id", TType.STRING, (short)14);
+  private static final TField ATTRIBUTES_FIELD_DESC = new TField("attributes", TType.STRUCT, (short)15);
 
   public String cc;
   public FeatureGeometry geometry;
@@ -62,6 +63,7 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
   public String matchedName;
   public String slug;
   public String id;
+  public GeocodeFeatureAttributes attributes;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
@@ -81,7 +83,8 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     HIGHLIGHTED_NAME((short)11, "highlightedName"),
     MATCHED_NAME((short)12, "matchedName"),
     SLUG((short)13, "slug"),
-    ID((short)14, "id");
+    ID((short)14, "id"),
+    ATTRIBUTES((short)15, "attributes");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -122,6 +125,8 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
           return SLUG;
         case 14: // ID
           return ID;
+        case 15: // ATTRIBUTES
+          return ATTRIBUTES;
         default:
           return null;
       }
@@ -196,6 +201,8 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         new FieldValueMetaData(TType.STRING)));
     tmpMap.put(_Fields.ID, new FieldMetaData("id", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.STRING)));
+    tmpMap.put(_Fields.ATTRIBUTES, new FieldMetaData("attributes", TFieldRequirementType.OPTIONAL, 
+        new StructMetaData(TType.STRUCT, GeocodeFeatureAttributes.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeFeature.class, metaDataMap);
   }
@@ -271,6 +278,9 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     if (other.isSetId()) {
       this.id = other.id;
     }
+    if (other.isSetAttributes()) {
+      this.attributes = new GeocodeFeatureAttributes(other.attributes);
+    }
   }
 
   public GeocodeFeature deepCopy() {
@@ -292,6 +302,7 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     this.matchedName = null;
     this.slug = null;
     this.id = null;
+    this.attributes = null;
   }
 
   public String getCc() {
@@ -674,6 +685,30 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     }
   }
 
+  public GeocodeFeatureAttributes getAttributes() {
+    return this.attributes;
+  }
+
+  public GeocodeFeature setAttributes(GeocodeFeatureAttributes attributes) {
+    this.attributes = attributes;
+    return this;
+  }
+
+  public void unsetAttributes() {
+    this.attributes = null;
+  }
+
+  /** Returns true if field attributes is set (has been asigned a value) and false otherwise */
+  public boolean isSetAttributes() {
+    return this.attributes != null;
+  }
+
+  public void setAttributesIsSet(boolean value) {
+    if (!value) {
+      this.attributes = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case CC:
@@ -780,6 +815,14 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       }
       break;
 
+    case ATTRIBUTES:
+      if (value == null) {
+        unsetAttributes();
+      } else {
+        setAttributes((GeocodeFeatureAttributes)value);
+      }
+      break;
+
     }
   }
 
@@ -824,6 +867,9 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     case ID:
       return getId();
 
+    case ATTRIBUTES:
+      return getAttributes();
+
     }
     throw new IllegalStateException();
   }
@@ -861,6 +907,8 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       return isSetSlug();
     case ID:
       return isSetId();
+    case ATTRIBUTES:
+      return isSetAttributes();
     }
     throw new IllegalStateException();
   }
@@ -992,6 +1040,15 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       if (!(this_present_id && that_present_id))
         return false;
       if (!this.id.equals(that.id))
+        return false;
+    }
+
+    boolean this_present_attributes = true && this.isSetAttributes();
+    boolean that_present_attributes = true && that.isSetAttributes();
+    if (this_present_attributes || that_present_attributes) {
+      if (!(this_present_attributes && that_present_attributes))
+        return false;
+      if (!this.attributes.equals(that.attributes))
         return false;
     }
 
@@ -1137,6 +1194,16 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
     }
     if (isSetId()) {
       lastComparison = TBaseHelper.compareTo(this.id, typedOther.id);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetAttributes()).compareTo(typedOther.isSetAttributes());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetAttributes()) {
+      lastComparison = TBaseHelper.compareTo(this.attributes, typedOther.attributes);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -1292,6 +1359,14 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
+        case 15: // ATTRIBUTES
+          if (field.type == TType.STRUCT) {
+            this.attributes = new GeocodeFeatureAttributes();
+            this.attributes.read(iprot);
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -1419,6 +1494,13 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
       if (isSetId()) {
         oprot.writeFieldBegin(ID_FIELD_DESC);
         oprot.writeString(this.id);
+        oprot.writeFieldEnd();
+      }
+    }
+    if (this.attributes != null) {
+      if (isSetAttributes()) {
+        oprot.writeFieldBegin(ATTRIBUTES_FIELD_DESC);
+        this.attributes.write(oprot);
         oprot.writeFieldEnd();
       }
     }
@@ -1553,6 +1635,16 @@ public class GeocodeFeature implements TBase<GeocodeFeature, GeocodeFeature._Fie
         sb.append("null");
       } else {
         sb.append(this.id);
+      }
+      first = false;
+    }
+    if (isSetAttributes()) {
+      if (!first) sb.append(", ");
+      sb.append("attributes:");
+      if (this.attributes == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.attributes);
       }
       first = false;
     }
