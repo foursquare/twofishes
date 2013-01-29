@@ -541,10 +541,10 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     val attributes = naturalEarthPopulatedPlacesMap.get(feature.geonameid.getOrElse("-1").toInt).map(feature => {
       val attr = new GeocodeFeatureAttributes()
       feature.propMap.get("adm0cap").foreach(v => 
-        attr.setAdm0cap(v == "1")
+        attr.setAdm0cap(v.toDouble.toInt =? 1)
       )
       feature.propMap.get("adm1cap").foreach(v => 
-        attr.setAdm1cap(v == "1")
+        attr.setAdm1cap(v.toDouble.toInt =? 1)
       )
       feature.propMap.get("scalerank").foreach(v => 
         attr.setScalerank(v.toInt)
