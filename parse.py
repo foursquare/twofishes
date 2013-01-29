@@ -28,10 +28,17 @@ basepath = os.path.join(basepath, str(datetime.datetime.now()).replace(' ', '-')
 print "outputting index to %s" % basepath
 os.mkdir(basepath)
 
+cmd_opts = ''
+
 if options.country:
-  cmd_opts = '--parse_country %s' % options.country
+  cmd_opts += ' --parse_country %s' % options.country
 else:
-  cmd_opts = '--parse_world true'
+  cmd_opts += ' --parse_world true'
+
+if options.output_revgeo_index:
+  cmd_opts += ' --output_revgeo_index true'
+else:
+  cmd_opts += ' --output_revgeo_index false'
 
 if options.output_prefix_index:
   cmd_opts += ' --output_prefix_index true'
