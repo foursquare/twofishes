@@ -544,9 +544,6 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       feature.propMap.get("adm0cap").foreach(v => 
         attr.setAdm0cap(v.toDouble.toInt == 1)
       )
-      feature.propMap.get("adm1cap").foreach(v => 
-        attr.setAdm1cap(v.toDouble.toInt == 1)
-      )
       feature.propMap.get("scalerank").foreach(v => 
         attr.setScalerank(v.toInt)
       )
@@ -556,6 +553,7 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       feature.propMap.get("labelrank").foreach(v => 
         attr.setLabelrank(v.toInt)
       )
+      attr.setAdm1cap(feature.isAdmin1Capital)
       attr
     })
 
