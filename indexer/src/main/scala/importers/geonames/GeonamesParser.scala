@@ -538,13 +538,14 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       geonameId.foreach(gid => missingSlugList.add(gid.toString))
     }
 
-    val attributes = naturalEarthPopulatedPlacesMap.get(feature.geonameid.getOrElse("-1").toInt).map(feature => {
+    val geonameIntId = TryO { feature.geonameid.getOrElse("-1").toInt } 
+    val attributes = geonameIntId.flatMap(naturalEarthPopulatedPlacesMap.get).map(feature => {
       val attr = new GeocodeFeatureAttributes()
       feature.propMap.get("adm0cap").foreach(v => 
-        attr.setAdm0cap(v.toDouble.toInt =? 1)
+        attr.setAdm0cap(v.toDouble.toInt == 1)
       )
       feature.propMap.get("adm1cap").foreach(v => 
-        attr.setAdm1cap(v.toDouble.toInt =? 1)
+        attr.setAdm1cap(v.toDouble.toInt == 1)
       )
       feature.propMap.get("scalerank").foreach(v => 
         attr.setScalerank(v.toInt)
