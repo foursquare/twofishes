@@ -117,6 +117,7 @@ class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[Str
   def isBuilding = featureClass.exists(_ == "S")
   def isPostalCode = featureClass.exists(_ == "Z")
   def isSuburb = featureCode.exists(_.contains("PPLX"))
+  def isAdmin1Capital = featureCode.exists(_ == "PPLA")
   def isCity = featureCode.exists(_.contains("PPL"))
   def isIsland = featureCode.exists(_.contains("ISL"))
   def isCountry = featureCode.exists(_.contains("PCL"))

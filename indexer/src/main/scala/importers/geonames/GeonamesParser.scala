@@ -539,21 +539,21 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     }
 
     val geonameIntId = TryO { feature.geonameid.getOrElse("-1").toInt } 
-    val attributes = geonameIntId.flatMap(naturalEarthPopulatedPlacesMap.get).map(feature => {
+    val attributes = geonameIntId.flatMap(naturalEarthPopulatedPlacesMap.get).map(sfeature => {
       val attr = new GeocodeFeatureAttributes()
-      feature.propMap.get("adm0cap").foreach(v => 
+      sfeature.propMap.get("adm0cap").foreach(v => 
         attr.setAdm0cap(v.toDouble.toInt == 1)
       )
-      feature.propMap.get("scalerank").foreach(v => 
+      sfeature.propMap.get("scalerank").foreach(v => 
         attr.setScalerank(v.toInt)
       )
-      feature.propMap.get("natscale").foreach(v => 
+      sfeature.propMap.get("natscale").foreach(v => 
         attr.setNatscale(v.toInt)
       )
-      feature.propMap.get("labelrank").foreach(v => 
+      sfeature.propMap.get("labelrank").foreach(v => 
         attr.setLabelrank(v.toInt)
       )
-      attr.setAdm1cap(feature.isAdmin1Capital)
+      attr.setAdm1cap(feature.featureClass.isAdmin1Capital)
       attr
     })
 
