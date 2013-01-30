@@ -293,8 +293,8 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
   }
 
   def buildRevGeoIndex() { 
-    val minS2Level = 8
-    val maxS2Level = 12
+    val minS2Level = 10
+    val maxS2Level = 10
     val levelMod = 2
 
     val ids = MongoGeocodeDAO.primitiveProjections[ObjectId](MongoDBObject("hasPoly" -> true), "_id").toList
