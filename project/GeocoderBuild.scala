@@ -86,8 +86,9 @@ object GeocoderBuild extends Build {
           "org.apache.hbase" % "hbase" % "0.90.4-cdh3u3" intransitive(),
           "com.google.guava" % "guava" % "r09",
           "com.novus" % "salat-core_2.9.1" % "0.0.8",
-          "org.apache.thrift" % "libthrift" % "0.8.0",
-          "commons-cli" % "commons-cli" % "1.2"
+          // "org.apache.thrift" % "libthrift" % "0.8.0",
+          "commons-cli" % "commons-cli" % "1.2",
+          "commons-logging" % "commons-logging" % "1.1.1"
           // "thrift" % "libthrift" % "0.5.0" from "http://maven.twttr.com/org/apache/thrift/libthrift/0.5.0/libthrift-0.5.0.jar"
         ),
         ivyXML := (
