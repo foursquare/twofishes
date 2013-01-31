@@ -1303,7 +1303,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     } yield {
       servingFeaturesMap.map({ case (oid, f) => {
         val parse = Parse[Sorted](List(FeatureMatch(0, 0, "", f)))
-        if (req.calculateCoverage) {
+        if (req.calculateCoverage && otherGeom.getNumPoints() > 2 && otherGeom.getArea() > 0) {
           polygonMap.get(oid).foreach(wkb => {
             val geom = wkbReader.read(wkb)
             parse.scoringFeatures.setPercentOfRequestCovered(computeCoverage(geom, otherGeom))
