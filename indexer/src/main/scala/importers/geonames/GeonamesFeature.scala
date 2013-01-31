@@ -122,6 +122,7 @@ class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[Str
   def isCountry = featureCode.exists(_.contains("PCL"))
   def isAdmin = adminLevel != OTHER
   def isAirport = featureCode.exists(_ == "AIRP")
+  def isAdmin1Capital = featureCode.exists(_ == "PPLA")
   val stupidCodes = List(
     "RGNE", // economic region
     "PPLQ", // abandoned (historical) place

@@ -49,7 +49,10 @@ class MockGeocodeStorageReadService extends GeocodeStorageFutureReadService {
     )
   }
 
-  def getByS2CellId(id: Long): Future[Seq[ObjectId]] = Future.value(Nil)
+  def getByS2CellId(id: Long): Future[Seq[CellGeometry]] = Future.value(Nil)
+  def getPolygonByObjectId(id: ObjectId): Future[Option[Array[Byte]]] = Future.value(None)
+
+  def getLevelMod: Int = 0
   def getMinS2Level: Int = 0
   def getMaxS2Level: Int = 0
 
