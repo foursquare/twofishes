@@ -1,2 +1,2 @@
 #!/bin/sh
-java  -agentpath:/export/hdj3/blackmad/twofishes/libyjpagent.so=onexit=snapshot -Xms6g -Xmx12g -Xss1M -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=384M -jar `dirname $0`/sbt-launch.jar  "$@"
+java  -Xms6g -Xmx12g -Xss1M -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=384M -jar `dirname $0`/sbt-launch.jar  "$@"

@@ -215,7 +215,7 @@ trait GeocodeStorageFutureReadService {
   def getLevelMod: Int
 }
 
-class WrappedGeocodeStorageFutureReadService(underlying: GeocodeStorageReadService) extends GeocodeStorageFutureReadService {
+class WrappedGeocodeStorageFutureReadService(underlying: GeocodeStorageReadService, future: FuturePool) extends GeocodeStorageFutureReadService {
   def getIdsByNamePrefix(name: String): Future[Seq[ObjectId]] = future {
     underlying.getIdsByNamePrefix(name)
   }
