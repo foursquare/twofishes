@@ -8,7 +8,7 @@ import java.nio.ByteBuffer
 import java.util.Arrays
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{LocalFileSystem, Path}
-import org.apache.hadoop.hbase.io.hfile.{HFile, HFileScanner}
+import org.apache.hadoop.hbase.io.hfile.{BlockCache, HFile, HFileScanner}
 import org.apache.hadoop.hbase.util.Bytes._
 import org.apache.thrift.TBaseHelper
 
@@ -82,13 +82,26 @@ class HFileStorageService(basepath: String) extends GeocodeStorageReadService {
   override  def getLevelMod: Int = s2map.levelMod
 }
 
+class InMemoryBlockCache extends BlockCache {
+  val cache = new java.util.concurrent.ConcurrentHashMap[String,ByteBuffer]();
+
+  override def getBlock(blockName: java.lang.String, caching: Boolean): ByteBuffer = cache.get(blockName)
+
+  override def cacheBlock(blockName: java.lang.String, buf: java.nio.ByteBuffer, inMemory: Boolean) = cacheBlock(blockName, buf)
+
+  override def cacheBlock(blockName: java.lang.String, buf: java.nio.ByteBuffer) = cache.put(blockName,buf)
+
+  override def shutdown(): Unit = cache.clear
+}
+
 abstract class HFileInput(basepath: String, filename: String) {
   val conf = new Configuration()
   val fs = new LocalFileSystem()
   fs.initialize(URI.create("file:///"), conf)
 
   val path = new Path(new File(basepath, filename).getAbsolutePath())
-  val reader = new HFile.Reader(fs, path, null, true)
+  val cache: BlockCache = new InMemoryBlockCache()
+  val reader = new HFile.Reader(fs, path, cache, true)
   val fileInfo = reader.loadFileInfo().asScala
 
   def lookup(key: ByteBuffer): Option[ByteBuffer] = {
@@ -125,10 +138,10 @@ abstract class HFileInput(basepath: String, filename: String) {
     ret
   }
 
-  def deserializeBytes[T <: org.apache.thrift.TBase[_ <: org.apache.thrift.TBase[_, _], _ <: org.apache.thrift.TFieldIdEnum]](struct: T, bytes: Array[Byte]): T = {
+  def deserializeBytes[T <: org.apache.thrift.TBase[_ <: org.apache.thrift.TBase[_ <: AnyRef, _ <: org.apache.thrift.TFieldIdEnum], _ <: org.apache.thrift.TFieldIdEnum]](s: T, bytes: Array[Byte]): T = {
     val deserializer = new TDeserializer(new TCompactProtocol.Factory());
-    deserializer.deserialize(struct, bytes);
-    struct
+    deserializer.deserialize(s, bytes);
+    s
   }
 }
 
