@@ -2,12 +2,11 @@
 package com.foursquare.twofishes
 
 import com.twitter.util.{Future, FuturePool}
+import org.apache.thrift.{TDeserializer, TSerializer}
+import org.apache.thrift.protocol.TCompactProtocol
 import org.bson.types.ObjectId
 import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
-import org.apache.thrift.TDeserializer
-import org.apache.thrift.TSerializer
-import org.apache.thrift.protocol.TCompactProtocol
 
 object Implicits {
   implicit def fidToString(fid: StoredFeatureId): String = fid.toString
