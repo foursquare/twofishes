@@ -94,6 +94,7 @@ object GeocoderBuild extends Build {
         ivyXML := (
           <dependencies>
             <exclude org="thrift"/>
+            <exclude org="org.apache.thrift" module="thrift"/>
           </dependencies>
         )
       )
