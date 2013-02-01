@@ -216,31 +216,31 @@ trait GeocodeStorageFutureReadService {
 }
 
 class WrappedGeocodeStorageFutureReadService(underlying: GeocodeStorageReadService, future: FuturePool) extends GeocodeStorageFutureReadService {
-  def getIdsByNamePrefix(name: String): Future[Seq[ObjectId]] = future {
+  def getIdsByNamePrefix(name: String): Future[Seq[ObjectId]] = Future.value {
     underlying.getIdsByNamePrefix(name)
   }
 
-  def getIdsByName(name: String): Future[Seq[ObjectId]] = future {
+  def getIdsByName(name: String): Future[Seq[ObjectId]] = Future.value {
     underlying.getIdsByName(name)
   }
 
-  def getByName(name: String): Future[Seq[GeocodeServingFeature]] = future {
+  def getByName(name: String): Future[Seq[GeocodeServingFeature]] = Future.value {
     underlying.getByName(name)
   }
 
-  def getByObjectIds(ids: Seq[ObjectId]): Future[Map[ObjectId, GeocodeServingFeature]] = future {
+  def getByObjectIds(ids: Seq[ObjectId]): Future[Map[ObjectId, GeocodeServingFeature]] = Future.value {
     underlying.getByObjectIds(ids)
   }
 
-  def getBySlugOrFeatureIds(ids: Seq[String]): Future[Map[String, GeocodeServingFeature]] = future {
+  def getBySlugOrFeatureIds(ids: Seq[String]): Future[Map[String, GeocodeServingFeature]] = Future.value {
     underlying.getBySlugOrFeatureIds(ids)
   }
   
-  def getByS2CellId(id: Long): Future[Seq[CellGeometry]] = future {
+  def getByS2CellId(id: Long): Future[Seq[CellGeometry]] = Future.value {
     underlying.getByS2CellId(id)
   }
   
-  def getPolygonByObjectId(id: ObjectId): Future[Option[Array[Byte]]] = future {
+  def getPolygonByObjectId(id: ObjectId): Future[Option[Array[Byte]]] = Future.value {
     underlying.getPolygonByObjectId(id)
   }
 
