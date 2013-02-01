@@ -215,7 +215,41 @@ trait GeocodeStorageFutureReadService {
   def getLevelMod: Int
 }
 
-class WrappedGeocodeStorageFutureReadService(underlying: GeocodeStorageReadService, future: FuturePool) extends GeocodeStorageFutureReadService {
+class WrappedGeocodeStorageFutureReadService(underlying: GeocodeStorageReadService) extends GeocodeStorageFutureReadService {
+  def getIdsByNamePrefix(name: String): Future[Seq[ObjectId]] = future {
+    underlying.getIdsByNamePrefix(name)
+  }
+
+  def getIdsByName(name: String): Future[Seq[ObjectId]] = future {
+    underlying.getIdsByName(name)
+  }
+
+  def getByName(name: String): Future[Seq[GeocodeServingFeature]] = future {
+    underlying.getByName(name)
+  }
+
+  def getByObjectIds(ids: Seq[ObjectId]): Future[Map[ObjectId, GeocodeServingFeature]] = future {
+    underlying.getByObjectIds(ids)
+  }
+
+  def getBySlugOrFeatureIds(ids: Seq[String]): Future[Map[String, GeocodeServingFeature]] = future {
+    underlying.getBySlugOrFeatureIds(ids)
+  }
+  
+  def getByS2CellId(id: Long): Future[Seq[CellGeometry]] = future {
+    underlying.getByS2CellId(id)
+  }
+  
+  def getPolygonByObjectId(id: ObjectId): Future[Option[Array[Byte]]] = future {
+    underlying.getPolygonByObjectId(id)
+  }
+
+  def getMinS2Level: Int = underlying.getMinS2Level
+  def getMaxS2Level: Int = underlying.getMaxS2Level
+  def getLevelMod: Int = underlying.getLevelMod
+}
+
+class WrappedGeocodeStorageFakeFutureReadService(underlying: GeocodeStorageReadService) extends GeocodeStorageFutureReadService {
   def getIdsByNamePrefix(name: String): Future[Seq[ObjectId]] = Future.value {
     underlying.getIdsByNamePrefix(name)
   }

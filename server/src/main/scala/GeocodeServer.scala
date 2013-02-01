@@ -158,16 +158,13 @@ class GeocoderHttpService(geocoder: GeocodeServerImpl) extends Service[HttpReque
 }
 
 object ServerStore {
-  val ioFuturePool = FuturePool(Executors.newFixedThreadPool(8))
-
   def getStore(config: GeocodeServerConfig): GeocodeStorageFutureReadService = {
     getStore(config.hfileBasePath)
   }
 
   def getStore(path: String): GeocodeStorageFutureReadService = {
-    new WrappedGeocodeStorageFutureReadService(
-      new HFileStorageService(path),
-      ioFuturePool)
+    new WrappedGeocodeStorageFakeFutureReadService(
+      new HFileStorageService(path))
   }
 }
 
