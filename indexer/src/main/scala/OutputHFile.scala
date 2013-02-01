@@ -463,9 +463,22 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
  def buildV1Writer[K: Manifest, V: Manifest](
       filename: String,
       thriftProtocol: TProtocolFactory): HFile.Writer = {
+
+    // this is all weirdly 4sq specific logic :-()
+    def fixName(n: String) {
+      if (n.contains("com.foursquare.twofishes.gen")) {
+        n
+      } else {
+        n.replace("com.foursquare.twofishes", "com.foursquare.twofishes.gen")
+      }
+    }
+
     val writer = buildBasicV1Writer(filename, thriftProtocol)
-    writer.appendFileInfo(HFileUtil.ThriftClassValueBytes, manifest[V].erasure.getName.getBytes("UTF-8"))
-    writer.appendFileInfo(HFileUtil.ThriftClassKeyBytes, manifest[K].erasure.getName.getBytes("UTF-8"))
+    val keyClassName = fixName(manifest[K].erasure.getName.getBytes("UTF-8"))
+    val valueClassName = fixName(manifest[V].erasure.getName.getBytes("UTF-8"))
+
+    writer.appendFileInfo(HFileUtil.ThriftClassKeyBytes, keyClassName)
+    writer.appendFileInfo(HFileUtil.ThriftClassValueBytes, valueClassName)
     writer
   }
   
