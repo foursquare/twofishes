@@ -138,7 +138,7 @@ abstract class GeocodeMatcher(client: Geocoder.ServiceToClient, inputFilename: S
   }
 }
 
-object ThriftClient extends GeocoderFinagleThiftClient("prodapp-geocoder-6", 35000) {
+object ThriftClient extends GeocoderFinagleThiftClient("localhost", 8080) {
   def main(args: Array[String]) {
     // Wrap the raw Thrift service in a Client decorator. The client provides
     // a convenient procedural interface for accessing the Thrift server.
