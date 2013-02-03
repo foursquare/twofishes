@@ -121,6 +121,7 @@ abstract class GeocodeMatcher(client: Geocoder.ServiceToClient, inputFilename: S
         req.setQuery(query)
         getWoeRestrict(shp).foreach(l => req.setWoeRestrict(l.asJava))
         getLatLngHint(shp).foreach(req.setLl)
+        println(req)
         for {
           responseOpt <- client.geocode(req)
           response <- Option(responseOpt)
