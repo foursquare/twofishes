@@ -649,109 +649,110 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     val name = NameUtils.bestName(f, Some(req.lang), false).map(_.name).getOrElse("")
     f.setName(name)
 
-    if (f.woeType == YahooWoeType.COUNTRY) {
-      f.setDisplayName(name)
+    // Take the least specific parent, hopefully a state
+    // Yields names like "Brick, NJ, US"
+    // should already be sorted, so we don't need to do: // .sorted(GeocodeServingFeatureOrdering)
+    val parentsToUse: List[GeocodeServingFeature] =
+      parents
+        .filter(p => p.feature.woeType != YahooWoeType.COUNTRY)
+        .filter(p => p.feature.woeType != YahooWoeType.CONTINENT)
+        .filter(p => {
+          if (f.cc != "US" && f.cc != "CA") {
+            p.feature.woeType == YahooWoeType.TOWN || 
+            p.feature.woeType == YahooWoeType.SUBURB ||
+            (numParentsRequired > 0)
+          } else {
+            true
+          }
+        })
+        .takeRight(
+          if (f.cc == "US" || f.cc == "CA") {
+            numParentsRequired + 1
+          } else {
+            numParentsRequired
+          }
+        ).toList
+
+    val countryAbbrev: Option[String] = if (f.cc != req.cc) {
+      if (f.cc == "GB") {
+        Some("UK")
+      } else {
+        Some(f.cc)
+      }
     } else {
-      // Take the least specific parent, hopefully a state
-      // Yields names like "Brick, NJ, US"
-      // should already be sorted, so we don't need to do: // .sorted(GeocodeServingFeatureOrdering)
-      val parentsToUse: List[GeocodeServingFeature] =
-        parents
-          .filter(p => p.feature.woeType != YahooWoeType.COUNTRY)
-          .filter(p => {
-            if (f.cc != "US" && f.cc != "CA") {
-              p.feature.woeType == YahooWoeType.TOWN || 
-              p.feature.woeType == YahooWoeType.SUBURB ||
-              (numParentsRequired > 0)
-            } else {
-              true
-            }
-          })
-          .takeRight(
-            if (f.cc == "US" || f.cc == "CA") {
-              numParentsRequired + 1
-            } else {
-              numParentsRequired
-            }
-          ).toList
-
-      val countryAbbrev: Option[String] = if (f.cc != req.cc) {
-        if (f.cc == "GB") {
-          Some("UK")
-        } else {
-          Some(f.cc)
-        }
-      } else {
-        None
-      }
-
-      var namesToUse: Seq[(com.foursquare.twofishes.FeatureName, Option[String])] = Nil
-
-      parse.foreach(p => {
-        val partsFromParse: Seq[(Option[FeatureMatch], GeocodeServingFeature)] =
-          p.map(fmatch => (Some(fmatch), fmatch.fmatch))
-        val partsFromParents: Seq[(Option[FeatureMatch], GeocodeServingFeature)] =
-         parentsToUse.filterNot(f => partsFromParse.exists(_._2 == f))
-          .map(f => (None, f))
-        val partsToUse = (partsFromParse ++ partsFromParents).sortBy(_._2)(GeocodeServingFeatureOrdering)
-        // logger.ifDebug("parts to use: " + partsToUse)
-        var i = 0
-        namesToUse = partsToUse.flatMap({case(fmatchOpt, servingFeature) => {
-          val name = bestNameWithMatch(servingFeature.feature, Some(req.lang), i != 0,
-            fmatchOpt.map(_.phrase))
-          i += 1
-          name
-        }})
-
-        // strip dupe un-matched parts, so we don't have "Istanbul, Istanbul, TR"
-        // don't strip out matched parts (that's the isempty check)
-        // don't strip out the main feature name (index != 0)
-        namesToUse = namesToUse.zipWithIndex.filterNot({case (nameMatch, index) => {
-          index != 0 && nameMatch._2.isEmpty && nameMatch._1.name == namesToUse(0)._1.name
-        }}).map(_._1)
-      
-        var (matchedNameParts, highlightedNameParts) = 
-          (namesToUse.map(_._1.name),
-           namesToUse.map({case(fname, highlightedName) => {
-            highlightedName.getOrElse(fname.name)
-          }}))
-
-        if (partsToUse.forall(_._2.feature.woeType != YahooWoeType.COUNTRY)) {
-          matchedNameParts ++= countryAbbrev.toList
-          highlightedNameParts ++= countryAbbrev.toList
-        }
-        f.setMatchedName(matchedNameParts.mkString(", "))
-        f.setHighlightedName(highlightedNameParts.mkString(", "))
-      })
-
-      // possibly clear names
-      val names = f.names
-      f.setNames(names.filter(n => 
-        Option(n.flags).exists(_.contains(FeatureNameFlags.ABBREVIATION)) ||
-        n.lang == req.lang ||
-        n.lang == "en" ||
-        namesToUse.contains(n)
-      ))
-
-      if (!req.full & !req.includePolygon) {
-        f.geometry.unsetWkbGeometry()
-      } else {
-        if (req.wktGeometry && f.geometry.wkbGeometry != null) {
-          val wkbReader = new WKBReader()
-          val wktWriter = new WKTWriter()
-          val geom = wkbReader.read(f.geometry.getWkbGeometry())
-          f.geometry.setWktGeometry(wktWriter.write(geom))
-        }
-      }
-
-      val parentNames = parentsToUse.map(p =>
-        NameUtils.bestName(p.feature, Some(req.lang), true).map(_.name).getOrElse(""))
-         .filterNot(parentName => {
-           name == parentName
-         })
-
-      f.setDisplayName((Vector(name) ++ parentNames ++ countryAbbrev.toList).mkString(", "))
+      None
     }
+
+    var namesToUse: Seq[(com.foursquare.twofishes.FeatureName, Option[String])] = Nil
+
+    parse.foreach(p => {
+      val partsFromParse: Seq[(Option[FeatureMatch], GeocodeServingFeature)] =
+        p.map(fmatch => (Some(fmatch), fmatch.fmatch))
+      val partsFromParents: Seq[(Option[FeatureMatch], GeocodeServingFeature)] =
+       parentsToUse.filterNot(f => partsFromParse.exists(_._2 == f))
+        .map(f => (None, f))
+      val partsToUse = (partsFromParse ++ partsFromParents).sortBy(_._2)(GeocodeServingFeatureOrdering)
+      // logger.ifDebug("parts to use: " + partsToUse)
+      var i = 0
+      namesToUse = partsToUse.flatMap({case(fmatchOpt, servingFeature) => {
+        val name = bestNameWithMatch(servingFeature.feature, Some(req.lang), i != 0,
+          fmatchOpt.map(_.phrase))
+        i += 1
+        name
+      }})
+
+      // strip dupe un-matched parts, so we don't have "Istanbul, Istanbul, TR"
+      // don't strip out matched parts (that's the isempty check)
+      // don't strip out the main feature name (index != 0)
+      namesToUse = namesToUse.zipWithIndex.filterNot({case (nameMatch, index) => {
+        index != 0 && nameMatch._2.isEmpty && nameMatch._1.name == namesToUse(0)._1.name
+      }}).map(_._1)
+    
+      var (matchedNameParts, highlightedNameParts) = 
+        (namesToUse.map(_._1.name),
+         namesToUse.map({case(fname, highlightedName) => {
+          highlightedName.getOrElse(fname.name)
+        }}))
+
+      if (!partsToUse.exists(_._2.feature.woeType == YahooWoeType.COUNTRY)) {
+        matchedNameParts ++= countryAbbrev.toList
+        highlightedNameParts ++= countryAbbrev.toList
+      }
+      f.setMatchedName(matchedNameParts.mkString(", "))
+      f.setHighlightedName(highlightedNameParts.mkString(", "))
+    })
+
+    // possibly clear names
+    val names = f.names
+    f.setNames(names.filter(n => 
+      Option(n.flags).exists(_.contains(FeatureNameFlags.ABBREVIATION)) ||
+      n.lang == req.lang ||
+      n.lang == "en" ||
+      namesToUse.contains(n)
+    ))
+
+    if (!req.full & !req.includePolygon) {
+      f.geometry.unsetWkbGeometry()
+    } else {
+      if (req.wktGeometry && f.geometry.wkbGeometry != null) {
+        val wkbReader = new WKBReader()
+        val wktWriter = new WKTWriter()
+        val geom = wkbReader.read(f.geometry.getWkbGeometry())
+        f.geometry.setWktGeometry(wktWriter.write(geom))
+      }
+    }
+
+    val parentNames = parentsToUse.map(p =>
+      NameUtils.bestName(p.feature, Some(req.lang), true).map(_.name).getOrElse(""))
+       .filterNot(parentName => {
+         name == parentName
+       })
+
+    var displayNameParts = Vector(name) ++ parentNames
+    if (f.woeType != YahooWoeType.COUNTRY) {
+      displayNameParts ++= countryAbbrev.toList
+    }
+    f.setDisplayName(displayNameParts.mkString(", "))
   }
 
   def featureDistance(f1: GeocodeFeature, f2: GeocodeFeature) = {
