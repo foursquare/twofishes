@@ -12,6 +12,7 @@ import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
 import java.io.File
 import org.opengis.feature.simple.SimpleFeature
+import org.bson.types.ObjectId
 import scala.collection.JavaConversions._
 import scala.collection.mutable.{HashMap, HashSet}
 import scalaj.collection.Implicits._
@@ -143,6 +144,12 @@ object GeonamesParser {
 
 import GeonamesParser._
 class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer) extends SimplePrintLogger {
+  def objectIdFromLong(n: Long) = {
+    val bytes = BigInt(n).toByteArray
+    val arr = bytes.reverse.padTo(12, 0: Byte).reverse
+    new ObjectId(arr)
+  }
+
   def loadPolygons(): Map[String, Geometry] = {
     val polygonDirs = List(
       new File("data/computed/polygons"),
@@ -418,7 +425,19 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
       attr
     })
 
+    val objectId = (
+      for {
+        fid <- geonameId
+        if fid.namespace == geonameIdNamespace
+        idInt <- Helpers.TryO(fid.id.toInt)
+      } yield {
+        // let's call geonames data
+        objectIdFromLong((1 << 32) + idInt)
+      }
+    ).getOrElse(new ObjectId())
+
     val record = GeocodeRecord(
+      _id = objectId,
       ids = ids,
       names = Nil,
       cc = feature.countryCode,
