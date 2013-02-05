@@ -16,7 +16,6 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable.{HashMap, HashSet}
 import scalaj.collection.Implicits._
 
-
 // TODO
 // stop using string representations of "a:b" featureids everywhere, PLEASE
 
@@ -29,9 +28,6 @@ object GeonamesParser {
   var countryNameMap = new HashMap[String, String]() 
   var adminIdMap = new HashMap[String, String]() 
 
-  val idToSlugMap = new HashMap[String, String]
-  val slugEntryMap = new SlugEntryMap
-  var missingSlugList = new HashSet[String]
   var hasPolygonList = new HashSet[String]
 
   val naturalEarthPopulatedPlacesMap: Map[Int, SimpleFeature] = {
@@ -42,156 +38,7 @@ object GeonamesParser {
     }).toMap
   }
 
-  def readSlugs() {
-    // step 1 -- load existing slugs into ... memory?
-    val files = List(
-      new File("data/computed/slugs.txt"),
-      new File("data/private/slugs.txt")
-    )
-    files.foreach(file => 
-      if (file.exists) {
-        val fileSource = scala.io.Source.fromFile(file)
-        val lines = fileSource.getLines.toList.filterNot(_.startsWith("#"))
-        lines.map(l => {
-          val parts = l.split("\t")
-          val slug = parts(0)
-          val id = parts(1)
-          val score = parts(2).toInt
-          val deprecated = parts(3).toBoolean
-          slugEntryMap(slug) = SlugEntry(id, score, deprecated = deprecated, permanent = true)
-          if (!deprecated) {
-            idToSlugMap(id) = slug
-          }
-        })
-      }
-    )
-    println("read %d slugs".format(slugEntryMap.size))
-  }
-
-  // TODO: not in love with this talking directly to mongo, please fix
-  import com.mongodb.casbah.Imports._
-  import com.novus.salat._
-  import com.novus.salat.annotations._
-  import com.novus.salat.dao._
-  import com.novus.salat.global._
-  val parentMap = new HashMap[String, Option[GeocodeFeature]]
-
-  def findFeature(fid: String): Option[GeocodeServingFeature] = {
-    val ret = MongoGeocodeDAO.findOne(MongoDBObject("ids" -> fid))
-      .map(_.toGeocodeServingFeature)
-    if (ret.isEmpty) {
-      println("couldn't find %s".format(fid))
-    }
-    ret
-  }
-
-  def findParent(fid: String): Option[GeocodeFeature] = {
-    parentMap.getOrElseUpdate(fid, findFeature(fid).map(_.feature))
-  }
-
-  def calculateSlugScore(f: GeocodeServingFeature): Int = {
-    f.scoringFeatures.boost + f.scoringFeatures.population
-  }
-
-  def matchSlugs(id: String, servingFeature: GeocodeServingFeature, possibleSlugs: List[String]): Option[String] = {
-    // println("trying to generate a slug for %s".format(id))
-    possibleSlugs.foreach(slug => {
-      // println("possible slug: %s".format(slug))
-      val existingSlug = slugEntryMap.get(slug)
-      val score = calculateSlugScore(servingFeature)
-      existingSlug match {
-        case Some(existing) => {
-          if (!existing.permanent && score > existing.score) {
-            val evictedId = existingSlug.get.id
-            // println("evicting %s and recursing".format(evictedId))
-            slugEntryMap(slug) = SlugEntry(id, score, deprecated = false, permanent = false)
-            buildSlug(evictedId)
-            return Some(slug)
-          }
-        }
-        case _ => {
-          // println("picking %s".format(slug))
-          slugEntryMap(slug) = SlugEntry(id, score, deprecated = false, permanent = false)
-          return Some(slug)
-        }
-      } 
-    })
-    // println("failed to find any slug")
-    return None
-  }
-
-  def buildSlug(id: String) {
-    val oldSlug = idToSlugMap.get(id)
-    val oldEntry = oldSlug.map(slug => slugEntryMap(slug))
-    var newSlug: Option[String] = None
-          
-    for {
-      servingFeature <- findFeature(id)
-      if (servingFeature.scoringFeatures.population > 0 || servingFeature.scoringFeatures.boost > 0)
-    } {
-      val parents = servingFeature.scoringFeatures.parents.asScala.flatMap(
-        p => findParent(p)).toList
-      var possibleSlugs = SlugBuilder.makePossibleSlugs(servingFeature.feature, parents)
-
-      // if a city is bigger than 2 million people, we'll attempt to use the bare city name as the slug
-      // unless it's the US, where I'd rather have consistency of always doing city-state
-      if (servingFeature.scoringFeatures.population > 2000000 && servingFeature.feature.cc != "US") {
-        possibleSlugs = NameUtils.bestName(servingFeature.feature, Some("en"), false).toList.map(n => SlugBuilder.normalize(n.name)) ++ possibleSlugs
-      }
-
-      newSlug = matchSlugs(id, servingFeature, possibleSlugs)
-      if (newSlug.isEmpty && possibleSlugs.nonEmpty) {
-        var extraDigit = 1
-        var slugFound = false
-        while (!newSlug.isEmpty) {
-          newSlug = matchSlugs(id, servingFeature, possibleSlugs.map(s => "%s-%d".format(s, extraDigit)))
-          extraDigit += 1
-        }
-      }
-    }
-    if (newSlug != oldSlug) {
-      println("deprecating old slug for %s %s -> %s".format(id, oldSlug, newSlug.getOrElse("newslug")))
-      oldEntry.map(_.deprecated = true)
-    }
-  }
-
-  def buildMissingSlugs() {
-    println("building missing slugs for %d fetures".format(missingSlugList.size))
-    // step 2 -- compute slugs for records without
-    for {
-      (id, index) <- missingSlugList.zipWithIndex
-    } {
-      if (index % 10000 == 0) {
-        println("built %d of %d slugs".format(index, missingSlugList.size))
-      }
-      buildSlug(id)
-    }
-
-    // step 3 -- write new slug file
-    println("writing new slug map for %d features".format(slugEntryMap.size))
-    val p = new java.io.PrintWriter(new File("data/computed/slugs.txt"))
-    slugEntryMap.keys.toList.sorted.foreach(slug => 
-     p.println("%s\t%s".format(slug, slugEntryMap(slug)))
-    )
-    p.close()
-  }
-
-  def writeMissingSlugs(store: GeocodeStorageWriteService) {
-    for {
-      (id, index) <- missingSlugList.zipWithIndex
-      slug <- idToSlugMap.get(id)
-      val parts = id.split(":")
-      fid1 <- parts.lift(0)
-      fid2 <- parts.lift(1)
-    } {
-      if (index % 10000 == 0) {
-        println("flushed %d of %d slug to mongo".format(index, missingSlugList.size))
-      }
-      val fid = StoredFeatureId(fid1, fid2)
-      store.addSlugToRecord(fid, slug)
-    }
-  }
-
+  
   def parseCountryInfo() {
     val fileSource = scala.io.Source.fromFile(new File("data/downloaded/countryInfo.txt"))
     val lines = fileSource.getLines.filterNot(_.startsWith("#"))
@@ -219,19 +66,31 @@ object GeonamesParser {
     })
   }
 
+  val store = new MongoGeocodeStorageService()
+  val slugIndexer = new SlugIndexer()
 
   def main(args: Array[String]) {
-    val store = new MongoGeocodeStorageService()
-    val parser = new GeonamesParser(store)
     config = new GeonamesImporterConfig(args)
+    loadIntoMongo()
+    writeHFileOutput()
+  }
 
-    Helpers.duration("readSlugs") { readSlugs() }
+  def writeHFileOutput() {
+    val outputter = new OutputHFile(config.hfileBasePath, config.outputPrefixIndex, slugIndexer.slugEntryMap)
+    outputter.process()
+    if (config.outputRevgeo) {
+      outputter.buildRevGeoIndex()
+    }
+  }
+
+  def loadIntoMongo() {
+    val parser = new GeonamesParser(store, slugIndexer)
+
     parseCountryInfo()
 
     if (config.importAlternateNames) {
       Helpers.duration("readAlternateNamesFile") {
-        parser.readAlternateNamesFile(
-          "data/downloaded/alternateNames.txt")
+        parser.loadAlternateNames()
       }
     }
 
@@ -276,25 +135,14 @@ object GeonamesParser {
 
     if (config.buildMissingSlugs) {
       println("building missing slugs")
-      buildMissingSlugs()
-      writeMissingSlugs(store)  
-    }
-
-    val outputter = new OutputHFile(config.hfileBasePath, config.outputPrefixIndex, slugEntryMap)
-    outputter.process()
-    if (config.outputRevgeo) {
-      outputter.buildRevGeoIndex()
-    }
+      slugIndexer.buildMissingSlugs()
+      slugIndexer.writeMissingSlugs(store)  
+    } 
   }
 }
 
 import GeonamesParser._
-class GeonamesParser(store: GeocodeStorageWriteService) {
-  object logger {
-    def error(s: String) { println("**ERROR** " + s)}
-    def info(s: String) { println(s)}
-  }
-
+class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer) extends SimplePrintLogger {
   def loadPolygons(): Map[String, Geometry] = {
     val polygonDirs = List(
       new File("data/computed/polygons"),
@@ -544,11 +392,11 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       wkbWriter.write(geom))
 
     val slug: Option[String] = geonameId.flatMap(gid => {
-      idToSlugMap.get(gid.toString)
+      slugIndexer.idToSlugMap.get(gid.toString)
     })
     if (slug.isEmpty &&
       List(YahooWoeType.TOWN, YahooWoeType.SUBURB, YahooWoeType.COUNTRY, YahooWoeType.ADMIN1, YahooWoeType.ADMIN2).has(feature.featureClass.woeType)) {
-      geonameId.foreach(gid => missingSlugList.add(gid.toString))
+      geonameId.foreach(gid => slugIndexer.missingSlugList.add(gid.toString))
     }
 
     val geonameIntId = TryO { feature.geonameid.getOrElse("-1").toInt } 
@@ -630,55 +478,11 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
     }})
   }
 
-  case class AlternateNameEntry(
-    nameId: String,
-    lang: String,
-    name: String,
-    isPrefName: Boolean,
-    isShortName: Boolean
-  )
-  val alternateNamesMap = new HashMap[String, List[AlternateNameEntry]]
-  def readAlternateNamesFile(filename: String) {
-    val lines = scala.io.Source.fromFile(new File(filename)).getLines
-    lines.zipWithIndex.foreach({case (line, index) => {
-      if (index % 100000 == 0) {
-        logger.info("imported %d alternateNames so far".format(index))
-      }
-
-      val parts = line.split("\t").toList
-      if (parts.size < 4) {
-          logger.error("line %d didn't have 5 parts: %s -- %s".format(index, line, parts.mkString(",")))
-        } else {
-          val nameid = parts(0)
-          val geonameid = parts(1)
-          val lang = parts(2)
-          val name = parts(3)
-          val isPrefName = parts.lift(4).exists(_ == "1")
-          val isShortName = parts.lift(5).exists(_ == "1")
-
-          val fid = StoredFeatureId(geonameIdNamespace, geonameid)
-          val names = alternateNamesMap.getOrElseUpdate(fid.toString, Nil)
-          alternateNamesMap(fid.toString) = AlternateNameEntry(
-            nameId = nameid,
-            name = name,
-            lang = lang,
-            isPrefName = isPrefName,
-            isShortName = isShortName
-          ) :: names
-      }
-    }})
+  var alternateNamesMap = new HashMap[String, List[AlternateNameEntry]]
+  def loadAlternateNames() {
+    alternateNamesMap = AlternateNamesReader.readAlternateNamesFile(
+      "data/downloaded/alternateNames.txt")
   }
-
-  // def parseAlternateNamesFile(filename: String) {
-  //   val lines = scala.io.Source.fromFile(new File(filename)).getLines
-  //   lines.zipWithIndex.foreach({case (line, index) => {
-  //     if (index % 10000 == 0) {
-  //       logger.info("imported %d alternateNames so far".format(index))
-  //     }
-
-  //     parseAlternateNamesLine(line, index)
-  //   }})
-  // }
 
   def processFeatureName(
     cc: String,
@@ -718,28 +522,6 @@ class GeonamesParser(store: GeocodeStorageWriteService) {
       Nil
     }
   }
-
-  // def parseAlternateNamesLine(line: String, index: Int) {
-  //   val parts = line.split("\t").toList
-  //   if (parts.size < 4) {
-  //       logger.error("line %d didn't have 5 parts: %s -- %s".format(index, line, parts.mkString(",")))
-  //     } else {
-  //       val geonameid = parts(1)
-  //       val lang = parts(2)
-  //       val name = parts(3)
-  //       val isPrefName = parts.lift(4).exists(_ == "1")
-  //       val isShortName = parts.lift(5).exists(_ == "1")
-
-  //       val fid = StoredFeatureId(geonameIdNamespace, geonameid)
-  //       val record = store.getById(fid).toList.headOption
-  //       val names = processFeatureName(
-  //         record.map(_.cc).getOrElse("XX"), lang, name, isPrefName, isShortName)
-  //       names.foreach(dn => {
-  //         addDisplayNameToNameIndex(dn, fid, record)
-  //         store.addNameToRecord(dn, fid)
-  //       })
-  //   }
-  // }
 
   def parsePreferredNames() {
     // geonameid -> lang|prefName
