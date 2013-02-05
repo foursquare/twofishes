@@ -36,7 +36,7 @@ class HFileStorageService(basepath: String) extends GeocodeStorageReadService {
   def readSlugMap() = {
     scala.io.Source.fromFile(new File(basepath, "id-mapping.txt")).getLines.map(l => {
       val parts = l.split("\t")
-      (parts(0), new ObjectId(parts(1)))
+      (parts(0), parts(1))
     }).toMap
   }
 
@@ -59,7 +59,21 @@ class HFileStorageService(basepath: String) extends GeocodeStorageReadService {
   }
 
   def getBySlugOrFeatureIds(ids: Seq[String]) = {
-    val oidMap = ids.flatMap(id => slugFidMap.get(id).map(oid => (oid, id))).toMap
+    val oidMap = ids.flatMap(id => slugFidMap.get(id).flatMap(oid => {
+      // temporary hack because we're outputting a map of 
+      // slug -> geoid
+      // geoid -> oid
+
+      if (ObjectId.isValid(oid)) {
+        Some((new ObjectId(oid), id))
+      } else {
+        for {
+          oid2 <- slugFidMap.get(oid)
+          if ObjectId.isValid(oid2)
+        } yield { (new ObjectId(oid2), id) } 
+      }
+    })).toMap
+
     getByObjectIds(oidMap.keys.toList).map({
       case (k, v) => (oidMap(k), v)
     })
