@@ -150,38 +150,6 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
     new ObjectId(arr)
   }
 
-  def loadPolygons(): Map[String, Geometry] = {
-    val polygonDirs = List(
-      new File("data/computed/polygons"),
-      new File("data/private/polygons")
-    )
-    val polygonFiles = polygonDirs.flatMap(polygonDir => {
-      if (polygonDir.exists) { polygonDir.listFiles.toList } else { Nil }
-    }).sorted
-
-    val wktReader = new WKTReader()
-    polygonFiles.flatMap(f => {
-      val extension = f.getName().split(".").lift(1).getOrElse("")
-      val shapeFileExtensions = List("shx", "dbf", "prj", "xml")
-
-      if (extension == "shp") {
-        for {
-          shp <- new ShapefileIterator(f)
-          geoid <- shp.propMap.get("fs_geoid")
-          geom <- shp.geometry
-        } yield { (geoid -> geom) }
-      } else if (shapeFileExtensions.has(extension)) {
-        // do nothing, shapefile aux file
-        Nil
-      } else {
-        scala.io.Source.fromFile(f).getLines.filterNot(_.startsWith("#")).toList.map(l => {
-          val parts = l.split("\t")
-          (parts(0) -> wktReader.read(parts(1))) 
-        })
-      }
-    }).toMap
-  }
-
   lazy val hierarchyTable = HierarchyParser.parseHierarchy(List(
     "data/downloaded/hierarchy.txt",
     "data/private/hierarchy.txt",
@@ -202,7 +170,7 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
   // geonameid --> new center
   lazy val moveTable = new TsvHelperFileParser("data/custom/moves.txt")
   // geonameid -> polygon
-  lazy val polygonTable: Map[String, Geometry] = loadPolygons() 
+  lazy val polygonTable: Map[String, Geometry] = PolygonLoader.load()
   // geonameid -> name to be deleted
   lazy val nameDeleteTable = new TsvHelperFileParser("data/custom/name-deletes.txt")
 
