@@ -322,7 +322,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
                 GeometryUtils.s2PolygonCovering(geom, level, level).foreach(
                   (cellid: S2CellId) => {
                     if (cellid.level() != level) {
-                      println("generated wrong level: %d SHOULD NOT HAPPEN at %d".format(cellid.level, level))
+                      throw new Exception("generated wrong level: %d SHOULD NOT HAPPEN at %d".format(cellid.level, level))
                     } else {
                       val s2Bytes: Array[Byte] = GeometryUtils.getBytes(cellid)
                       val bucket = s2map.getOrElseUpdate(ByteBuffer.wrap(s2Bytes), new HashSet[CellGeometry]())
