@@ -37,6 +37,7 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
   private static final TField LABELRANK_FIELD_DESC = new TField("labelrank", TType.I32, (short)4);
   private static final TField NATSCALE_FIELD_DESC = new TField("natscale", TType.I32, (short)5);
   private static final TField POPULATION_FIELD_DESC = new TField("population", TType.I32, (short)6);
+  private static final TField SOCIALLY_RELEVANT_FIELD_DESC = new TField("sociallyRelevant", TType.BOOL, (short)7);
 
   public boolean adm0cap;
   public boolean adm1cap;
@@ -44,6 +45,7 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
   public int labelrank;
   public int natscale;
   public int population;
+  public boolean sociallyRelevant;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
@@ -52,7 +54,8 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
     SCALERANK((short)3, "scalerank"),
     LABELRANK((short)4, "labelrank"),
     NATSCALE((short)5, "natscale"),
-    POPULATION((short)6, "population");
+    POPULATION((short)6, "population"),
+    SOCIALLY_RELEVANT((short)7, "sociallyRelevant");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -79,6 +82,8 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
           return NATSCALE;
         case 6: // POPULATION
           return POPULATION;
+        case 7: // SOCIALLY_RELEVANT
+          return SOCIALLY_RELEVANT;
         default:
           return null;
       }
@@ -125,7 +130,8 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
   private static final int __LABELRANK_ISSET_ID = 3;
   private static final int __NATSCALE_ISSET_ID = 4;
   private static final int __POPULATION_ISSET_ID = 5;
-  private BitSet __isset_bit_vector = new BitSet(6);
+  private static final int __SOCIALLYRELEVANT_ISSET_ID = 6;
+  private BitSet __isset_bit_vector = new BitSet(7);
 
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
@@ -142,6 +148,8 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
         new FieldValueMetaData(TType.I32)));
     tmpMap.put(_Fields.POPULATION, new FieldMetaData("population", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.I32)));
+    tmpMap.put(_Fields.SOCIALLY_RELEVANT, new FieldMetaData("sociallyRelevant", TFieldRequirementType.OPTIONAL, 
+        new FieldValueMetaData(TType.BOOL)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeFeatureAttributes.class, metaDataMap);
   }
@@ -159,6 +167,8 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
 
     this.population = 0;
 
+    this.sociallyRelevant = false;
+
   }
 
   /**
@@ -173,6 +183,7 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
     this.labelrank = other.labelrank;
     this.natscale = other.natscale;
     this.population = other.population;
+    this.sociallyRelevant = other.sociallyRelevant;
   }
 
   public GeocodeFeatureAttributes deepCopy() {
@@ -192,6 +203,8 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
     this.natscale = 0;
 
     this.population = 0;
+
+    this.sociallyRelevant = false;
 
   }
 
@@ -333,6 +346,29 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
     __isset_bit_vector.set(__POPULATION_ISSET_ID, value);
   }
 
+  public boolean isSociallyRelevant() {
+    return this.sociallyRelevant;
+  }
+
+  public GeocodeFeatureAttributes setSociallyRelevant(boolean sociallyRelevant) {
+    this.sociallyRelevant = sociallyRelevant;
+    setSociallyRelevantIsSet(true);
+    return this;
+  }
+
+  public void unsetSociallyRelevant() {
+    __isset_bit_vector.clear(__SOCIALLYRELEVANT_ISSET_ID);
+  }
+
+  /** Returns true if field sociallyRelevant is set (has been asigned a value) and false otherwise */
+  public boolean isSetSociallyRelevant() {
+    return __isset_bit_vector.get(__SOCIALLYRELEVANT_ISSET_ID);
+  }
+
+  public void setSociallyRelevantIsSet(boolean value) {
+    __isset_bit_vector.set(__SOCIALLYRELEVANT_ISSET_ID, value);
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case ADM0CAP:
@@ -383,6 +419,14 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
       }
       break;
 
+    case SOCIALLY_RELEVANT:
+      if (value == null) {
+        unsetSociallyRelevant();
+      } else {
+        setSociallyRelevant((Boolean)value);
+      }
+      break;
+
     }
   }
 
@@ -405,6 +449,9 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
 
     case POPULATION:
       return new Integer(getPopulation());
+
+    case SOCIALLY_RELEVANT:
+      return new Boolean(isSociallyRelevant());
 
     }
     throw new IllegalStateException();
@@ -429,6 +476,8 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
       return isSetNatscale();
     case POPULATION:
       return isSetPopulation();
+    case SOCIALLY_RELEVANT:
+      return isSetSociallyRelevant();
     }
     throw new IllegalStateException();
   }
@@ -497,6 +546,15 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
       if (!(this_present_population && that_present_population))
         return false;
       if (this.population != that.population)
+        return false;
+    }
+
+    boolean this_present_sociallyRelevant = true && this.isSetSociallyRelevant();
+    boolean that_present_sociallyRelevant = true && that.isSetSociallyRelevant();
+    if (this_present_sociallyRelevant || that_present_sociallyRelevant) {
+      if (!(this_present_sociallyRelevant && that_present_sociallyRelevant))
+        return false;
+      if (this.sociallyRelevant != that.sociallyRelevant)
         return false;
     }
 
@@ -576,6 +634,16 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetSociallyRelevant()).compareTo(typedOther.isSetSociallyRelevant());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetSociallyRelevant()) {
+      lastComparison = TBaseHelper.compareTo(this.sociallyRelevant, typedOther.sociallyRelevant);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -641,6 +709,14 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
+        case 7: // SOCIALLY_RELEVANT
+          if (field.type == TType.BOOL) {
+            this.sociallyRelevant = iprot.readBool();
+            setSociallyRelevantIsSet(true);
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -686,6 +762,11 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
       oprot.writeI32(this.population);
       oprot.writeFieldEnd();
     }
+    if (isSetSociallyRelevant()) {
+      oprot.writeFieldBegin(SOCIALLY_RELEVANT_FIELD_DESC);
+      oprot.writeBool(this.sociallyRelevant);
+      oprot.writeFieldEnd();
+    }
     oprot.writeFieldStop();
     oprot.writeStructEnd();
   }
@@ -728,6 +809,12 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
       if (!first) sb.append(", ");
       sb.append("population:");
       sb.append(this.population);
+      first = false;
+    }
+    if (isSetSociallyRelevant()) {
+      if (!first) sb.append(", ");
+      sb.append("sociallyRelevant:");
+      sb.append(this.sociallyRelevant);
       first = false;
     }
     sb.append(")");

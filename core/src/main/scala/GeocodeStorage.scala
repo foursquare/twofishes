@@ -74,14 +74,11 @@ case class GeocodeRecord(
   }
 
   def getAttributes(): Option[GeocodeFeatureAttributes] = {
-    if (attributes.nonEmpty || population.nonEmpty) {
+    attributes.map(bytes => {
       val attr = new GeocodeFeatureAttributes()
-      attributes.map(b => deserializer.deserialize(attr, b))
-      population.foreach(p => attr.setPopulation(p))
-      Some(attr)
-    } else {
-      None
-    }
+      deserializer.deserialize(attr, bytes)
+      attr
+    })
   }
 
   def featureIds = ids.map(id => {

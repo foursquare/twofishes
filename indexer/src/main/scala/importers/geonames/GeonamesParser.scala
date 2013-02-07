@@ -375,23 +375,40 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
     }
 
     val geonameIntId = TryO { feature.geonameid.getOrElse("-1").toInt } 
-    val attributes = geonameIntId.flatMap(naturalEarthPopulatedPlacesMap.get).map(sfeature => {
-      val attr = new GeocodeFeatureAttributes()
+
+    var attributesSet = false
+    lazy val attributes = {
+      attributesSet = true
+      new GeocodeFeatureAttributes()
+    }
+
+    geonameIntId.flatMap(naturalEarthPopulatedPlacesMap.get).map(sfeature => {
       sfeature.propMap.get("adm0cap").foreach(v => 
-        attr.setAdm0cap(v.toDouble.toInt == 1)
+        attributes.setAdm0cap(v.toDouble.toInt == 1)
       )
       sfeature.propMap.get("scalerank").foreach(v => 
-        attr.setScalerank(v.toInt)
+        attributes.setScalerank(v.toInt)
       )
       sfeature.propMap.get("natscale").foreach(v => 
-        attr.setNatscale(v.toInt)
+        attributes.setNatscale(v.toInt)
       )
       sfeature.propMap.get("labelrank").foreach(v => 
-        attr.setLabelrank(v.toInt)
+        attributes.setLabelrank(v.toInt)
       )
-      attr.setAdm1cap(feature.featureClass.isAdmin1Capital)
-      attr
     })
+
+    if (feature.featureClass.isAdmin1Capital) {
+      attributes.setAdm1cap(true)
+    }
+
+    feature.population.foreach(pop =>
+      attributes.setPopulation(pop)
+    )
+
+    feature.extraColumns.get("sociallyRelevant").map(v => 
+      attributes.setSociallyRelevant(v.toInt > 0)
+    )
+
 
     val objectId = (
       for {
@@ -423,7 +440,9 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
       hasPoly = polygon.map(p => true)
     )
 
-    record.setAttributes(attributes)
+    if (attributesSet) {
+      record.setAttributes(Some(attributes))
+    }
 
     store.insert(record)
 

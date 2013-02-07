@@ -127,7 +127,8 @@ struct GeocodeFeatureAttributes {
   3: optional i32 scalerank = 0,
   4: optional i32 labelrank = 0,
   5: optional i32 natscale = 0,
-  6: optional i32 population = 0
+  6: optional i32 population = 0,
+  7: optional bool sociallyRelevant = 0
 }
 
 // index-only data structure
