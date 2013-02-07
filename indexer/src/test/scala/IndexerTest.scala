@@ -58,6 +58,15 @@ class IndexerSpec extends Specification {
     names must contain("N Bergen")
   }
 
+  "ARRONDISSEMENT rewrites work" in {
+    val (deaccentedNames, otherModifiedNames) = parser.rewriteNames(
+      List("9eme"))
+    val names = deaccentedNames ++ otherModifiedNames
+    names.size aka names.toString mustEqual 2
+    names must contain("9E ARRONDISSEMENT")
+    names must contain("9th ARRONDISSEMENT")
+  }
+
  "long rewrites work" in {
     val (deaccentedNames, otherModifiedNames) =
       parser.rewriteNames(List("Griffiss Air Force Base"))

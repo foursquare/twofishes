@@ -13,3 +13,8 @@ Township\b|Twp,Charter Township
 kommun\b|Kommune
 Fort\b|Ft
 Boulevard|Blvd
+1eme|1ER ARRONDISSEMENT
+2eme|2nd ARRONDISSEMENT
+3eme|3nd ARRONDISSEMENT
+eme|E ARRONDISSEMENT
+eme|th ARRONDISSEMENT
