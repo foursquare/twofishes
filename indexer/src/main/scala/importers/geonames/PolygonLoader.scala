@@ -29,7 +29,7 @@ object PolygonLoader {
 
     val wktReader = new WKTReader()
     polygonFiles.flatMap(f => {
-      val extension = f.getName().split(".").lift(1).getOrElse("")
+      val extension = f.getName().split("\\.").lastOption.getOrElse("")
       val shapeFileExtensions = List("shx", "dbf", "prj", "xml")
 
       if (extension == "shp") {
