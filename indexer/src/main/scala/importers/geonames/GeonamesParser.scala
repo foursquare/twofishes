@@ -189,22 +189,22 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
   ))
 
   // token -> alt tokens
-  val rewriteTable = new TsvHelperFileParser("data/custom/rewrites.txt",
+  lazy val rewriteTable = new TsvHelperFileParser("data/custom/rewrites.txt",
     "data/private/rewrites.txt")
   // tokenlist
-  val deletesList: List[String] = scala.io.Source.fromFile(new File("data/custom/deletes.txt")).getLines.toList
+  lazy val deletesList: List[String] = scala.io.Source.fromFile(new File("data/custom/deletes.txt")).getLines.toList
   // geonameid -> boost value
-  val boostTable = new TsvHelperFileParser("data/custom/boosts.txt",
+  lazy val boostTable = new TsvHelperFileParser("data/custom/boosts.txt",
     "data/private/boosts.txt")
   // geonameid -> alias
-  val aliasTable = new TsvHelperFileParser("data/custom/aliases.txt",
+  lazy val aliasTable = new TsvHelperFileParser("data/custom/aliases.txt",
     "data/private/aliases.txt")
   // geonameid --> new center
-  val moveTable = new TsvHelperFileParser("data/custom/moves.txt")
+  lazy val moveTable = new TsvHelperFileParser("data/custom/moves.txt")
   // geonameid -> polygon
-  val polygonTable: Map[String, Geometry] = loadPolygons() 
+  lazy val polygonTable: Map[String, Geometry] = loadPolygons() 
   // geonameid -> name to be deleted
-  val nameDeleteTable = new TsvHelperFileParser("data/custom/name-deletes.txt")
+  lazy val nameDeleteTable = new TsvHelperFileParser("data/custom/name-deletes.txt")
 
   val bboxDirs = List(
     new File("data/computed/bboxes/"),

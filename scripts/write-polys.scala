@@ -17,12 +17,14 @@ import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
     })  
   }).toMap
 
+
+    val polygonTable: Map[String, Geometry] = GeonamesParser.loadPolygons() 
+
       val wktReader = new WKTReader()
       val wkbWriter = new WKBWriter()
 
 
-  def addPolygonToRecord(id: String, wkt: String) {
-      val geom = wktReader.read(wkt)
+  def addPolygonToRecord(id: String, geom: Geometry) {
       val wkb = wkbWriter.write(geom)
 
     MongoGeocodeDAO.update(MongoDBObject("ids" -> id),
