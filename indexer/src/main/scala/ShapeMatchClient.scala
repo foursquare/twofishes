@@ -8,7 +8,9 @@ import org.opengis.feature.simple.SimpleFeature
 import com.twitter.finagle.thrift.{ThriftClientFramedCodec, ThriftClientRequest}
 import com.twitter.util.{Duration, TimeLike}
 import com.twitter.conversions.time._
+import com.foursquare.twofishes.util.Helpers
 import org.apache.thrift.TException
+import com.vividsolutions.jts.util.GeometricShapeFactory
 import org.apache.thrift.protocol.TBinaryProtocol
 import org.geotools.data.shapefile.ShapefileDataStore
 import com.foursquare.geo.shapes.FsqSimpleFeatureImplicits._
@@ -22,6 +24,7 @@ import org.apache.thrift.transport.TTransportException
 import org.geotools.geometry.jts.JTSFactoryFinder
 import org.geotools.feature.{AttributeTypeBuilder, NameImpl}
 import org.geotools.feature.simple.SimpleFeatureTypeImpl
+import org.geotools.factory.Hints
 import org.opengis.feature.`type`.{AttributeDescriptor, AttributeType}
 import java.io.File
 import org.geotools.data.Transaction
@@ -81,6 +84,109 @@ class ZillowShapeMatcher(client: Geocoder.ServiceToClient, inputFilename: String
   override def getWoeRestrict(f: SimpleFeature) = Some(List(YahooWoeType.SUBURB))
 }
 
+object CommandLineMatcher {
+  def main(args: Array[String]) {
+    var port: Int = -1
+    var host: String = null
+    var inputFilename: String = null
+    var outputFilename: String = null
+    var queryColumnNames: List[String] = null
+    var woeRestricts: Option[List[YahooWoeType]] = None
+    var querySuffix: Option[String] = None
+    var parserName = "generic"
+    var limit: Option[Int] = None
+
+    val parser = 
+      new scopt.OptionParser("twofishes", "0.12") {
+        intOpt("p", "port", "port twofishes server is running on",
+          { v: Int => port = v } )
+
+        opt("h", "host", "twofishes host",
+          { v: String => host = v } )
+
+        opt("i", "input", "input shapefile",
+          { v: String => inputFilename = v } )
+
+        opt("o", "ouput", "ouput shapefile",
+          { v: String => outputFilename = v } )
+
+        opt("s", "query_suffix", "string to append to all queries, like a countrycode",
+          { v: String => querySuffix = Some(v) } )
+
+        opt("c", "colnames", "comma separated list of column names",
+          { v: String => queryColumnNames = v.split(",").toList } )
+
+        opt("w", "woe_restricts", "comma separated list of woe type names to restrict searches",
+          { v: String => woeRestricts = Some(v.split(",").toList.map(YahooWoeType.valueOf)) } )
+
+        opt("parser", "custom parser to use for makign queries. avail: nps",
+          { v: String => parserName = v } )
+
+        intOpt("l", "limit", "limit on the number of shapes to process",
+          { v: Int => limit = Some(v) } )
+      }
+
+    if (!parser.parse(args)) {
+      // arguments are bad, usage message will have been displayed
+      System.exit(1)
+    }
+
+    if (parserName == "nps") {
+      new NPSDataMatcher(new GeocoderFinagleThiftClient(host, port).client,
+        inputFilename, outputFilename).process(limit)
+    } else {
+      new CommandLineMatcher(
+        new GeocoderFinagleThiftClient(host, port).client,
+          inputFilename, outputFilename, queryColumnNames, woeRestricts, querySuffix
+      ).process(limit)
+    }
+    println("exiting ....")
+    System.exit(0)
+  }
+}
+
+class CommandLineMatcher(
+    client: Geocoder.ServiceToClient,
+    inputFilename: String,
+    outputFilename: String,
+    queryColumnNames: List[String],
+    woeRestricts: Option[List[YahooWoeType]],
+    querySuffix: Option[String]
+  ) extends BasicGeocodeMatcher(client, inputFilename, outputFilename) {
+
+  override def getWoeRestrict(shp: SimpleFeature) = woeRestricts
+
+  override val getQueryColumnsNames = queryColumnNames
+
+  override def getQuery(f: SimpleFeature) = {
+    super.getQuery(f).map(query => {
+      querySuffix match {
+        case Some(suffix) => query + " " + suffix
+        case None => query
+      }
+    })
+  }
+}
+
+class NPSDataMatcher(client: Geocoder.ServiceToClient, inputFilename: String, outputFilename: String)
+    extends BasicGeocodeMatcher(client, inputFilename, outputFilename) {
+  override val getQueryColumnsNames = List("UNIT_NAME", "UNIT_TYPE", "STATE")
+
+  override def getQuery(f: SimpleFeature) = {
+    var query = f.propMap("UNIT_NAME")
+    var parkType = f.propMap("UNIT_TYPE")
+    if (!query.contains(parkType)) {
+      query += " " + parkType
+    }
+
+    query += " " + f.propMap("STATE")
+
+    Some(query)
+  }
+
+  override def getWoeRestrict(f: SimpleFeature) = Some(List(YahooWoeType.PARK))
+}
+
 class AuthoritativeDataShapeMatcher(client: Geocoder.ServiceToClient, inputFilename: String, outputFilename: String)
     extends BasicGeocodeMatcher(client, inputFilename, outputFilename) {
   override val getQueryColumnsNames = List("qs_name")
@@ -137,38 +243,57 @@ abstract class GeocodeMatcher(client: Geocoder.ServiceToClient, inputFilename: S
 
    val geometryFactory = JTSFactoryFinder.getGeometryFactory(null)
 
-  def findMatchingInterpretation(shp: SimpleFeature, response: GeocodeResponse) = {
-    (for {
-      interpretation <- response.interpretations.asScala.headOption
+  def findMatchingInterpretations(shp: SimpleFeature, response: GeocodeResponse): (List[GeocodeInterpretation], List[String]) = {
+    var messages: List[String] = Nil
+    val matches = (for {
+      interpretation <- response.interpretations.asScala.toList
       val feature = interpretation.feature
       if interpretation.what.isEmpty
       if feature.ids.asScala.exists(_.source == "geonameid")
     } yield {
       // check if the feature overlaps / is near
-      if (shp.getDefaultGeometry().asInstanceOf[Geometry].contains(
-        geometryFactory.createPoint(
-          new Coordinate(
-            feature.geometry.center.lng,
-            feature.geometry.center.lat
-          )
-        )
-      )) {
+      val shpGeom = shp.getDefaultGeometry().asInstanceOf[Geometry]
+
+      // make a 1km circle to give us a buffer around the edge
+      val coord = new Coordinate(
+        feature.geometry.center.lng,
+        feature.geometry.center.lat
+      )
+
+      val crs = shp.getFeatureType().getCoordinateReferenceSystem()
+      // val hints = new Hints(Hints.DEFAULT_COORDINATE_REFERENCE_SYSTEM , crs)
+      val hints = new Hints(Hints.CRS , crs)
+      val geomFactory = JTSFactoryFinder.getGeometryFactory(hints)
+
+      val sizeDegrees = 10000 / 111319.9
+      val gsf = new GeometricShapeFactory(geomFactory)
+      gsf.setSize(sizeDegrees)
+      gsf.setNumPoints(100)
+      gsf.setCentre(coord)
+      val testGeom = gsf.createCircle()
+
+      if (shpGeom.intersects(testGeom)) {
         Some(interpretation)
       } else {
-        println("contianment failed for %s".format(getQuery(shp)))
+        messages ::= ("\tcontainment failed for %s (%s, %s) %s in %s".format(getQuery(shp),
+            feature.geometry.center.lat,
+           feature.geometry.center.lng,
+           testGeom,        
+           shp.getDefaultGeometry()))
         None
       }
-    }).getOrElse(None)
+    }).flatMap(a => a)
+
+    (matches, messages)
   }
 
-  def process {
+  def process(limit: Option[Int] = None) {
     val iter = new ShapefileIterator(inputFilename)
 
     val outStore = new ShapefileDataStore(new File(outputFilename).toURL())
     val oldSchema = iter.store.getFeatureSource().getSchema
     val descriptorList:java.util.List[AttributeDescriptor] = new java.util.ArrayList[AttributeDescriptor]()
     oldSchema.getDescriptors().asScala.foreach{ case d if d.isInstanceOf[AttributeDescriptor] => descriptorList.add(d.asInstanceOf[AttributeDescriptor]) }
-    
 
     val geonameTB = new AttributeTypeBuilder()
     geonameTB.setName("geonameid")
@@ -188,7 +313,10 @@ abstract class GeocodeMatcher(client: Geocoder.ServiceToClient, inputFilename: S
     outStore.createSchema(newSchema)
     val outFeatureWriter = outStore.getFeatureWriter(outStore.getTypeNames()(0), Transaction.AUTO_COMMIT);
 
-    iter.take(10).foreach(shp => {
+    iter.take(limit.getOrElse(iter.size)).zipWithIndex.foreach({ case (shp, index) => {
+      if (index % 100 == 0) {
+        println("finished %d of %d shapes".format(index, iter.size))
+      }
       for {
         query <- getQuery(shp)
       } {
@@ -197,37 +325,35 @@ abstract class GeocodeMatcher(client: Geocoder.ServiceToClient, inputFilename: S
         req.setQuery(query)
         getWoeRestrict(shp).foreach(l => req.setWoeRestrict(l.asJava))
         getLatLngHint(shp).foreach(req.setLl)
-        // println(req)
 
-        val geonameidOpt = 
-          for {
-            response <- Option(client.geocode(req).get)
-            //response <- Option(responseOpt)
-            matchingInterpretation <- findMatchingInterpretation(shp, response)
-            geonameid <- matchingInterpretation.feature.ids.asScala.lift(0).map(_.id)
-          } yield{
-            geonameid
-          }
+        val geonameids: List[String] = {
+          Helpers.TryO(client.geocode(req).get).toList.flatMap(response => {
+            val (matchingInterpretations, messages) = findMatchingInterpretations(shp, response)
+            if (matchingInterpretations.isEmpty) {
+              println(messages.mkString("\n"))
+            }
+            matchingInterpretations.flatMap(_.feature.ids.asScala.lift(0).map(_.id))
+          })
+        }
 
-        geonameidOpt match {
-          case Some(geonameid) => {
-            val writeFeature = outFeatureWriter.next()
-            val attributes = shp.getAttributes()
-            //println(attributes)
-            attributes.add(geonameid)
-            //println(attributes.size)
-            //println(attributes)
-            writeFeature.setAttributes(attributes)
-            //writeFeature.setAttribute("geonameid", geonameid)
-            outFeatureWriter.write()
-          }
-          case None => {
-            println("failed to match " + req)
-          }
+        if (!geonameids.isEmpty) {
+          val writeFeature = outFeatureWriter.next()
+          val attributes = shp.getAttributes()
+          //println(attributes)
+          attributes.add(geonameids.mkString)
+          //println(attributes.size)
+          //println(attributes)
+          writeFeature.setAttributes(attributes)
+          //writeFeature.setAttribute("geonameid", geonameid)
+          outFeatureWriter.write()
+        } else {
+          println("failed to match " + req)
         }
       }
-    })
+    }})
+    println("writing!")
     outFeatureWriter.close()
+    println("DONE!")
   }
 }
 
