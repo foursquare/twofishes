@@ -15,8 +15,10 @@ object FsqSimpleFeatureImplicits {
 }
 
 class FsqSimpleFeature(val f: SimpleFeature) {
-  val propMap = f.getProperties().asScala.map(p => {
-    (p.getName().toString, p.getValue().toString)
+  val propMap = f.getProperties().asScala.flatMap(p => {
+    Option(p.getValue()).map(v => 
+      (p.getName().toString, v.toString)
+    )
   }).toMap
 
   lazy val geometry: Option[Geometry] = {
