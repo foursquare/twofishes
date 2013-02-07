@@ -22,6 +22,7 @@ object GeocoderBuild extends Build {
     resolvers ++= Seq("snapshots" at "http://oss.sonatype.org/content/repositories/snapshots",
                       "releases"  at "http://oss.sonatype.org/content/repositories/releases"),
 
+    fork in run := true,
     publishMavenStyle := true,
     publishArtifact in Test := false,
     pomIncludeRepository := { _ => false },
@@ -116,6 +117,8 @@ object GeocoderBuild extends Build {
         mainClass in assembly := Some("com.foursquare.twofishes.GeocodeFinagleServer"),
         publishArtifact := true,
         libraryDependencies ++= Seq(
+          "com.twitter" % "ostrich" % "8.2.3",
+          "com.twitter" % "finagle-ostrich4" % "5.3.23",
           "com.twitter" % "finagle-http" % "5.3.23",
           "org.specs2" %% "specs2" % "1.8.2" % "test",
           "org.scala-tools.testing" %% "specs" % "1.6.9" % "test",
@@ -135,7 +138,8 @@ object GeocoderBuild extends Build {
         import java.io.File
 
         val store = new MongoGeocodeStorageService()
-        val parser = new GeonamesParser(store)
+        val slugIndexer = new SlugIndexer()
+        val parser = new GeonamesParser(store, slugIndexer)
         """,
 
         publishArtifact := false,

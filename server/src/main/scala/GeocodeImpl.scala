@@ -1348,8 +1348,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         val sizeDegrees = req.radius / 111319.9
         val gsf = new GeometricShapeFactory()
         gsf.setSize(sizeDegrees)
-        gsf.setNumPoints(100);
-        gsf.setBase(new Coordinate(req.ll.lng, req.ll.lat));
+        gsf.setNumPoints(100)
+        gsf.setCentre(new Coordinate(req.ll.lng, req.ll.lat))
         val geom = gsf.createCircle()
         val cellids = GeometryUtils.s2PolygonCovering(
           geom,
