@@ -21,13 +21,13 @@ import org.jboss.netty.handler.codec.http._
 import org.jboss.netty.util.CharsetUtil
 import scala.collection.mutable.ListBuffer
 
-class GeocodeServerImpl(store: GeocodeStorageFutureReadService) extends Geocoder.ServiceIface {
+class GeocodeServerImpl(store: GeocodeStorageReadService) extends Geocoder.ServiceIface {
   def geocode(r: GeocodeRequest): Future[GeocodeResponse] = {
-    new GeocoderImpl(store, r).geocode()
+    Future.value(new GeocoderImpl(store, r).geocode())
   }
 
   def reverseGeocode(r: GeocodeRequest): Future[GeocodeResponse] = {
-    new GeocoderImpl(store, r).reverseGeocode()
+    Future.value(new GeocoderImpl(store, r).reverseGeocode())
   }
 }
 
@@ -161,24 +161,23 @@ class GeocoderHttpService(geocoder: GeocodeServerImpl) extends Service[HttpReque
 }
 
 object ServerStore {
-  def getStore(config: GeocodeServerConfig): GeocodeStorageFutureReadService = {
+  def getStore(config: GeocodeServerConfig): GeocodeStorageReadService = {
     getStore(config.hfileBasePath)
   }
 
-  def getStore(path: String): GeocodeStorageFutureReadService = {
-    new WrappedGeocodeStorageFakeFutureReadService(
-      new HFileStorageService(path))
+  def getStore(path: String): GeocodeStorageReadService = {
+    new HFileStorageService(path)
   }
 }
 
 object GeocodeThriftServer extends Application {
-  class GeocodeServer(store: GeocodeStorageFutureReadService) extends Geocoder.Iface {
+  class GeocodeServer(store: GeocodeStorageReadService) extends Geocoder.Iface {
     override def geocode(request: GeocodeRequest): GeocodeResponse = {
-      new GeocoderImpl(store, request).geocode().get
+      new GeocoderImpl(store, request).geocode()
     }
 
     override def reverseGeocode(request: GeocodeRequest): GeocodeResponse = {
-      new GeocoderImpl(store, request).reverseGeocode().get
+      new GeocoderImpl(store, request).reverseGeocode()
     }
   }
 
