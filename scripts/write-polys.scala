@@ -3,22 +3,10 @@ import com.novus.salat._
 import com.novus.salat.annotations._
 import com.novus.salat.dao._
 import com.novus.salat.global._
+import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
 
-  val polygonDirs = List(
-    new File("data/computed/polygons"),
-    new File("data/private/polygons")
-  )
-  val polygonFiles = polygonDirs.flatMap(_.listFiles.toList.sorted)
-  val polygonTable: Map[String, String] = polygonFiles.flatMap(f => {
-    scala.io.Source.fromFile(f).getLines.filterNot(_.startsWith("#")).toList.map(l => {
-      val parts = l.split("\t")
-      (parts(0) -> parts(1))
-    })  
-  }).toMap
-
-
-    val polygonTable: Map[String, Geometry] = GeonamesParser.loadPolygons() 
+    val polygonTable: Map[String, Geometry] = PolygonLoader.load() 
 
       val wktReader = new WKTReader()
       val wkbWriter = new WKBWriter()
