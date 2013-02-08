@@ -302,7 +302,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
   }
 
   def buildRevGeoIndex() { 
-    val minS2Level = 8
+    val minS2Level = 12
     val maxS2Level = 12
     val levelMod = 2
 
