@@ -16,11 +16,11 @@ import org.bson.types.ObjectId
 import scala.collection.JavaConversions._
 import scalaj.collection.Implicits._
 
-class HFileStorageService(basepath: String) extends GeocodeStorageReadService {
-  val nameMap = new NameIndexHFileInput(basepath)
-  val oidMap = new GeocodeRecordHFileInput(basepath)
-  val geomMap = new GeometryHFileInput(basepath)
-  val s2mapOpt = ReverseGeocodeHFileInput.readInput(basepath)
+class HFileStorageService(basepath: String, shouldPreload: Boolean) extends GeocodeStorageReadService {
+  val nameMap = new NameIndexHFileInput(basepath, shouldPreload)
+  val oidMap = new GeocodeRecordHFileInput(basepath, shouldPreload)
+  val geomMap = new GeometryHFileInput(basepath, shouldPreload)
+  val s2mapOpt = ReverseGeocodeHFileInput.readInput(basepath, shouldPreload)
   // will only be hit if we get a reverse geocode query
   lazy val s2map = s2mapOpt.getOrElse(
     throw new Exception("s2/revgeo index not built, please build s2_index.hfile"))
@@ -104,7 +104,7 @@ class InMemoryBlockCache extends BlockCache {
   override def shutdown(): Unit = cache.clear
 }
 
-abstract class HFileInput(basepath: String, filename: String) {
+abstract class HFileInput(basepath: String, filename: String, shouldPreload: Boolean) {
   val conf = new Configuration()
   val fs = new LocalFileSystem()
   fs.initialize(URI.create("file:///"), conf)
@@ -115,13 +115,15 @@ abstract class HFileInput(basepath: String, filename: String) {
   val fileInfo = reader.loadFileInfo().asScala
 
   // prefetch the hfile
-  val (rv, duration) = Duration.inMilliseconds({    
-    val scanner = reader.getScanner(true, false) // Seek, caching.
-    scanner.seekTo()
-    while(scanner.next()) {}
-  })
+  if (shouldPreload) {
+    val (rv, duration) = Duration.inMilliseconds({    
+      val scanner = reader.getScanner(true, false) // Seek, caching.
+      scanner.seekTo()
+      while(scanner.next()) {}
+    })
 
-  println("took %s seconds to read %s".format(duration.inSeconds, filename))
+    println("took %s seconds to read %s".format(duration.inSeconds, filename))
+  }
 
   def lookup(key: ByteBuffer): Option[ByteBuffer] = {
     val scanner: HFileScanner = reader.getScanner(true, true)
@@ -172,8 +174,9 @@ trait ObjectIdReader {
   }
 }
 
-class NameIndexHFileInput(basepath: String) extends HFileInput(basepath, "name_index.hfile") with ObjectIdReader {
-  val prefixMapOpt = PrefixIndexHFileInput.readInput(basepath)
+class NameIndexHFileInput(basepath: String, shouldPreload: Boolean)
+    extends HFileInput(basepath, "name_index.hfile", shouldPreload) with ObjectIdReader {
+  val prefixMapOpt = PrefixIndexHFileInput.readInput(basepath, shouldPreload)
 
   def get(name: String): List[ObjectId] = {
     val buf = ByteBuffer.wrap(name.getBytes())
@@ -198,16 +201,17 @@ class NameIndexHFileInput(basepath: String) extends HFileInput(basepath, "name_i
 }
 
 object PrefixIndexHFileInput {
-  def readInput(basepath: String) = {
+  def readInput(basepath: String, shouldPreload: Boolean) = {
     if (new File(basepath, "prefix_index.hfile").exists()) {
-      Some( new PrefixIndexHFileInput(basepath))
+      Some(new PrefixIndexHFileInput(basepath, shouldPreload))
     } else {
       None
     }
   } 
 }
 
-class PrefixIndexHFileInput(basepath: String) extends HFileInput(basepath, "prefix_index.hfile") with ObjectIdReader {
+class PrefixIndexHFileInput(basepath: String, shouldPreload: Boolean)
+    extends HFileInput(basepath, "prefix_index.hfile", shouldPreload) with ObjectIdReader {
   val maxPrefixLength = 5 // TODO: pull from hfile metadata  
 
   def get(name: String): List[ObjectId] = {
@@ -220,16 +224,17 @@ class PrefixIndexHFileInput(basepath: String) extends HFileInput(basepath, "pref
 }
 
 object ReverseGeocodeHFileInput {
-  def readInput(basepath: String) = {
+  def readInput(basepath: String, shouldPreload: Boolean) = {
     if (new File(basepath, "s2_index.hfile").exists()) {
-      Some( new ReverseGeocodeHFileInput(basepath))
+      Some(new ReverseGeocodeHFileInput(basepath, shouldPreload))
     } else {
       None
     }
   } 
 }
 
-class ReverseGeocodeHFileInput(basepath: String) extends HFileInput(basepath, "s2_index.hfile") with ObjectIdReader {
+class ReverseGeocodeHFileInput(basepath: String, shouldPreload: Boolean)
+    extends HFileInput(basepath, "s2_index.hfile", shouldPreload) with ObjectIdReader {
   def fromByteArray(bytes: Array[Byte]) = {
     ByteBuffer.wrap(bytes).getInt()
   } 
@@ -257,7 +262,8 @@ class ReverseGeocodeHFileInput(basepath: String) extends HFileInput(basepath, "s
   }
 }
 
-class GeometryHFileInput(basepath: String) extends HFileInput(basepath, "geometry.hfile") {  
+class GeometryHFileInput(basepath: String, shouldPreload: Boolean)
+    extends HFileInput(basepath, "geometry.hfile", shouldPreload) with ObjectIdReader { 
   def get(oid: ObjectId): Option[Array[Byte]] = {
     val buf = ByteBuffer.wrap(oid.toByteArray())
     lookup(buf).map(b => {
@@ -266,7 +272,8 @@ class GeometryHFileInput(basepath: String) extends HFileInput(basepath, "geometr
   }
 }
 
-class GeocodeRecordHFileInput(basepath: String) extends HFileInput(basepath, "features.hfile") {
+class GeocodeRecordHFileInput(basepath: String, shouldPreload: Boolean)
+    extends HFileInput(basepath, "features.hfile", shouldPreload) with ObjectIdReader { 
   def get(oid: ObjectId): Option[GeocodeServingFeature] = {
     val buf = ByteBuffer.wrap(oid.toByteArray())
     lookup(buf).map(b => {

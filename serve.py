@@ -8,6 +8,8 @@ usage = "usage: %prog [options] hfile_directory"
 parser = OptionParser(usage = usage)
 parser.add_option("-p", "--port", dest="port",  default=8080, type='int',
   help="port")
+parser.add_option("--preload", dest="preload",  default=False, action='store_true',
+  help="preload index to prevent coldstart, increases startup time")
 parser.add_option("-r", "--rebel", dest="rebel",  default=False, action='store_true',
   help="rebel")
 
@@ -24,7 +26,10 @@ sbt = './sbt'
 if options.rebel:
   sbt = './sbt-rebel'
 
-cmd = '%s "server/run-main com.foursquare.twofishes.GeocodeFinagleServer --port %d --hfile_basepath %s"' % (sbt, options.port, basepath)
+args = ' --preload %s ' % options.preload
+
+
+cmd = '%s "server/run-main com.foursquare.twofishes.GeocodeFinagleServer %s --port %d --hfile_basepath %s"' % (sbt, args, options.port, basepath)
 print(cmd)
 os.system(cmd)
 

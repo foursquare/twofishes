@@ -5,6 +5,7 @@ class GeocodeServerConfig(args: Array[String]) {
   var runHttpServer: Boolean = true
   var thriftServerPort: Int = 8080
   var hfileBasePath: String = null
+  var shouldPreload: Boolean = true
 
   private val config = this
 
@@ -16,6 +17,8 @@ class GeocodeServerConfig(args: Array[String]) {
         { v: Boolean => config.runHttpServer = v } )
       opt("hfile_basepath", "directory containing output hfile for serving",
         { v: String => config.hfileBasePath = v} )
+      booleanOpt("preload", "scan the hfiles at startup to prevent a cold start, turn off when testing",
+        { v: Boolean => config.shouldPreload = v} )
       }
 
   if (!parser.parse(args)) {

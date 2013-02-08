@@ -162,11 +162,11 @@ class GeocoderHttpService(geocoder: GeocodeServerImpl) extends Service[HttpReque
 
 object ServerStore {
   def getStore(config: GeocodeServerConfig): GeocodeStorageReadService = {
-    getStore(config.hfileBasePath)
+    getStore(config.hfileBasePath, config.shouldPreload)
   }
 
-  def getStore(path: String): GeocodeStorageReadService = {
-    new HFileStorageService(path)
+  def getStore(path: String, shouldPreload: Boolean): GeocodeStorageReadService = {
+    new HFileStorageService(path, shouldPreload)
   }
 }
 
