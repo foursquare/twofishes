@@ -1,6 +1,7 @@
  //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
+import com.foursquare.twofishes.util.Helpers
 import collection.JavaConverters._
 import com.twitter.finagle.{Service, SimpleFilter}
 import com.twitter.finagle.builder.{Server, ServerBuilder}
@@ -87,18 +88,10 @@ class GeocoderHttpService(geocoder: GeocodeServerImpl) extends Service[HttpReque
       request.setLang(v)))
     params.get("cc").foreach(_.asScala.headOption.foreach(v =>
       request.setCc(v)))
-    params.get("full").foreach(_.asScala.headOption.foreach(v =>
-      request.setFull(v.toBoolean)))
     params.get("debug").foreach(_.asScala.headOption.foreach(v =>
       request.setDebug(v.toInt)))
     params.get("autocomplete").foreach(_.asScala.headOption.foreach(v =>
       request.setAutocomplete(v.toBoolean)))
-    params.get("includePolygon").foreach(_.asScala.headOption.foreach(v =>
-      request.setIncludePolygon(v.toBoolean)))
-    params.get("calculateCoverage").foreach(_.asScala.headOption.foreach(v =>
-      request.setCalculateCoverage(v.toBoolean)))
-    params.get("wktGeometry").foreach(_.asScala.headOption.foreach(v =>
-      request.setWktGeometry(v.toBoolean)))
     params.get("ll").foreach(_.asScala.headOption.foreach(v => {
       val ll = v.split(",").toList
       request.setLl(new GeocodePoint(ll(0).toDouble, ll(1).toDouble))
@@ -117,6 +110,15 @@ class GeocoderHttpService(geocoder: GeocodeServerImpl) extends Service[HttpReque
       request.setMaxInterpretations(v.toInt)))
     params.get("allowedSources").foreach(_.asScala.headOption.foreach(str => {
       request.setAllowedSources(str.split(",").toList.asJava)
+    }))
+    params.get("responseIncludes").foreach(_.asScala.headOption.foreach(str => {
+      request.setResponseIncludes(str.split(",").toList.map(i => {
+        if (Helpers.TryO(i.toInt).isDefined) {
+          ResponseIncludes.findByValue(i.toInt)
+        } else {
+          ResponseIncludes.valueOf(i)
+        }
+      }).asJava)
     }))
 
     request

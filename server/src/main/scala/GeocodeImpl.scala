@@ -731,17 +731,6 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       namesToUse.contains(n)
     ))
 
-    if (!req.full & !req.includePolygon) {
-      f.geometry.unsetWkbGeometry()
-    } else {
-      if (req.wktGeometry && f.geometry.wkbGeometry != null) {
-        val wkbReader = new WKBReader()
-        val wktWriter = new WKTWriter()
-        val geom = wkbReader.read(f.geometry.getWkbGeometry())
-        f.geometry.setWktGeometry(wktWriter.write(geom))
-      }
-    }
-
     val parentNames = parentsToUse.map(p =>
       NameUtils.bestName(p.feature, Some(req.lang), true).map(_.name).getOrElse(""))
        .filterNot(parentName => {
@@ -890,6 +879,11 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     "%s %s".format(id, name)
   }
 
+  def responseIncludes(include: ResponseIncludes): Boolean = {
+    req.responseIncludes.asScala.has(include) ||
+      req.responseIncludes.asScala.has(ResponseIncludes.EVERYTHING)
+  }
+
   // This function signature is gross
   // Given a set of parses, create a geocode response which has fully formed
   // versions of all the features in it (names, parents)
@@ -945,10 +939,20 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         val scores = p.scoringFeatures
         interp.setScores(scores)
 
-        polygonMap.get(new ObjectId(fmatch.id)).foreach(wkb =>
-          feature.geometry.setWkbGeometry(wkb))
+        if (responseIncludes(ResponseIncludes.WKT_GEOMETRY) ||
+            responseIncludes(ResponseIncludes.WKB_GEOMETRY)) {
+          polygonMap.get(new ObjectId(fmatch.id)).foreach(wkb => {
+            feature.geometry.setWkbGeometry(wkb)
+            if (responseIncludes(ResponseIncludes.WKT_GEOMETRY)) {
+              val wkbReader = new WKBReader()
+              val wktWriter = new WKTWriter()
+              val geom = wkbReader.read(wkb)
+              feature.geometry.setWktGeometry(wktWriter.write(geom))
+            }
+          })
+        }
 
-        if (req.full) {
+        if (responseIncludes(ResponseIncludes.PARENTS)) {
           interp.setParents(sortedParents.map(parentFeature => {
             val sortedParentParents = parentFeature.scoringFeatures.parents.flatMap(parent =>
               parentMap.get(new ObjectId(parent))).sorted
@@ -1244,8 +1248,13 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     math.min(1, intersection.getArea() / requestGeometry.getArea())
   }
 
+  lazy val shouldFetchPolygon = 
+    responseIncludes(ResponseIncludes.WKB_GEOMETRY) ||
+    responseIncludes(ResponseIncludes.WKT_GEOMETRY) ||
+    responseIncludes(ResponseIncludes.REVGEO_COVERAGE)
+
   def getPolygonMap(featureOidsF: Future[Seq[ObjectId]]): Future[Map[ObjectId, Array[Byte]]]  = {
-    if (req.calculateCoverage || req.includePolygon) {
+    if (shouldFetchPolygon) {
       val polygonMapSeqF: Future[Seq[Option[(ObjectId, Array[Byte])]]] = featureOidsF.flatMap((featureOids: Seq[ObjectId]) => {
         Future.collect(
           for {
@@ -1304,7 +1313,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     } yield {
       servingFeaturesMap.map({ case (oid, f) => {
         val parse = Parse[Sorted](List(FeatureMatch(0, 0, "", f)))
-        if (req.calculateCoverage) {
+        if (responseIncludes(ResponseIncludes.REVGEO_COVERAGE)) {
           polygonMap.get(oid).foreach(wkb => {
             val geom = wkbReader.read(wkb)
             parse.scoringFeatures.setPercentOfRequestCovered(computeCoverage(geom, otherGeom))

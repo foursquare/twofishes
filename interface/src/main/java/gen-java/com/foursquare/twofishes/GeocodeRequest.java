@@ -35,37 +35,33 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   private static final TField CC_FIELD_DESC = new TField("cc", TType.STRING, (short)2);
   private static final TField LANG_FIELD_DESC = new TField("lang", TType.STRING, (short)3);
   private static final TField LL_FIELD_DESC = new TField("ll", TType.STRUCT, (short)4);
-  private static final TField FULL_FIELD_DESC = new TField("full", TType.BOOL, (short)5);
   private static final TField DEBUG_FIELD_DESC = new TField("debug", TType.I32, (short)6);
   private static final TField AUTOCOMPLETE_FIELD_DESC = new TField("autocomplete", TType.BOOL, (short)7);
   private static final TField WOE_HINT_FIELD_DESC = new TField("woeHint", TType.LIST, (short)8);
   private static final TField WOE_RESTRICT_FIELD_DESC = new TField("woeRestrict", TType.LIST, (short)9);
   private static final TField BOUNDS_FIELD_DESC = new TField("bounds", TType.STRUCT, (short)10);
   private static final TField SLUG_FIELD_DESC = new TField("slug", TType.STRING, (short)11);
-  private static final TField INCLUDE_POLYGON_FIELD_DESC = new TField("includePolygon", TType.BOOL, (short)12);
-  private static final TField WKT_GEOMETRY_FIELD_DESC = new TField("wktGeometry", TType.BOOL, (short)13);
+  private static final TField INCLUDE_POLYGON__DEPRECATED_FIELD_DESC = new TField("includePolygon_DEPRECATED", TType.BOOL, (short)12);
   private static final TField RADIUS_FIELD_DESC = new TField("radius", TType.I32, (short)14);
-  private static final TField CALCULATE_COVERAGE_FIELD_DESC = new TField("calculateCoverage", TType.BOOL, (short)15);
   private static final TField MAX_INTERPRETATIONS_FIELD_DESC = new TField("maxInterpretations", TType.I32, (short)16);
   private static final TField ALLOWED_SOURCES_FIELD_DESC = new TField("allowedSources", TType.LIST, (short)17);
+  private static final TField RESPONSE_INCLUDES_FIELD_DESC = new TField("responseIncludes", TType.LIST, (short)18);
 
   public String query;
   public String cc;
   public String lang;
   public GeocodePoint ll;
-  public boolean full;
   public int debug;
   public boolean autocomplete;
   public List<YahooWoeType> woeHint;
   public List<YahooWoeType> woeRestrict;
   public GeocodeBoundingBox bounds;
   public String slug;
-  public boolean includePolygon;
-  public boolean wktGeometry;
+  public boolean includePolygon_DEPRECATED;
   public int radius;
-  public boolean calculateCoverage;
   public int maxInterpretations;
   public List<String> allowedSources;
+  public List<ResponseIncludes> responseIncludes;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
@@ -73,19 +69,17 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     CC((short)2, "cc"),
     LANG((short)3, "lang"),
     LL((short)4, "ll"),
-    FULL((short)5, "full"),
     DEBUG((short)6, "debug"),
     AUTOCOMPLETE((short)7, "autocomplete"),
     WOE_HINT((short)8, "woeHint"),
     WOE_RESTRICT((short)9, "woeRestrict"),
     BOUNDS((short)10, "bounds"),
     SLUG((short)11, "slug"),
-    INCLUDE_POLYGON((short)12, "includePolygon"),
-    WKT_GEOMETRY((short)13, "wktGeometry"),
+    INCLUDE_POLYGON__DEPRECATED((short)12, "includePolygon_DEPRECATED"),
     RADIUS((short)14, "radius"),
-    CALCULATE_COVERAGE((short)15, "calculateCoverage"),
     MAX_INTERPRETATIONS((short)16, "maxInterpretations"),
-    ALLOWED_SOURCES((short)17, "allowedSources");
+    ALLOWED_SOURCES((short)17, "allowedSources"),
+    RESPONSE_INCLUDES((short)18, "responseIncludes");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -108,8 +102,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
           return LANG;
         case 4: // LL
           return LL;
-        case 5: // FULL
-          return FULL;
         case 6: // DEBUG
           return DEBUG;
         case 7: // AUTOCOMPLETE
@@ -122,18 +114,16 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
           return BOUNDS;
         case 11: // SLUG
           return SLUG;
-        case 12: // INCLUDE_POLYGON
-          return INCLUDE_POLYGON;
-        case 13: // WKT_GEOMETRY
-          return WKT_GEOMETRY;
+        case 12: // INCLUDE_POLYGON__DEPRECATED
+          return INCLUDE_POLYGON__DEPRECATED;
         case 14: // RADIUS
           return RADIUS;
-        case 15: // CALCULATE_COVERAGE
-          return CALCULATE_COVERAGE;
         case 16: // MAX_INTERPRETATIONS
           return MAX_INTERPRETATIONS;
         case 17: // ALLOWED_SOURCES
           return ALLOWED_SOURCES;
+        case 18: // RESPONSE_INCLUDES
+          return RESPONSE_INCLUDES;
         default:
           return null;
       }
@@ -174,15 +164,12 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   }
 
   // isset id assignments
-  private static final int __FULL_ISSET_ID = 0;
-  private static final int __DEBUG_ISSET_ID = 1;
-  private static final int __AUTOCOMPLETE_ISSET_ID = 2;
-  private static final int __INCLUDEPOLYGON_ISSET_ID = 3;
-  private static final int __WKTGEOMETRY_ISSET_ID = 4;
-  private static final int __RADIUS_ISSET_ID = 5;
-  private static final int __CALCULATECOVERAGE_ISSET_ID = 6;
-  private static final int __MAXINTERPRETATIONS_ISSET_ID = 7;
-  private BitSet __isset_bit_vector = new BitSet(8);
+  private static final int __DEBUG_ISSET_ID = 0;
+  private static final int __AUTOCOMPLETE_ISSET_ID = 1;
+  private static final int __INCLUDEPOLYGON_DEPRECATED_ISSET_ID = 2;
+  private static final int __RADIUS_ISSET_ID = 3;
+  private static final int __MAXINTERPRETATIONS_ISSET_ID = 4;
+  private BitSet __isset_bit_vector = new BitSet(5);
 
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
@@ -195,8 +182,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         new FieldValueMetaData(TType.STRING)));
     tmpMap.put(_Fields.LL, new FieldMetaData("ll", TFieldRequirementType.OPTIONAL, 
         new StructMetaData(TType.STRUCT, GeocodePoint.class)));
-    tmpMap.put(_Fields.FULL, new FieldMetaData("full", TFieldRequirementType.OPTIONAL, 
-        new FieldValueMetaData(TType.BOOL)));
     tmpMap.put(_Fields.DEBUG, new FieldMetaData("debug", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.I32)));
     tmpMap.put(_Fields.AUTOCOMPLETE, new FieldMetaData("autocomplete", TFieldRequirementType.OPTIONAL, 
@@ -211,27 +196,24 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         new StructMetaData(TType.STRUCT, GeocodeBoundingBox.class)));
     tmpMap.put(_Fields.SLUG, new FieldMetaData("slug", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.STRING)));
-    tmpMap.put(_Fields.INCLUDE_POLYGON, new FieldMetaData("includePolygon", TFieldRequirementType.OPTIONAL, 
-        new FieldValueMetaData(TType.BOOL)));
-    tmpMap.put(_Fields.WKT_GEOMETRY, new FieldMetaData("wktGeometry", TFieldRequirementType.OPTIONAL, 
+    tmpMap.put(_Fields.INCLUDE_POLYGON__DEPRECATED, new FieldMetaData("includePolygon_DEPRECATED", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.BOOL)));
     tmpMap.put(_Fields.RADIUS, new FieldMetaData("radius", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.I32)));
-    tmpMap.put(_Fields.CALCULATE_COVERAGE, new FieldMetaData("calculateCoverage", TFieldRequirementType.OPTIONAL, 
-        new FieldValueMetaData(TType.BOOL)));
     tmpMap.put(_Fields.MAX_INTERPRETATIONS, new FieldMetaData("maxInterpretations", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.I32)));
     tmpMap.put(_Fields.ALLOWED_SOURCES, new FieldMetaData("allowedSources", TFieldRequirementType.OPTIONAL, 
         new ListMetaData(TType.LIST, 
             new FieldValueMetaData(TType.STRING))));
+    tmpMap.put(_Fields.RESPONSE_INCLUDES, new FieldMetaData("responseIncludes", TFieldRequirementType.OPTIONAL, 
+        new ListMetaData(TType.LIST, 
+            new EnumMetaData(TType.ENUM, ResponseIncludes.class))));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeRequest.class, metaDataMap);
   }
 
   public GeocodeRequest() {
     this.lang = "en";
-
-    this.full = false;
 
     this.debug = 0;
 
@@ -241,15 +223,13 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
 
     this.woeRestrict = new ArrayList<YahooWoeType>();
 
-    this.includePolygon = false;
-
-    this.wktGeometry = false;
+    this.includePolygon_DEPRECATED = false;
 
     this.radius = 0;
 
-    this.calculateCoverage = false;
-
     this.maxInterpretations = 0;
+
+    this.responseIncludes = new ArrayList<ResponseIncludes>();
 
   }
 
@@ -271,7 +251,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     if (other.isSetLl()) {
       this.ll = new GeocodePoint(other.ll);
     }
-    this.full = other.full;
     this.debug = other.debug;
     this.autocomplete = other.autocomplete;
     if (other.isSetWoeHint()) {
@@ -294,10 +273,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     if (other.isSetSlug()) {
       this.slug = other.slug;
     }
-    this.includePolygon = other.includePolygon;
-    this.wktGeometry = other.wktGeometry;
+    this.includePolygon_DEPRECATED = other.includePolygon_DEPRECATED;
     this.radius = other.radius;
-    this.calculateCoverage = other.calculateCoverage;
     this.maxInterpretations = other.maxInterpretations;
     if (other.isSetAllowedSources()) {
       List<String> __this__allowedSources = new ArrayList<String>();
@@ -305,6 +282,13 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         __this__allowedSources.add(other_element);
       }
       this.allowedSources = __this__allowedSources;
+    }
+    if (other.isSetResponseIncludes()) {
+      List<ResponseIncludes> __this__responseIncludes = new ArrayList<ResponseIncludes>();
+      for (ResponseIncludes other_element : other.responseIncludes) {
+        __this__responseIncludes.add(other_element);
+      }
+      this.responseIncludes = __this__responseIncludes;
     }
   }
 
@@ -319,8 +303,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     this.lang = "en";
 
     this.ll = null;
-    this.full = false;
-
     this.debug = 0;
 
     this.autocomplete = false;
@@ -331,17 +313,15 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
 
     this.bounds = null;
     this.slug = null;
-    this.includePolygon = false;
-
-    this.wktGeometry = false;
+    this.includePolygon_DEPRECATED = false;
 
     this.radius = 0;
-
-    this.calculateCoverage = false;
 
     this.maxInterpretations = 0;
 
     this.allowedSources = null;
+    this.responseIncludes = new ArrayList<ResponseIncludes>();
+
   }
 
   public String getQuery() {
@@ -438,29 +418,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     if (!value) {
       this.ll = null;
     }
-  }
-
-  public boolean isFull() {
-    return this.full;
-  }
-
-  public GeocodeRequest setFull(boolean full) {
-    this.full = full;
-    setFullIsSet(true);
-    return this;
-  }
-
-  public void unsetFull() {
-    __isset_bit_vector.clear(__FULL_ISSET_ID);
-  }
-
-  /** Returns true if field full is set (has been asigned a value) and false otherwise */
-  public boolean isSetFull() {
-    return __isset_bit_vector.get(__FULL_ISSET_ID);
-  }
-
-  public void setFullIsSet(boolean value) {
-    __isset_bit_vector.set(__FULL_ISSET_ID, value);
   }
 
   public int getDebug() {
@@ -635,50 +592,27 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     }
   }
 
-  public boolean isIncludePolygon() {
-    return this.includePolygon;
+  public boolean isIncludePolygon_DEPRECATED() {
+    return this.includePolygon_DEPRECATED;
   }
 
-  public GeocodeRequest setIncludePolygon(boolean includePolygon) {
-    this.includePolygon = includePolygon;
-    setIncludePolygonIsSet(true);
+  public GeocodeRequest setIncludePolygon_DEPRECATED(boolean includePolygon_DEPRECATED) {
+    this.includePolygon_DEPRECATED = includePolygon_DEPRECATED;
+    setIncludePolygon_DEPRECATEDIsSet(true);
     return this;
   }
 
-  public void unsetIncludePolygon() {
-    __isset_bit_vector.clear(__INCLUDEPOLYGON_ISSET_ID);
+  public void unsetIncludePolygon_DEPRECATED() {
+    __isset_bit_vector.clear(__INCLUDEPOLYGON_DEPRECATED_ISSET_ID);
   }
 
-  /** Returns true if field includePolygon is set (has been asigned a value) and false otherwise */
-  public boolean isSetIncludePolygon() {
-    return __isset_bit_vector.get(__INCLUDEPOLYGON_ISSET_ID);
+  /** Returns true if field includePolygon_DEPRECATED is set (has been asigned a value) and false otherwise */
+  public boolean isSetIncludePolygon_DEPRECATED() {
+    return __isset_bit_vector.get(__INCLUDEPOLYGON_DEPRECATED_ISSET_ID);
   }
 
-  public void setIncludePolygonIsSet(boolean value) {
-    __isset_bit_vector.set(__INCLUDEPOLYGON_ISSET_ID, value);
-  }
-
-  public boolean isWktGeometry() {
-    return this.wktGeometry;
-  }
-
-  public GeocodeRequest setWktGeometry(boolean wktGeometry) {
-    this.wktGeometry = wktGeometry;
-    setWktGeometryIsSet(true);
-    return this;
-  }
-
-  public void unsetWktGeometry() {
-    __isset_bit_vector.clear(__WKTGEOMETRY_ISSET_ID);
-  }
-
-  /** Returns true if field wktGeometry is set (has been asigned a value) and false otherwise */
-  public boolean isSetWktGeometry() {
-    return __isset_bit_vector.get(__WKTGEOMETRY_ISSET_ID);
-  }
-
-  public void setWktGeometryIsSet(boolean value) {
-    __isset_bit_vector.set(__WKTGEOMETRY_ISSET_ID, value);
+  public void setIncludePolygon_DEPRECATEDIsSet(boolean value) {
+    __isset_bit_vector.set(__INCLUDEPOLYGON_DEPRECATED_ISSET_ID, value);
   }
 
   public int getRadius() {
@@ -702,29 +636,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
 
   public void setRadiusIsSet(boolean value) {
     __isset_bit_vector.set(__RADIUS_ISSET_ID, value);
-  }
-
-  public boolean isCalculateCoverage() {
-    return this.calculateCoverage;
-  }
-
-  public GeocodeRequest setCalculateCoverage(boolean calculateCoverage) {
-    this.calculateCoverage = calculateCoverage;
-    setCalculateCoverageIsSet(true);
-    return this;
-  }
-
-  public void unsetCalculateCoverage() {
-    __isset_bit_vector.clear(__CALCULATECOVERAGE_ISSET_ID);
-  }
-
-  /** Returns true if field calculateCoverage is set (has been asigned a value) and false otherwise */
-  public boolean isSetCalculateCoverage() {
-    return __isset_bit_vector.get(__CALCULATECOVERAGE_ISSET_ID);
-  }
-
-  public void setCalculateCoverageIsSet(boolean value) {
-    __isset_bit_vector.set(__CALCULATECOVERAGE_ISSET_ID, value);
   }
 
   public int getMaxInterpretations() {
@@ -789,6 +700,45 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     }
   }
 
+  public int getResponseIncludesSize() {
+    return (this.responseIncludes == null) ? 0 : this.responseIncludes.size();
+  }
+
+  public java.util.Iterator<ResponseIncludes> getResponseIncludesIterator() {
+    return (this.responseIncludes == null) ? null : this.responseIncludes.iterator();
+  }
+
+  public void addToResponseIncludes(ResponseIncludes elem) {
+    if (this.responseIncludes == null) {
+      this.responseIncludes = new ArrayList<ResponseIncludes>();
+    }
+    this.responseIncludes.add(elem);
+  }
+
+  public List<ResponseIncludes> getResponseIncludes() {
+    return this.responseIncludes;
+  }
+
+  public GeocodeRequest setResponseIncludes(List<ResponseIncludes> responseIncludes) {
+    this.responseIncludes = responseIncludes;
+    return this;
+  }
+
+  public void unsetResponseIncludes() {
+    this.responseIncludes = null;
+  }
+
+  /** Returns true if field responseIncludes is set (has been asigned a value) and false otherwise */
+  public boolean isSetResponseIncludes() {
+    return this.responseIncludes != null;
+  }
+
+  public void setResponseIncludesIsSet(boolean value) {
+    if (!value) {
+      this.responseIncludes = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case QUERY:
@@ -820,14 +770,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         unsetLl();
       } else {
         setLl((GeocodePoint)value);
-      }
-      break;
-
-    case FULL:
-      if (value == null) {
-        unsetFull();
-      } else {
-        setFull((Boolean)value);
       }
       break;
 
@@ -879,19 +821,11 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       }
       break;
 
-    case INCLUDE_POLYGON:
+    case INCLUDE_POLYGON__DEPRECATED:
       if (value == null) {
-        unsetIncludePolygon();
+        unsetIncludePolygon_DEPRECATED();
       } else {
-        setIncludePolygon((Boolean)value);
-      }
-      break;
-
-    case WKT_GEOMETRY:
-      if (value == null) {
-        unsetWktGeometry();
-      } else {
-        setWktGeometry((Boolean)value);
+        setIncludePolygon_DEPRECATED((Boolean)value);
       }
       break;
 
@@ -900,14 +834,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         unsetRadius();
       } else {
         setRadius((Integer)value);
-      }
-      break;
-
-    case CALCULATE_COVERAGE:
-      if (value == null) {
-        unsetCalculateCoverage();
-      } else {
-        setCalculateCoverage((Boolean)value);
       }
       break;
 
@@ -924,6 +850,14 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         unsetAllowedSources();
       } else {
         setAllowedSources((List<String>)value);
+      }
+      break;
+
+    case RESPONSE_INCLUDES:
+      if (value == null) {
+        unsetResponseIncludes();
+      } else {
+        setResponseIncludes((List<ResponseIncludes>)value);
       }
       break;
 
@@ -944,9 +878,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     case LL:
       return getLl();
 
-    case FULL:
-      return new Boolean(isFull());
-
     case DEBUG:
       return new Integer(getDebug());
 
@@ -965,23 +896,20 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     case SLUG:
       return getSlug();
 
-    case INCLUDE_POLYGON:
-      return new Boolean(isIncludePolygon());
-
-    case WKT_GEOMETRY:
-      return new Boolean(isWktGeometry());
+    case INCLUDE_POLYGON__DEPRECATED:
+      return new Boolean(isIncludePolygon_DEPRECATED());
 
     case RADIUS:
       return new Integer(getRadius());
-
-    case CALCULATE_COVERAGE:
-      return new Boolean(isCalculateCoverage());
 
     case MAX_INTERPRETATIONS:
       return new Integer(getMaxInterpretations());
 
     case ALLOWED_SOURCES:
       return getAllowedSources();
+
+    case RESPONSE_INCLUDES:
+      return getResponseIncludes();
 
     }
     throw new IllegalStateException();
@@ -1002,8 +930,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       return isSetLang();
     case LL:
       return isSetLl();
-    case FULL:
-      return isSetFull();
     case DEBUG:
       return isSetDebug();
     case AUTOCOMPLETE:
@@ -1016,18 +942,16 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       return isSetBounds();
     case SLUG:
       return isSetSlug();
-    case INCLUDE_POLYGON:
-      return isSetIncludePolygon();
-    case WKT_GEOMETRY:
-      return isSetWktGeometry();
+    case INCLUDE_POLYGON__DEPRECATED:
+      return isSetIncludePolygon_DEPRECATED();
     case RADIUS:
       return isSetRadius();
-    case CALCULATE_COVERAGE:
-      return isSetCalculateCoverage();
     case MAX_INTERPRETATIONS:
       return isSetMaxInterpretations();
     case ALLOWED_SOURCES:
       return isSetAllowedSources();
+    case RESPONSE_INCLUDES:
+      return isSetResponseIncludes();
     }
     throw new IllegalStateException();
   }
@@ -1078,15 +1002,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       if (!(this_present_ll && that_present_ll))
         return false;
       if (!this.ll.equals(that.ll))
-        return false;
-    }
-
-    boolean this_present_full = true && this.isSetFull();
-    boolean that_present_full = true && that.isSetFull();
-    if (this_present_full || that_present_full) {
-      if (!(this_present_full && that_present_full))
-        return false;
-      if (this.full != that.full)
         return false;
     }
 
@@ -1144,21 +1059,12 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         return false;
     }
 
-    boolean this_present_includePolygon = true && this.isSetIncludePolygon();
-    boolean that_present_includePolygon = true && that.isSetIncludePolygon();
-    if (this_present_includePolygon || that_present_includePolygon) {
-      if (!(this_present_includePolygon && that_present_includePolygon))
+    boolean this_present_includePolygon_DEPRECATED = true && this.isSetIncludePolygon_DEPRECATED();
+    boolean that_present_includePolygon_DEPRECATED = true && that.isSetIncludePolygon_DEPRECATED();
+    if (this_present_includePolygon_DEPRECATED || that_present_includePolygon_DEPRECATED) {
+      if (!(this_present_includePolygon_DEPRECATED && that_present_includePolygon_DEPRECATED))
         return false;
-      if (this.includePolygon != that.includePolygon)
-        return false;
-    }
-
-    boolean this_present_wktGeometry = true && this.isSetWktGeometry();
-    boolean that_present_wktGeometry = true && that.isSetWktGeometry();
-    if (this_present_wktGeometry || that_present_wktGeometry) {
-      if (!(this_present_wktGeometry && that_present_wktGeometry))
-        return false;
-      if (this.wktGeometry != that.wktGeometry)
+      if (this.includePolygon_DEPRECATED != that.includePolygon_DEPRECATED)
         return false;
     }
 
@@ -1168,15 +1074,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       if (!(this_present_radius && that_present_radius))
         return false;
       if (this.radius != that.radius)
-        return false;
-    }
-
-    boolean this_present_calculateCoverage = true && this.isSetCalculateCoverage();
-    boolean that_present_calculateCoverage = true && that.isSetCalculateCoverage();
-    if (this_present_calculateCoverage || that_present_calculateCoverage) {
-      if (!(this_present_calculateCoverage && that_present_calculateCoverage))
-        return false;
-      if (this.calculateCoverage != that.calculateCoverage)
         return false;
     }
 
@@ -1195,6 +1092,15 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       if (!(this_present_allowedSources && that_present_allowedSources))
         return false;
       if (!this.allowedSources.equals(that.allowedSources))
+        return false;
+    }
+
+    boolean this_present_responseIncludes = true && this.isSetResponseIncludes();
+    boolean that_present_responseIncludes = true && that.isSetResponseIncludes();
+    if (this_present_responseIncludes || that_present_responseIncludes) {
+      if (!(this_present_responseIncludes && that_present_responseIncludes))
+        return false;
+      if (!this.responseIncludes.equals(that.responseIncludes))
         return false;
     }
 
@@ -1250,16 +1156,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     }
     if (isSetLl()) {
       lastComparison = TBaseHelper.compareTo(this.ll, typedOther.ll);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
-    lastComparison = Boolean.valueOf(isSetFull()).compareTo(typedOther.isSetFull());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetFull()) {
-      lastComparison = TBaseHelper.compareTo(this.full, typedOther.full);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -1324,22 +1220,12 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetIncludePolygon()).compareTo(typedOther.isSetIncludePolygon());
+    lastComparison = Boolean.valueOf(isSetIncludePolygon_DEPRECATED()).compareTo(typedOther.isSetIncludePolygon_DEPRECATED());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetIncludePolygon()) {
-      lastComparison = TBaseHelper.compareTo(this.includePolygon, typedOther.includePolygon);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
-    lastComparison = Boolean.valueOf(isSetWktGeometry()).compareTo(typedOther.isSetWktGeometry());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetWktGeometry()) {
-      lastComparison = TBaseHelper.compareTo(this.wktGeometry, typedOther.wktGeometry);
+    if (isSetIncludePolygon_DEPRECATED()) {
+      lastComparison = TBaseHelper.compareTo(this.includePolygon_DEPRECATED, typedOther.includePolygon_DEPRECATED);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -1350,16 +1236,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     }
     if (isSetRadius()) {
       lastComparison = TBaseHelper.compareTo(this.radius, typedOther.radius);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
-    lastComparison = Boolean.valueOf(isSetCalculateCoverage()).compareTo(typedOther.isSetCalculateCoverage());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetCalculateCoverage()) {
-      lastComparison = TBaseHelper.compareTo(this.calculateCoverage, typedOther.calculateCoverage);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -1380,6 +1256,16 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     }
     if (isSetAllowedSources()) {
       lastComparison = TBaseHelper.compareTo(this.allowedSources, typedOther.allowedSources);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetResponseIncludes()).compareTo(typedOther.isSetResponseIncludes());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetResponseIncludes()) {
+      lastComparison = TBaseHelper.compareTo(this.responseIncludes, typedOther.responseIncludes);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -1426,14 +1312,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
           if (field.type == TType.STRUCT) {
             this.ll = new GeocodePoint();
             this.ll.read(iprot);
-          } else { 
-            TProtocolUtil.skip(iprot, field.type);
-          }
-          break;
-        case 5: // FULL
-          if (field.type == TType.BOOL) {
-            this.full = iprot.readBool();
-            setFullIsSet(true);
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -1503,18 +1381,10 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
-        case 12: // INCLUDE_POLYGON
+        case 12: // INCLUDE_POLYGON__DEPRECATED
           if (field.type == TType.BOOL) {
-            this.includePolygon = iprot.readBool();
-            setIncludePolygonIsSet(true);
-          } else { 
-            TProtocolUtil.skip(iprot, field.type);
-          }
-          break;
-        case 13: // WKT_GEOMETRY
-          if (field.type == TType.BOOL) {
-            this.wktGeometry = iprot.readBool();
-            setWktGeometryIsSet(true);
+            this.includePolygon_DEPRECATED = iprot.readBool();
+            setIncludePolygon_DEPRECATEDIsSet(true);
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -1523,14 +1393,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
           if (field.type == TType.I32) {
             this.radius = iprot.readI32();
             setRadiusIsSet(true);
-          } else { 
-            TProtocolUtil.skip(iprot, field.type);
-          }
-          break;
-        case 15: // CALCULATE_COVERAGE
-          if (field.type == TType.BOOL) {
-            this.calculateCoverage = iprot.readBool();
-            setCalculateCoverageIsSet(true);
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -1553,6 +1415,23 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
                 String _elem48;
                 _elem48 = iprot.readString();
                 this.allowedSources.add(_elem48);
+              }
+              iprot.readListEnd();
+            }
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 18: // RESPONSE_INCLUDES
+          if (field.type == TType.LIST) {
+            {
+              TList _list49 = iprot.readListBegin();
+              this.responseIncludes = new ArrayList<ResponseIncludes>(_list49.size);
+              for (int _i50 = 0; _i50 < _list49.size; ++_i50)
+              {
+                ResponseIncludes _elem51;
+                _elem51 = ResponseIncludes.findByValue(iprot.readI32());
+                this.responseIncludes.add(_elem51);
               }
               iprot.readListEnd();
             }
@@ -1603,11 +1482,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         oprot.writeFieldEnd();
       }
     }
-    if (isSetFull()) {
-      oprot.writeFieldBegin(FULL_FIELD_DESC);
-      oprot.writeBool(this.full);
-      oprot.writeFieldEnd();
-    }
     if (isSetDebug()) {
       oprot.writeFieldBegin(DEBUG_FIELD_DESC);
       oprot.writeI32(this.debug);
@@ -1623,9 +1497,9 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         oprot.writeFieldBegin(WOE_HINT_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.I32, this.woeHint.size()));
-          for (YahooWoeType _iter49 : this.woeHint)
+          for (YahooWoeType _iter52 : this.woeHint)
           {
-            oprot.writeI32(_iter49.getValue());
+            oprot.writeI32(_iter52.getValue());
           }
           oprot.writeListEnd();
         }
@@ -1637,9 +1511,9 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         oprot.writeFieldBegin(WOE_RESTRICT_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.I32, this.woeRestrict.size()));
-          for (YahooWoeType _iter50 : this.woeRestrict)
+          for (YahooWoeType _iter53 : this.woeRestrict)
           {
-            oprot.writeI32(_iter50.getValue());
+            oprot.writeI32(_iter53.getValue());
           }
           oprot.writeListEnd();
         }
@@ -1660,24 +1534,14 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         oprot.writeFieldEnd();
       }
     }
-    if (isSetIncludePolygon()) {
-      oprot.writeFieldBegin(INCLUDE_POLYGON_FIELD_DESC);
-      oprot.writeBool(this.includePolygon);
-      oprot.writeFieldEnd();
-    }
-    if (isSetWktGeometry()) {
-      oprot.writeFieldBegin(WKT_GEOMETRY_FIELD_DESC);
-      oprot.writeBool(this.wktGeometry);
+    if (isSetIncludePolygon_DEPRECATED()) {
+      oprot.writeFieldBegin(INCLUDE_POLYGON__DEPRECATED_FIELD_DESC);
+      oprot.writeBool(this.includePolygon_DEPRECATED);
       oprot.writeFieldEnd();
     }
     if (isSetRadius()) {
       oprot.writeFieldBegin(RADIUS_FIELD_DESC);
       oprot.writeI32(this.radius);
-      oprot.writeFieldEnd();
-    }
-    if (isSetCalculateCoverage()) {
-      oprot.writeFieldBegin(CALCULATE_COVERAGE_FIELD_DESC);
-      oprot.writeBool(this.calculateCoverage);
       oprot.writeFieldEnd();
     }
     if (isSetMaxInterpretations()) {
@@ -1690,9 +1554,23 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         oprot.writeFieldBegin(ALLOWED_SOURCES_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.STRING, this.allowedSources.size()));
-          for (String _iter51 : this.allowedSources)
+          for (String _iter54 : this.allowedSources)
           {
-            oprot.writeString(_iter51);
+            oprot.writeString(_iter54);
+          }
+          oprot.writeListEnd();
+        }
+        oprot.writeFieldEnd();
+      }
+    }
+    if (this.responseIncludes != null) {
+      if (isSetResponseIncludes()) {
+        oprot.writeFieldBegin(RESPONSE_INCLUDES_FIELD_DESC);
+        {
+          oprot.writeListBegin(new TList(TType.I32, this.responseIncludes.size()));
+          for (ResponseIncludes _iter55 : this.responseIncludes)
+          {
+            oprot.writeI32(_iter55.getValue());
           }
           oprot.writeListEnd();
         }
@@ -1747,12 +1625,6 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       }
       first = false;
     }
-    if (isSetFull()) {
-      if (!first) sb.append(", ");
-      sb.append("full:");
-      sb.append(this.full);
-      first = false;
-    }
     if (isSetDebug()) {
       if (!first) sb.append(", ");
       sb.append("debug:");
@@ -1805,28 +1677,16 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       }
       first = false;
     }
-    if (isSetIncludePolygon()) {
+    if (isSetIncludePolygon_DEPRECATED()) {
       if (!first) sb.append(", ");
-      sb.append("includePolygon:");
-      sb.append(this.includePolygon);
-      first = false;
-    }
-    if (isSetWktGeometry()) {
-      if (!first) sb.append(", ");
-      sb.append("wktGeometry:");
-      sb.append(this.wktGeometry);
+      sb.append("includePolygon_DEPRECATED:");
+      sb.append(this.includePolygon_DEPRECATED);
       first = false;
     }
     if (isSetRadius()) {
       if (!first) sb.append(", ");
       sb.append("radius:");
       sb.append(this.radius);
-      first = false;
-    }
-    if (isSetCalculateCoverage()) {
-      if (!first) sb.append(", ");
-      sb.append("calculateCoverage:");
-      sb.append(this.calculateCoverage);
       first = false;
     }
     if (isSetMaxInterpretations()) {
@@ -1842,6 +1702,16 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         sb.append("null");
       } else {
         sb.append(this.allowedSources);
+      }
+      first = false;
+    }
+    if (isSetResponseIncludes()) {
+      if (!first) sb.append(", ");
+      sb.append("responseIncludes:");
+      if (this.responseIncludes == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.responseIncludes);
       }
       first = false;
     }

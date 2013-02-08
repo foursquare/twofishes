@@ -191,6 +191,22 @@ struct GeocodeResponse {
   2: optional list<string> debugLines,
 }
 
+enum ResponseIncludes {
+  // include as much as we possibly can. Everything below here is true.
+  EVERYTHING,
+  // include parents in response
+  PARENTS,
+  // include all names on base feature
+  ALL_NAMES,
+  // include all names on all parents
+  PARENT_ALL_NAMES,
+  // include geometry in wkb or wkt format if available
+  WKB_GEOMETRY,
+  WKT_GEOMETRY,
+  // include geometry coverage information (revgeo only)
+  REVGEO_COVERAGE
+}
+
 struct GeocodeRequest {
   1: optional string query,
 
@@ -202,9 +218,6 @@ struct GeocodeRequest {
 
   // lat/lng hint -- results will be biased towards this location
   4: optional GeocodePoint ll,
-
-  // whether or not to return fully expanded names and parents
-  5: optional bool full = 0,
 
   // debug information, currently 0 or 1
   6: optional i32 debug = 0,
@@ -224,20 +237,19 @@ struct GeocodeRequest {
   // This can be either a slug or a namespace:id featureid for now
   11: optional string slug
 
-  12: optional bool includePolygon = 0
-  13: optional bool wktGeometry = 0
+  12: optional bool includePolygon_DEPRECATED = 0
 
   // radius in meters, ll+radius is an alternative to boundingbox
   14: optional i32 radius = 0
-
-  // in area revgeo mode, whether or not to bother giving overlap %age
-  15: optional bool calculateCoverage = 0
 
   // If set to <= 0, means unlimited in revgeo, and ~3 in geocode or autocomplete
   16: optional i32 maxInterpretations = 0
 
   // if set, then restrict to features where the source in one of the ids is in the list
   17: optional list<string> allowedSources
+
+  // replaces full, includePolygon, wktGeometry, calculateCoverage
+  18: optional list<ResponseIncludes> responseIncludes = []
 }
 
 service Geocoder {
