@@ -854,7 +854,8 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
 
   def responseIncludes(include: ResponseIncludes): Boolean = {
     req.responseIncludes.asScala.has(include) ||
-      req.responseIncludes.asScala.has(ResponseIncludes.EVERYTHING)
+      req.responseIncludes.asScala.has(ResponseIncludes.EVERYTHING) ||
+      req.full_DEPRECATED
   }
 
   // This function signature is gross

@@ -35,6 +35,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   private static final TField CC_FIELD_DESC = new TField("cc", TType.STRING, (short)2);
   private static final TField LANG_FIELD_DESC = new TField("lang", TType.STRING, (short)3);
   private static final TField LL_FIELD_DESC = new TField("ll", TType.STRUCT, (short)4);
+  private static final TField FULL__DEPRECATED_FIELD_DESC = new TField("full_DEPRECATED", TType.BOOL, (short)5);
   private static final TField DEBUG_FIELD_DESC = new TField("debug", TType.I32, (short)6);
   private static final TField AUTOCOMPLETE_FIELD_DESC = new TField("autocomplete", TType.BOOL, (short)7);
   private static final TField WOE_HINT_FIELD_DESC = new TField("woeHint", TType.LIST, (short)8);
@@ -51,6 +52,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   public String cc;
   public String lang;
   public GeocodePoint ll;
+  public boolean full_DEPRECATED;
   public int debug;
   public boolean autocomplete;
   public List<YahooWoeType> woeHint;
@@ -69,6 +71,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     CC((short)2, "cc"),
     LANG((short)3, "lang"),
     LL((short)4, "ll"),
+    FULL__DEPRECATED((short)5, "full_DEPRECATED"),
     DEBUG((short)6, "debug"),
     AUTOCOMPLETE((short)7, "autocomplete"),
     WOE_HINT((short)8, "woeHint"),
@@ -102,6 +105,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
           return LANG;
         case 4: // LL
           return LL;
+        case 5: // FULL__DEPRECATED
+          return FULL__DEPRECATED;
         case 6: // DEBUG
           return DEBUG;
         case 7: // AUTOCOMPLETE
@@ -164,12 +169,13 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
   }
 
   // isset id assignments
-  private static final int __DEBUG_ISSET_ID = 0;
-  private static final int __AUTOCOMPLETE_ISSET_ID = 1;
-  private static final int __INCLUDEPOLYGON_DEPRECATED_ISSET_ID = 2;
-  private static final int __RADIUS_ISSET_ID = 3;
-  private static final int __MAXINTERPRETATIONS_ISSET_ID = 4;
-  private BitSet __isset_bit_vector = new BitSet(5);
+  private static final int __FULL_DEPRECATED_ISSET_ID = 0;
+  private static final int __DEBUG_ISSET_ID = 1;
+  private static final int __AUTOCOMPLETE_ISSET_ID = 2;
+  private static final int __INCLUDEPOLYGON_DEPRECATED_ISSET_ID = 3;
+  private static final int __RADIUS_ISSET_ID = 4;
+  private static final int __MAXINTERPRETATIONS_ISSET_ID = 5;
+  private BitSet __isset_bit_vector = new BitSet(6);
 
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
@@ -182,6 +188,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         new FieldValueMetaData(TType.STRING)));
     tmpMap.put(_Fields.LL, new FieldMetaData("ll", TFieldRequirementType.OPTIONAL, 
         new StructMetaData(TType.STRUCT, GeocodePoint.class)));
+    tmpMap.put(_Fields.FULL__DEPRECATED, new FieldMetaData("full_DEPRECATED", TFieldRequirementType.OPTIONAL, 
+        new FieldValueMetaData(TType.BOOL)));
     tmpMap.put(_Fields.DEBUG, new FieldMetaData("debug", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.I32)));
     tmpMap.put(_Fields.AUTOCOMPLETE, new FieldMetaData("autocomplete", TFieldRequirementType.OPTIONAL, 
@@ -214,6 +222,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
 
   public GeocodeRequest() {
     this.lang = "en";
+
+    this.full_DEPRECATED = false;
 
     this.debug = 0;
 
@@ -251,6 +261,7 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     if (other.isSetLl()) {
       this.ll = new GeocodePoint(other.ll);
     }
+    this.full_DEPRECATED = other.full_DEPRECATED;
     this.debug = other.debug;
     this.autocomplete = other.autocomplete;
     if (other.isSetWoeHint()) {
@@ -303,6 +314,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     this.lang = "en";
 
     this.ll = null;
+    this.full_DEPRECATED = false;
+
     this.debug = 0;
 
     this.autocomplete = false;
@@ -418,6 +431,29 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     if (!value) {
       this.ll = null;
     }
+  }
+
+  public boolean isFull_DEPRECATED() {
+    return this.full_DEPRECATED;
+  }
+
+  public GeocodeRequest setFull_DEPRECATED(boolean full_DEPRECATED) {
+    this.full_DEPRECATED = full_DEPRECATED;
+    setFull_DEPRECATEDIsSet(true);
+    return this;
+  }
+
+  public void unsetFull_DEPRECATED() {
+    __isset_bit_vector.clear(__FULL_DEPRECATED_ISSET_ID);
+  }
+
+  /** Returns true if field full_DEPRECATED is set (has been asigned a value) and false otherwise */
+  public boolean isSetFull_DEPRECATED() {
+    return __isset_bit_vector.get(__FULL_DEPRECATED_ISSET_ID);
+  }
+
+  public void setFull_DEPRECATEDIsSet(boolean value) {
+    __isset_bit_vector.set(__FULL_DEPRECATED_ISSET_ID, value);
   }
 
   public int getDebug() {
@@ -773,6 +809,14 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       }
       break;
 
+    case FULL__DEPRECATED:
+      if (value == null) {
+        unsetFull_DEPRECATED();
+      } else {
+        setFull_DEPRECATED((Boolean)value);
+      }
+      break;
+
     case DEBUG:
       if (value == null) {
         unsetDebug();
@@ -878,6 +922,9 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
     case LL:
       return getLl();
 
+    case FULL__DEPRECATED:
+      return new Boolean(isFull_DEPRECATED());
+
     case DEBUG:
       return new Integer(getDebug());
 
@@ -930,6 +977,8 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       return isSetLang();
     case LL:
       return isSetLl();
+    case FULL__DEPRECATED:
+      return isSetFull_DEPRECATED();
     case DEBUG:
       return isSetDebug();
     case AUTOCOMPLETE:
@@ -1002,6 +1051,15 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       if (!(this_present_ll && that_present_ll))
         return false;
       if (!this.ll.equals(that.ll))
+        return false;
+    }
+
+    boolean this_present_full_DEPRECATED = true && this.isSetFull_DEPRECATED();
+    boolean that_present_full_DEPRECATED = true && that.isSetFull_DEPRECATED();
+    if (this_present_full_DEPRECATED || that_present_full_DEPRECATED) {
+      if (!(this_present_full_DEPRECATED && that_present_full_DEPRECATED))
+        return false;
+      if (this.full_DEPRECATED != that.full_DEPRECATED)
         return false;
     }
 
@@ -1160,6 +1218,16 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetFull_DEPRECATED()).compareTo(typedOther.isSetFull_DEPRECATED());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetFull_DEPRECATED()) {
+      lastComparison = TBaseHelper.compareTo(this.full_DEPRECATED, typedOther.full_DEPRECATED);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     lastComparison = Boolean.valueOf(isSetDebug()).compareTo(typedOther.isSetDebug());
     if (lastComparison != 0) {
       return lastComparison;
@@ -1312,6 +1380,14 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
           if (field.type == TType.STRUCT) {
             this.ll = new GeocodePoint();
             this.ll.read(iprot);
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 5: // FULL__DEPRECATED
+          if (field.type == TType.BOOL) {
+            this.full_DEPRECATED = iprot.readBool();
+            setFull_DEPRECATEDIsSet(true);
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -1482,6 +1558,11 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
         oprot.writeFieldEnd();
       }
     }
+    if (isSetFull_DEPRECATED()) {
+      oprot.writeFieldBegin(FULL__DEPRECATED_FIELD_DESC);
+      oprot.writeBool(this.full_DEPRECATED);
+      oprot.writeFieldEnd();
+    }
     if (isSetDebug()) {
       oprot.writeFieldBegin(DEBUG_FIELD_DESC);
       oprot.writeI32(this.debug);
@@ -1623,6 +1704,12 @@ public class GeocodeRequest implements TBase<GeocodeRequest, GeocodeRequest._Fie
       } else {
         sb.append(this.ll);
       }
+      first = false;
+    }
+    if (isSetFull_DEPRECATED()) {
+      if (!first) sb.append(", ");
+      sb.append("full_DEPRECATED:");
+      sb.append(this.full_DEPRECATED);
       first = false;
     }
     if (isSetDebug()) {

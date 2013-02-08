@@ -219,6 +219,8 @@ struct GeocodeRequest {
   // lat/lng hint -- results will be biased towards this location
   4: optional GeocodePoint ll,
 
+  5: optional bool full_DEPRECATED = 0,
+
   // debug information, currently 0 or 1
   6: optional i32 debug = 0,
 
