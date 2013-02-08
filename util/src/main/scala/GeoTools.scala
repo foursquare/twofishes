@@ -2,6 +2,8 @@ package com.foursquare.twofishes.util
 
 import com.foursquare.twofishes._
 import com.google.common.geometry.{S2LatLng, S2LatLngRect}
+import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory, Polygon}
+import com.vividsolutions.jts.operation.distance.DistanceOp
 
 object GeoTools {
   val MetersPerMile: Double = 1609.344
@@ -32,6 +34,27 @@ object GeoTools {
 
   def boundsIntersect(b1: GeocodeBoundingBox, b2: GeocodeBoundingBox): Boolean = {
     boundingBoxToS2Rect(b1).intersects(boundingBoxToS2Rect(b2))
+  }
+
+  def boundsToGeometry(bounds: GeocodeBoundingBox): Geometry = {
+    val fact = new GeometryFactory()
+    val coordinates = Array(
+      new Coordinate(bounds.ne.lng, bounds.ne.lat),
+      new Coordinate(bounds.sw.lng, bounds.sw.lat)
+    )
+    val linear = new GeometryFactory().createLinearRing(coordinates);
+    val poly = new Polygon(linear, null, fact)
+    println(poly.getEnvelope())
+    poly.getEnvelope()
+  }
+
+  def distanceFromPointToBounds(p: GeocodePoint, bounds: GeocodeBoundingBox): Double = {
+    val geometryFactory = new GeometryFactory()
+    val coord = new Coordinate(p.lng, p.lat)
+    val point = geometryFactory.createPoint(coord);
+    val geom = boundsToGeometry(bounds)
+    println (DistanceOp.distance(point, geom) / MetersPerDegreeLatitude)
+    DistanceOp.distance(point, geom) / MetersPerDegreeLatitude
   }
 
   /**

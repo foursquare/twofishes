@@ -492,10 +492,14 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
         }
 
         def distancePenalty(ll: GeocodePoint) {
-          val distance = GeoTools.getDistance(ll.lat, ll.lng,
+          val distance = if (primaryFeature.feature.geometry.bounds != null) {
+            GeoTools.distanceFromPointToBounds(ll, primaryFeature.feature.geometry.bounds)
+          } else {
+            GeoTools.getDistance(ll.lat, ll.lng,
               primaryFeature.feature.geometry.center.lat,
               primaryFeature.feature.geometry.center.lng)
-          val distancePenalty = (distance / 100)
+          }
+          val distancePenalty = (distance.toInt / 100)
           if (distance < 5000) {
             modifySignal(200000, "5km distance BONUS for being %d meters away".format(distance))
           } else {
