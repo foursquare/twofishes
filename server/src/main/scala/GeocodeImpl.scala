@@ -5,7 +5,7 @@ import com.foursquare.twofishes.Implicits._
 import com.foursquare.twofishes.util.{GeoTools, GeometryUtils, NameNormalizer, NameUtils, TwofishesLogger}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.foursquare.twofishes.util.NameUtils.BestNameMatch
-import com.twitter.util.{Duration, Future}
+import com.twitter.util.{Duration}
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory}
 import com.vividsolutions.jts.io.{WKBReader, WKTWriter}
 import com.vividsolutions.jts.util.GeometricShapeFactory
@@ -83,7 +83,7 @@ trait GeocoderImplTypes {
 
   // ParseCache = a table to save our previous parses from the left-most
   // side of the string.
-  type ParseCache = ConcurrentHashMap[Int, Future[SortedParseSeq]]
+  type ParseCache = ConcurrentHashMap[Int, SortedParseSeq]
 }
 
 class MemoryLogger(req: GeocodeRequest) extends TwofishesLogger {
@@ -106,7 +106,7 @@ class MemoryLogger(req: GeocodeRequest) extends TwofishesLogger {
   def toOutput(): String = lines.mkString("<br>\n");
 }
 
-class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) extends GeocoderImplTypes {
+class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extends GeocoderImplTypes {
   val logger = new MemoryLogger(req)
 
   /*
@@ -142,64 +142,45 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     cache
   }
 
-  def generateParsesHelper(tokens: List[String], offset: Int, cache: ParseCache): Future[SortedParseSeq] = {
+  def generateParsesHelper(tokens: List[String], offset: Int, cache: ParseCache): SortedParseSeq = {
     val cacheKey = tokens.size
     if (tokens.size == 0) {
-      Future.value(List(NullParse))
+      List(NullParse)
     } else {
       if (!cache.contains(cacheKey)) {
-        val searchStrs: Seq[String] =
-          1.to(tokens.size).map(i => tokens.take(i).mkString(" "))
-
-        val toEndStr = tokens.mkString(" ")
-
-        val featuresFs: Seq[Future[Parse[Unsorted]]] =
-          for ((searchStr, i) <- searchStrs.zipWithIndex) yield {
-            store.getByName(searchStr).map(features => Parse[Unsorted](features.map(f => 
+        val validParses: SortedParseSeq =
+          1.to(tokens.size).flatMap(i => {
+            val searchStr = tokens.take(i).mkString(" ")
+            val featureMatches = store.getByName(searchStr).map((f: GeocodeServingFeature) => 
               FeatureMatch(offset, offset + i, searchStr, f)
-            )))
-          }
-
-         // Compute subparses in parallel (scatter)
-         val subParsesFs: Seq[Future[SortedParseSeq]] =
-           1.to(tokens.size).map(i => generateParsesHelper(tokens.drop(i), offset + i, cache))
-
-         // Collect the results of all the features and subparses (gather)
-         val featureListsF: Future[ParseSeq] = Future.collect(featuresFs)
-         val subParseSeqsF: Future[Seq[SortedParseSeq]] = Future.collect(subParsesFs)
-
-         val validParsesF: Future[SortedParseSeq] =
-          for((featureLists, subParseSeqs) <- featureListsF.join(subParseSeqsF)) yield {
-            val validParses: SortedParseSeq = (
-              featureLists.zip(subParseSeqs).flatMap({case(features: Parse[Unsorted], subparses: ParseSeq) => {
-                (for {
-                  f <- features.fmatches
-                  val _ = logger.ifDebug("looking at %s".format(f), 3)
-                  p <- subparses
-                  val _ = logger.ifDebug("sub_parse: %s".format(p), 3)
-                } yield {
-                  val parse = p.addFeature(f)
-                  val sortedParse = parse.getSorted
-                  if (isValidParse(sortedParse)) {
-                    logger.ifDebug("VALID -- adding to %d".format(cacheKey), 4)
-                    logger.ifDebug("sorted " + sortedParse, 4)
-                    Some(sortedParse)
-                  } else {
-                    logger.ifDebug("INVALID", 4)
-                    None
-                  }
-                }).flatten
-              }})
             )
-            validParses.toList
-          }
+
+            val subParses: SortedParseSeq = 
+              generateParsesHelper(tokens.drop(i), offset + i, cache)
+
+            (for {
+              f <- featureMatches
+              p <- subParses
+              val _ = logger.ifDebug("looking at %s".format(f), 3)
+              val _ = logger.ifDebug("sub_parse: %s".format(p), 3)
+            } yield {
+              val parse = p.addFeature(f)
+              val sortedParse = parse.getSorted
+              if (isValidParse(sortedParse)) {
+                logger.ifDebug("VALID -- adding to %d".format(cacheKey), 4)
+                logger.ifDebug("sorted " + sortedParse, 4)
+                Some(sortedParse)
+              } else {
+                logger.ifDebug("INVALID", 4)
+                None
+              }
+            }).flatten
+          })
 
         if (req.debug > 1) {
-          validParsesF.onSuccess(validParses => {
-            logger.ifDebug("setting %d to %s".format(cacheKey, validParses))
-          })
+          logger.ifDebug("setting %d to %s".format(cacheKey, validParses))
         }
-        cache(cacheKey) = validParsesF
+        cache(cacheKey) = validParses
       }
       cache(cacheKey)
     }
@@ -272,15 +253,13 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       fids: Seq[ObjectId],
       offset: Int,
       i: Int,
-      matchString: String): Future[ParseSeq] = {
+      matchString: String): ParseSeq = {
     if (parses.size == 0) {
       logger.ifDebug("parses == 0, so accepting everything")
-      store.getByObjectIds(fids).map(featureMap =>
-        featureMap.map({case(oid, feature) => {
-          Parse[Unsorted](List(FeatureMatch(offset, offset + i,
-            matchString, feature)))
-        }}).toList
-      )
+      store.getByObjectIds(fids).map({case(oid, feature) => {
+        Parse[Unsorted](List(FeatureMatch(offset, offset + i,
+          matchString, feature)))
+      }}).toList
     } else {
       val validParsePairs: Seq[(Parse[Unsorted], ObjectId)] = parses.flatMap(parse => {
         if (req.debug > 0) {
@@ -308,23 +287,21 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
       })
 
       val fidsToFetch: Seq[ObjectId] = validParsePairs.map(_._2).toSet.toList
-      val featuresMapF = store.getByObjectIds(fidsToFetch)
+      val featuresMap = store.getByObjectIds(fidsToFetch)
 
-      featuresMapF.map(featureMap => {
-        validParsePairs.flatMap({case(parse, fid) => {
-          featureMap.get(fid).map(feature => {
-            parse.addFeature(FeatureMatch(offset, offset + i,
-              matchString, feature))
-          })
-        }})
-      })
+      validParsePairs.flatMap({case(parse, fid) => {
+        featuresMap.get(fid).map(feature => {
+          parse.addFeature(FeatureMatch(offset, offset + i,
+            matchString, feature))
+        })
+      }})
     }
   }
 
-  def generateAutoParses(tokens: List[String], spaceAtEnd: Boolean): Future[SortedParseSeq] = {
+  def generateAutoParses(tokens: List[String], spaceAtEnd: Boolean): SortedParseSeq = {
     // The getSorted is redundant here because the isValid function for autocomplete
     // parses enforces smallest-to-largest ordering, but we can't prove that to the compiler
-    generateAutoParsesHelper(tokens, 0, Nil, spaceAtEnd).map(_.map(_.getSorted))
+    generateAutoParsesHelper(tokens, 0, Nil, spaceAtEnd).map(_.getSorted)
   }
 
   def matchName(name: FeatureName, query: String, isEnd: Boolean): Boolean = {
@@ -344,42 +321,39 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
   }
 
   // Yet another huge hack because I don't know what name I hit
-  def filterNonPrefExactAutocompleteMatch(ids: Seq[ObjectId], phrase: String): Future[Seq[ObjectId]] = {
-    store.getByObjectIds(ids).map(features => {
-      features.filter(f => {
-        f._2.feature.woeType == YahooWoeType.POSTAL_CODE ||
-        {
-          val nameMatch = bestNameWithMatch(f._2.feature, Some(req.lang), false, Some(phrase))
-          nameMatch.exists(nm => 
-            nm._1.flags.contains(FeatureNameFlags.PREFERRED) ||
-            nm._1.flags.contains(FeatureNameFlags.ALT_NAME)
-          )
-        }
-      }).toList.map(_._1)
-    })
+  def filterNonPrefExactAutocompleteMatch(ids: Seq[ObjectId], phrase: String): Seq[ObjectId] = {
+    store.getByObjectIds(ids).filter(f => {
+      f._2.feature.woeType == YahooWoeType.POSTAL_CODE ||
+      {
+        val nameMatch = bestNameWithMatch(f._2.feature, Some(req.lang), false, Some(phrase))
+        nameMatch.exists(nm => 
+          nm._1.flags.contains(FeatureNameFlags.PREFERRED) ||
+          nm._1.flags.contains(FeatureNameFlags.ALT_NAME)
+        )
+      }
+    }).toList.map(_._1)
   }
 
-  def generateAutoParsesHelper(tokens: List[String], offset: Int, parses: ParseSeq, spaceAtEnd: Boolean): Future[ParseSeq] = {
+  def generateAutoParsesHelper(tokens: List[String], offset: Int, parses: ParseSeq, spaceAtEnd: Boolean): ParseSeq = {
     if (tokens.size == 0) {
-      Future.value(parses)
+      parses
     } else {
-      val validParses: Seq[Future[ParseSeq]] = 1.to(tokens.size).map(i => {
+      val validParses: Seq[ParseSeq] = 1.to(tokens.size).map(i => {
         val query = tokens.take(i).mkString(" ")
         val isEnd = (i == tokens.size)
 
         val possibleParents = parses.flatMap(_.flatMap(_.fmatch.scoringFeatures.parents))
           .map(parent => new ObjectId(parent))
 
-        val fidsF: Future[Seq[ObjectId]] = 
+        val featureIds: Seq[ObjectId] = 
           if (parses.size == 0) {
             if (isEnd) {
               logger.ifDebug("looking at prefix: %s".format(query))
               if (spaceAtEnd) {
-                Future.collect(List(
+                List(
                   store.getIdsByNamePrefix(query + " "),
-                  store.getIdsByName(query).flatMap(ids => 
-                    filterNonPrefExactAutocompleteMatch(ids, query))
-                )).map((a: Seq[Seq[ObjectId]]) => a.flatten)
+                  filterNonPrefExactAutocompleteMatch(store.getIdsByName(query), query)
+                ).flatten
               } else {
                 store.getIdsByNamePrefix(query)
               }
@@ -387,31 +361,26 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
               store.getIdsByName(query)
             }
           } else {
-            store.getByObjectIds(possibleParents).map(features => {
-              features.filter(feature => {
-                feature._2.feature.names.exists(n => matchName(n, query, isEnd))
-              }).map(_._1).toList
-            })
+            store.getByObjectIds(possibleParents).filter(feature => {
+              feature._2.feature.names.exists(n => matchName(n, query, isEnd))
+            }).map(_._1).toList
           }
 
-        val nextParseF: Future[ParseSeq] = fidsF.flatMap(featureIds => {
+        if (req.debug > 0) {
           logger.ifDebug("%d-%d: looking at: %s (is end? %s)".format(offset, i, query, isEnd))
           logger.ifDebug("%d-%d: %d previous parses: %s".format(offset, i, parses.size,   parses))
           logger.ifDebug("%d-%d: examining %d featureIds against parse".format(offset, i, featureIds.size))
-          buildValidParses(parses, featureIds, offset, i, query)
-        })
+        }
 
-        nextParseF.flatMap(nextParses => {
-          if (nextParses.size == 0) {
-            Future.value(List(Parse[Unsorted](Nil)))
-          } else {
-            generateAutoParsesHelper(tokens.drop(i), offset + i, nextParses, spaceAtEnd)
-          }
-        })
+        val nextParses: ParseSeq = buildValidParses(parses, featureIds, offset, i, query)
+
+        if (nextParses.size == 0) {
+          List(Parse[Unsorted](Nil))
+        } else {
+          generateAutoParsesHelper(tokens.drop(i), offset + i, nextParses, spaceAtEnd)
+        }
       })
-      Future.collect(validParses).map((vp: Seq[ParseSeq]) => {
-        vp.flatten
-      })
+      validParses.flatten
     }
   }
 
@@ -895,8 +864,8 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     longest: Int,
     sortedParses: SortedParseSeq,
     parseParams: ParseParams,
-    polygonMapF: Future[Map[ObjectId, Array[Byte]]]
-  ): Future[GeocodeResponse] = {
+    polygonMap: Map[ObjectId, Array[Byte]]
+  ): GeocodeResponse = {
     val tokens = parseParams.tokens
     val originalTokens = parseParams.originalTokens
     val tryHard = parseParams.tryHard
@@ -914,92 +883,88 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     logger.ifDebug("parent ids: " + parentOids)
 
     // possible optimization here: add in features we already have in our parses and don't refetch them
-    for {
-      parentMap <- store.getByObjectIds(parentOids)
-      polygonMap <- polygonMapF
-    } yield {
-      logger.ifDebug(parentMap.toString)
+    val parentMap = store.getByObjectIds(parentOids)
+    logger.ifDebug(parentMap.toString)
 
-      val what = if (hadConnector) {
-        originalTokens.take(connectorStart).mkString(" ")
-      } else {
-        tokens.take(tokens.size - longest).mkString(" ")
-      }
-      val where = tokens.drop(tokens.size - longest).mkString(" ")
-      logger.ifDebug("%d sorted parses".format(sortedParses.size))
-      logger.ifDebug("%s".format(sortedParses))
+    val what = if (hadConnector) {
+      originalTokens.take(connectorStart).mkString(" ")
+    } else {
+      tokens.take(tokens.size - longest).mkString(" ")
+    }
+    val where = tokens.drop(tokens.size - longest).mkString(" ")
+    logger.ifDebug("%d sorted parses".format(sortedParses.size))
+    logger.ifDebug("%s".format(sortedParses))
 
-      var interpretations = sortedParses.map(p => {
-        val fmatch = p(0).fmatch
-        val feature = p(0).fmatch.feature
-        val sortedParents = p(0).fmatch.scoringFeatures.parents.flatMap(parent =>
-          parentMap.get(new ObjectId(parent))).sorted(GeocodeServingFeatureOrdering)
-        fixFeature(feature, sortedParents, Some(p))
-        val interp = new GeocodeInterpretation()
-        interp.setWhat(what)
-        interp.setWhere(where)
-        interp.setFeature(feature)
+    var interpretations = sortedParses.map(p => {
+      val fmatch = p(0).fmatch
+      val feature = p(0).fmatch.feature
+      val sortedParents = p(0).fmatch.scoringFeatures.parents.flatMap(parent =>
+        parentMap.get(new ObjectId(parent))).sorted(GeocodeServingFeatureOrdering)
+      fixFeature(feature, sortedParents, Some(p))
+      val interp = new GeocodeInterpretation()
+      interp.setWhat(what)
+      interp.setWhere(where)
+      interp.setFeature(feature)
 
-        val scores = p.scoringFeatures
-        interp.setScores(scores)
+      val scores = p.scoringFeatures
+      interp.setScores(scores)
 
-        if (responseIncludes(ResponseIncludes.WKT_GEOMETRY) ||
-            responseIncludes(ResponseIncludes.WKB_GEOMETRY)) {
-          polygonMap.get(new ObjectId(fmatch.id)).foreach(wkb => {
-            feature.geometry.setWkbGeometry(wkb)
-            if (responseIncludes(ResponseIncludes.WKT_GEOMETRY)) {
-              val wkbReader = new WKBReader()
-              val wktWriter = new WKTWriter()
-              val geom = wkbReader.read(wkb)
-              feature.geometry.setWktGeometry(wktWriter.write(geom))
-            }
-          })
-        }
-
-        if (responseIncludes(ResponseIncludes.PARENTS)) {
-          interp.setParents(sortedParents.map(parentFeature => {
-            val sortedParentParents = parentFeature.scoringFeatures.parents.flatMap(parent =>
-              parentMap.get(new ObjectId(parent))).sorted
-            val feature = parentFeature.feature
-            fixFeature(feature, sortedParentParents, None)
-            feature
-          }))
-        }
-        interp
-      })
-
-      // Find + fix ambiguous names
-      // check to see if any of our features are ambiguous, even after deduping (which
-      // happens outside this function). ie, there are 3 "Cobble Hill, NY"s. Which
-      // are the names we get if we only take one parent component from each.
-      // Find ambiguous geocodes, tell them to take more name component
-      val ambiguousInterpretationsMap: Map[String, Seq[GeocodeInterpretation]] = 
-        interpretations.groupBy(_.feature.displayName).filter(_._2.size > 1)
-      val ambiguousInterpretations: Iterable[GeocodeInterpretation] = 
-        ambiguousInterpretationsMap.flatMap(_._2).toList
-      val ambiguousIdMap: Map[String, Iterable[GeocodeInterpretation]] =
-        ambiguousInterpretations.groupBy(_.feature.ids.toString)
-
-      if (ambiguousInterpretations.size > 0) {
-        logger.ifDebug("had ambiguous interpretations")
-        ambiguousInterpretationsMap.foreach({case (k, v) => logger.ifDebug("have %d of %s".format(v.size, k)) })
-        sortedParses.foreach(p => {
-          val fmatch = p(0).fmatch
-          val feature = p(0).fmatch.feature
-          ambiguousIdMap.getOrElse(feature.ids.toString, Nil).foreach(interp => {
-            val sortedParents = p(0).fmatch.scoringFeatures.parents
-              .flatMap(parent =>
-                parentMap.get(new ObjectId(parent))).sorted(GeocodeServingFeatureOrdering)
-            fixFeature(interp.feature, sortedParents, Some(p), 2)
-          })
+      if (responseIncludes(ResponseIncludes.WKT_GEOMETRY) ||
+          responseIncludes(ResponseIncludes.WKB_GEOMETRY)) {
+        polygonMap.get(new ObjectId(fmatch.id)).foreach(wkb => {
+          feature.geometry.setWkbGeometry(wkb)
+          if (responseIncludes(ResponseIncludes.WKT_GEOMETRY)) {
+            val wkbReader = new WKBReader()
+            val wktWriter = new WKTWriter()
+            val geom = wkbReader.read(wkb)
+            feature.geometry.setWktGeometry(wktWriter.write(geom))
+          }
         })
       }
- 
-      generateResponse(interpretations)
+
+      if (responseIncludes(ResponseIncludes.PARENTS)) {
+        interp.setParents(sortedParents.map(parentFeature => {
+          val sortedParentParents = parentFeature.scoringFeatures.parents.flatMap(parent =>
+            parentMap.get(new ObjectId(parent))).sorted
+          val feature = parentFeature.feature
+          fixFeature(feature, sortedParentParents, None)
+          feature
+        }))
+      }
+      interp
+    })
+
+    // Find + fix ambiguous names
+    // check to see if any of our features are ambiguous, even after deduping (which
+    // happens outside this function). ie, there are 3 "Cobble Hill, NY"s. Which
+    // are the names we get if we only take one parent component from each.
+    // Find ambiguous geocodes, tell them to take more name component
+    val ambiguousInterpretationsMap: Map[String, Seq[GeocodeInterpretation]] = 
+      interpretations.groupBy(_.feature.displayName).filter(_._2.size > 1)
+    val ambiguousInterpretations: Iterable[GeocodeInterpretation] = 
+      ambiguousInterpretationsMap.flatMap(_._2).toList
+    val ambiguousIdMap: Map[String, Iterable[GeocodeInterpretation]] =
+      ambiguousInterpretations.groupBy(_.feature.ids.toString)
+
+    if (ambiguousInterpretations.size > 0) {
+      logger.ifDebug("had ambiguous interpretations")
+      ambiguousInterpretationsMap.foreach({case (k, v) => logger.ifDebug("have %d of %s".format(v.size, k)) })
+      sortedParses.foreach(p => {
+        val fmatch = p(0).fmatch
+        val feature = p(0).fmatch.feature
+        ambiguousIdMap.getOrElse(feature.ids.toString, Nil).foreach(interp => {
+          val sortedParents = p(0).fmatch.scoringFeatures.parents
+            .flatMap(parent =>
+              parentMap.get(new ObjectId(parent))).sorted(GeocodeServingFeatureOrdering)
+          fixFeature(interp.feature, sortedParents, Some(p), 2)
+        })
+      })
     }
+
+    generateResponse(interpretations)
   }
 
-  def geocode(): Future[GeocodeResponse] = {
+  def geocode(): GeocodeResponse = {
     val query = req.query
     if (query != null) {
       logger.ifDebug("%s --> %s".format(query, NameNormalizer.normalize(query)))
@@ -1094,9 +1059,9 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
 
     // TODO: make this configurable
     val sortedDedupedParses: SortedParseSeq = dedupedParses.sorted(new ParseOrdering).take(3)
-    val polygonMapF: Future[Map[ObjectId, Array[Byte]]] = getPolygonMap(
-      Future.value(sortedDedupedParses.map(p => new ObjectId(p(0).fmatch.id))))
-    hydrateParses(parseLength, sortedDedupedParses, parseParams, polygonMapF)
+    val polygonMap: Map[ObjectId, Array[Byte]] = getPolygonMap(
+      sortedDedupedParses.map(p => new ObjectId(p(0).fmatch.id)))
+    hydrateParses(parseLength, sortedDedupedParses, parseParams, polygonMap)
   }
 
   def doNormalGeocode(parseParams: ParseParams) = {
@@ -1109,53 +1074,48 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     val isRetry = parseParams.isRetry
 
     val cache = generateParses(tokens)
-    val futureCache: Iterable[Future[(Int, SortedParseSeq)]] = cache.map({case (k, v) => {
-      Future.value(k).join(v)
-    }})
 
-    Future.collect(futureCache.toList).flatMap(cache => {
-      val validParseCaches: Iterable[(Int, SortedParseSeq)] =
-        cache.filter(_._2.nonEmpty)
+    val validParseCaches: Iterable[(Int, SortedParseSeq)] =
+      cache.filter(_._2.nonEmpty)
 
-      if (validParseCaches.size > 0) {
-        val longest = validParseCaches.map(_._1).max
-        if (hadConnector && longest != tokens.size) {
-          Future.value(generateResponse(Nil))
-        } else {
-          val longestParses = validParseCaches.find(_._1 == longest).get._2
-          if (longest != tokens.size) {
-            maybeRetryParsing(longestParses, longest, parseParams)
-          } else {
-            buildFinalParses(longestParses, longest, parseParams)
-          }
-        }
+    if (validParseCaches.size > 0) {
+      val longest = validParseCaches.map(_._1).max
+      if (hadConnector && longest != tokens.size) {
+        generateResponse(Nil)
       } else {
-        Future.value(generateResponse(Nil))
+        val longestParses = validParseCaches.find(_._1 == longest).get._2
+        if (longest != tokens.size) {
+          maybeRetryParsing(longestParses, longest, parseParams)
+        } else {
+          buildFinalParses(longestParses, longest, parseParams)
+        }
       }
-    })
+    } else {
+      generateResponse(Nil)
+    }
   }
 
   def doAutocompleteGeocode(
     spaceAtEnd: Boolean,
     parseParams: ParseParams
   ) = {
-    generateAutoParses(parseParams.tokens, spaceAtEnd).flatMap(parses => {
-      if (req.debug > 1) {
-        parses.foreach(p => {
-          logger.ifDebug("parse ids: %s".format(p.map(_.fmatch.id)))
-        })
-      }
-      buildFinalParses(parses, 0, parseParams)
-    })
+    val parses = generateAutoParses(parseParams.tokens, spaceAtEnd)
+    if (req.debug > 1) {
+      parses.foreach(p => {
+        logger.ifDebug("parse ids: %s".format(p.map(_.fmatch.id)))
+      })
+    }
+    buildFinalParses(parses, 0, parseParams)
   }
 
-  def doSlugGeocode(slug: String): Future[GeocodeResponse] = {
+  def doSlugGeocode(slug: String): GeocodeResponse = {
     val parseParams = ParseParams()
 
     val featureMap: Map[String, GeocodeServingFeature]  = if (ObjectId.isValid(slug)) {
-      store.getByObjectIds(List(new ObjectId(slug))).map(_.map({case (key, value) => (key.toString, value)}).toMap)()
+      val features = store.getByObjectIds(List(new ObjectId(slug)))
+      features.map({case (key, value) => (key.toString, value)}).toMap
     } else {
-      store.getBySlugOrFeatureIds(List(slug))()
+      store.getBySlugOrFeatureIds(List(slug))
     }
 
     // a parse is still a seq of featurematch, bleh
@@ -1169,7 +1129,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
   def geocode(originalTokens: List[String],
               isRetry: Boolean = false,
               spaceAtEnd: Boolean = false
-      ): Future[GeocodeResponse] = {
+      ): GeocodeResponse = {
     logger.ifDebug("--> %s".format(originalTokens.mkString("_|_")))
 
     // This is awful connector parsing
@@ -1257,29 +1217,25 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     responseIncludes(ResponseIncludes.WKT_GEOMETRY) ||
     responseIncludes(ResponseIncludes.REVGEO_COVERAGE)
 
-  def getPolygonMap(featureOidsF: Future[Seq[ObjectId]]): Future[Map[ObjectId, Array[Byte]]]  = {
+  def getPolygonMap(featureOids: Seq[ObjectId]): Map[ObjectId, Array[Byte]] = {
     if (shouldFetchPolygon) {
-      val polygonMapSeqF: Future[Seq[Option[(ObjectId, Array[Byte])]]] = featureOidsF.flatMap((featureOids: Seq[ObjectId]) => {
-        Future.collect(
-          for {
-            oid <- featureOids
-          } yield {
-            store.getPolygonByObjectId(oid).map(_.map(polygon => (oid -> polygon)))
-          }
-        )
-      })
-      polygonMapSeqF.map(_.flatten.toMap)
+      val polygonMapSeq: Seq[(ObjectId, Array[Byte])] = 
+        for {
+          oid <- featureOids
+          polygon <- store.getPolygonByObjectId(oid)
+        } yield {
+          (oid -> polygon)
+        }
+      polygonMapSeq.toMap
     } else {
-      Future.value(Map.empty)    
+      Map.empty
     }
   }
 
-  def doReverseGeocode(cellids: Seq[Long], otherGeom: Geometry) = {
-    val cellGeometriesSeqF: Future[Seq[CellGeometry]] = 
-      Future.collect(cellids.map(store.getByS2CellId)).map(_.flatten)
+  def doReverseGeocode(cellids: Seq[Long], otherGeom: Geometry): GeocodeResponse = {
+    val cellGeometries: Seq[CellGeometry] = cellids.map(store.getByS2CellId).flatten
 
-    val featureOidsF: Future[Seq[ObjectId]] = cellGeometriesSeqF.map(
-      (cellGeometries: Seq[CellGeometry]) => {
+    val featureOids: Seq[ObjectId] = {
       if (req.debug > 0) {
         logger.ifDebug("had %d candidates".format(cellGeometries.size))
       }
@@ -1302,47 +1258,40 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
           }
         }
       }).flatten
-    })
+    }
 
-    val servingFeaturesMapF: Future[Map[ObjectId, GeocodeServingFeature]] = featureOidsF.flatMap(
-      (featureOids: Seq[ObjectId]) => store.getByObjectIds(featureOids.toSet.toList))
+    val servingFeaturesMap: Map[ObjectId, GeocodeServingFeature] =
+      store.getByObjectIds(featureOids.toSet.toList)
 
     // need to get polygons if we need to calculate coverage
-    val polygonMapF: Future[Map[ObjectId, Array[Byte]]] = getPolygonMap(featureOidsF) 
+    val polygonMap: Map[ObjectId, Array[Byte]] = getPolygonMap(featureOids) 
     val wkbReader = new WKBReader()
     // for each, check if we're really in it
-    val parsesF: Future[SortedParseSeq] = for {
-      servingFeaturesMap <- servingFeaturesMapF
-      polygonMap <- polygonMapF
-    } yield {
-      servingFeaturesMap.map({ case (oid, f) => {
-        val parse = Parse[Sorted](List(FeatureMatch(0, 0, "", f)))
-        if (responseIncludes(ResponseIncludes.REVGEO_COVERAGE)) {
-          polygonMap.get(oid).foreach(wkb => {
-            val geom = wkbReader.read(wkb)
-            parse.scoringFeatures.setPercentOfRequestCovered(computeCoverage(geom, otherGeom))
-            parse.scoringFeatures.setPercentOfFeatureCovered(computeCoverage(otherGeom, geom))
-          })
-        }
-        parse
-      }}).toList
-    }
+    val parses: SortedParseSeq = servingFeaturesMap.map({ case (oid, f) => {
+      val parse = Parse[Sorted](List(FeatureMatch(0, 0, "", f)))
+      if (responseIncludes(ResponseIncludes.REVGEO_COVERAGE)) {
+        polygonMap.get(oid).foreach(wkb => {
+          val geom = wkbReader.read(wkb)
+          parse.scoringFeatures.setPercentOfRequestCovered(computeCoverage(geom, otherGeom))
+          parse.scoringFeatures.setPercentOfFeatureCovered(computeCoverage(otherGeom, geom))
+        })
+      }
+      parse
+    }}).toSeq
 
     val parseParams = ParseParams()
 
-    parsesF.flatMap(parses => {
-      val maxInterpretations = if (req.maxInterpretations <= 0) {
-        parses.size  
-      } else {
-        req.maxInterpretations
-      }
+    val maxInterpretations = if (req.maxInterpretations <= 0) {
+      parses.size  
+    } else {
+      req.maxInterpretations
+    }
 
-      val sortedParses = parses.map(_.getSorted).sorted(new ReverseGeocodeParseOrdering).take(maxInterpretations)
-      hydrateParses(0, sortedParses, parseParams, polygonMapF)
-    })
+    val sortedParses = parses.sorted(new ReverseGeocodeParseOrdering).take(maxInterpretations)
+    hydrateParses(0, sortedParses, parseParams, polygonMap)
   }
 
-  def reverseGeocodePoint(ll: GeocodePoint): Future[GeocodeResponse] = {
+  def reverseGeocodePoint(ll: GeocodePoint): GeocodeResponse = {
     logger.ifDebug("doing point revgeo on %s at level %s".format(ll, store.getMaxS2Level))
     val cellids: Seq[Long] = List(GeometryUtils.getS2CellIdForLevel(ll.lat, ll.lng, store.getMaxS2Level).id())
     logger.ifDebug("looking up: " + cellids.mkString(" "))
@@ -1355,7 +1304,7 @@ class GeocoderImpl(store: GeocodeStorageFutureReadService, req: GeocodeRequest) 
     doReverseGeocode(cellids, point)
   }
 
-  def reverseGeocode(): Future[GeocodeResponse] = {
+  def reverseGeocode(): GeocodeResponse = {
     if (req.ll != null) {
       if (req.isSetRadius) {
         val sizeDegrees = req.radius / 111319.9

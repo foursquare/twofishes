@@ -114,6 +114,15 @@ abstract class HFileInput(basepath: String, filename: String) {
   val reader = new HFile.Reader(fs, path, cache, true)
   val fileInfo = reader.loadFileInfo().asScala
 
+  // prefetch the hfile
+  val (rv, duration) = Duration.inMilliseconds({    
+    val scanner = reader.getScanner(true, false) // Seek, caching.
+    scanner.seekTo()
+    while(scanner.next()) {}
+  })
+
+  println("took %s seconds to read %s".format(duration.inSeconds, filename))
+
   def lookup(key: ByteBuffer): Option[ByteBuffer] = {
     val scanner: HFileScanner = reader.getScanner(true, true)
     if (scanner.reseekTo(key.array, key.position, key.remaining) == 0) {
