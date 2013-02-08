@@ -35,7 +35,7 @@ object PolygonLoader {
       if (extension == "shp") {
         for {
           shp <- new ShapefileIterator(f)
-          geoid <- shp.propMap.get("fs_geoid")
+          geoid <- shp.propMap.get("geonameid")
           geom <- shp.geometry
         } yield { (geoid -> geom) }
       } else if (shapeFileExtensions.has(extension)) {
