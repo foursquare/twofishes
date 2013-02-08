@@ -47,6 +47,12 @@ object PolygonLoader {
           (parts(0) -> wktReader.read(parts(1))) 
         })
       }
-    }).toMap
+    }).map({case (k, v) => {
+      if (!k.contains(":")) {
+        ("%s:%s".format(GeonamesParser.geonameIdNamespace, k), v)
+      } else {
+        (k, v)
+      }
+    }}).toMap
   }
 }
