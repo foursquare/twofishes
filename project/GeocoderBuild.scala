@@ -129,6 +129,7 @@ object GeocoderBuild extends Build {
   lazy val indexer = Project(id = "indexer",
       base = file("indexer"),
       settings = defaultSettings ++ assemblySettings ++ Seq(
+        baseDirectory in run := file("."),
         mainClass in assembly := Some("com.foursquare.twofishes.importers.geonames.GeonamesParser"),
         initialCommands := """
         import com.foursquare.twofishes.importers.geonames._
