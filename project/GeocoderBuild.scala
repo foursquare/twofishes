@@ -115,6 +115,7 @@ object GeocoderBuild extends Build {
   lazy val server = Project(id = "server",
       settings = defaultSettings ++ assemblySettings ++ Seq(
         mainClass in assembly := Some("com.foursquare.twofishes.GeocodeFinagleServer"),
+        baseDirectory in run := file("."),
         publishArtifact := true,
         libraryDependencies ++= Seq(
           "com.twitter" % "ostrich" % "8.2.3",

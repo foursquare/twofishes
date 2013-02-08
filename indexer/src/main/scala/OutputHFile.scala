@@ -56,9 +56,17 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
   val factory = new TCompactProtocol.Factory()
   val serializer = new TSerializer(factory)
 
-  def serializeGeocodeRecord(g: GeocodeRecord, fixParentId: IdFixer) = {
+  def serializeGeocodeRecordWithoutGeometry(g: GeocodeRecord, fixParentId: IdFixer) = {
     val f = g.toGeocodeServingFeature()
+    f.feature.geometry.unsetWkbGeometry()
+    serializeGeocodeServingFeature(f, fixParentId)
+  }
 
+  def serializeGeocodeRecord(g: GeocodeRecord, fixParentId: IdFixer) = {
+    serializeGeocodeServingFeature(g.toGeocodeServingFeature(), fixParentId)
+  }
+
+  def serializeGeocodeServingFeature(f: GeocodeServingFeature, fixParentId: IdFixer) = {
     val parents = for {
       parent <- f.scoringFeatures.parents
       parentId <- fixParentId(parent)
@@ -69,6 +77,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     f.scoringFeatures.setParents(parents)
     serializer.serialize(f)
   }
+
 
   val stateCache = new HashMap[List[String], Option[String]]
   def findStateName(parents: List[String]) = {
@@ -670,7 +679,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
 
     writeCollection("features.hfile",
       (g: GeocodeRecord) => 
-        (g._id.toByteArray(), serializeGeocodeRecord(g, fixParentId)),
+        (g._id.toByteArray(), serializeGeocodeRecordWithoutGeometry(g, fixParentId)),
       MongoGeocodeDAO, "_id")
   }
 

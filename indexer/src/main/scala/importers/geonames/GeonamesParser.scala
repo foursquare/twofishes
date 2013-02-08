@@ -406,7 +406,7 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
     )
 
     feature.extraColumns.get("sociallyRelevant").map(v => 
-      attributes.setSociallyRelevant(v.toInt > 0)
+      attributes.setSociallyRelevant(v.toBoolean)
     )
 
 
