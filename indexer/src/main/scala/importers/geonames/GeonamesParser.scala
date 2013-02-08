@@ -31,7 +31,7 @@ object GeonamesParser {
 
   var hasPolygonList = new HashSet[String]
 
-  val naturalEarthPopulatedPlacesMap: Map[Int, SimpleFeature] = {
+  lazy val naturalEarthPopulatedPlacesMap: Map[Int, SimpleFeature] = {
     new ShapefileIterator("data/downloaded/ne_10m_populated_places_simple.shp").flatMap(f => {
       f.propMap.get("geonameid").map(id => {
         (id.toDouble.toInt, f)
@@ -68,11 +68,16 @@ object GeonamesParser {
   }
 
   val store = new MongoGeocodeStorageService()
-  val slugIndexer = new SlugIndexer()
+  lazy val slugIndexer = new SlugIndexer()
 
   def main(args: Array[String]) {
     config = new GeonamesImporterConfig(args)
     loadIntoMongo()
+    writeHFileOutput()
+  }
+
+  def writeIndex(args: Array[String]) {
+    config = new GeonamesImporterConfig(args)
     writeHFileOutput()
   }
 
