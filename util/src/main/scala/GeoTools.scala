@@ -40,11 +40,13 @@ object GeoTools {
     val fact = new GeometryFactory()
     val coordinates = Array(
       new Coordinate(bounds.ne.lng, bounds.ne.lat),
-      new Coordinate(bounds.sw.lng, bounds.sw.lat)
+      new Coordinate(bounds.sw.lng, bounds.ne.lat),
+      new Coordinate(bounds.sw.lng, bounds.sw.lat),
+      new Coordinate(bounds.ne.lng, bounds.sw.lat),
+      new Coordinate(bounds.ne.lng, bounds.ne.lat)
     )
     val linear = new GeometryFactory().createLinearRing(coordinates);
     val poly = new Polygon(linear, null, fact)
-    println(poly.getEnvelope())
     poly.getEnvelope()
   }
 
@@ -53,8 +55,7 @@ object GeoTools {
     val coord = new Coordinate(p.lng, p.lat)
     val point = geometryFactory.createPoint(coord);
     val geom = boundsToGeometry(bounds)
-    println (DistanceOp.distance(point, geom) / MetersPerDegreeLatitude)
-    DistanceOp.distance(point, geom) / MetersPerDegreeLatitude
+    DistanceOp.distance(point, geom) * MetersPerDegreeLatitude
   }
 
   /**

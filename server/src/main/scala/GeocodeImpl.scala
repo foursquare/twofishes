@@ -470,9 +470,9 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
           }
           val distancePenalty = (distance.toInt / 100)
           if (distance < 5000) {
-            modifySignal(200000, "5km distance BONUS for being %d meters away".format(distance))
+            modifySignal(200000, "5km distance BONUS for being %s meters away".format(distance))
           } else {
-            modifySignal(-distancePenalty, "distance penalty for being %d meters away".format(distance)) 
+            modifySignal(-distancePenalty, "distance penalty for being %s meters away".format(distance)) 
           }
         }
 
