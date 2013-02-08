@@ -4,6 +4,7 @@ package com.foursquare.twofishes
 import com.twitter.util.{Future, FuturePool}
 import org.apache.thrift.{TDeserializer, TSerializer}
 import org.apache.thrift.protocol.TCompactProtocol
+import com.vividsolutions.jts.io.{WKBReader, WKTWriter}
 import org.bson.types.ObjectId
 import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
@@ -104,8 +105,22 @@ case class GeocodeRecord(
       ))  
     )
 
-    polygon.foreach(poly => geometry.setWkbGeometry(poly))
-    
+    polygon.foreach(poly => {
+      geometry.setWkbGeometry(poly)
+
+      if (boundingbox.isEmpty) {
+        val wkbReader = new WKBReader()
+        val g = wkbReader.read(poly)
+
+        val envelope = g.getEnvelopeInternal()
+
+        geometry.setBounds(new GeocodeBoundingBox(
+          new GeocodePoint(envelope.getMaxY(), envelope.getMaxX()),
+          new GeocodePoint(envelope.getMinY(), envelope.getMinX())
+        ))
+      }
+    })
+
     val feature = new GeocodeFeature(
       cc, geometry
     )
