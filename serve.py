@@ -10,6 +10,8 @@ parser.add_option("-p", "--port", dest="port",  default=8080, type='int',
   help="port")
 parser.add_option("--preload", dest="preload",  default=False, action='store_true',
   help="preload index to prevent coldstart, increases startup time")
+parser.add_option("--nopreload", dest="preload",  default=False, action='store_false',
+  help="don't preload index to prevent coldstart, decrease startup time, increases intial latency")
 parser.add_option("-r", "--rebel", dest="rebel",  default=False, action='store_true',
   help="rebel")
 
