@@ -302,8 +302,9 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
   }
 
   def buildRevGeoIndex() { 
-    val minS2Level = 12
+    val minS2Level = 8
     val maxS2Level = 12
+    val maxCells = 1000
     val levelMod = 2
 
     val ids = MongoGeocodeDAO.primitiveProjections[ObjectId](MongoDBObject("hasPoly" -> true), "_id").toList
@@ -321,38 +322,25 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
             //println("reading poly %s".format(index))
             val geom = wkbReader.read(polygon)
 
-            var numCells = 0
-
-            for {
-              level <- minS2Level.to(maxS2Level)
-              if ((level - minS2Level) % levelMod) == 0
-            } {
-              logDuration("generating covering at level %s".format(level)) {
-                GeometryUtils.s2PolygonCovering(geom, level, level).foreach(
-                  (cellid: S2CellId) => {
-                    if (cellid.level() != level) {
-                      throw new Exception("generated wrong level: %d SHOULD NOT HAPPEN at %d".format(cellid.level, level))
-                    } else {
-                      val s2Bytes: Array[Byte] = GeometryUtils.getBytes(cellid)
-                      val bucket = s2map.getOrElseUpdate(ByteBuffer.wrap(s2Bytes), new HashSet[CellGeometry]())
-                      val cellGeometry = new CellGeometry()
-                      val (clippedGeom, isContained) = ShapefileS2Util.clipGeometryToCell(geom.buffer(0), cellid)
-                      if (isContained) {
-                        cellGeometry.setFull(true)
-                      } else {
-                        cellGeometry.setWkbGeometry(wkbWriter.write(clippedGeom))
-                      }
-                      cellGeometry.setWoeType(record.woeType)
-                      cellGeometry.setOid(record._id.toByteArray())
-                      bucket.add(cellGeometry)
-                      numCells += 1
-                    }
-                  } 
-                )
-              }
+            val cells = logDuration("generated cover ") { GeometryUtils.s2PolygonCovering(geom, minS2Level, maxS2Level) }
+            logDuration("clipped and outputted cover ") {
+              cells.foreach(
+                (cellid: S2CellId) => {
+                  val s2Bytes: Array[Byte] = GeometryUtils.getBytes(cellid)
+                  val bucket = s2map.getOrElseUpdate(ByteBuffer.wrap(s2Bytes), new HashSet[CellGeometry]())
+                  val cellGeometry = new CellGeometry()
+                  val (clippedGeom, isContained) = ShapefileS2Util.clipGeometryToCell(geom.buffer(0), cellid)
+                  if (isContained) {
+                    cellGeometry.setFull(true)
+                  } else {
+                    cellGeometry.setWkbGeometry(wkbWriter.write(clippedGeom))
+                  }
+                  cellGeometry.setWoeType(record.woeType)
+                  cellGeometry.setOid(record._id.toByteArray())
+                  bucket.add(cellGeometry)
+                } 
+              )
             }
-
-            println("outputted %d cells".format(numCells))
           }
         }
 
