@@ -297,7 +297,9 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
 
   def logDuration[T](what: String)(f: => T): T = {
     val (rv, duration) = Duration.inNanoseconds(f)
-    println(what + " in %s µs / %s ms".format(duration.inMicroseconds, duration.inMilliseconds))
+    if (duration.inMilliseconds > 200) {
+      println(what + " in %s µs / %s ms".format(duration.inMicroseconds, duration.inMilliseconds))
+    }
     rv
   }
 
@@ -330,7 +332,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
                 maxCellsHintWhichMightBeIgnored = Some(1000)
               )
             }
-            logDuration("clipped and outputted cover ") {
+            logDuration("clipped and outputted cover for %d cells".format(cells.size)) {
               cells.foreach(
                 (cellid: S2CellId) => {
                   val s2Bytes: Array[Byte] = GeometryUtils.getBytes(cellid)
