@@ -17,6 +17,12 @@ import scala.collection.JavaConversions._
 import scalaj.collection.Implicits._
 
 class HFileStorageService(basepath: String, shouldPreload: Boolean) extends GeocodeStorageReadService {
+  val slugFidMapFuture = FuturePool.defaultPool {
+    val (rv, duration) = Duration.inMilliseconds(readSlugMap())
+    println("took %s seconds to read id map".format(duration.inSeconds))
+    rv
+  }
+
   val nameMap = new NameIndexHFileInput(basepath, shouldPreload)
   val oidMap = new GeocodeRecordHFileInput(basepath, shouldPreload)
   val geomMap = new GeometryHFileInput(basepath, shouldPreload)
@@ -25,13 +31,11 @@ class HFileStorageService(basepath: String, shouldPreload: Boolean) extends Geoc
   lazy val s2map = s2mapOpt.getOrElse(
     throw new Exception("s2/revgeo index not built, please build s2_index.hfile"))
 
-  val slugFidMapFuture = FuturePool.defaultPool {
-    val (rv, duration) = Duration.inMilliseconds(readSlugMap())
-    println("took %s seconds to read id map".format(duration.inSeconds))
-    rv
-  }
-
   lazy val slugFidMap = slugFidMapFuture.get()
+
+  if (shouldPreload) {
+    slugFidMap.wait()
+  }
 
   def readSlugMap() = {
     scala.io.Source.fromFile(new File(basepath, "id-mapping.txt")).getLines.map(l => {
