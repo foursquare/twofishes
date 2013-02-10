@@ -104,14 +104,32 @@ object GeometryUtils {
   def s2PolygonCovering(geomCollection: Geometry, 
       minS2Level: Int,
       maxS2Level: Int,
-      levelMod: Option[Int] = None) = {
+      maxCellsHintWhichMightBeIgnored: Option[Int] = None,
+      levelMod: Option[Int] = None
+    ) = {
     val s2poly = s2Polygon(geomCollection)
     val coverer =  new S2RegionCoverer
     coverer.setMinLevel(minS2Level)
     coverer.setMaxLevel(maxS2Level)   
+    maxCellsHintWhichMightBeIgnored.foreach(coverer.setMaxCells)
     levelMod.foreach(m => coverer.setLevelMod(m))
     val coveringCells = new java.util.ArrayList[com.google.common.geometry.S2CellId]
     coverer.getCovering(s2poly, coveringCells)
     coveringCells
+  }
+
+  // curious if doing a single covering and blowing it out by hand would
+  // be significantly faster
+  def coverAtAllLevels(geomCollection: Geometry, 
+      minS2Level: Int,
+      maxS2Level: Int,
+      levelMod: Option[Int] = None
+    ): Seq[S2CellId] = {
+    (for {
+      level <- minS2Level.to(maxS2Level)
+      if ((level - minS2Level) % levelMod.getOrElse(1)) == 0
+    } yield {
+      s2PolygonCovering(geomCollection, minS2Level, maxS2Level)
+    }).flatten.toSet.toSeq
   }
 }

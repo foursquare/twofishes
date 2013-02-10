@@ -1,7 +1,7 @@
-import sbt._
-import Keys._
-import sbtassembly.Plugin._
 import AssemblyKeys._
+import Keys._
+import sbt._
+import sbtassembly.Plugin._
 
 object GeocoderBuild extends Build {
   lazy val buildSettings = Seq(
@@ -133,10 +133,10 @@ object GeocoderBuild extends Build {
         baseDirectory in run := file("."),
         mainClass in assembly := Some("com.foursquare.twofishes.importers.geonames.GeonamesParser"),
         initialCommands := """
-        import com.foursquare.twofishes.importers.geonames._
-        import com.foursquare.twofishes._
-        import com.foursquare.twofishes.util.Helpers._
         import com.foursquare.twofishes.Implicits._
+        import com.foursquare.twofishes._
+        import com.foursquare.twofishes.importers.geonames._
+        import com.foursquare.twofishes.util.Helpers._
         import java.io.File
 
         val store = new MongoGeocodeStorageService()

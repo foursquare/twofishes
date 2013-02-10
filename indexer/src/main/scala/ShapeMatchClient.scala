@@ -1,35 +1,28 @@
 package com.foursquare.twofishes
 
-import com.twitter.finagle.builder.ClientBuilder
-import com.twitter.finagle.Service
-import java.net.InetSocketAddress
-import org.apache.thrift.protocol.TBinaryProtocol
-import org.opengis.feature.simple.SimpleFeature
-import com.twitter.finagle.thrift.{ThriftClientFramedCodec, ThriftClientRequest}
-import com.twitter.util.{Duration, TimeLike}
-import com.twitter.conversions.time._
-import com.foursquare.twofishes.util.Helpers
-import org.apache.thrift.TException
-import com.vividsolutions.jts.util.GeometricShapeFactory
-import org.apache.thrift.protocol.TBinaryProtocol
-import org.geotools.data.shapefile.ShapefileDataStore
 import com.foursquare.geo.shapes.FsqSimpleFeatureImplicits._
 import com.foursquare.geo.shapes.ShapefileIterator
-import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory}
-import scala.collection.JavaConverters._
-import org.apache.thrift.protocol.TProtocol
+import com.foursquare.twofishes.util.Helpers
+import com.twitter.conversions.time._
+import com.twitter.finagle.Service
+import com.twitter.finagle.builder.ClientBuilder
+import com.twitter.finagle.thrift.{ThriftClientFramedCodec, ThriftClientRequest}
+import com.vividsolutions.jts.geom.{Coordinate, Geometry}
+import com.vividsolutions.jts.util.GeometricShapeFactory
+import java.net.InetSocketAddress
+import org.apache.thrift.protocol.TBinaryProtocol
 import org.apache.thrift.transport.TSocket
-import org.apache.thrift.transport.TTransport
-import org.apache.thrift.transport.TTransportException
-import org.geotools.geometry.jts.JTSFactoryFinder
+import org.geotools.data.shapefile.ShapefileDataStore
+import org.geotools.factory.Hints
 import org.geotools.feature.{AttributeTypeBuilder, NameImpl}
 import org.geotools.feature.simple.SimpleFeatureTypeImpl
-import org.geotools.factory.Hints
+import org.geotools.geometry.jts.JTSFactoryFinder
+import org.opengis.feature.simple.SimpleFeature
+import scala.collection.JavaConverters._
 import org.opengis.feature.`type`.{AttributeDescriptor, AttributeType}
+import com.foursquare.geo.UsStateCodes
 import java.io.File
 import org.geotools.data.Transaction
-import org.opengis.feature.Property
-import com.foursquare.geo.UsStateCodes
 
 class GeocoderVanillaThriftClient {
   val transport = new TSocket("datamining-ml-1", 20000);

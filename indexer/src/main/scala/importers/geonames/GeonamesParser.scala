@@ -5,14 +5,14 @@ import com.foursquare.geo.shapes.FsqSimpleFeatureImplicits._
 import com.foursquare.geo.shapes.ShapefileIterator
 import com.foursquare.twofishes.Implicits._
 import com.foursquare.twofishes._
-import com.foursquare.twofishes.util.{Helpers, NameNormalizer, NameUtils, SlugBuilder}
+import com.foursquare.twofishes.util.{Helpers, NameNormalizer}
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
 import java.io.File
-import org.opengis.feature.simple.SimpleFeature
 import org.bson.types.ObjectId
+import org.opengis.feature.simple.SimpleFeature
 import scala.collection.JavaConversions._
 import scala.collection.mutable.{HashMap, HashSet}
 import scalaj.collection.Implicits._

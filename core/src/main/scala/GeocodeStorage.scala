@@ -1,10 +1,9 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes
 
-import com.twitter.util.{Future, FuturePool}
+import com.vividsolutions.jts.io.WKBReader
 import org.apache.thrift.{TDeserializer, TSerializer}
 import org.apache.thrift.protocol.TCompactProtocol
-import com.vividsolutions.jts.io.{WKBReader, WKTWriter}
 import org.bson.types.ObjectId
 import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap

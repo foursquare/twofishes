@@ -322,7 +322,14 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
             //println("reading poly %s".format(index))
             val geom = wkbReader.read(polygon)
 
-            val cells = logDuration("generated cover ") { GeometryUtils.s2PolygonCovering(geom, minS2Level, maxS2Level) }
+            val cells = logDuration("generated cover ") {
+              GeometryUtils.s2PolygonCovering(
+                geom,
+                minS2Level,
+                maxS2Level,
+                maxCellsHintWhichMightBeIgnored = Some(1000)
+              )
+            }
             logDuration("clipped and outputted cover ") {
               cells.foreach(
                 (cellid: S2CellId) => {

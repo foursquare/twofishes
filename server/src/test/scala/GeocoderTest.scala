@@ -2,7 +2,6 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.util.Lists.Implicits._
-import com.twitter.util.Future
 import org.bson.types.ObjectId
 import org.specs2.mutable._
 import scala.collection.JavaConverters._

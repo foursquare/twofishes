@@ -1,13 +1,13 @@
  //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
-import com.foursquare.twofishes.util.Helpers
 import collection.JavaConverters._
+import com.foursquare.twofishes.util.Helpers
 import com.twitter.finagle.{Service, SimpleFilter}
 import com.twitter.finagle.builder.{Server, ServerBuilder}
 import com.twitter.finagle.http.Http
-import com.twitter.finagle.thrift.ThriftServerFramedCodec
 import com.twitter.finagle.stats.OstrichStatsReceiver
+import com.twitter.finagle.thrift.ThriftServerFramedCodec
 import com.twitter.util.{Future, FuturePool}
 import java.io.InputStream
 import java.net.InetSocketAddress

@@ -3,7 +3,7 @@ package com.foursquare.twofishes.importers.geonames
 
 import com.foursquare.twofishes._
 import java.io.File
-import scala.collection.mutable.{HashMap, HashSet}
+import scala.collection.mutable.HashMap
 
 case class AlternateNameEntry(
   nameId: String,
