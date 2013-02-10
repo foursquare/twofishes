@@ -1,7 +1,7 @@
-import AssemblyKeys._
-import Keys._
 import sbt._
+import sbt.Keys._
 import sbtassembly.Plugin._
+import sbtassembly.Plugin.AssemblyKeys._
 
 object GeocoderBuild extends Build {
   lazy val buildSettings = Seq(
