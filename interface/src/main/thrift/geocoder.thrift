@@ -189,6 +189,7 @@ struct GeocodeResponse {
 
   // only present if debug > 0 in request
   2: optional list<string> debugLines,
+  3: optional string requestWktGeometry
 }
 
 enum ResponseIncludes {

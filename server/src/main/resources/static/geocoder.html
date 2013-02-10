@@ -170,7 +170,13 @@
           if (feature.geometry.wktGeometry) {
             var wkt = new Wkt.Wkt();
             wkt.read(feature.geometry.wktGeometry);
-            map.addLayer(wkt.toObject());
+            map.addLayer(wkt.toObject({color: 'blue'}));
+          }
+
+          if (data.requestWktGeometry) {
+            var wkt = new Wkt.Wkt();
+            wkt.read(data.requestWktGeometry)
+            map.addLayer(wkt.toObject({color: 'red'}));
           }
         }
       });

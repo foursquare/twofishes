@@ -33,14 +33,17 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
 
   private static final TField INTERPRETATIONS_FIELD_DESC = new TField("interpretations", TType.LIST, (short)1);
   private static final TField DEBUG_LINES_FIELD_DESC = new TField("debugLines", TType.LIST, (short)2);
+  private static final TField REQUEST_WKT_GEOMETRY_FIELD_DESC = new TField("requestWktGeometry", TType.STRING, (short)3);
 
   public List<GeocodeInterpretation> interpretations;
   public List<String> debugLines;
+  public String requestWktGeometry;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
     INTERPRETATIONS((short)1, "interpretations"),
-    DEBUG_LINES((short)2, "debugLines");
+    DEBUG_LINES((short)2, "debugLines"),
+    REQUEST_WKT_GEOMETRY((short)3, "requestWktGeometry");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -59,6 +62,8 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
           return INTERPRETATIONS;
         case 2: // DEBUG_LINES
           return DEBUG_LINES;
+        case 3: // REQUEST_WKT_GEOMETRY
+          return REQUEST_WKT_GEOMETRY;
         default:
           return null;
       }
@@ -109,6 +114,8 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
     tmpMap.put(_Fields.DEBUG_LINES, new FieldMetaData("debugLines", TFieldRequirementType.OPTIONAL, 
         new ListMetaData(TType.LIST, 
             new FieldValueMetaData(TType.STRING))));
+    tmpMap.put(_Fields.REQUEST_WKT_GEOMETRY, new FieldMetaData("requestWktGeometry", TFieldRequirementType.OPTIONAL, 
+        new FieldValueMetaData(TType.STRING)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeResponse.class, metaDataMap);
   }
@@ -141,6 +148,9 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
       }
       this.debugLines = __this__debugLines;
     }
+    if (other.isSetRequestWktGeometry()) {
+      this.requestWktGeometry = other.requestWktGeometry;
+    }
   }
 
   public GeocodeResponse deepCopy() {
@@ -151,6 +161,7 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
   public void clear() {
     this.interpretations = null;
     this.debugLines = null;
+    this.requestWktGeometry = null;
   }
 
   public int getInterpretationsSize() {
@@ -231,6 +242,30 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
     }
   }
 
+  public String getRequestWktGeometry() {
+    return this.requestWktGeometry;
+  }
+
+  public GeocodeResponse setRequestWktGeometry(String requestWktGeometry) {
+    this.requestWktGeometry = requestWktGeometry;
+    return this;
+  }
+
+  public void unsetRequestWktGeometry() {
+    this.requestWktGeometry = null;
+  }
+
+  /** Returns true if field requestWktGeometry is set (has been asigned a value) and false otherwise */
+  public boolean isSetRequestWktGeometry() {
+    return this.requestWktGeometry != null;
+  }
+
+  public void setRequestWktGeometryIsSet(boolean value) {
+    if (!value) {
+      this.requestWktGeometry = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case INTERPRETATIONS:
@@ -249,6 +284,14 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
       }
       break;
 
+    case REQUEST_WKT_GEOMETRY:
+      if (value == null) {
+        unsetRequestWktGeometry();
+      } else {
+        setRequestWktGeometry((String)value);
+      }
+      break;
+
     }
   }
 
@@ -259,6 +302,9 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
 
     case DEBUG_LINES:
       return getDebugLines();
+
+    case REQUEST_WKT_GEOMETRY:
+      return getRequestWktGeometry();
 
     }
     throw new IllegalStateException();
@@ -275,6 +321,8 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
       return isSetInterpretations();
     case DEBUG_LINES:
       return isSetDebugLines();
+    case REQUEST_WKT_GEOMETRY:
+      return isSetRequestWktGeometry();
     }
     throw new IllegalStateException();
   }
@@ -310,6 +358,15 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
         return false;
     }
 
+    boolean this_present_requestWktGeometry = true && this.isSetRequestWktGeometry();
+    boolean that_present_requestWktGeometry = true && that.isSetRequestWktGeometry();
+    if (this_present_requestWktGeometry || that_present_requestWktGeometry) {
+      if (!(this_present_requestWktGeometry && that_present_requestWktGeometry))
+        return false;
+      if (!this.requestWktGeometry.equals(that.requestWktGeometry))
+        return false;
+    }
+
     return true;
   }
 
@@ -342,6 +399,16 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
     }
     if (isSetDebugLines()) {
       lastComparison = TBaseHelper.compareTo(this.debugLines, typedOther.debugLines);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetRequestWktGeometry()).compareTo(typedOther.isSetRequestWktGeometry());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetRequestWktGeometry()) {
+      lastComparison = TBaseHelper.compareTo(this.requestWktGeometry, typedOther.requestWktGeometry);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -398,6 +465,13 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
+        case 3: // REQUEST_WKT_GEOMETRY
+          if (field.type == TType.STRING) {
+            this.requestWktGeometry = iprot.readString();
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -439,6 +513,13 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
         oprot.writeFieldEnd();
       }
     }
+    if (this.requestWktGeometry != null) {
+      if (isSetRequestWktGeometry()) {
+        oprot.writeFieldBegin(REQUEST_WKT_GEOMETRY_FIELD_DESC);
+        oprot.writeString(this.requestWktGeometry);
+        oprot.writeFieldEnd();
+      }
+    }
     oprot.writeFieldStop();
     oprot.writeStructEnd();
   }
@@ -462,6 +543,16 @@ public class GeocodeResponse implements TBase<GeocodeResponse, GeocodeResponse._
         sb.append("null");
       } else {
         sb.append(this.debugLines);
+      }
+      first = false;
+    }
+    if (isSetRequestWktGeometry()) {
+      if (!first) sb.append(", ");
+      sb.append("requestWktGeometry:");
+      if (this.requestWktGeometry == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.requestWktGeometry);
       }
       first = false;
     }

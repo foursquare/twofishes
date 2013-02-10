@@ -1291,7 +1291,12 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     }
 
     val sortedParses = parses.sorted(new ReverseGeocodeParseOrdering).take(maxInterpretations)
-    hydrateParses(0, sortedParses, parseParams, polygonMap)
+    val response = hydrateParses(0, sortedParses, parseParams, polygonMap)
+    if (req.debug > 0) {
+      val wktWriter = new WKTWriter
+      response.setRequestWktGeometry(wktWriter.write(otherGeom))
+    }
+    response
   }
 
   def getAllLevels(): Seq[Int] = {
@@ -1304,7 +1309,6 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
   def reverseGeocodePoint(ll: GeocodePoint): GeocodeResponse = {
     val levels = getAllLevels()
     logger.ifDebug("doing point revgeo on %s at levels %s".format(ll, levels.mkString(",")))
-
 
     val cellids: Seq[Long] = 
       levels.map(level =>
