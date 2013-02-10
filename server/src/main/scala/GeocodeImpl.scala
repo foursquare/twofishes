@@ -1,6 +1,7 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
+import com.google.common.geometry.S2CellId
 import com.foursquare.twofishes.Implicits._
 import com.foursquare.twofishes.util.{GeoTools, GeometryUtils, NameNormalizer, NameUtils, TwofishesLogger}
 import com.foursquare.twofishes.util.Lists.Implicits._
@@ -1235,8 +1236,14 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     }
   }
 
-  def doReverseGeocode(cellids: Seq[Long], otherGeom: Geometry): GeocodeResponse = {
-    val cellGeometries: Seq[CellGeometry] = cellids.map(store.getByS2CellId).flatten
+  def doReverseGeocode(cellids: Seq[S2CellId], otherGeom: Geometry): GeocodeResponse = {
+    if (req.debug > 0) {
+      cellids.foreach(c => 
+        logger.ifDebug(c.toString)
+      )
+   }
+
+    val cellGeometries: Seq[CellGeometry] = cellids.map(_.id()).map(store.getByS2CellId).flatten
 
     val featureOids: Seq[ObjectId] = {
       if (req.debug > 0) {
@@ -1272,7 +1279,8 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     // for each, check if we're really in it
     val parses: SortedParseSeq = servingFeaturesMap.map({ case (oid, f) => {
       val parse = Parse[Sorted](List(FeatureMatch(0, 0, "", f)))
-      if (responseIncludes(ResponseIncludes.REVGEO_COVERAGE)) {
+      if (responseIncludes(ResponseIncludes.REVGEO_COVERAGE) &&
+          otherGeom.getCoordinates().size > 2) {
         polygonMap.get(oid).foreach(wkb => {
           val geom = wkbReader.read(wkb)
           parse.scoringFeatures.setPercentOfRequestCovered(computeCoverage(geom, otherGeom))
@@ -1310,9 +1318,9 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     val levels = getAllLevels()
     logger.ifDebug("doing point revgeo on %s at levels %s".format(ll, levels.mkString(",")))
 
-    val cellids: Seq[Long] = 
+    val cellids: Seq[S2CellId] = 
       levels.map(level =>
-        GeometryUtils.getS2CellIdForLevel(ll.lat, ll.lng, level).id()
+        GeometryUtils.getS2CellIdForLevel(ll.lat, ll.lng, level)
       )
     logger.ifDebug("looking up: " + cellids.mkString(" "))
 
@@ -1331,7 +1339,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
         store.getMinS2Level,
         store.getMaxS2Level,
         Some(store.getLevelMod)
-      ).map(_.id())
+      )
     }
     doReverseGeocode(cellids, geom)
   }

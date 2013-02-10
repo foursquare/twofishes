@@ -174,9 +174,17 @@
           }
 
           if (data.requestWktGeometry) {
+
+            var myIcon = L.icon({
+              iconUrl: '/static/leaflet/images/red.png',
+            });
+
             var wkt = new Wkt.Wkt();
             wkt.read(data.requestWktGeometry)
-            map.addLayer(wkt.toObject({color: 'red'}));
+            map.addLayer(wkt.toObject({
+              color: '#03f',
+              fillColor: '#03f',
+              icon: myIcon}));
           }
         }
       });
