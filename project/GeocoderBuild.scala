@@ -7,7 +7,7 @@ object GeocoderBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.foursquare.twofishes",
     name := "twofishes",
-    version      := "0.68",
+    version      := "0.69",
     scalaVersion := "2.9.1"
   )
 
@@ -83,8 +83,10 @@ object GeocoderBuild extends Build {
           "com.twitter" % "util-core" % "5.3.14",
           "com.twitter" % "util-logging" % "5.3.14",
           "org.slf4j" % "slf4j-api" % "1.6.1",
-          "org.apache.hadoop" % "hadoop-core" % "0.20.2-cdh3u3" intransitive(),
-          "org.apache.hbase" % "hbase" % "0.90.4-cdh3u3" intransitive(),
+          "org.apache.avro" % "avro" % "1.7.1.cloudera.2",
+          "org.apache.hadoop" % "hadoop-client" % "2.0.0-cdh4.1.2" intransitive(),
+          "org.apache.hadoop" % "hadoop-common" % "2.0.0-cdh4.1.2" intransitive(),
+          "org.apache.hbase" % "hbase" % "0.92.1-cdh4.1.2" intransitive(),
           "com.google.guava" % "guava" % "r09",
           "com.novus" % "salat-core_2.9.1" % "0.0.8",
           // "org.apache.thrift" % "libthrift" % "0.8.0",
@@ -138,6 +140,7 @@ object GeocoderBuild extends Build {
         import com.foursquare.twofishes.importers.geonames._
         import com.foursquare.twofishes.util.Helpers._
         import java.io.File
+        import com.vividsolutions.jts.io._
 
         import com.mongodb.casbah.Imports._
 import com.novus.salat._

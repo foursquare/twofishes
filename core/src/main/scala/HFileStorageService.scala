@@ -8,7 +8,7 @@ import java.nio.ByteBuffer
 import java.util.Arrays
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{LocalFileSystem, Path}
-import org.apache.hadoop.hbase.io.hfile.{BlockCache, HFile, HFileScanner}
+import org.apache.hadoop.hbase.io.hfile.{BlockCache, CacheConfig, FoursquareCacheConfig, HFile, HFileScanner}
 import org.apache.hadoop.hbase.util.Bytes._
 import org.apache.thrift.{TBaseHelper, TDeserializer}
 import org.apache.thrift.protocol.TCompactProtocol
@@ -96,26 +96,16 @@ class HFileStorageService(basepath: String, shouldPreload: Boolean) extends Geoc
   override  def getLevelMod: Int = s2map.levelMod
 }
 
-class InMemoryBlockCache extends BlockCache {
-  val cache = new java.util.concurrent.ConcurrentHashMap[String,ByteBuffer]();
-
-  override def getBlock(blockName: java.lang.String, caching: Boolean): ByteBuffer = cache.get(blockName)
-
-  override def cacheBlock(blockName: java.lang.String, buf: java.nio.ByteBuffer, inMemory: Boolean) = cacheBlock(blockName, buf)
-
-  override def cacheBlock(blockName: java.lang.String, buf: java.nio.ByteBuffer) = cache.put(blockName,buf)
-
-  override def shutdown(): Unit = cache.clear
-}
-
 abstract class HFileInput(basepath: String, filename: String, shouldPreload: Boolean) {
   val conf = new Configuration()
   val fs = new LocalFileSystem()
   fs.initialize(URI.create("file:///"), conf)
 
   val path = new Path(new File(basepath, filename).getAbsolutePath())
-  val cache: BlockCache = new InMemoryBlockCache()
-  val reader = new HFile.Reader(fs, path, cache, true)
+  val cache = new FoursquareCacheConfig()
+
+  val reader = HFile.createReader(path.getFileSystem(conf), path, cache)
+
   val fileInfo = reader.loadFileInfo().asScala
 
   // prefetch the hfile
@@ -143,7 +133,7 @@ abstract class HFileInput(basepath: String, filename: String, shouldPreload: Boo
   def lookupPrefix(key: String, minPrefixRatio: Double = 0.5): Seq[Array[Byte]] = {
     val scanner: HFileScanner = reader.getScanner(true, true)
     scanner.seekTo(key.getBytes())
-    if (!scanner.getKeyValue().getKeyString().startsWith(key)) {
+    if (!new String(scanner.getKeyValue().getKey()).startsWith(key)) {
       scanner.next()
     }
 
@@ -152,9 +142,9 @@ abstract class HFileInput(basepath: String, filename: String, shouldPreload: Boo
 
     // I hate to encode this logic here, but I don't really want to thread it
     // all the way through the storage logic.
-    while (scanner.getKeyValue().getKeyString().startsWith(key)) {
+    while (new String(scanner.getKeyValue().getKey()).startsWith(key)) {
       if ((key.size >= 3) ||
-          (key.size*1.0 / scanner.getKeyValue().getKeyString().size) >= minPrefixRatio) {
+          (key.size*1.0 / new String(scanner.getKeyValue().getKey()).size) >= minPrefixRatio) {
         ret.append(scanner.getKeyValue().getValue())
       }
       scanner.next()
