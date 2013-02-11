@@ -1,7 +1,6 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
-import com.google.common.geometry.S2CellId
 import com.foursquare.twofishes.Implicits._
 import com.foursquare.twofishes.util.{GeoTools, GeometryUtils, NameNormalizer, NameUtils, TwofishesLogger}
 import com.foursquare.twofishes.util.Lists.Implicits._
@@ -17,6 +16,9 @@ import org.bson.types.ObjectId
 import scala.collection.JavaConversions._
 import scala.collection.mutable.{HashMap, ListBuffer}
 import scalaj.collection.Implicits._
+
+// TODO
+// 
 
 // TODO
 // --make autocomplete faster
@@ -963,6 +965,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
   }
 
   def geocode(): GeocodeResponse = {
+    Stats.incr("geocode-requests", 1)
     val query = req.query
     if (query != null) {
       logger.ifDebug("%s --> %s".format(query, NameNormalizer.normalize(query)))
@@ -1158,11 +1161,17 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     }
 
     if (Option(req.slug).exists(_.nonEmpty)) {
-      doSlugGeocode(req.slug)
+      Stats.time("slug-geocode") {
+        doSlugGeocode(req.slug)
+      }
     } else if (req.autocomplete) {
-      doAutocompleteGeocode(spaceAtEnd, parseParams)
+      Stats.time("autocomplete-geocode") {
+        doAutocompleteGeocode(spaceAtEnd, parseParams)
+      }
     } else {
-      doNormalGeocode(parseParams)
+      Stats.time("geocode") {
+        doNormalGeocode(parseParams)
+      }
     }
   }
 
@@ -1231,14 +1240,8 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     }
   }
 
-  def doReverseGeocode(cellids: Seq[S2CellId], otherGeom: Geometry): GeocodeResponse = {
-    if (req.debug > 0) {
-      cellids.foreach(c => 
-        logger.ifDebug(c.toString)
-      )
-   }
-
-    val cellGeometries: Seq[CellGeometry] = cellids.map(_.id()).map(store.getByS2CellId).flatten
+  def doReverseGeocode(cellids: Seq[Long], otherGeom: Geometry): GeocodeResponse = {
+    val cellGeometries: Seq[CellGeometry] = cellids.map(store.getByS2CellId).flatten
 
     val featureOids: Seq[ObjectId] = {
       if (req.debug > 0) {
@@ -1274,8 +1277,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     // for each, check if we're really in it
     val parses: SortedParseSeq = servingFeaturesMap.map({ case (oid, f) => {
       val parse = Parse[Sorted](List(FeatureMatch(0, 0, "", f)))
-      if (responseIncludes(ResponseIncludes.REVGEO_COVERAGE) &&
-          otherGeom.getCoordinates().size > 2) {
+      if (responseIncludes(ResponseIncludes.REVGEO_COVERAGE)) {
         polygonMap.get(oid).foreach(wkb => {
           val geom = wkbReader.read(wkb)
           parse.scoringFeatures.setPercentOfRequestCovered(computeCoverage(geom, otherGeom))
@@ -1313,9 +1315,9 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     val levels = getAllLevels()
     logger.ifDebug("doing point revgeo on %s at levels %s".format(ll, levels.mkString(",")))
 
-    val cellids: Seq[S2CellId] = 
+    val cellids: Seq[Long] = 
       levels.map(level =>
-        GeometryUtils.getS2CellIdForLevel(ll.lat, ll.lng, level)
+        GeometryUtils.getS2CellIdForLevel(ll.lat, ll.lng, level).id()
       )
     logger.ifDebug("looking up: " + cellids.mkString(" "))
 
@@ -1334,12 +1336,13 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
         store.getMinS2Level,
         store.getMaxS2Level,
         Some(store.getLevelMod)
-      )
+      ).map(_.id())
     }
     doReverseGeocode(cellids, geom)
   }
 
   def reverseGeocode(): GeocodeResponse = {
+    Stats.incr("revgeo-requests", 1)
     if (req.ll != null) {
       if (req.isSetRadius) {
         val sizeDegrees = req.radius / 111319.9
@@ -1348,9 +1351,13 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
         gsf.setNumPoints(100)
         gsf.setCentre(new Coordinate(req.ll.lng, req.ll.lat))
         val geom = gsf.createCircle()
-        doGeometryReverseGeocode(geom)
+        Stats.time("revgeo-geom") {
+          doGeometryReverseGeocode(geom)
+        }
       } else {
-        reverseGeocodePoint(req.ll)
+        Stats.time("revgeo-point") {
+          reverseGeocodePoint(req.ll)
+        }
       }
     } else if (req.bounds != null) {
       val s2rect = GeoTools.boundingBoxToS2Rect(req.bounds)
@@ -1362,7 +1369,9 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
         new Coordinate(s2rect.lng.hi, s2rect.lat.lo),
         new Coordinate(s2rect.lng.lo, s2rect.lat.lo)
       ))
-      doGeometryReverseGeocode(geom)
+      Stats.time("revgeo-geom") {
+        doGeometryReverseGeocode(geom)
+      }
     } else {
       throw new Exception("no bounds or ll")
     }

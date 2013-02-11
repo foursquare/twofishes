@@ -6,7 +6,7 @@ import com.foursquare.twofishes.util.Helpers
 import com.twitter.finagle.{Service, SimpleFilter}
 import com.twitter.finagle.builder.{Server, ServerBuilder}
 import com.twitter.finagle.http.Http
-//import com.twitter.finagle.stats.OstrichStatsReceiver
+import com.twitter.ostrich.stats.{Stats, StatsProvider}
 import com.twitter.finagle.thrift.ThriftServerFramedCodec
 import com.twitter.util.{Future, FuturePool}
 import java.io.InputStream
@@ -22,7 +22,7 @@ import org.jboss.netty.util.CharsetUtil
 import scala.collection.mutable.ListBuffer
 
 class GeocodeServerImpl(store: GeocodeStorageReadService) extends Geocoder.ServiceIface {
-  val queryFuturePool = FuturePool(Executors.newFixedThreadPool(8))
+  val queryFuturePool = FuturePool(StatsWrappedExecutors.create(24, 100, "geocoder"))
 
   def geocode(r: GeocodeRequest): Future[GeocodeResponse] = queryFuturePool {
     new GeocoderImpl(store, r).geocode()
@@ -175,10 +175,12 @@ object ServerStore {
 object GeocodeThriftServer extends Application {
   class GeocodeServer(store: GeocodeStorageReadService) extends Geocoder.Iface {
     override def geocode(request: GeocodeRequest): GeocodeResponse = {
+      Stats.incr("geocode-requests", 1)
       new GeocoderImpl(store, request).geocode()
     }
 
     override def reverseGeocode(request: GeocodeRequest): GeocodeResponse = {
+      Stats.incr("geocode-requests", 1)
       new GeocoderImpl(store, request).reverseGeocode()
     }
   }
