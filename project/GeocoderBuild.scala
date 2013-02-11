@@ -85,13 +85,16 @@ object GeocoderBuild extends Build {
           "org.slf4j" % "slf4j-api" % "1.6.1",
           "org.apache.avro" % "avro" % "1.7.1.cloudera.2",
           "org.apache.hadoop" % "hadoop-client" % "2.0.0-cdh4.1.2" intransitive(),
-          "org.apache.hadoop" % "hadoop-common" % "2.0.0-cdh4.1.2" intransitive(),
+          "org.apache.hadoop" % "hadoop-common" % "2.0.0-cdh4.1.2" ,
           "org.apache.hbase" % "hbase" % "0.92.1-cdh4.1.2" intransitive(),
           "com.google.guava" % "guava" % "r09",
           "com.novus" % "salat-core_2.9.1" % "0.0.8",
           // "org.apache.thrift" % "libthrift" % "0.8.0",
           "commons-cli" % "commons-cli" % "1.2",
-          "commons-logging" % "commons-logging" % "1.1.1"
+          "commons-logging" % "commons-logging" % "1.1.1",
+          "commons-daemon" % "commons-daemon" % "1.0.9",
+          "commons-configuration" % "commons-configuration" % "1.6"
+
           // "thrift" % "libthrift" % "0.5.0" from "http://maven.twttr.com/org/apache/thrift/libthrift/0.5.0/libthrift-0.5.0.jar"
         ),
         ivyXML := (
