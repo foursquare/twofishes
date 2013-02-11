@@ -129,7 +129,7 @@ object GeometryUtils {
       level <- minS2Level.to(maxS2Level)
       if ((level - minS2Level) % levelMod.getOrElse(1)) == 0
     } yield {
-      s2PolygonCovering(geomCollection, minS2Level, maxS2Level)
+      s2PolygonCovering(geomCollection, level, level)
     }).flatten.toSet.toSeq
   }
 }
