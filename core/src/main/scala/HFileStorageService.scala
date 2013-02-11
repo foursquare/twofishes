@@ -27,15 +27,12 @@ class HFileStorageService(basepath: String, shouldPreload: Boolean) extends Geoc
   val oidMap = new GeocodeRecordHFileInput(basepath, shouldPreload)
   val geomMap = new GeometryHFileInput(basepath, shouldPreload)
   val s2mapOpt = ReverseGeocodeHFileInput.readInput(basepath, shouldPreload)
+  val slugFidMap = new SlugFidHFileInput(basepath, shouldPreload)
+
+
   // will only be hit if we get a reverse geocode query
   lazy val s2map = s2mapOpt.getOrElse(
     throw new Exception("s2/revgeo index not built, please build s2_index.hfile"))
-
-  lazy val slugFidMap = slugFidMapFuture.get()
-
-  if (shouldPreload) {
-    slugFidMap.get()
-  }
 
   def readSlugMap() = {
     scala.io.Source.fromFile(new File(basepath, "id-mapping.txt")).getLines.map(l => {
@@ -63,20 +60,10 @@ class HFileStorageService(basepath: String, shouldPreload: Boolean) extends Geoc
   }
 
   def getBySlugOrFeatureIds(ids: Seq[String]) = {
-    val oidMap = ids.flatMap(id => slugFidMap.get(id).flatMap(oid => {
-      // temporary hack because we're outputting a map of 
-      // slug -> geoid
-      // geoid -> oid
-
-      if (ObjectId.isValid(oid)) {
-        Some((new ObjectId(oid), id))
-      } else {
-        for {
-          oid2 <- slugFidMap.get(oid)
-          if ObjectId.isValid(oid2)
-        } yield { (new ObjectId(oid2), id) } 
-      }
-    })).toMap
+    val oidMap = (for {
+      id <- ids
+      oid <- slugFidMap.get(id)
+    } yield { (oid, id) }).toMap
 
     getByObjectIds(oidMap.keys.toList).map({
       case (k, v) => (oidMap(k), v)
@@ -272,6 +259,17 @@ class GeometryHFileInput(basepath: String, shouldPreload: Boolean)
     val buf = ByteBuffer.wrap(oid.toByteArray())
     lookup(buf).map(b => {
       TBaseHelper.byteBufferToByteArray(b)
+    })
+  }
+}
+
+class SlugFidHFileInput(basepath: String, shouldPreload: Boolean)
+    extends HFileInput(basepath, "id-mapping.hfile", shouldPreload) with ObjectIdReader { 
+  def get(s: String): Option[ObjectId] = {
+    val buf = ByteBuffer.wrap(s.getBytes("UTF-8"))
+    lookup(buf).flatMap(b => {
+      val bytes = TBaseHelper.byteBufferToByteArray(b)
+      decodeObjectIds(bytes).headOption
     })
   }
 }

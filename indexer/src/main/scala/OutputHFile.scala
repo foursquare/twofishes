@@ -656,18 +656,27 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
 
   def writeSlugsAndIds() {
     val p = new java.io.PrintWriter(new File(basepath, "id-mapping.txt"))
-    for {
-      (slug, entry) <- slugEntryMap
+    val slugEntries: List[(Array[Byte], Array[Byte])]  = for {
+      (slug, entry) <- slugEntryMap.toList
       oid <- fidMap.get(entry.id)
-    } {
-      p.println("%s\t%s".format(slug, oid))
+    } yield {
+      (slug.getBytes("UTF-8"), oid.toByteArray)
     }
 
-    MongoGeocodeDAO.find(MongoDBObject()).foreach(geocodeRecord => {
-      geocodeRecord.ids.foreach(id => {
-        p.println("%s\t%s".format(id, geocodeRecord._id))
-      })
-    })
+    val oidEntries: List[(Array[Byte], Array[Byte])] = (for {
+      geocodeRecord <- MongoGeocodeDAO.find(MongoDBObject())
+      id <- geocodeRecord.ids
+    } yield {
+      (id.getBytes("UTF-8"), geocodeRecord._id.toByteArray)
+    }).toList
+
+    // these types are a lie
+    val writer = buildV1Writer[StringWrapper, ObjectIdListWrapper](
+      new File(basepath, "id-mapping.hfile").toString, factory)
+
+    val sortedEntries = (slugEntries ++ oidEntries).sortWith(bytePairSort).foreach({case (k, v) => {
+      writer.append(k, v)
+    }})
 
     p.close()
   }
