@@ -34,7 +34,7 @@ class HFileStorageService(basepath: String, shouldPreload: Boolean) extends Geoc
   lazy val slugFidMap = slugFidMapFuture.get()
 
   if (shouldPreload) {
-    slugFidMap.wait()
+    slugFidMap.get()
   }
 
   def readSlugMap() = {

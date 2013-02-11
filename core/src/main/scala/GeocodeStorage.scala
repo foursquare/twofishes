@@ -101,7 +101,7 @@ case class GeocodeRecord(
       val currentBounds = (bounds.ne.lat, bounds.ne.lng, bounds.sw.lat, bounds.sw.lng)
 
       // This breaks at 180, I get that, to fix.
-      val finalBounds = List(
+      val finalBounds = (
         List(bounds.ne.lat, bounds.sw.lat).max,
         List(bounds.ne.lng, bounds.sw.lng).max,
         List(bounds.ne.lat, bounds.sw.lat).min,
@@ -113,8 +113,8 @@ case class GeocodeRecord(
       }
 
       geometry.setBounds(new GeocodeBoundingBox(
-        new GeocodePoint(finalBounds(0), finalBounds(1)),
-        new GeocodePoint(finalBounds(2), finalBounds(3))
+        new GeocodePoint(finalBounds._1, finalBounds._2),
+        new GeocodePoint(finalBounds._3, finalBounds._4)
       ))  
     })
 
