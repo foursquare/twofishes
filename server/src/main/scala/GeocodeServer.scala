@@ -22,12 +22,14 @@ import org.jboss.netty.util.CharsetUtil
 import scala.collection.mutable.ListBuffer
 
 class GeocodeServerImpl(store: GeocodeStorageReadService) extends Geocoder.ServiceIface {
-  def geocode(r: GeocodeRequest): Future[GeocodeResponse] = {
-    Future.value(new GeocoderImpl(store, r).geocode())
+  val queryFuturePool = FuturePool(Executors.newFixedThreadPool(8))
+
+  def geocode(r: GeocodeRequest): Future[GeocodeResponse] = queryFuturePool {
+    new GeocoderImpl(store, r).geocode()
   }
 
-  def reverseGeocode(r: GeocodeRequest): Future[GeocodeResponse] = {
-    Future.value(new GeocoderImpl(store, r).reverseGeocode())
+  def reverseGeocode(r: GeocodeRequest): Future[GeocodeResponse] = queryFuturePool {
+    new GeocoderImpl(store, r).reverseGeocode()
   }
 }
 
