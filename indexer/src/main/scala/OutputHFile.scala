@@ -457,15 +457,12 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     fs.initialize(URI.create("file:///"), conf)
     val hadoopConfiguration: Configuration = new Configuration()
 
-    val compressionAlgorithm: Compression.Algorithm =
-      Compression.getCompressionAlgorithmByName("none")
-
-    val blockSizeBytes = 1024 * 1024
-
-    val writer = HFile.getWriterFactory(hadoopConfiguration).createWriter(fs,
-      path,  
-      blockSizeBytes, compressionAlgorithm,
-      null)
+    val writer = new HFile.Writer(
+      fs,
+      path,
+      blockSize,
+      compressionAlgo,
+      null /* Will cause the right comparator to be chosen */)
     writer.appendFileInfo(HFileUtil.ThriftEncodingKeyBytes, thriftProtocol.getClass.getName.getBytes("UTF-8"))
     writer
   }
