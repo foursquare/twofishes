@@ -124,7 +124,6 @@ object GeocoderBuild extends Build {
         publishArtifact := true,
         libraryDependencies ++= Seq(
           "com.twitter" % "ostrich" % "8.2.3",
-          "com.twitter" % "finagle-ostrich4" % "5.3.23",
           "com.twitter" % "finagle-http" % "5.3.23",
           "org.specs2" %% "specs2" % "1.8.2" % "test",
           "org.scala-tools.testing" %% "specs" % "1.6.9" % "test",

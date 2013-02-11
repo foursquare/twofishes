@@ -6,7 +6,7 @@ import com.foursquare.twofishes.util.Helpers
 import com.twitter.finagle.{Service, SimpleFilter}
 import com.twitter.finagle.builder.{Server, ServerBuilder}
 import com.twitter.finagle.http.Http
-import com.twitter.finagle.stats.OstrichStatsReceiver
+//import com.twitter.finagle.stats.OstrichStatsReceiver
 import com.twitter.finagle.thrift.ThriftServerFramedCodec
 import com.twitter.util.{Future, FuturePool}
 import java.io.InputStream
@@ -219,7 +219,7 @@ object GeocodeFinagleServer {
     val server: Server = ServerBuilder()
       .bindTo(new InetSocketAddress(config.thriftServerPort))
       .codec(ThriftServerFramedCodec())
-      .reportTo(new OstrichStatsReceiver)
+      .reportTo(new FoursquareStatsReceiver)
       .name("geocoder")
       .build(service)
 
@@ -228,7 +228,7 @@ object GeocodeFinagleServer {
         .bindTo(new InetSocketAddress(config.thriftServerPort + 1))
         .codec(Http())
         .name("geocoder-http")
-        .reportTo(new OstrichStatsReceiver)
+        .reportTo(new FoursquareStatsReceiver)
         .build(handleExceptions andThen new GeocoderHttpService(processor))
     }
   }
