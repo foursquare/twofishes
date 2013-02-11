@@ -19,11 +19,6 @@ import scala.collection.mutable.{HashMap, ListBuffer}
 import scalaj.collection.Implicits._
 
 // TODO
-// cover %age
-// adminid lookup
-// deprecated slug output
-
-// TODO
 // --make autocomplete faster
 // --save name-hit in the index
 // --start treating Parse like an object, stop using headOption

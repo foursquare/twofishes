@@ -139,6 +139,12 @@ object GeocoderBuild extends Build {
         import com.foursquare.twofishes.util.Helpers._
         import java.io.File
 
+        import com.mongodb.casbah.Imports._
+import com.novus.salat._
+import com.novus.salat.annotations._
+import com.novus.salat.dao._
+import com.novus.salat.global._
+
         val store = new MongoGeocodeStorageService()
         val slugIndexer = new SlugIndexer()
         val parser = new GeonamesParser(store, slugIndexer)

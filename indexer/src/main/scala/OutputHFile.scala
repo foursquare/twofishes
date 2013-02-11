@@ -329,6 +329,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
                 geom,
                 minS2Level,
                 maxS2Level,
+                levelMod = Some(levelMod),
                 maxCellsHintWhichMightBeIgnored = Some(1000)
               )
             }
