@@ -97,12 +97,26 @@ case class GeocodeRecord(
     val geometry = new FeatureGeometry(
       new GeocodePoint(lat, lng))
 
-    boundingbox.foreach(bounds =>
+    boundingbox.foreach(bounds => {
+      val currentBounds = (bounds.ne.lat, bounds.ne.lng, bounds.sw.lat, bounds.sw.lng)
+
+      // This breaks at 180, I get that, to fix.
+      val finalBounds = List(
+        List(bounds.ne.lat, bounds.sw.lat).max,
+        List(bounds.ne.lng, bounds.sw.lng).max,
+        List(bounds.ne.lat, bounds.sw.lat).min,
+        List(bounds.ne.lng, bounds.sw.lng).min
+      )
+
+      if (finalBounds != currentBounds) {
+        println("incorrect bounds %s -> %s".format(currentBounds, finalBounds))
+      }
+
       geometry.setBounds(new GeocodeBoundingBox(
-        new GeocodePoint(bounds.ne.lat, bounds.ne.lng),
-        new GeocodePoint(bounds.sw.lat, bounds.sw.lng)
+        new GeocodePoint(finalBounds(0), finalBounds(1)),
+        new GeocodePoint(finalBounds(2), finalBounds(3))
       ))  
-    )
+    })
 
     polygon.foreach(poly => {
       geometry.setWkbGeometry(poly)
