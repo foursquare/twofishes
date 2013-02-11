@@ -655,7 +655,6 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
   val fidMap = new FidMap()
 
   def writeSlugsAndIds() {
-    val p = new java.io.PrintWriter(new File(basepath, "id-mapping.txt"))
     val slugEntries: List[(Array[Byte], Array[Byte])]  = for {
       (slug, entry) <- slugEntryMap.toList
       oid <- fidMap.get(entry.id)
@@ -677,8 +676,8 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     val sortedEntries = (slugEntries ++ oidEntries).sortWith(bytePairSort).foreach({case (k, v) => {
       writer.append(k, v)
     }})
-
-    p.close()
+    
+    writer.close()
   }
 
   def writeFeatures() {
