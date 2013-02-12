@@ -17,29 +17,15 @@ import scala.collection.JavaConversions._
 import scalaj.collection.Implicits._
 
 class HFileStorageService(basepath: String, shouldPreload: Boolean) extends GeocodeStorageReadService {
-  val slugFidMapFuture = FuturePool.defaultPool {
-    val (rv, duration) = Duration.inMilliseconds(readSlugMap())
-    println("took %s seconds to read id map".format(duration.inSeconds))
-    rv
-  }
-
   val nameMap = new NameIndexHFileInput(basepath, shouldPreload)
   val oidMap = new GeocodeRecordHFileInput(basepath, shouldPreload)
   val geomMap = new GeometryHFileInput(basepath, shouldPreload)
   val s2mapOpt = ReverseGeocodeHFileInput.readInput(basepath, shouldPreload)
   val slugFidMap = new SlugFidHFileInput(basepath, shouldPreload)
 
-
   // will only be hit if we get a reverse geocode query
   lazy val s2map = s2mapOpt.getOrElse(
     throw new Exception("s2/revgeo index not built, please build s2_index.hfile"))
-
-  def readSlugMap() = {
-    scala.io.Source.fromFile(new File(basepath, "id-mapping.txt")).getLines.map(l => {
-      val parts = l.split("\t")
-      (parts(0), parts(1))
-    }).toMap
-  }
 
   def getIdsByNamePrefix(name: String): Seq[ObjectId] = {
     nameMap.getPrefix(name)
