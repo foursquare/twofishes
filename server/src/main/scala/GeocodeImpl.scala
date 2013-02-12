@@ -135,54 +135,58 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
       non-geocoded tokens) in the final interpretation.
    */
 
+  // for rego park ny us
+  // first try us
+  // then ny us (try "ny us" and ny -> "us"
+  // then park ny us ()
+
    def generateParses(tokens: List[String]): ParseCache = {
     val cache = new ParseCache
-    generateParsesHelper(tokens, 0, cache)
+    cache(0) = List(NullParse)
+ 
+    (tokens.size - 1).to(0, -1).foreach(offset => {
+      val subTokens = tokens.drop(offset)
+      val validParses = generateParsesHelper(subTokens, offset, cache)
+      val cacheKey = subTokens.size
+      if (req.debug > 1) {
+        logger.ifDebug("setting %d to %s".format(cacheKey, validParses))
+      }
+      cache(cacheKey) = validParses
+    })
     cache
   }
 
   def generateParsesHelper(tokens: List[String], offset: Int, cache: ParseCache): SortedParseSeq = {
-    val cacheKey = tokens.size
-    if (tokens.size == 0) {
-      List(NullParse)
-    } else {
-      if (!cache.contains(cacheKey)) {
-        val validParses: SortedParseSeq =
-          1.to(tokens.size).flatMap(i => {
-            val searchStr = tokens.take(i).mkString(" ")
-            val featureMatches = store.getByName(searchStr).map((f: GeocodeServingFeature) => 
-              FeatureMatch(offset, offset + i, searchStr, f)
-            )
+    println("processing %s".format(tokens.mkString(" ")))
 
-            val subParses: SortedParseSeq = 
-              generateParsesHelper(tokens.drop(i), offset + i, cache)
-
-            (for {
-              f <- featureMatches
-              p <- subParses
-              val _ = logger.ifDebug("looking at %s".format(f), 3)
-              val _ = logger.ifDebug("sub_parse: %s".format(p), 3)
-            } yield {
-              val parse = p.addFeature(f)
-              val sortedParse = parse.getSorted
-              if (isValidParse(sortedParse)) {
-                logger.ifDebug("VALID -- adding to %d".format(cacheKey), 4)
-                logger.ifDebug("sorted " + sortedParse, 4)
-                Some(sortedParse)
-              } else {
-                logger.ifDebug("INVALID", 4)
-                None
-              }
-            }).flatten
-          })
-
-        if (req.debug > 1) {
-          logger.ifDebug("setting %d to %s".format(cacheKey, validParses))
-        }
-        cache(cacheKey) = validParses
+    1.to(tokens.size).flatMap(i => {
+      val searchStr = tokens.take(i).mkString(" ")
+      println(" -- doing %s".format(searchStr))
+      val featureMatches = logDuration("get-by-name", "get-by-name for %s".format(searchStr)) {
+        store.getByName(searchStr).map((f: GeocodeServingFeature) => 
+          FeatureMatch(offset, offset + i, searchStr, f)
+        )
       }
-      cache(cacheKey)
-    }
+      println("took %d tokens, looking at cache for %d".format(i, tokens.size - i))
+      val subParses = cache(tokens.size - i)
+      (for {
+        f <- featureMatches
+        p <- subParses
+        val _ = logger.ifDebug("looking at %s".format(f), 3)
+        val _ = logger.ifDebug("sub_parse: %s".format(p), 3)
+      } yield {
+        val parse = p.addFeature(f)
+        val sortedParse = parse.getSorted
+        if (isValidParse(sortedParse)) {
+          logger.ifDebug("VALID", 4)
+          logger.ifDebug("sorted " + sortedParse, 4)
+          Some(sortedParse)
+        } else {
+          logger.ifDebug("INVALID", 4)
+          None
+        }
+      }).flatten
+    })
   }
 
   def isValidParse(parse: Parse[Sorted]): Boolean = {
