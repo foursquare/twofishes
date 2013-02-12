@@ -56,9 +56,9 @@ class HFileStorageService(basepath: String, shouldPreload: Boolean) extends Geoc
   }
 
   def getByObjectIds(oids: Seq[ObjectId]): Map[ObjectId, GeocodeServingFeature] = {
-    oids.flatMap(oid => oidMap.get(oid).map(r => (oid -> r))).toMap
+    oidMap.getByObjectIds(oids)
   }
-
+ 
   def getBySlugOrFeatureIds(ids: Seq[String]) = {
     val oidMap = (for {
       id <- ids
@@ -276,11 +276,33 @@ class SlugFidHFileInput(basepath: String, shouldPreload: Boolean)
 
 class GeocodeRecordHFileInput(basepath: String, shouldPreload: Boolean)
     extends HFileInput(basepath, "features.hfile", shouldPreload) with ObjectIdReader { 
+
+  def decodeFeature(b: ByteBuffer) = {
+    val bytes = TBaseHelper.byteBufferToByteArray(b)
+    deserializeBytes(new GeocodeServingFeature(), bytes)
+  }
+
+  def getByObjectIds(oids: Seq[ObjectId]): Map[ObjectId, GeocodeServingFeature] = {
+    val comp = new ByteArrayComparator()
+    val sortedOids = oids.map(oid => (oid.toByteArray(), oid)).toList.sortWith((a, b) => {
+      comp.compare(a._1, b._1) < 0
+    })
+
+    val scanner: HFileScanner = reader.getScanner(true, true)
+    def find(b: Array[Byte]) = {
+      val key = ByteBuffer.wrap(b)
+      if (scanner.seekTo(key.array, key.position, key.remaining) == 0) {
+        Some(scanner.getValue.duplicate())
+      } else {
+        None
+      }
+    }
+
+    sortedOids.flatMap({case (oidBytes, oid) => find(oidBytes).map(f => (oid, decodeFeature(f)))}).toMap
+  }
+
   def get(oid: ObjectId): Option[GeocodeServingFeature] = {
     val buf = ByteBuffer.wrap(oid.toByteArray())
-    lookup(buf).map(b => {
-      val bytes = TBaseHelper.byteBufferToByteArray(b)
-      deserializeBytes(new GeocodeServingFeature(), bytes)
-    })
+    lookup(buf).map(decodeFeature)
   }
 }

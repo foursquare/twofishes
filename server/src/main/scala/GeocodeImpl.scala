@@ -1256,7 +1256,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
         if (cellGeometry.isFull) {
           Some(oid)
         } else {
-          val (geom, intersects) = logDuration("insersection_check", "intersecting %s".format(oid)) {
+          val (geom, intersects) = logDuration("intersectionCheck", "intersecting %s".format(oid)) {
             featureGeometryIntersections(cellGeometry.getWkbGeometry(), otherGeom)
           }
           if (intersects) {
