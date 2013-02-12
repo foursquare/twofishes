@@ -164,6 +164,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
           FeatureMatch(offset, offset + i, searchStr, f)
         )
       }
+      logger.ifDebug("got %d features for %s".format(featureMatches.size, searchStr))
       val subParses = cache(tokens.size - i)
       (for {
         f <- featureMatches

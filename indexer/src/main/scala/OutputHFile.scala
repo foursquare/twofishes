@@ -35,7 +35,8 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
   val blockSizeKey = "hbase.mapreduce.hfileoutputformat.blocksize"
   val compressionKey = "hfile.compression"
 
-  val blockSize = HFile.DEFAULT_BLOCKSIZE
+  // val blockSize = HFile.DEFAULT_BLOCKSIZE
+  val blockSize = 16384
   val compressionAlgo = Compression.Algorithm.NONE.getName
 
   val conf = new Configuration()
@@ -460,11 +461,9 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     val compressionAlgorithm: Compression.Algorithm =
       Compression.getCompressionAlgorithmByName("none")
 
-    val blockSizeBytes = 1024 * 1024
-
     val writer = HFile.getWriterFactory(hadoopConfiguration).createWriter(fs,
       path,  
-      blockSizeBytes, compressionAlgorithm,
+      blockSize, compressionAlgorithm,
       null)
     writer.appendFileInfo(HFileUtil.ThriftEncodingKeyBytes, thriftProtocol.getClass.getName.getBytes("UTF-8"))
     writer
@@ -673,8 +672,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     }).toList
 
     // these types are a lie
-    val writer = buildV1Writer[StringWrapper, ObjectIdListWrapper](
-      new File(basepath, "id-mapping.hfile").toString, factory)
+    val writer = buildV1Writer[StringWrapper, ObjectIdListWrapper]("id-mapping.hfile", factory)
 
     val sortedEntries = (slugEntries ++ oidEntries).sortWith(bytePairSort).foreach({case (k, v) => {
       writer.append(k, v)
