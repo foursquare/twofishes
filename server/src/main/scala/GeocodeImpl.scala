@@ -157,17 +157,13 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
   }
 
   def generateParsesHelper(tokens: List[String], offset: Int, cache: ParseCache): SortedParseSeq = {
-    println("processing %s".format(tokens.mkString(" ")))
-
     1.to(tokens.size).flatMap(i => {
       val searchStr = tokens.take(i).mkString(" ")
-      println(" -- doing %s".format(searchStr))
       val featureMatches = logDuration("get-by-name", "get-by-name for %s".format(searchStr)) {
         store.getByName(searchStr).map((f: GeocodeServingFeature) => 
           FeatureMatch(offset, offset + i, searchStr, f)
         )
       }
-      println("took %d tokens, looking at cache for %d".format(i, tokens.size - i))
       val subParses = cache(tokens.size - i)
       (for {
         f <- featureMatches
