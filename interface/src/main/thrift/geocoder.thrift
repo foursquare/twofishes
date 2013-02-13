@@ -205,7 +205,11 @@ enum ResponseIncludes {
   WKB_GEOMETRY,
   WKT_GEOMETRY,
   // include geometry coverage information (revgeo only)
-  REVGEO_COVERAGE
+  REVGEO_COVERAGE,
+  // controls if we should fetch parents to construct string likes "New York, NY"
+  // for legacy reasons, this is automatically turned on for geocode queries for now.
+  // it's mainly here because reverse geocode clients often don't need it
+  DISPLAY_NAME
 }
 
 struct GeocodeRequest {

@@ -17,7 +17,8 @@ public enum ResponseIncludes implements TEnum {
   PARENT_ALL_NAMES(3),
   WKB_GEOMETRY(4),
   WKT_GEOMETRY(5),
-  REVGEO_COVERAGE(6);
+  REVGEO_COVERAGE(6),
+  DISPLAY_NAME(7);
 
   private final int value;
 
@@ -52,6 +53,8 @@ public enum ResponseIncludes implements TEnum {
         return WKT_GEOMETRY;
       case 6:
         return REVGEO_COVERAGE;
+      case 7:
+        return DISPLAY_NAME;
       default:
         return null;
     }

@@ -865,7 +865,8 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     longest: Int,
     sortedParses: SortedParseSeq,
     parseParams: ParseParams,
-    polygonMap: Map[ObjectId, Array[Byte]]
+    polygonMap: Map[ObjectId, Array[Byte]],
+    fixAmbiguousNames: Boolean
   ): GeocodeResponse = {
     val tokens = parseParams.tokens
     val originalTokens = parseParams.originalTokens
@@ -899,12 +900,21 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     var interpretations = sortedParses.map(p => {
       val fmatch = p(0).fmatch
       val feature = p(0).fmatch.feature
-      val sortedParents: Seq[GeocodeServingFeature] =
+
+      val shouldFetchParents =
+        responseIncludes(ResponseIncludes.PARENTS) ||
+        responseIncludes(ResponseIncludes.DISPLAY_NAME)
+
+      val sortedParents = if (shouldFetchParents) {
         // we've seen dupe parents, not sure why, the toSet.toSeq fixes
         // TODO(blackmad): why dupe US parents on new york state?
         p(0).fmatch.scoringFeatures.parents.toSet.toSeq.flatMap((parent: String) =>
           parentMap.get(new ObjectId(parent))).sorted(GeocodeServingFeatureOrdering)
+      } else {
+        Nil
+      }
       fixFeature(feature, sortedParents, Some(p))
+
       val interp = new GeocodeInterpretation()
       interp.setWhat(what)
       interp.setWhere(where)
@@ -938,31 +948,33 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
       interp
     })
 
-    // Find + fix ambiguous names
-    // check to see if any of our features are ambiguous, even after deduping (which
-    // happens outside this function). ie, there are 3 "Cobble Hill, NY"s. Which
-    // are the names we get if we only take one parent component from each.
-    // Find ambiguous geocodes, tell them to take more name component
-    val ambiguousInterpretationsMap: Map[String, Seq[GeocodeInterpretation]] = 
-      interpretations.groupBy(_.feature.displayName).filter(_._2.size > 1)
-    val ambiguousInterpretations: Iterable[GeocodeInterpretation] = 
-      ambiguousInterpretationsMap.flatMap(_._2).toList
-    val ambiguousIdMap: Map[String, Iterable[GeocodeInterpretation]] =
-      ambiguousInterpretations.groupBy(_.feature.ids.toString)
+    if (fixAmbiguousNames) {
+      // Find + fix ambiguous names
+      // check to see if any of our features are ambiguous, even after deduping (which
+      // happens outside this function). ie, there are 3 "Cobble Hill, NY"s. Which
+      // are the names we get if we only take one parent component from each.
+      // Find ambiguous geocodes, tell them to take more name component
+      val ambiguousInterpretationsMap: Map[String, Seq[GeocodeInterpretation]] = 
+        interpretations.groupBy(_.feature.displayName).filter(_._2.size > 1)
+      val ambiguousInterpretations: Iterable[GeocodeInterpretation] = 
+        ambiguousInterpretationsMap.flatMap(_._2).toList
+      val ambiguousIdMap: Map[String, Iterable[GeocodeInterpretation]] =
+        ambiguousInterpretations.groupBy(_.feature.ids.toString)
 
-    if (ambiguousInterpretations.size > 0) {
-      logger.ifDebug("had ambiguous interpretations")
-      ambiguousInterpretationsMap.foreach({case (k, v) => logger.ifDebug("have %d of %s".format(v.size, k)) })
-      sortedParses.foreach(p => {
-        val fmatch = p(0).fmatch
-        val feature = p(0).fmatch.feature
-        ambiguousIdMap.getOrElse(feature.ids.toString, Nil).foreach(interp => {
-          val sortedParents = p(0).fmatch.scoringFeatures.parents
-            .flatMap(parent =>
-              parentMap.get(new ObjectId(parent))).sorted(GeocodeServingFeatureOrdering)
-          fixFeature(interp.feature, sortedParents, Some(p), 2)
+      if (ambiguousInterpretations.size > 0) {
+        logger.ifDebug("had ambiguous interpretations")
+        ambiguousInterpretationsMap.foreach({case (k, v) => logger.ifDebug("have %d of %s".format(v.size, k)) })
+        sortedParses.foreach(p => {
+          val fmatch = p(0).fmatch
+          val feature = p(0).fmatch.feature
+          ambiguousIdMap.getOrElse(feature.ids.toString, Nil).foreach(interp => {
+            val sortedParents = p(0).fmatch.scoringFeatures.parents
+              .flatMap(parent =>
+                parentMap.get(new ObjectId(parent))).sorted(GeocodeServingFeatureOrdering)
+            fixFeature(interp.feature, sortedParents, Some(p), 2)
+          })
         })
-      })
+      }
     }
 
     generateResponse(interpretations)
@@ -970,6 +982,15 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
 
   def geocode(): GeocodeResponse = {
     Stats.incr("geocode-requests", 1)
+
+    if (req.responseIncludes == null || req.responseIncludes.isEmpty) {
+      req.setResponseIncludes(List(ResponseIncludes.DISPLAY_NAME).asJava)
+    } else {
+      req.setResponseIncludes(
+        (ResponseIncludes.DISPLAY_NAME :: req.responseIncludes.toList).asJava
+      )
+    }
+
     val query = req.query
     if (query != null) {
       logger.ifDebug("%s --> %s".format(query, NameNormalizer.normalize(query)))
@@ -1066,7 +1087,8 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     val sortedDedupedParses: SortedParseSeq = dedupedParses.sorted(new ParseOrdering).take(3)
     val polygonMap: Map[ObjectId, Array[Byte]] = getPolygonMap(
       sortedDedupedParses.map(p => new ObjectId(p(0).fmatch.id)))
-    hydrateParses(parseLength, sortedDedupedParses, parseParams, polygonMap)
+    hydrateParses(parseLength, sortedDedupedParses, parseParams, polygonMap,
+      fixAmbiguousNames = true)
   }
 
   def doNormalGeocode(parseParams: ParseParams) = {
@@ -1300,7 +1322,8 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     }
 
     val sortedParses = parses.sorted(new ReverseGeocodeParseOrdering).take(maxInterpretations)
-    val response = hydrateParses(0, sortedParses, parseParams, polygonMap)
+    val response = hydrateParses(0, sortedParses, parseParams, polygonMap,
+      fixAmbiguousNames = false)
     if (req.debug > 0) {
       val wktWriter = new WKTWriter
       response.setRequestWktGeometry(wktWriter.write(otherGeom))
