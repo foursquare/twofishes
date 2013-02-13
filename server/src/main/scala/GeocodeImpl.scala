@@ -658,42 +658,45 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
 
     var namesToUse: Seq[(com.foursquare.twofishes.FeatureName, Option[String])] = Nil
 
-    parse.foreach(p => {
-      val partsFromParse: Seq[(Option[FeatureMatch], GeocodeServingFeature)] =
-        p.map(fmatch => (Some(fmatch), fmatch.fmatch))
-      val partsFromParents: Seq[(Option[FeatureMatch], GeocodeServingFeature)] =
-       parentsToUse.filterNot(f => partsFromParse.exists(_._2 == f))
-        .map(f => (None, f))
-      val partsToUse = (partsFromParse ++ partsFromParents).sortBy(_._2)(GeocodeServingFeatureOrdering)
-      // logger.ifDebug("parts to use: " + partsToUse)
-      var i = 0
-      namesToUse = partsToUse.flatMap({case(fmatchOpt, servingFeature) => {
-        val name = bestNameWithMatch(servingFeature.feature, Some(req.lang), i != 0,
-          fmatchOpt.map(_.phrase))
-        i += 1
-        name
-      }})
+    // set highlightedName and matchedName
+    if (req.query != null && req.query.nonEmpty) {
+      parse.foreach(p => {
+        val partsFromParse: Seq[(Option[FeatureMatch], GeocodeServingFeature)] =
+          p.map(fmatch => (Some(fmatch), fmatch.fmatch))
+        val partsFromParents: Seq[(Option[FeatureMatch], GeocodeServingFeature)] =
+         parentsToUse.filterNot(f => partsFromParse.exists(_._2 == f))
+          .map(f => (None, f))
+        val partsToUse = (partsFromParse ++ partsFromParents).sortBy(_._2)(GeocodeServingFeatureOrdering)
+        // logger.ifDebug("parts to use: " + partsToUse)
+        var i = 0
+        namesToUse = partsToUse.flatMap({case(fmatchOpt, servingFeature) => {
+          val name = bestNameWithMatch(servingFeature.feature, Some(req.lang), i != 0,
+            fmatchOpt.map(_.phrase))
+          i += 1
+          name
+        }})
 
-      // strip dupe un-matched parts, so we don't have "Istanbul, Istanbul, TR"
-      // don't strip out matched parts (that's the isempty check)
-      // don't strip out the main feature name (index != 0)
-      namesToUse = namesToUse.zipWithIndex.filterNot({case (nameMatch, index) => {
-        index != 0 && nameMatch._2.isEmpty && nameMatch._1.name == namesToUse(0)._1.name
-      }}).map(_._1)
-    
-      var (matchedNameParts, highlightedNameParts) = 
-        (namesToUse.map(_._1.name),
-         namesToUse.map({case(fname, highlightedName) => {
-          highlightedName.getOrElse(fname.name)
-        }}))
+        // strip dupe un-matched parts, so we don't have "Istanbul, Istanbul, TR"
+        // don't strip out matched parts (that's the isempty check)
+        // don't strip out the main feature name (index != 0)
+        namesToUse = namesToUse.zipWithIndex.filterNot({case (nameMatch, index) => {
+          index != 0 && nameMatch._2.isEmpty && nameMatch._1.name == namesToUse(0)._1.name
+        }}).map(_._1)
+      
+        var (matchedNameParts, highlightedNameParts) = 
+          (namesToUse.map(_._1.name),
+           namesToUse.map({case(fname, highlightedName) => {
+            highlightedName.getOrElse(fname.name)
+          }}))
 
-      if (!partsToUse.exists(_._2.feature.woeType == YahooWoeType.COUNTRY)) {
-        matchedNameParts ++= countryAbbrev.toList
-        highlightedNameParts ++= countryAbbrev.toList
-      }
-      f.setMatchedName(matchedNameParts.mkString(", "))
-      f.setHighlightedName(highlightedNameParts.mkString(", "))
-    })
+        if (!partsToUse.exists(_._2.feature.woeType == YahooWoeType.COUNTRY)) {
+          matchedNameParts ++= countryAbbrev.toList
+          highlightedNameParts ++= countryAbbrev.toList
+        }
+        f.setMatchedName(matchedNameParts.mkString(", "))
+        f.setHighlightedName(highlightedNameParts.mkString(", "))
+      })
+    }
 
     // possibly clear names
     val names = f.names
