@@ -899,8 +899,11 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     var interpretations = sortedParses.map(p => {
       val fmatch = p(0).fmatch
       val feature = p(0).fmatch.feature
-      val sortedParents = p(0).fmatch.scoringFeatures.parents.flatMap(parent =>
-        parentMap.get(new ObjectId(parent))).sorted(GeocodeServingFeatureOrdering)
+      val sortedParents: Seq[GeocodeServingFeature] =
+        // we've seen dupe parents, not sure why, the toSet.toSeq fixes
+        // TODO(blackmad): why dupe US parents on new york state?
+        p(0).fmatch.scoringFeatures.parents.toSet.toSeq.flatMap((parent: String) =>
+          parentMap.get(new ObjectId(parent))).sorted(GeocodeServingFeatureOrdering)
       fixFeature(feature, sortedParents, Some(p))
       val interp = new GeocodeInterpretation()
       interp.setWhat(what)
