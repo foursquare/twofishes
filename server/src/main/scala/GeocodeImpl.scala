@@ -1252,7 +1252,8 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
   lazy val shouldFetchPolygon = 
     responseIncludes(ResponseIncludes.WKB_GEOMETRY) ||
     responseIncludes(ResponseIncludes.WKT_GEOMETRY) ||
-    responseIncludes(ResponseIncludes.REVGEO_COVERAGE)
+    responseIncludes(ResponseIncludes.REVGEO_COVERAGE) ||
+    req.includePolygon_DEPRECATED
 
   def getPolygonMap(featureOids: Seq[ObjectId]): Map[ObjectId, Array[Byte]] = {
     if (shouldFetchPolygon) {
