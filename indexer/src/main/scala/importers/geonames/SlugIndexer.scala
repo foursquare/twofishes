@@ -89,6 +89,7 @@ class SlugIndexer {
         case _ => {
           // println("picking %s".format(slug))
           slugEntryMap(slug) = SlugEntry(id, score, deprecated = false, permanent = false)
+          idToSlugMap(id) = slug
           return Some(slug)
         }
       } 
