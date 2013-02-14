@@ -8,6 +8,8 @@ import scala.collection.JavaConversions._
 object SlugBuilder {
   import NameFormatter.FormatPattern
 
+  // TODO(blackmad): clearly a bug here with non-FEATURE patterns failing
+
   // do something special with CN-14 (tibet) in the parents, ditto taiwan
 
   val patterns = List( 
