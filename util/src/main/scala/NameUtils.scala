@@ -136,7 +136,7 @@ object NameFormatter {
         name <- NameUtils.bestName(matchFeature, lang, woeToken.preferAbbrev)
       } yield {
         if (matchFeature == feature) {
-          usedPrimaryFeature
+          usedPrimaryFeature = true
         }
         WoeTokenMatch(woeToken, name.name)
       }

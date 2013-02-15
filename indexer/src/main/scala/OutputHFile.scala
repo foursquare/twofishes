@@ -380,7 +380,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     // wait until everything finishes
     subMaps.foreach(_._2.join)
 
-    val sortedMapKeys = subMaps.flatMap(_._1.keys).toList.sort(byteBufferSort)
+    val sortedMapKeys = subMaps.flatMap(_._1.keys).toList.distinct.sort(byteBufferSort)
     val writer = buildBasicV1Writer("s2_index.hfile", factory)
     sortedMapKeys.foreach(k => {
       val cells = subMaps.flatMap(_._1.get(k).map(_.toList).getOrElse(Nil))
