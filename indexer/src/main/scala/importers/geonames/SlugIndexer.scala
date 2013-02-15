@@ -105,7 +105,15 @@ class SlugIndexer {
           
     for {
       servingFeature <- findFeature(id)
-      if (servingFeature.scoringFeatures.population > 0 || servingFeature.scoringFeatures.boost > 0)
+      if (servingFeature.scoringFeatures.population > 0 ||
+          servingFeature.scoringFeatures.boost > 0 ||
+          servingFeature.feature.geometry.wkbGeometry != null ||
+          YahooWoeTypes.isAdminWoeType(servingFeature.feature.woeType) ||
+          (servingFeature.feature.attributes != null &&
+           (servingFeature.feature.attributes.adm1cap ||
+           servingFeature.feature.attributes.adm0cap)
+          )
+      )
     } {
       val parents = servingFeature.scoringFeatures.parents.asScala.flatMap(
         p => findParent(p)).toList

@@ -9,4 +9,8 @@ object YahooWoeTypes {
   def getOrdering(woetype: YahooWoeType): Int = {
     order.indexOf(woetype)
   }
+
+  val isAdminWoeTypes = List(ADMIN3, ADMIN2, ADMIN1, COUNTRY)
+  def isAdminWoeType(woeType: YahooWoeType): Boolean = 
+    isAdminWoeTypes.contains(woeType)
 }
