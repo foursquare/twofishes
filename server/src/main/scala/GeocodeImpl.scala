@@ -1307,7 +1307,9 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     // for each, check if we're really in it
     val parses: SortedParseSeq = servingFeaturesMap.map({ case (oid, f) => {
       val parse = Parse[Sorted](List(FeatureMatch(0, 0, "", f)))
-      if (responseIncludes(ResponseIncludes.REVGEO_COVERAGE)) {
+      if (responseIncludes(ResponseIncludes.REVGEO_COVERAGE) &&
+          otherGeom.getNumPoints > 2 &&
+          geom.getNumPoints > 2)
         polygonMap.get(oid).foreach(wkb => {
           val geom = wkbReader.read(wkb)
           parse.scoringFeatures.setPercentOfRequestCovered(computeCoverage(geom, otherGeom))
