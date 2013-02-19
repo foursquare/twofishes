@@ -116,6 +116,12 @@ enum GeocodeRelationType {
   HIERARCHY = 2
 }
 
+enum NeighborhoodType {
+  MACRO = 2,
+  NEIGHBORHOOD = 3,
+  SUB = 4,
+}
+
 struct GeocodeRelation {
   1: optional GeocodeRelationType relationType,
   2: optional string relatedId
@@ -128,7 +134,8 @@ struct GeocodeFeatureAttributes {
   4: optional i32 labelrank = 0,
   5: optional i32 natscale = 0,
   6: optional i32 population = 0,
-  7: optional bool sociallyRelevant = 0
+  7: optional bool sociallyRelevant = 0,
+  8: optional NeighborhoodType neighborhoodType
 }
 
 // index-only data structure

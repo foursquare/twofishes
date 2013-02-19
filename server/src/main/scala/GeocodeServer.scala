@@ -99,11 +99,23 @@ class GeocoderHttpService(geocoder: GeocodeServerImpl) extends Service[HttpReque
       request.setLl(new GeocodePoint(ll(0).toDouble, ll(1).toDouble))
     }))
     params.get("woeHint").foreach(_.asScala.headOption.foreach(hintStr => {
-      val hints = hintStr.split(",").map(_.toInt).map(YahooWoeType.findByValue)
+      val hints = hintStr.split(",").map(i =>
+        if (Helpers.TryO(i.toInt).isDefined) {
+          YahooWoeType.findByValue(i.toInt)
+        } else {
+          YahooWoeType.valueOf(i)
+        }
+      )
       request.setWoeHint(hints.toList.asJava)
     }))
     params.get("woeRestrict").foreach(_.asScala.headOption.foreach(hintStr => {
-      val hints = hintStr.split(",").map(_.toInt).map(YahooWoeType.findByValue)
+      val hints = hintStr.split(",").map(i =>
+        if (Helpers.TryO(i.toInt).isDefined) {
+          YahooWoeType.findByValue(i.toInt)
+        } else {
+          YahooWoeType.valueOf(i)
+        }
+      )
       request.setWoeRestrict(hints.toList.asJava)
     }))
     params.get("radius").foreach(_.asScala.headOption.foreach(v =>

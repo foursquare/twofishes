@@ -38,6 +38,7 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
   private static final TField NATSCALE_FIELD_DESC = new TField("natscale", TType.I32, (short)5);
   private static final TField POPULATION_FIELD_DESC = new TField("population", TType.I32, (short)6);
   private static final TField SOCIALLY_RELEVANT_FIELD_DESC = new TField("sociallyRelevant", TType.BOOL, (short)7);
+  private static final TField NEIGHBORHOOD_TYPE_FIELD_DESC = new TField("neighborhoodType", TType.I32, (short)8);
 
   public boolean adm0cap;
   public boolean adm1cap;
@@ -46,6 +47,11 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
   public int natscale;
   public int population;
   public boolean sociallyRelevant;
+  /**
+   * 
+   * @see NeighborhoodType
+   */
+  public NeighborhoodType neighborhoodType;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
@@ -55,7 +61,12 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
     LABELRANK((short)4, "labelrank"),
     NATSCALE((short)5, "natscale"),
     POPULATION((short)6, "population"),
-    SOCIALLY_RELEVANT((short)7, "sociallyRelevant");
+    SOCIALLY_RELEVANT((short)7, "sociallyRelevant"),
+    /**
+     * 
+     * @see NeighborhoodType
+     */
+    NEIGHBORHOOD_TYPE((short)8, "neighborhoodType");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -84,6 +95,8 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
           return POPULATION;
         case 7: // SOCIALLY_RELEVANT
           return SOCIALLY_RELEVANT;
+        case 8: // NEIGHBORHOOD_TYPE
+          return NEIGHBORHOOD_TYPE;
         default:
           return null;
       }
@@ -150,6 +163,8 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
         new FieldValueMetaData(TType.I32)));
     tmpMap.put(_Fields.SOCIALLY_RELEVANT, new FieldMetaData("sociallyRelevant", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.BOOL)));
+    tmpMap.put(_Fields.NEIGHBORHOOD_TYPE, new FieldMetaData("neighborhoodType", TFieldRequirementType.OPTIONAL, 
+        new EnumMetaData(TType.ENUM, NeighborhoodType.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeFeatureAttributes.class, metaDataMap);
   }
@@ -184,6 +199,9 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
     this.natscale = other.natscale;
     this.population = other.population;
     this.sociallyRelevant = other.sociallyRelevant;
+    if (other.isSetNeighborhoodType()) {
+      this.neighborhoodType = other.neighborhoodType;
+    }
   }
 
   public GeocodeFeatureAttributes deepCopy() {
@@ -206,6 +224,7 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
 
     this.sociallyRelevant = false;
 
+    this.neighborhoodType = null;
   }
 
   public boolean isAdm0cap() {
@@ -369,6 +388,38 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
     __isset_bit_vector.set(__SOCIALLYRELEVANT_ISSET_ID, value);
   }
 
+  /**
+   * 
+   * @see NeighborhoodType
+   */
+  public NeighborhoodType getNeighborhoodType() {
+    return this.neighborhoodType;
+  }
+
+  /**
+   * 
+   * @see NeighborhoodType
+   */
+  public GeocodeFeatureAttributes setNeighborhoodType(NeighborhoodType neighborhoodType) {
+    this.neighborhoodType = neighborhoodType;
+    return this;
+  }
+
+  public void unsetNeighborhoodType() {
+    this.neighborhoodType = null;
+  }
+
+  /** Returns true if field neighborhoodType is set (has been asigned a value) and false otherwise */
+  public boolean isSetNeighborhoodType() {
+    return this.neighborhoodType != null;
+  }
+
+  public void setNeighborhoodTypeIsSet(boolean value) {
+    if (!value) {
+      this.neighborhoodType = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case ADM0CAP:
@@ -427,6 +478,14 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
       }
       break;
 
+    case NEIGHBORHOOD_TYPE:
+      if (value == null) {
+        unsetNeighborhoodType();
+      } else {
+        setNeighborhoodType((NeighborhoodType)value);
+      }
+      break;
+
     }
   }
 
@@ -453,6 +512,9 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
     case SOCIALLY_RELEVANT:
       return new Boolean(isSociallyRelevant());
 
+    case NEIGHBORHOOD_TYPE:
+      return getNeighborhoodType();
+
     }
     throw new IllegalStateException();
   }
@@ -478,6 +540,8 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
       return isSetPopulation();
     case SOCIALLY_RELEVANT:
       return isSetSociallyRelevant();
+    case NEIGHBORHOOD_TYPE:
+      return isSetNeighborhoodType();
     }
     throw new IllegalStateException();
   }
@@ -555,6 +619,15 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
       if (!(this_present_sociallyRelevant && that_present_sociallyRelevant))
         return false;
       if (this.sociallyRelevant != that.sociallyRelevant)
+        return false;
+    }
+
+    boolean this_present_neighborhoodType = true && this.isSetNeighborhoodType();
+    boolean that_present_neighborhoodType = true && that.isSetNeighborhoodType();
+    if (this_present_neighborhoodType || that_present_neighborhoodType) {
+      if (!(this_present_neighborhoodType && that_present_neighborhoodType))
+        return false;
+      if (!this.neighborhoodType.equals(that.neighborhoodType))
         return false;
     }
 
@@ -644,6 +717,16 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetNeighborhoodType()).compareTo(typedOther.isSetNeighborhoodType());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetNeighborhoodType()) {
+      lastComparison = TBaseHelper.compareTo(this.neighborhoodType, typedOther.neighborhoodType);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -717,6 +800,13 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
+        case 8: // NEIGHBORHOOD_TYPE
+          if (field.type == TType.I32) {
+            this.neighborhoodType = NeighborhoodType.findByValue(iprot.readI32());
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -767,6 +857,13 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
       oprot.writeBool(this.sociallyRelevant);
       oprot.writeFieldEnd();
     }
+    if (this.neighborhoodType != null) {
+      if (isSetNeighborhoodType()) {
+        oprot.writeFieldBegin(NEIGHBORHOOD_TYPE_FIELD_DESC);
+        oprot.writeI32(this.neighborhoodType.getValue());
+        oprot.writeFieldEnd();
+      }
+    }
     oprot.writeFieldStop();
     oprot.writeStructEnd();
   }
@@ -815,6 +912,16 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
       if (!first) sb.append(", ");
       sb.append("sociallyRelevant:");
       sb.append(this.sociallyRelevant);
+      first = false;
+    }
+    if (isSetNeighborhoodType()) {
+      if (!first) sb.append(", ");
+      sb.append("neighborhoodType:");
+      if (this.neighborhoodType == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.neighborhoodType);
+      }
       first = false;
     }
     sb.append(")");

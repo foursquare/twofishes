@@ -82,7 +82,7 @@ object GeonamesParser {
   }
 
   def writeHFileOutput() {
-    val outputter = new OutputHFile(config.hfileBasePath, config.outputPrefixIndex, slugIndexer.slugEntryMap)
+    val outputter = new OutputHFile(config.hfileBasePath, config.outputPrefixIndex, GeonamesParser.slugIndexer.slugEntryMap)
     outputter.process()
     if (config.outputRevgeo) {
       outputter.buildRevGeoIndex()
@@ -178,6 +178,8 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
   lazy val polygonTable: Map[String, Geometry] = PolygonLoader.load()
   // geonameid -> name to be deleted
   lazy val nameDeleteTable = new TsvHelperFileParser("data/custom/name-deletes.txt")
+  // list of geoids (geonameid:XXX) to skip indexing
+  lazy val ignoreList: List[String] = scala.io.Source.fromFile(new File("data/custom/ignores.txt")).getLines.toList
 
   val bboxDirs = List(
     new File("data/computed/bboxes/"),
@@ -414,6 +416,9 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
       attributes.setSociallyRelevant(v.toBoolean)
     )
 
+    feature.extraColumns.get("neighborhoodType").map(v => 
+      attributes.setNeighborhoodType(NeighborhoodType.valueOf(v))
+    )
 
     val objectId = (
       for {
@@ -482,6 +487,7 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
         if (
           !f.featureClass.isStupid &&
           !(f.name.contains(", Stadt") && f.countryCode == "DE") &&
+          !f.geonameid.exists(ignoreList.contains) &&
           (!f.featureClass.isBuilding || config.shouldParseBuildings || allowBuildings)) {
           parseFeature(f)
         }
