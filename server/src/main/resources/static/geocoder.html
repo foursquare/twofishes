@@ -125,7 +125,9 @@
           var jsonDiv = $('<div class="json"/>');
           var mapDiv = $('<div class="map" id="result-' + count + '" />');
           statusArea.append(sectionDiv);
-          sectionDiv.append('<div class="highlightedName">Interp ' + (count+1) + ': ' + feature.highlightedName + '</div>');
+
+          var name = feature.highlightedName || feature.displayName || feature.name;
+          sectionDiv.append('<div class="highlightedName">Interp ' + (count+1) + ': ' + name + '</div>');
           sectionDiv.append(jsonDiv);
           sectionDiv.append(mapDiv);
 
