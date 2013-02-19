@@ -272,14 +272,14 @@ public class CellGeometries implements TBase<CellGeometries, CellGeometries._Fie
         case 1: // CELLS
           if (field.type == TType.LIST) {
             {
-              TList _list4 = iprot.readListBegin();
-              this.cells = new ArrayList<CellGeometry>(_list4.size);
-              for (int _i5 = 0; _i5 < _list4.size; ++_i5)
+              TList _list0 = iprot.readListBegin();
+              this.cells = new ArrayList<CellGeometry>(_list0.size);
+              for (int _i1 = 0; _i1 < _list0.size; ++_i1)
               {
-                CellGeometry _elem6;
-                _elem6 = new CellGeometry();
-                _elem6.read(iprot);
-                this.cells.add(_elem6);
+                CellGeometry _elem2;
+                _elem2 = new CellGeometry();
+                _elem2.read(iprot);
+                this.cells.add(_elem2);
               }
               iprot.readListEnd();
             }
@@ -307,9 +307,9 @@ public class CellGeometries implements TBase<CellGeometries, CellGeometries._Fie
         oprot.writeFieldBegin(CELLS_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.STRUCT, this.cells.size()));
-          for (CellGeometry _iter7 : this.cells)
+          for (CellGeometry _iter3 : this.cells)
           {
-            _iter7.write(oprot);
+            _iter3.write(oprot);
           }
           oprot.writeListEnd();
         }

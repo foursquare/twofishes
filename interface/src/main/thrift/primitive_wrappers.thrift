@@ -1,4 +1,4 @@
-namespace java com.foursquare.base.gen
+namespace java com.foursquare.base.thrift
 
 include "types.thrift"
 

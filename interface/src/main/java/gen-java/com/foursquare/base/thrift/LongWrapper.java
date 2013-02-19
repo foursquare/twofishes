@@ -3,7 +3,7 @@
  *
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
-package com.foursquare.base.gen;
+package com.foursquare.base.thrift;
 
 import java.util.List;
 import java.util.ArrayList;

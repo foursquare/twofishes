@@ -3,7 +3,7 @@
  *
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
-package com.foursquare.base.gen;
+package com.foursquare.base.thrift;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -28,12 +28,12 @@ import org.apache.thrift.protocol.*;
 
 // No additional import required for struct/union.
 
-public class ObjectIdWrapper implements TBase<ObjectIdWrapper, ObjectIdWrapper._Fields>, java.io.Serializable, Cloneable {
-  private static final TStruct STRUCT_DESC = new TStruct("ObjectIdWrapper");
+public class StringWrapper implements TBase<StringWrapper, StringWrapper._Fields>, java.io.Serializable, Cloneable {
+  private static final TStruct STRUCT_DESC = new TStruct("StringWrapper");
 
   private static final TField VALUE_FIELD_DESC = new TField("value", TType.STRING, (short)1);
 
-  public ByteBuffer value;
+  public String value;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
@@ -99,25 +99,25 @@ public class ObjectIdWrapper implements TBase<ObjectIdWrapper, ObjectIdWrapper._
   static {
     Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
     tmpMap.put(_Fields.VALUE, new FieldMetaData("value", TFieldRequirementType.OPTIONAL, 
-        new FieldValueMetaData(TType.STRING        , "ThriftObjectId")));
+        new FieldValueMetaData(TType.STRING)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
-    FieldMetaData.addStructMetaDataMap(ObjectIdWrapper.class, metaDataMap);
+    FieldMetaData.addStructMetaDataMap(StringWrapper.class, metaDataMap);
   }
 
-  public ObjectIdWrapper() {
+  public StringWrapper() {
   }
 
   /**
    * Performs a deep copy on <i>other</i>.
    */
-  public ObjectIdWrapper(ObjectIdWrapper other) {
+  public StringWrapper(StringWrapper other) {
     if (other.isSetValue()) {
       this.value = other.value;
     }
   }
 
-  public ObjectIdWrapper deepCopy() {
-    return new ObjectIdWrapper(this);
+  public StringWrapper deepCopy() {
+    return new StringWrapper(this);
   }
 
   @Override
@@ -125,21 +125,11 @@ public class ObjectIdWrapper implements TBase<ObjectIdWrapper, ObjectIdWrapper._
     this.value = null;
   }
 
-  public byte[] getValue() {
-    setValue(TBaseHelper.rightSize(value));
-    return value.array();
+  public String getValue() {
+    return this.value;
   }
 
-  public ByteBuffer BufferForValue() {
-    return value;
-  }
-
-  public ObjectIdWrapper setValue(byte[] value) {
-    setValue(ByteBuffer.wrap(value));
-    return this;
-  }
-
-  public ObjectIdWrapper setValue(ByteBuffer value) {
+  public StringWrapper setValue(String value) {
     this.value = value;
     return this;
   }
@@ -165,7 +155,7 @@ public class ObjectIdWrapper implements TBase<ObjectIdWrapper, ObjectIdWrapper._
       if (value == null) {
         unsetValue();
       } else {
-        setValue((ByteBuffer)value);
+        setValue((String)value);
       }
       break;
 
@@ -198,12 +188,12 @@ public class ObjectIdWrapper implements TBase<ObjectIdWrapper, ObjectIdWrapper._
   public boolean equals(Object that) {
     if (that == null)
       return false;
-    if (that instanceof ObjectIdWrapper)
-      return this.equals((ObjectIdWrapper)that);
+    if (that instanceof StringWrapper)
+      return this.equals((StringWrapper)that);
     return false;
   }
 
-  public boolean equals(ObjectIdWrapper that) {
+  public boolean equals(StringWrapper that) {
     if (that == null)
       return false;
 
@@ -224,13 +214,13 @@ public class ObjectIdWrapper implements TBase<ObjectIdWrapper, ObjectIdWrapper._
     return 0;
   }
 
-  public int compareTo(ObjectIdWrapper other) {
+  public int compareTo(StringWrapper other) {
     if (!getClass().equals(other.getClass())) {
       return getClass().getName().compareTo(other.getClass().getName());
     }
 
     int lastComparison = 0;
-    ObjectIdWrapper typedOther = (ObjectIdWrapper)other;
+    StringWrapper typedOther = (StringWrapper)other;
 
     lastComparison = Boolean.valueOf(isSetValue()).compareTo(typedOther.isSetValue());
     if (lastComparison != 0) {
@@ -261,7 +251,7 @@ public class ObjectIdWrapper implements TBase<ObjectIdWrapper, ObjectIdWrapper._
       switch (field.id) {
         case 1: // VALUE
           if (field.type == TType.STRING) {
-            this.value = iprot.readBinary();
+            this.value = iprot.readString();
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -284,7 +274,7 @@ public class ObjectIdWrapper implements TBase<ObjectIdWrapper, ObjectIdWrapper._
     if (this.value != null) {
       if (isSetValue()) {
         oprot.writeFieldBegin(VALUE_FIELD_DESC);
-        oprot.writeBinary(this.value);
+        oprot.writeString(this.value);
         oprot.writeFieldEnd();
       }
     }
@@ -294,7 +284,7 @@ public class ObjectIdWrapper implements TBase<ObjectIdWrapper, ObjectIdWrapper._
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("ObjectIdWrapper(");
+    StringBuilder sb = new StringBuilder("StringWrapper(");
     boolean first = true;
 
     if (isSetValue()) {

@@ -1,6 +1,6 @@
 package com.foursquare.twofishes
 
-import com.foursquare.base.gen.{LongWrapper, ObjectIdListWrapper, ObjectIdWrapper, StringWrapper}
+import com.foursquare.base.thrift.{LongWrapper, ObjectIdListWrapper, ObjectIdWrapper, StringWrapper}
 import com.foursquare.batch.ShapefileSimplifier
 import com.foursquare.geo.shapes.ShapefileS2Util
 import com.foursquare.twofishes.util.{GeometryUtils, NameUtils}
@@ -77,122 +77,6 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
 
     f.scoringFeatures.setParents(parents)
     serializer.serialize(f)
-  }
-
-
-  val stateCache = new HashMap[List[String], Option[String]]
-  def findStateName(parents: List[String]) = {
-    stateCache.getOrElseUpdate(parents, {
-      val features = MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> parents.toList),
-        "_woeType" -> YahooWoeType.ADMIN1.getValue))
-      features.map(_.toGeocodeServingFeature).flatMap(sf => 
-        NameUtils.bestName(sf.feature, None, preferAbbrev = true)
-      ).map(_.name).toList.headOption
-    })
-  }
-
-  def buildChildEntries(children: Iterator[GeocodeRecord]): List[ChildEntry] = {
-    (for {
-      child <- children
-      val feature = child.toGeocodeServingFeature.feature
-      name <- NameUtils.bestName(feature, Some("en"), false)
-      slug <- child.slug
-      // hack because we're setting the boost of poorly-known neighborhoods to < 0
-      if (child._woeType != YahooWoeType.SUBURB.getValue || child.boost.getOrElse(0) >= 0)
-    } yield {
-      var finalName = name.name
-      if (child.cc == "US" && child._woeType == YahooWoeType.TOWN.getValue) {
-        // awful hack to yank out state
-        findStateName(child.parents) match {
-          case Some(stateCode) => finalName = "%s, %s".format(name.name, stateCode)
-          case None => {
-            println("failed to find state parents for: " + feature.id)
-            println(child.parents)
-          }
-        }
-      }
-      new ChildEntry().setName(finalName).setSlug(slug).setWoeType(child.woeType)
-    }).toList
-  }
-
-  def buildChildMap(
-    parentType: YahooWoeType,
-    childType: YahooWoeType,
-    limit: Int,
-    minPopulation: Int,
-    minPopulationPerCounty: Map[String, Int] = Map.empty
-  ): Map[String, List[ChildEntry]] = {
-    // find all parents of parentType
-    val parents = MongoGeocodeDAO.find(MongoDBObject("_woeType" -> parentType.getValue))
-
-    parents.flatMap(parent => {
-      val servingFeature = parent.toGeocodeServingFeature
-      val children = MongoGeocodeDAO.find(MongoDBObject("parents" -> servingFeature.feature.id,
-        "hasPoly" -> true,
-        "_woeType" -> childType.getValue
-        ))
-        .sort(orderBy = MongoDBObject("population" -> -1)) // sort by population descending
-        .limit(limit)
-
-      val childEntries = buildChildEntries(children.filter(child => {
-        val population = child.population.getOrElse(0)
-        (population > minPopulation ||  minPopulationPerCounty.get(child.cc).exists(_ < population))
-      }))
-      if (servingFeature.feature.id == null) {
-        println("null id: " + servingFeature)
-      }
-      if (childEntries.size > 0) {
-        println("found %d children for %s".format(childEntries.size, servingFeature.feature.id))
-        Some(servingFeature.feature.id -> childEntries.toList)
-      } else {
-        None
-      }
-    }).toMap
-
-    // for each parent, find all children of childType, sorted by descending popularity
-    // trim down those records super aggressively
-  }
-
-  def buildRootMap(countryIds: Iterable[String]):  Map[String, List[ChildEntry]] = {
-    val countries = MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> countryIds.toList)))
-      .sort(orderBy = MongoDBObject("population" -> -1)) // sort by population descending
-
-    Map(
-      "" -> buildChildEntries(countries)
-    )
-  }
-
-  def buildChildMaps() {
-    val countryToTownMap =
-      buildChildMap(YahooWoeType.COUNTRY, YahooWoeType.TOWN, 1000, 300000,
-        Map(("US" -> 150000)))
-
-    val childMaps = 
-      buildRootMap(countryToTownMap.keys) ++
-      countryToTownMap ++
-      buildChildMap(YahooWoeType.ADMIN1, YahooWoeType.TOWN, 1000, 300000) ++
-      buildChildMap(YahooWoeType.TOWN, YahooWoeType.SUBURB, 1000, 0) ++
-      buildChildMap(YahooWoeType.ADMIN2, YahooWoeType.SUBURB, 1000, 0)
-
-    val writer = buildV1Writer[StringWrapper, ChildEntries]("child_map.hfile", factory)
-
-    println("sorting")
-
-    val sortedMapKeys = childMaps.keys.toList.sort(lexicalSort)
-
-    println("sorted")
-   val comp = new ByteArrayComparator()
-
-    sortedMapKeys.map(k => {
-      (serializer.serialize(new StringWrapper().setValue(k.toString)),
-       serializer.serialize(new ChildEntries().setEntries(childMaps(k))))
-   }).toList.sortWith((a, b) => {
-     comp.compare(a._1, b._1) < 0
-   }).foreach({case (k, v) => {
-     writer.append(k, v)
-   }})
-    writer.close()
-    println("done")
   }
 
   // please clean me up, sorry
@@ -473,12 +357,14 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
       filename: String,
       thriftProtocol: TProtocolFactory): HFile.Writer = {
 
-    // this is all weirdly 4sq specific logic :-()
+    // this is all weirdly 4sq specific logic :-(
     def fixName(n: String) = {
       if (n.contains("com.foursquare.twofishes.gen")) {
         n
       } else {
         n.replace("com.foursquare.twofishes", "com.foursquare.twofishes.gen")
+          .replace("com.foursquare.base.thrift", "com.foursquare.base.gen")
+
       }
     }
 

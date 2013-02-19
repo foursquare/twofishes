@@ -3,7 +3,7 @@
  *
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
-package com.foursquare.base.gen;
+package com.foursquare.base.thrift;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -28,16 +28,16 @@ import org.apache.thrift.protocol.*;
 
 // No additional import required for struct/union.
 
-public class ObjectIdListWrapper implements TBase<ObjectIdListWrapper, ObjectIdListWrapper._Fields>, java.io.Serializable, Cloneable {
-  private static final TStruct STRUCT_DESC = new TStruct("ObjectIdListWrapper");
+public class ObjectIdWrapper implements TBase<ObjectIdWrapper, ObjectIdWrapper._Fields>, java.io.Serializable, Cloneable {
+  private static final TStruct STRUCT_DESC = new TStruct("ObjectIdWrapper");
 
-  private static final TField VALUES_FIELD_DESC = new TField("values", TType.LIST, (short)1);
+  private static final TField VALUE_FIELD_DESC = new TField("value", TType.STRING, (short)1);
 
-  public List<ByteBuffer> values;
+  public ByteBuffer value;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
-    VALUES((short)1, "values");
+    VALUE((short)1, "value");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -52,8 +52,8 @@ public class ObjectIdListWrapper implements TBase<ObjectIdListWrapper, ObjectIdL
      */
     public static _Fields findByThriftId(int fieldId) {
       switch(fieldId) {
-        case 1: // VALUES
-          return VALUES;
+        case 1: // VALUE
+          return VALUE;
         default:
           return null;
       }
@@ -98,84 +98,74 @@ public class ObjectIdListWrapper implements TBase<ObjectIdListWrapper, ObjectIdL
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
     Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.VALUES, new FieldMetaData("values", TFieldRequirementType.OPTIONAL, 
-        new ListMetaData(TType.LIST, 
-            new FieldValueMetaData(TType.STRING            , "ThriftObjectId"))));
+    tmpMap.put(_Fields.VALUE, new FieldMetaData("value", TFieldRequirementType.OPTIONAL, 
+        new FieldValueMetaData(TType.STRING        , "ThriftObjectId")));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
-    FieldMetaData.addStructMetaDataMap(ObjectIdListWrapper.class, metaDataMap);
+    FieldMetaData.addStructMetaDataMap(ObjectIdWrapper.class, metaDataMap);
   }
 
-  public ObjectIdListWrapper() {
+  public ObjectIdWrapper() {
   }
 
   /**
    * Performs a deep copy on <i>other</i>.
    */
-  public ObjectIdListWrapper(ObjectIdListWrapper other) {
-    if (other.isSetValues()) {
-      List<ByteBuffer> __this__values = new ArrayList<ByteBuffer>();
-      for (ByteBuffer other_element : other.values) {
-        __this__values.add(other_element);
-      }
-      this.values = __this__values;
+  public ObjectIdWrapper(ObjectIdWrapper other) {
+    if (other.isSetValue()) {
+      this.value = other.value;
     }
   }
 
-  public ObjectIdListWrapper deepCopy() {
-    return new ObjectIdListWrapper(this);
+  public ObjectIdWrapper deepCopy() {
+    return new ObjectIdWrapper(this);
   }
 
   @Override
   public void clear() {
-    this.values = null;
+    this.value = null;
   }
 
-  public int getValuesSize() {
-    return (this.values == null) ? 0 : this.values.size();
+  public byte[] getValue() {
+    setValue(TBaseHelper.rightSize(value));
+    return value.array();
   }
 
-  public java.util.Iterator<ByteBuffer> getValuesIterator() {
-    return (this.values == null) ? null : this.values.iterator();
+  public ByteBuffer BufferForValue() {
+    return value;
   }
 
-  public void addToValues(ByteBuffer elem) {
-    if (this.values == null) {
-      this.values = new ArrayList<ByteBuffer>();
-    }
-    this.values.add(elem);
-  }
-
-  public List<ByteBuffer> getValues() {
-    return this.values;
-  }
-
-  public ObjectIdListWrapper setValues(List<ByteBuffer> values) {
-    this.values = values;
+  public ObjectIdWrapper setValue(byte[] value) {
+    setValue(ByteBuffer.wrap(value));
     return this;
   }
 
-  public void unsetValues() {
-    this.values = null;
+  public ObjectIdWrapper setValue(ByteBuffer value) {
+    this.value = value;
+    return this;
   }
 
-  /** Returns true if field values is set (has been asigned a value) and false otherwise */
-  public boolean isSetValues() {
-    return this.values != null;
+  public void unsetValue() {
+    this.value = null;
   }
 
-  public void setValuesIsSet(boolean value) {
+  /** Returns true if field value is set (has been asigned a value) and false otherwise */
+  public boolean isSetValue() {
+    return this.value != null;
+  }
+
+  public void setValueIsSet(boolean value) {
     if (!value) {
-      this.values = null;
+      this.value = null;
     }
   }
 
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
-    case VALUES:
+    case VALUE:
       if (value == null) {
-        unsetValues();
+        unsetValue();
       } else {
-        setValues((List<ByteBuffer>)value);
+        setValue((ByteBuffer)value);
       }
       break;
 
@@ -184,8 +174,8 @@ public class ObjectIdListWrapper implements TBase<ObjectIdListWrapper, ObjectIdL
 
   public Object getFieldValue(_Fields field) {
     switch (field) {
-    case VALUES:
-      return getValues();
+    case VALUE:
+      return getValue();
 
     }
     throw new IllegalStateException();
@@ -198,8 +188,8 @@ public class ObjectIdListWrapper implements TBase<ObjectIdListWrapper, ObjectIdL
     }
 
     switch (field) {
-    case VALUES:
-      return isSetValues();
+    case VALUE:
+      return isSetValue();
     }
     throw new IllegalStateException();
   }
@@ -208,21 +198,21 @@ public class ObjectIdListWrapper implements TBase<ObjectIdListWrapper, ObjectIdL
   public boolean equals(Object that) {
     if (that == null)
       return false;
-    if (that instanceof ObjectIdListWrapper)
-      return this.equals((ObjectIdListWrapper)that);
+    if (that instanceof ObjectIdWrapper)
+      return this.equals((ObjectIdWrapper)that);
     return false;
   }
 
-  public boolean equals(ObjectIdListWrapper that) {
+  public boolean equals(ObjectIdWrapper that) {
     if (that == null)
       return false;
 
-    boolean this_present_values = true && this.isSetValues();
-    boolean that_present_values = true && that.isSetValues();
-    if (this_present_values || that_present_values) {
-      if (!(this_present_values && that_present_values))
+    boolean this_present_value = true && this.isSetValue();
+    boolean that_present_value = true && that.isSetValue();
+    if (this_present_value || that_present_value) {
+      if (!(this_present_value && that_present_value))
         return false;
-      if (!this.values.equals(that.values))
+      if (!this.value.equals(that.value))
         return false;
     }
 
@@ -234,20 +224,20 @@ public class ObjectIdListWrapper implements TBase<ObjectIdListWrapper, ObjectIdL
     return 0;
   }
 
-  public int compareTo(ObjectIdListWrapper other) {
+  public int compareTo(ObjectIdWrapper other) {
     if (!getClass().equals(other.getClass())) {
       return getClass().getName().compareTo(other.getClass().getName());
     }
 
     int lastComparison = 0;
-    ObjectIdListWrapper typedOther = (ObjectIdListWrapper)other;
+    ObjectIdWrapper typedOther = (ObjectIdWrapper)other;
 
-    lastComparison = Boolean.valueOf(isSetValues()).compareTo(typedOther.isSetValues());
+    lastComparison = Boolean.valueOf(isSetValue()).compareTo(typedOther.isSetValue());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetValues()) {
-      lastComparison = TBaseHelper.compareTo(this.values, typedOther.values);
+    if (isSetValue()) {
+      lastComparison = TBaseHelper.compareTo(this.value, typedOther.value);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -269,19 +259,9 @@ public class ObjectIdListWrapper implements TBase<ObjectIdListWrapper, ObjectIdL
         break;
       }
       switch (field.id) {
-        case 1: // VALUES
-          if (field.type == TType.LIST) {
-            {
-              TList _list0 = iprot.readListBegin();
-              this.values = new ArrayList<ByteBuffer>(_list0.size);
-              for (int _i1 = 0; _i1 < _list0.size; ++_i1)
-              {
-                ByteBuffer _elem2;
-                _elem2 = iprot.readBinary();
-                this.values.add(_elem2);
-              }
-              iprot.readListEnd();
-            }
+        case 1: // VALUE
+          if (field.type == TType.STRING) {
+            this.value = iprot.readBinary();
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -301,17 +281,10 @@ public class ObjectIdListWrapper implements TBase<ObjectIdListWrapper, ObjectIdL
     validate();
 
     oprot.writeStructBegin(STRUCT_DESC);
-    if (this.values != null) {
-      if (isSetValues()) {
-        oprot.writeFieldBegin(VALUES_FIELD_DESC);
-        {
-          oprot.writeListBegin(new TList(TType.STRING, this.values.size()));
-          for (ByteBuffer _iter3 : this.values)
-          {
-            oprot.writeBinary(_iter3);
-          }
-          oprot.writeListEnd();
-        }
+    if (this.value != null) {
+      if (isSetValue()) {
+        oprot.writeFieldBegin(VALUE_FIELD_DESC);
+        oprot.writeBinary(this.value);
         oprot.writeFieldEnd();
       }
     }
@@ -321,15 +294,15 @@ public class ObjectIdListWrapper implements TBase<ObjectIdListWrapper, ObjectIdL
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("ObjectIdListWrapper(");
+    StringBuilder sb = new StringBuilder("ObjectIdWrapper(");
     boolean first = true;
 
-    if (isSetValues()) {
-      sb.append("values:");
-      if (this.values == null) {
+    if (isSetValue()) {
+      sb.append("value:");
+      if (this.value == null) {
         sb.append("null");
       } else {
-        sb.append(this.values);
+        sb.append(this.value);
       }
       first = false;
     }

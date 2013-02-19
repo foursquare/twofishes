@@ -3,7 +3,7 @@
  *
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
-package com.foursquare.base.gen;
+package com.foursquare.base.thrift;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -28,16 +28,16 @@ import org.apache.thrift.protocol.*;
 
 // No additional import required for struct/union.
 
-public class StringWrapper implements TBase<StringWrapper, StringWrapper._Fields>, java.io.Serializable, Cloneable {
-  private static final TStruct STRUCT_DESC = new TStruct("StringWrapper");
+public class ObjectIdListWrapper implements TBase<ObjectIdListWrapper, ObjectIdListWrapper._Fields>, java.io.Serializable, Cloneable {
+  private static final TStruct STRUCT_DESC = new TStruct("ObjectIdListWrapper");
 
-  private static final TField VALUE_FIELD_DESC = new TField("value", TType.STRING, (short)1);
+  private static final TField VALUES_FIELD_DESC = new TField("values", TType.LIST, (short)1);
 
-  public String value;
+  public List<ByteBuffer> values;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
-    VALUE((short)1, "value");
+    VALUES((short)1, "values");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -52,8 +52,8 @@ public class StringWrapper implements TBase<StringWrapper, StringWrapper._Fields
      */
     public static _Fields findByThriftId(int fieldId) {
       switch(fieldId) {
-        case 1: // VALUE
-          return VALUE;
+        case 1: // VALUES
+          return VALUES;
         default:
           return null;
       }
@@ -98,64 +98,84 @@ public class StringWrapper implements TBase<StringWrapper, StringWrapper._Fields
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
     Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.VALUE, new FieldMetaData("value", TFieldRequirementType.OPTIONAL, 
-        new FieldValueMetaData(TType.STRING)));
+    tmpMap.put(_Fields.VALUES, new FieldMetaData("values", TFieldRequirementType.OPTIONAL, 
+        new ListMetaData(TType.LIST, 
+            new FieldValueMetaData(TType.STRING            , "ThriftObjectId"))));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
-    FieldMetaData.addStructMetaDataMap(StringWrapper.class, metaDataMap);
+    FieldMetaData.addStructMetaDataMap(ObjectIdListWrapper.class, metaDataMap);
   }
 
-  public StringWrapper() {
+  public ObjectIdListWrapper() {
   }
 
   /**
    * Performs a deep copy on <i>other</i>.
    */
-  public StringWrapper(StringWrapper other) {
-    if (other.isSetValue()) {
-      this.value = other.value;
+  public ObjectIdListWrapper(ObjectIdListWrapper other) {
+    if (other.isSetValues()) {
+      List<ByteBuffer> __this__values = new ArrayList<ByteBuffer>();
+      for (ByteBuffer other_element : other.values) {
+        __this__values.add(other_element);
+      }
+      this.values = __this__values;
     }
   }
 
-  public StringWrapper deepCopy() {
-    return new StringWrapper(this);
+  public ObjectIdListWrapper deepCopy() {
+    return new ObjectIdListWrapper(this);
   }
 
   @Override
   public void clear() {
-    this.value = null;
+    this.values = null;
   }
 
-  public String getValue() {
-    return this.value;
+  public int getValuesSize() {
+    return (this.values == null) ? 0 : this.values.size();
   }
 
-  public StringWrapper setValue(String value) {
-    this.value = value;
+  public java.util.Iterator<ByteBuffer> getValuesIterator() {
+    return (this.values == null) ? null : this.values.iterator();
+  }
+
+  public void addToValues(ByteBuffer elem) {
+    if (this.values == null) {
+      this.values = new ArrayList<ByteBuffer>();
+    }
+    this.values.add(elem);
+  }
+
+  public List<ByteBuffer> getValues() {
+    return this.values;
+  }
+
+  public ObjectIdListWrapper setValues(List<ByteBuffer> values) {
+    this.values = values;
     return this;
   }
 
-  public void unsetValue() {
-    this.value = null;
+  public void unsetValues() {
+    this.values = null;
   }
 
-  /** Returns true if field value is set (has been asigned a value) and false otherwise */
-  public boolean isSetValue() {
-    return this.value != null;
+  /** Returns true if field values is set (has been asigned a value) and false otherwise */
+  public boolean isSetValues() {
+    return this.values != null;
   }
 
-  public void setValueIsSet(boolean value) {
+  public void setValuesIsSet(boolean value) {
     if (!value) {
-      this.value = null;
+      this.values = null;
     }
   }
 
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
-    case VALUE:
+    case VALUES:
       if (value == null) {
-        unsetValue();
+        unsetValues();
       } else {
-        setValue((String)value);
+        setValues((List<ByteBuffer>)value);
       }
       break;
 
@@ -164,8 +184,8 @@ public class StringWrapper implements TBase<StringWrapper, StringWrapper._Fields
 
   public Object getFieldValue(_Fields field) {
     switch (field) {
-    case VALUE:
-      return getValue();
+    case VALUES:
+      return getValues();
 
     }
     throw new IllegalStateException();
@@ -178,8 +198,8 @@ public class StringWrapper implements TBase<StringWrapper, StringWrapper._Fields
     }
 
     switch (field) {
-    case VALUE:
-      return isSetValue();
+    case VALUES:
+      return isSetValues();
     }
     throw new IllegalStateException();
   }
@@ -188,21 +208,21 @@ public class StringWrapper implements TBase<StringWrapper, StringWrapper._Fields
   public boolean equals(Object that) {
     if (that == null)
       return false;
-    if (that instanceof StringWrapper)
-      return this.equals((StringWrapper)that);
+    if (that instanceof ObjectIdListWrapper)
+      return this.equals((ObjectIdListWrapper)that);
     return false;
   }
 
-  public boolean equals(StringWrapper that) {
+  public boolean equals(ObjectIdListWrapper that) {
     if (that == null)
       return false;
 
-    boolean this_present_value = true && this.isSetValue();
-    boolean that_present_value = true && that.isSetValue();
-    if (this_present_value || that_present_value) {
-      if (!(this_present_value && that_present_value))
+    boolean this_present_values = true && this.isSetValues();
+    boolean that_present_values = true && that.isSetValues();
+    if (this_present_values || that_present_values) {
+      if (!(this_present_values && that_present_values))
         return false;
-      if (!this.value.equals(that.value))
+      if (!this.values.equals(that.values))
         return false;
     }
 
@@ -214,20 +234,20 @@ public class StringWrapper implements TBase<StringWrapper, StringWrapper._Fields
     return 0;
   }
 
-  public int compareTo(StringWrapper other) {
+  public int compareTo(ObjectIdListWrapper other) {
     if (!getClass().equals(other.getClass())) {
       return getClass().getName().compareTo(other.getClass().getName());
     }
 
     int lastComparison = 0;
-    StringWrapper typedOther = (StringWrapper)other;
+    ObjectIdListWrapper typedOther = (ObjectIdListWrapper)other;
 
-    lastComparison = Boolean.valueOf(isSetValue()).compareTo(typedOther.isSetValue());
+    lastComparison = Boolean.valueOf(isSetValues()).compareTo(typedOther.isSetValues());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetValue()) {
-      lastComparison = TBaseHelper.compareTo(this.value, typedOther.value);
+    if (isSetValues()) {
+      lastComparison = TBaseHelper.compareTo(this.values, typedOther.values);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -249,9 +269,19 @@ public class StringWrapper implements TBase<StringWrapper, StringWrapper._Fields
         break;
       }
       switch (field.id) {
-        case 1: // VALUE
-          if (field.type == TType.STRING) {
-            this.value = iprot.readString();
+        case 1: // VALUES
+          if (field.type == TType.LIST) {
+            {
+              TList _list0 = iprot.readListBegin();
+              this.values = new ArrayList<ByteBuffer>(_list0.size);
+              for (int _i1 = 0; _i1 < _list0.size; ++_i1)
+              {
+                ByteBuffer _elem2;
+                _elem2 = iprot.readBinary();
+                this.values.add(_elem2);
+              }
+              iprot.readListEnd();
+            }
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -271,10 +301,17 @@ public class StringWrapper implements TBase<StringWrapper, StringWrapper._Fields
     validate();
 
     oprot.writeStructBegin(STRUCT_DESC);
-    if (this.value != null) {
-      if (isSetValue()) {
-        oprot.writeFieldBegin(VALUE_FIELD_DESC);
-        oprot.writeString(this.value);
+    if (this.values != null) {
+      if (isSetValues()) {
+        oprot.writeFieldBegin(VALUES_FIELD_DESC);
+        {
+          oprot.writeListBegin(new TList(TType.STRING, this.values.size()));
+          for (ByteBuffer _iter3 : this.values)
+          {
+            oprot.writeBinary(_iter3);
+          }
+          oprot.writeListEnd();
+        }
         oprot.writeFieldEnd();
       }
     }
@@ -284,15 +321,15 @@ public class StringWrapper implements TBase<StringWrapper, StringWrapper._Fields
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("StringWrapper(");
+    StringBuilder sb = new StringBuilder("ObjectIdListWrapper(");
     boolean first = true;
 
-    if (isSetValue()) {
-      sb.append("value:");
-      if (this.value == null) {
+    if (isSetValues()) {
+      sb.append("values:");
+      if (this.values == null) {
         sb.append("null");
       } else {
-        sb.append(this.value);
+        sb.append(this.values);
       }
       first = false;
     }

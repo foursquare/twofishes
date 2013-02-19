@@ -1,5 +1,7 @@
 #!/bin/sh
 
+export PATH=/home/blackmad/packages/thrift-0.5.0-finagle/compiler/cpp:$PATH
+
 if thrift -version | grep -v 0.5.0 > /dev/null; then
   echo "You need thrift compiler version 0.5.0, with finagle extensions"
   echo "see: https://github.com/mariusaeriksen/thrift-0.5.0-finagle"
