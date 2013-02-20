@@ -8,3 +8,9 @@
 4793846|-14815000
 # give bali the island a big boost over indian state of bali
 1650534|1000000
+# bump up modeling queens as a city
+5133273|4000000
+# brooklyn city
+5110302|4000000
+# manhattan city
+5128581|4000000
