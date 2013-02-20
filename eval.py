@@ -126,12 +126,14 @@ class GeocodeFetch(threading.Thread):
             evallog('bounds in B, but not A')
           elif 'bounds' in geomA and 'bounds' in geomB and geomA['bounds'] != geomB['bounds']:
             evallog('bounds differ')
+          elif (len(responseA['interpretations']) != len(responseB['interpretations'])):
+            evallog('# of interpretations differ')
 
       self.queue.task_done()
 
 if __name__ == '__main__':
   print "going"
-  for i in range(10):
+  for i in range(20):
     t = GeocodeFetch(queue)
     t.setDaemon(True)
     t.start()
