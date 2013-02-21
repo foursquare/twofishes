@@ -136,21 +136,16 @@ object GeometryUtils {
 
     initialCovering.foreach(cellid => {
       val level = cellid.level()
-      println("cell %s at level %s".format(cellid, level))
       allCells.add(cellid)
 
       if (level > minS2Level) {
-        println("this cell was above the min level %s, so let's get parents".format(minS2Level))
-        minS2Level.to(maxS2Level, levelMod.getOrElse(1)).foreach(l => {
-          println("getting parent at level %s".format(l))
+        minS2Level.until(maxS2Level, levelMod.getOrElse(1)).foreach(l => {
           allCells.add(cellid.parent(l))
         })
       }
 
       if (level < maxS2Level) {
-        println("this cell was below the max level %s, so let's get children".format(maxS2Level))
-        level.to(minS2Level, -levelMod.getOrElse(1)).foreach(l => {
-          println("getting children at level %s".format(l))
+        level.until(minS2Level, -levelMod.getOrElse(1)).foreach(l => {
           var c = cellid.childBegin(l)
           var num = 0
           while (!c.equals(cellid.childEnd())) {
@@ -158,7 +153,6 @@ object GeometryUtils {
             c = c.next()
             num += 1
           }
-          println("added %d children".format(num))
         })
       }
     })

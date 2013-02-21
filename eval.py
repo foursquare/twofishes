@@ -81,9 +81,16 @@ class GeocodeFetch(threading.Thread):
         responseKey = '%s:%s' % (getId(responseA), getId(responseB))
         if responseKey not in evalLogDict:
           evalLogDict[responseKey] = []
-        message = ('%s: %s<br>' % (params['query'], message) +
-                   ' -- <a href="%s">serverA</a>' % (serverA + '/static/geocoder.html#' + params['query'][0]) +
-                   ' - <a href="%s">serverB</a><p>' % (serverB + '/static/geocoder.html#' + params['query'][0]))
+
+        query = ''
+        if 'query' in params:
+          query = params['query'][0]
+        elif 'll' in params:
+          query = params['ll'][0]
+
+        message = ('%s: %s<br>' % (query, message) +
+                   ' -- <a href="%s">serverA</a>' % (serverA + '/static/geocoder.html#' + query) +
+                   ' - <a href="%s">serverB</a><p>' % (serverB + '/static/geocoder.html#' + query))
         evalLogDict[responseKey].append(message)
 
       if (responseA == None and responseB == None):
