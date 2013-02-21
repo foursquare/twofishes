@@ -5,6 +5,7 @@ package com.foursquare.twofishes.util
 import com.google.common.geometry.{S2CellId, S2LatLng, S2LatLngRect, S2Polygon, S2PolygonBuilder, S2RegionCoverer}
 import com.vividsolutions.jts.geom.{Geometry, Polygon}
 import java.io.{ByteArrayOutputStream, DataOutputStream}
+import scala.collection.mutable.HashSet
 import scala.collection.JavaConversions._
 
 object GeometryUtils {
@@ -125,11 +126,43 @@ object GeometryUtils {
       maxS2Level: Int,
       levelMod: Option[Int] = None
     ): Seq[S2CellId] = {
-    (for {
-      level <- minS2Level.to(maxS2Level)
-      if ((level - minS2Level) % levelMod.getOrElse(1)) == 0
-    } yield {
-      s2PolygonCovering(geomCollection, level, level)
-    }).flatten.toSet.toSeq
+    val initialCovering = s2PolygonCovering(geomCollection,
+      minS2Level = minS2Level,
+      maxS2Level = maxS2Level,
+      levelMod = levelMod
+    )
+
+    val allCells = new HashSet[S2CellId]
+
+    initialCovering.foreach(cellid => {
+      val level = cellid.level()
+      println("cell %s at level %s".format(cellid, level))
+      allCells.add(cellid)
+
+      if (level > minS2Level) {
+        println("this cell was above the min level %s, so let's get parents".format(minS2Level))
+        minS2Level.to(maxS2Level, levelMod.getOrElse(1)).foreach(l => {
+          println("getting parent at level %s".format(l))
+          allCells.add(cellid.parent(l))
+        })
+      }
+
+      if (level < maxS2Level) {
+        println("this cell was below the max level %s, so let's get children".format(maxS2Level))
+        level.to(minS2Level, -levelMod.getOrElse(1)).foreach(l => {
+          println("getting children at level %s".format(l))
+          var c = cellid.childBegin(l)
+          var num = 0
+          while (!c.equals(cellid.childEnd())) {
+            allCells.add(c)
+            c = c.next()
+            num += 1
+          }
+          println("added %d children".format(num))
+        })
+      }
+    })
+
+    allCells.toSeq
   }
 }
