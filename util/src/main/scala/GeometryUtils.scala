@@ -102,7 +102,7 @@ object GeometryUtils {
     builder.assemblePolygon()
   }
 
-  def s2PolygonCovering(geomCollection: Geometry, 
+  def s2PolygonCovering(geomCollection: Geometry,
       minS2Level: Int,
       maxS2Level: Int,
       maxCellsHintWhichMightBeIgnored: Option[Int] = None,
@@ -111,7 +111,7 @@ object GeometryUtils {
     val s2poly = s2Polygon(geomCollection)
     val coverer =  new S2RegionCoverer
     coverer.setMinLevel(minS2Level)
-    coverer.setMaxLevel(maxS2Level)   
+    coverer.setMaxLevel(maxS2Level)
     maxCellsHintWhichMightBeIgnored.foreach(coverer.setMaxCells)
     levelMod.foreach(m => coverer.setLevelMod(m))
     val coveringCells = new java.util.ArrayList[com.google.common.geometry.S2CellId]
@@ -121,7 +121,7 @@ object GeometryUtils {
 
   // curious if doing a single covering and blowing it out by hand would
   // be significantly faster
-  def coverAtAllLevels(geomCollection: Geometry, 
+  def coverAtAllLevels(geomCollection: Geometry,
       minS2Level: Int,
       maxS2Level: Int,
       levelMod: Option[Int] = None
@@ -139,17 +139,21 @@ object GeometryUtils {
       allCells.add(cellid)
 
       if (level > minS2Level) {
-        minS2Level.until(maxS2Level, levelMod.getOrElse(1)).foreach(l => {
-          allCells.add(cellid.parent(l))
+        level.until(minS2Level, levelMod.getOrElse(1)).drop(1).foreach(l => {
+          val p = cellid.parent(l)
+          println("cellid %s, parent %s".format(cellid, p, l))
+          allCells.add(p)
         })
       }
 
       if (level < maxS2Level) {
-        level.until(minS2Level, -levelMod.getOrElse(1)).foreach(l => {
+        level.until(maxS2Level, -levelMod.getOrElse(1)).drop(1).foreach(l => {
+          println("cellid %s is at level %s, splitting into level %s".format(cellid, level, l))
           var c = cellid.childBegin(l)
           var num = 0
-          while (!c.equals(cellid.childEnd())) {
+          while (!c.equals(cellid.childEnd(l))) {
             allCells.add(c)
+            println("cellid %s, child %s at level %s".format(cellid, c, l))
             c = c.next()
             num += 1
           }
@@ -159,4 +163,19 @@ object GeometryUtils {
 
     allCells.toSeq
   }
+
+  def coverAtAllLevels_Naive(geomCollection: Geometry,
+      minS2Level: Int,
+      maxS2Level: Int,
+      levelMod: Option[Int] = None
+    ): Seq[S2CellId] = {
+
+    minS2Level.to(maxS2Level, levelMod.getOrElse(1)).flatMap(l =>
+     s2PolygonCovering(geomCollection,
+        minS2Level = l,
+        maxS2Level = l,
+        levelMod = levelMod
+     )
+   ).distinct
+ }
 }
