@@ -102,7 +102,7 @@ object GeometryUtils {
     builder.assemblePolygon()
   }
 
-  def s2PolygonCovering(geomCollection: Geometry, 
+  def s2PolygonCovering(geomCollection: Geometry,
       minS2Level: Int,
       maxS2Level: Int,
       maxCellsHintWhichMightBeIgnored: Option[Int] = None,
@@ -111,7 +111,7 @@ object GeometryUtils {
     val s2poly = s2Polygon(geomCollection)
     val coverer =  new S2RegionCoverer
     coverer.setMinLevel(minS2Level)
-    coverer.setMaxLevel(maxS2Level)   
+    coverer.setMaxLevel(maxS2Level)
     maxCellsHintWhichMightBeIgnored.foreach(coverer.setMaxCells)
     levelMod.foreach(m => coverer.setLevelMod(m))
     val coveringCells = new java.util.ArrayList[com.google.common.geometry.S2CellId]
@@ -119,7 +119,13 @@ object GeometryUtils {
     coveringCells
   }
 
+<<<<<<< HEAD
   def coverAtAllLevels(geomCollection: Geometry, 
+=======
+  // curious if doing a single covering and blowing it out by hand would
+  // be significantly faster
+  def coverAtAllLevels(geomCollection: Geometry,
+>>>>>>> benchmark for s2 covering
       minS2Level: Int,
       maxS2Level: Int,
       levelMod: Option[Int] = None
@@ -140,7 +146,7 @@ object GeometryUtils {
       // max = 12 (smaller)
       if (level > minS2Level) {
         // I'm smaller, if I'm 12, generate 10, 8
-        level.to(minS2Level, -levelMod.getOrElse(1)).drop(1).foreach(l => {
+        minS2Level.until(level, -levelMod.getOrElse(1)).foreach(l => {
           allCells.add(cellid.parent(l))
         })
       }
@@ -152,6 +158,7 @@ object GeometryUtils {
           var c = cellid.childBegin(l)
           while (!c.equals(cellid.childEnd(l))) {
             allCells.add(c)
+            println("cellid %s, child %s at level %s".format(cellid, c, l))
             c = c.next()
           }
         })
@@ -160,4 +167,19 @@ object GeometryUtils {
 
     allCells.toSeq
   }
+
+  def coverAtAllLevels_Naive(geomCollection: Geometry,
+      minS2Level: Int,
+      maxS2Level: Int,
+      levelMod: Option[Int] = None
+    ): Seq[S2CellId] = {
+
+    minS2Level.to(maxS2Level, levelMod.getOrElse(1)).flatMap(l =>
+     s2PolygonCovering(geomCollection,
+        minS2Level = l,
+        maxS2Level = l,
+        levelMod = levelMod
+     )
+   ).distinct
+ }
 }

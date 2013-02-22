@@ -57,8 +57,8 @@ object GeocoderBuild extends Build {
           val host = (s \ "id").text
           val realm = if (host == sonatype._2) sonatype._1 else "Unknown"
           Credentials(realm, host, (s \ "username").text, (s \ "password").text)
-        })  
-      }   
+        })
+      }
       val ivyCredentials   = Path.userHome / ".ivy2" / ".credentials"
       val mavenCredentials = Path.userHome / ".m2"   / "settings.xml"
       (ivyCredentials.asFile, mavenCredentials.asFile) match {
@@ -168,12 +168,12 @@ import com.novus.salat.global._
 
   lazy val util = Project(id = "util",
       base = file("util"),
-      settings = defaultSettings ++ Seq(
+      settings = defaultSettings ++ assemblySettings ++ Seq(
         publishArtifact := true,
         libraryDependencies ++= Seq(
           "org.geotools" % "gt-shapefile" % "8.0-M1",
-          "org.geotools" % "gt-epsg-hsql" % "8.0-M1"
-
+          "org.geotools" % "gt-epsg-hsql" % "8.0-M1",
+          "com.google.caliper" % "caliper" % "0.5-rc1"
         )
       )
     ) dependsOn(interface)
