@@ -1372,6 +1372,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
         Some(store.getLevelMod)
       ).map(_.id())
     }
+    Stats.addMetric("num_geom_cells", cellids.size)
     doReverseGeocode(cellids, geom)
   }
 

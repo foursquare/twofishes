@@ -3,6 +3,8 @@ package com.foursquare.twofishes
 
 import collection.JavaConverters._
 import com.foursquare.twofishes.util.Helpers
+import com.twitter.ostrich.admin._
+import com.twitter.ostrich.admin.config._
 import com.twitter.finagle.{Service, SimpleFilter}
 import com.twitter.finagle.builder.{Server, ServerBuilder}
 import com.twitter.finagle.http.Http
@@ -231,6 +233,7 @@ object GeocodeFinagleServer {
 
     println("serving finagle-thrift on port %d".format(config.thriftServerPort))
     println("serving http/json on port %d".format(config.thriftServerPort + 1))
+    println("serving debug info on port %d".format(config.thriftServerPort + 2))
 
     val server: Server = ServerBuilder()
       .bindTo(new InetSocketAddress(config.thriftServerPort))
@@ -238,6 +241,15 @@ object GeocodeFinagleServer {
       .reportTo(new FoursquareStatsReceiver)
       .name("geocoder")
       .build(service)
+
+    val adminConfig = new AdminServiceConfig {
+      httpPort = config.thriftServerPort + 2
+      statsNodes = new StatsConfig {
+        reporters = new TimeSeriesCollectorConfig
+      }
+    }
+    val runtime = RuntimeEnvironment(this, Nil.toArray)
+    val admin = adminConfig()(runtime)
 
     if (config.runHttpServer) {
       ServerBuilder()
