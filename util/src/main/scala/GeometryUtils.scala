@@ -119,9 +119,7 @@ object GeometryUtils {
     coveringCells
   }
 
-  // curious if doing a single covering and blowing it out by hand would
-  // be significantly faster
-  def coverAtAllLevels(geomCollection: Geometry,
+  def coverAtAllLevels(geomCollection: Geometry, 
       minS2Level: Int,
       maxS2Level: Int,
       levelMod: Option[Int] = None
@@ -139,24 +137,25 @@ object GeometryUtils {
       val level = cellid.level()
       allCells += cellid
 
+      // min = 8 (bigger)
+      // max = 12 (smaller)
       if (level > minS2Level) {
+        // I'm smaller, if I'm 12, generate 10, 8
         level.until(minS2Level, levelMod.getOrElse(1)).drop(1).foreach(l => {
           val p = cellid.parent(l)
-          println("cellid %s, parent %s".format(cellid, p, l))
           allCells += p
         })
       }
 
       if (level < maxS2Level) {
+        // I'm bigger
+        // if I'm 8, generate 10, and 12 children
         level.until(maxS2Level, -levelMod.getOrElse(1)).drop(1).foreach(l => {
-          println("cellid %s is at level %s, splitting into level %s".format(cellid, level, l))
           var c = cellid.childBegin(l)
           var num = 0
           while (!c.equals(cellid.childEnd(l))) {
             allCells += c
-            println("cellid %s, child %s at level %s".format(cellid, c, l))
             c = c.next()
-            num += 1
           }
         })
       }

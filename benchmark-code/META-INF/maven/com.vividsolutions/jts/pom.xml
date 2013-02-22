@@ -1,0 +1,170 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.vividsolutions</groupId>
+    <artifactId>jts</artifactId>
+    <packaging>jar</packaging>
+    <version>1.12</version>
+    <name>JTS Topology Suite</name>
+    <description>
+        The JTS Topology Suite is an API for modelling and
+        manipulating 2-dimensional linear geometry. It provides
+        numerous geometric predicates and functions. JTS
+        conforms to the Simple Features Specification for
+        SQL published by the Open GIS Consortium.
+    </description>
+
+    <url>http://sourceforge.net/projects/jts-topo-suite</url>
+    <scm>
+        <connection>scm:svn:https://jts-topo-suite.svn.sourceforge.net/svnroot/jts-topo-suite/tags/Version_1.12/jts/</connection>
+        <url>http://jts-topo-suite.svn.sourceforge.net/viewvc/jts-topo-suite/tags/Version_1.12/jts/</url>
+    </scm>
+
+    <licenses>
+        <license>
+            <name>Lesser General Public License (LGPL)</name>
+            <url>http://www.gnu.org/copyleft/lesser.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>dr_jts</id>
+            <name>Martin Davis</name>
+            <organization>Refractions Research</organization>
+            <organizationUrl>http://www.refractions.net</organizationUrl>
+            <roles>
+                <role>architect</role>
+                <role>developer</role>
+            </roles>
+        </developer>
+    </developers>
+
+    <mailingLists>
+        <mailingList>
+            <name>jts-topo-suite-user</name>
+            <subscribe>https://lists.sourceforge.net/lists/listinfo/jts-topo-suite-user</subscribe>
+            <archive>http://sourceforge.net/mailarchive/forum.php?forum_name=jts-topo-suite-user</archive>
+        </mailingList>
+    </mailingLists>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>1.5</version>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>/Users/michael/coding/jts/jts-topo-suite/tags/Version_1.12/jts/java/src/</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>com/vividsolutions/jtsplugin/**</exclude>
+                        <exclude>com/vividsolutions/jtstest/**</exclude>
+                    </excludes>
+                    <source>1.5</source>
+                    <target>1.5</target>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.1.2</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <excludes>
+                        <exclude>com/vividsolutions/jtstest/**</exclude>
+                        <exclude>com/vividsolutions/jtsplugin/**</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.8</version>
+                <configuration>
+                    <excludePackageNames>com.vividsolutions.jtstest:com.vividsolutions.jtsplugin</excludePackageNames>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>xerces</groupId>
+            <artifactId>xercesImpl</artifactId>
+            <version>2.4.0</version>
+        </dependency>
+    </dependencies>
+
+    <distributionManagement>
+        <repository>
+            <id>jts-staging</id>
+            <name>JTS Staging Repo</name>
+            <url>http://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+        </repository>
+    </distributionManagement>
+
+    <profiles>
+        <profile>
+            <id>release-signed-artifacts</id>
+            <activation>
+                <property>
+                    <name>performRelease</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+</project>

@@ -1,0 +1,115 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>net.java.dev.jsr-275</groupId>
+  <artifactId>jsr-275</artifactId>
+  <packaging>jar</packaging>
+  <version>1.0-beta-2</version>
+  <name>jsr-275</name>
+  <url>http://maven.apache.org</url>
+  <properties>
+     <maven.compile.encoding>UTF-8</maven.compile.encoding>
+     <project.css>${project.build.sourceDirectory}\..\api</project.css>
+  </properties>
+  <build>
+    <directory>target</directory>
+    <outputDirectory>bin</outputDirectory>
+    <finalName>${artifactId}-${version}</finalName>
+    <testOutputDirectory>target/test-classes</testOutputDirectory>
+    <sourceDirectory>src</sourceDirectory>
+  	<plugins>
+  	  <plugin>
+       <inherited>true</inherited>
+       <groupId>org.apache.maven.plugins</groupId>
+       <artifactId>maven-javadoc-plugin</artifactId>
+       <executions>
+         <execution>
+           <id>attach-javadocs</id>
+           <phase>generate-resources</phase>
+           <goals>
+             <goal>jar</goal>
+           </goals>
+         </execution>
+       </executions>
+     </plugin>
+     <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>  
+         <artifactId>maven-compiler-plugin</artifactId>  
+         <configuration>  
+           <source>1.5</source>  
+           <target>1.5</target>  
+           <encoding>UTF-8</encoding>
+         </configuration>  
+     </plugin>  
+  </plugins>
+  <extensions>
+      <extension>
+        <groupId>org.jvnet.wagon-svn</groupId>
+        <artifactId>wagon-svn</artifactId>
+        <version>1.8</version>
+      </extension>
+    </extensions>
+  </build>
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.4</version>
+        <configuration>
+          <overview>src/overview.html</overview>
+          <sourcepath>${project.build.sourceDirectory}</sourcepath>
+          <windowtitle>JSR-275 v${version} API</windowtitle>
+          <author>true</author>
+          <version>true</version>
+          <charset></charset>
+          <verbose>true</verbose>
+          <charset>${maven.compile.encoding}</charset>
+          <encoding>${maven.compile.encoding}</encoding>
+         <docencoding>${maven.compile.encoding}</docencoding>
+         <stylesheetfile>${project.css}/stylesheet.css</stylesheetfile>
+         <splitindex>true</splitindex>
+       </configuration>
+     </plugin>
+   </plugins>
+  </reporting>
+  
+  <licenses>
+    <license>
+      <name>BSD License</name>
+      <url>http://jscience.org/doc/license.txt</url>
+      <distribution>repo</distribution>
+      <comments>A business-friendly OSS license</comments>
+    </license>
+  </licenses>
+  
+  <dependencies>
+  </dependencies>
+  
+  <repositories>
+	  <repository>
+	  <id>maven2-repository.dev.java.net</id>
+	  <name>Java.net Repository for Maven</name>
+	  <url>http://download.java.net/maven/2/</url>
+	  <layout>default</layout>
+	</repository>
+  </repositories>
+  
+  <distributionManagement>
+    <repository>
+      <id>java.net-m2-repository</id>
+     <url>java-net:/maven2-repository/trunk/www/repository/</url>
+    </repository>
+  </distributionManagement>
+</project>
