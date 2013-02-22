@@ -119,48 +119,6 @@ object GeometryUtils {
     coveringCells
   }
 
-  def coverAtAllLevels(geomCollection: Geometry, 
-      minS2Level: Int,
-      maxS2Level: Int,
-      levelMod: Option[Int] = None
-    ): Seq[S2CellId] = {
-    val initialCovering = s2PolygonCovering(geomCollection,
-      minS2Level = minS2Level,
-      maxS2Level = maxS2Level,
-      levelMod = levelMod
-    )
-
-    val allCells = new HashSet[S2CellId]
-
-    initialCovering.foreach(cellid => {
-      val level = cellid.level()
-      allCells.add(cellid)
-
-      // min = 8 (bigger)
-      // max = 12 (smaller)
-      if (level > minS2Level) {
-        // I'm smaller, if I'm 12, generate 10, 8
-        minS2Level.until(level, levelMod.getOrElse(1)).foreach(l => {
-          allCells.add(cellid.parent(l))
-        })
-      }
-
-      if (level < maxS2Level) {
-        // I'm bigger
-        // if I'm 8, generate 10, and 12 children
-        level.to(maxS2Level, levelMod.getOrElse(1)).drop(1).foreach(l => {
-          var c = cellid.childBegin(l)
-          while (!c.equals(cellid.childEnd(l))) {
-            allCells.add(c)
-            c = c.next()
-          }
-        })
-      }
-    })
-
-    allCells.toSeq
-  }
-
   def coverAtAllLevels_Naive(geomCollection: Geometry,
       minS2Level: Int,
       maxS2Level: Int,
