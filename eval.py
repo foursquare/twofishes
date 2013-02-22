@@ -12,7 +12,7 @@ import threading
 
 # TODO: move this to thrift
 
-serverA = "http://prodproxy-b-2:35010"
+serverA = "http://prodapp-geocoder-10:35000"
 serverB = "http://dev-blackmad:8081"
 
 outputFile = open('eval-%s.html' % datetime.datetime.now(), 'w')
@@ -51,10 +51,10 @@ class GeocodeFetch(threading.Thread):
     while True:
       line = self.queue.get()
 
-      if count % 1000 == 0:
+      if count % 100 == 0:
         print 'processed %d queries' % count
-      print 'processed %d queries' % count
-      print 'procesing: %s' % line
+      #print 'processed %d queries' % count
+      #print 'procesing: %s' % line
       count += 1
 
       param = line.strip()
@@ -62,7 +62,8 @@ class GeocodeFetch(threading.Thread):
 
       if '?' not in param:
         param = '?' +  urllib.urlencode([('query', param)])
-      params = urlparse.parse_qs(param[param.find('?')+1:])
+      param_str = param[param.find('?')+1:]
+      params = urlparse.parse_qs(param_str)
      
       responseA = getResponse(serverA, param)
       responseB = getResponse(serverB, param)
@@ -89,8 +90,8 @@ class GeocodeFetch(threading.Thread):
           query = params['ll'][0]
 
         message = ('%s: %s<br>' % (query, message) +
-                   ' -- <a href="%s">serverA</a>' % (serverA + '/static/geocoder.html#' + query) +
-                   ' - <a href="%s">serverB</a><p>' % (serverB + '/static/geocoder.html#' + query))
+                   ' -- <a href="%s">serverA</a>' % (serverA + '/static/geocoder.html#' + param_str) +
+                   ' - <a href="%s">serverB</a><p>' % (serverB + '/static/geocoder.html#' + param_str))
         evalLogDict[responseKey].append(message)
 
       if (responseA == None and responseB == None):
@@ -114,7 +115,7 @@ class GeocodeFetch(threading.Thread):
         if interpA['feature']['ids'] != interpB['feature']['ids'] and \
             interpA['feature']['woeType'] != 11 and \
             interpB['feature']['woeType'] != 11:
-          evallog('ids changed')
+          evallog('ids changed %s -> %s' % (interpA['feature']['ids'], interpB['feature']['ids']))
         else:
           geomA = interpA['feature']['geometry']
           geomB = interpB['feature']['geometry']
@@ -140,7 +141,7 @@ class GeocodeFetch(threading.Thread):
 
 if __name__ == '__main__':
   print "going"
-  for i in range(20):
+  for i in range(10):
     t = GeocodeFetch(queue)
     t.setDaemon(True)
     t.start()
