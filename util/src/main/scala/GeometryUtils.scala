@@ -119,7 +119,7 @@ object GeometryUtils {
     coveringCells
   }
 
-  def coverAtAllLevels(geomCollection: Geometry, 
+  def coverAtAllLevels(geomCollection: Geometry,
       minS2Level: Int,
       maxS2Level: Int,
       levelMod: Option[Int] = None
@@ -207,4 +207,19 @@ object GeometryUtils {
 
     allCells.result.toSeq
   }
+
+  def coverAtAllLevels_Naive(geomCollection: Geometry,
+      minS2Level: Int,
+      maxS2Level: Int,
+      levelMod: Option[Int] = None
+    ): Seq[S2CellId] = {
+
+    minS2Level.to(maxS2Level, levelMod.getOrElse(1)).flatMap(l =>
+     s2PolygonCovering(geomCollection,
+        minS2Level = l,
+        maxS2Level = l,
+        levelMod = levelMod
+     )
+   ).distinct
+ }
 }
