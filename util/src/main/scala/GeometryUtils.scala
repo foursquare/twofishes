@@ -119,7 +119,7 @@ object GeometryUtils {
     coveringCells
   }
 
-  def coverAtAllLevels(geomCollection: Geometry,
+  def coverAtAllLevels(geomCollection: Geometry, 
       minS2Level: Int,
       maxS2Level: Int,
       levelMod: Option[Int] = None
