@@ -119,6 +119,52 @@ object GeometryUtils {
     coveringCells
   }
 
+  // curious if doing a single covering and blowing it out by hand would
+  // be significantly faster
+  def coverAtAllLevels(geomCollection: Geometry,
+      minS2Level: Int,
+      maxS2Level: Int,
+      levelMod: Option[Int] = None
+    ): Seq[S2CellId] = {
+    val initialCovering = s2PolygonCovering(geomCollection,
+      minS2Level = minS2Level,
+      maxS2Level = maxS2Level,
+      levelMod = levelMod
+    )
+
+    val allCells = Set.newBuilder[S2CellId]
+    allCells.sizeHint(initialCovering.size*(1+4+16))
+
+    initialCovering.foreach(cellid => {
+      val level = cellid.level()
+      allCells += cellid
+
+      if (level > minS2Level) {
+        level.until(minS2Level, levelMod.getOrElse(1)).drop(1).foreach(l => {
+          val p = cellid.parent(l)
+          println("cellid %s, parent %s".format(cellid, p, l))
+          allCells += p
+        })
+      }
+
+      if (level < maxS2Level) {
+        level.until(maxS2Level, -levelMod.getOrElse(1)).drop(1).foreach(l => {
+          println("cellid %s is at level %s, splitting into level %s".format(cellid, level, l))
+          var c = cellid.childBegin(l)
+          var num = 0
+          while (!c.equals(cellid.childEnd(l))) {
+            allCells += c
+            println("cellid %s, child %s at level %s".format(cellid, c, l))
+            c = c.next()
+            num += 1
+          }
+        })
+      }
+    })
+
+    allCells.result.toSeq
+  }
+
   def coverAtAllLevels_Naive(geomCollection: Geometry,
       minS2Level: Int,
       maxS2Level: Int,
@@ -126,11 +172,40 @@ object GeometryUtils {
     ): Seq[S2CellId] = {
 
     minS2Level.to(maxS2Level, levelMod.getOrElse(1)).flatMap(l =>
-     s2PolygonCovering(geomCollection,
+      s2PolygonCovering(geomCollection,
         minS2Level = l,
         maxS2Level = l,
         levelMod = levelMod
-     )
-   ).distinct
- }
+      )
+    ).toSet.toSeq
+  }
+
+  def coverAtAllLevels_LessNaive(geomCollection: Geometry,
+      minS2Level: Int,
+      maxS2Level: Int,
+      levelMod: Option[Int] = None
+    ): Seq[S2CellId] = {
+    val initialCovering = s2PolygonCovering(geomCollection,
+      minS2Level = maxS2Level,
+      maxS2Level = maxS2Level,
+      levelMod = levelMod
+    )
+
+    val allCells = Set.newBuilder[S2CellId]
+    allCells.sizeHint(initialCovering.size*(1+4+16))
+
+    initialCovering.foreach(cellid => {
+      val level = cellid.level()
+      allCells += cellid
+
+      if (level > minS2Level) {
+        level.until(minS2Level, levelMod.getOrElse(1)).drop(1).foreach(l => {
+          val p = cellid.parent(l)
+          allCells += p
+        })
+      }
+    })
+
+    allCells.result.toSeq
+  }
 }
