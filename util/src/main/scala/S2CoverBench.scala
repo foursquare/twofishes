@@ -24,7 +24,7 @@ class S2CoverBenchmark extends SimpleBenchmark {
   for use in console:
 
   import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory}
-  def geocode2(points: Seq[Coordinate], radius: Int, levelMod: Int): Unit = points.foreach(p => {
+  def geocode2(points: Seq[Coordinate], radius: Int, levelMod: Int) = points.map(p => {
     println(p)
     import com.vividsolutions.jts.util.GeometricShapeFactory
     import com.foursquare.twofishes.util.GeometryUtils
@@ -61,23 +61,6 @@ class S2CoverBenchmark extends SimpleBenchmark {
      })
   }
 
-  def geocode_Naive(radius: Int): Unit = {
-    val sizeDegrees = radius / 111319.9 // req.radius / ...
-    points.foreach(c => {
-      println(c)
-      val gsf = new GeometricShapeFactory()
-      gsf.setSize(sizeDegrees)
-      gsf.setNumPoints(100)
-      gsf.setCentre(c) //new Coordinate(40.74, -74.0))//req.ll.lng, req.ll.lat))
-      val geom = gsf.createCircle()
-      GeometryUtils.coverAtAllLevels_Naive(
-        geom,
-        8, //store.getMinS2Level,
-        12, //store.getMaxS2Level,
-        Some(2) //Some(store.getLevelMod)
-      ).map(_.id())
-     })
-  }
 
   def helpTime[T](f: Unit => T)(reps: Int): Int = {
     var i = 0
@@ -91,19 +74,10 @@ class S2CoverBenchmark extends SimpleBenchmark {
   }
 
   def time100(reps: Int): Unit = helpTime(Unit => geocode(100))(reps)
-  def time100_Naive(reps: Int): Unit = helpTime(Unit => geocode_Naive(100))(reps)
-
   def time1k(reps: Int): Unit = helpTime(Unit => geocode(1000))(reps)
-  def time1k_Naive(reps: Int): Unit = helpTime(Unit => geocode_Naive(1000))(reps)
-
   def time2k(reps: Int): Unit = helpTime(Unit => geocode(2*1000))(reps)
-  def time2k_Naive(reps: Int): Unit = helpTime(Unit => geocode_Naive(2*1000))(reps)
-
   def time5k(reps: Int): Unit = helpTime(Unit => geocode(5*1000))(reps)
-  def time5k_Naive(reps: Int): Unit = helpTime(Unit => geocode_Naive(5*1000))(reps)
-
   def time10k(reps: Int): Unit = helpTime(Unit => geocode(10*1000))(reps)
-  def time10k_Naive(reps: Int): Unit = helpTime(Unit => geocode_Naive(10*1000))(reps)
 }
 
 /** To run this benchmark:

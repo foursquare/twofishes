@@ -119,67 +119,67 @@ object GeometryUtils {
     coveringCells
   }
 
-  def coverAtAllLevels(geomCollection: Geometry, 
-      minS2Level: Int,
-      maxS2Level: Int,
-      levelMod: Option[Int] = None
-    ): Seq[S2CellId] = {
-    val initialCovering = s2PolygonCovering(geomCollection,
-      minS2Level = minS2Level,
-      maxS2Level = maxS2Level,
-      levelMod = levelMod
-    )
+  // def coverAtAllLevels(geomCollection: Geometry, 
+  //     minS2Level: Int,
+  //     maxS2Level: Int,
+  //     levelMod: Option[Int] = None
+  //   ): Seq[S2CellId] = {
+  //   val initialCovering = s2PolygonCovering(geomCollection,
+  //     minS2Level = minS2Level,
+  //     maxS2Level = maxS2Level,
+  //     levelMod = levelMod
+  //   )
 
-    val allCells = Set.newBuilder[S2CellId]
-    allCells.sizeHint(initialCovering.size*(1+4+16))
+  //   val allCells = Set.newBuilder[S2CellId]
+  //   allCells.sizeHint(initialCovering.size*(1+4+16))
 
-    initialCovering.foreach(cellid => {
-      val level = cellid.level()
-      allCells += cellid
+  //   initialCovering.foreach(cellid => {
+  //     val level = cellid.level()
+  //     allCells += cellid
 
-      // min = 8 (bigger)
-      // max = 12 (smaller)
-      if (level > minS2Level) {
-        // I'm smaller, if I'm 12, generate 10, 8
-        level.until(minS2Level, levelMod.getOrElse(1)).drop(1).foreach(l => {
-          val p = cellid.parent(l)
-          allCells += p
-        })
-      }
+  //     // min = 8 (bigger)
+  //     // max = 12 (smaller)
+  //     if (level > minS2Level) {
+  //       // I'm smaller, if I'm 12, generate 10, 8
+  //       level.until(minS2Level, levelMod.getOrElse(1)).drop(1).foreach(l => {
+  //         val p = cellid.parent(l)
+  //         allCells += p
+  //       })
+  //     }
 
-      if (level < maxS2Level) {
-        // I'm bigger
-        // if I'm 8, generate 10, and 12 children
-        level.until(maxS2Level, -levelMod.getOrElse(1)).drop(1).foreach(l => {
-          var c = cellid.childBegin(l)
-          var num = 0
-          while (!c.equals(cellid.childEnd(l))) {
-            allCells += c
-            c = c.next()
-          }
-        })
-      }
-    })
+  //     if (level < maxS2Level) {
+  //       // I'm bigger
+  //       // if I'm 8, generate 10, and 12 children
+  //       level.until(maxS2Level, -levelMod.getOrElse(1)).drop(1).foreach(l => {
+  //         var c = cellid.childBegin(l)
+  //         var num = 0
+  //         while (!c.equals(cellid.childEnd(l))) {
+  //           allCells += c
+  //           c = c.next()
+  //         }
+  //       })
+  //     }
+  //   })
 
-    allCells.result.toSeq
-  }
+  //   allCells.result.toSeq
+  // }
 
-  def coverAtAllLevels_Naive(geomCollection: Geometry,
-      minS2Level: Int,
-      maxS2Level: Int,
-      levelMod: Option[Int] = None
-    ): Seq[S2CellId] = {
+  // def coverAtAllLevels_Naive(geomCollection: Geometry,
+  //     minS2Level: Int,
+  //     maxS2Level: Int,
+  //     levelMod: Option[Int] = None
+  //   ): Seq[S2CellId] = {
 
-    minS2Level.to(maxS2Level, levelMod.getOrElse(1)).flatMap(l =>
-      s2PolygonCovering(geomCollection,
-        minS2Level = l,
-        maxS2Level = l,
-        levelMod = levelMod
-      )
-    ).toSet.toSeq
-  }
+  //   minS2Level.to(maxS2Level, levelMod.getOrElse(1)).flatMap(l =>
+  //     s2PolygonCovering(geomCollection,
+  //       minS2Level = l,
+  //       maxS2Level = l,
+  //       levelMod = levelMod
+  //     )
+  //   ).toSet.toSeq
+  // }
 
-  def coverAtAllLevels_LessNaive(geomCollection: Geometry,
+  def coverAtAllLevels(geomCollection: Geometry,
       minS2Level: Int,
       maxS2Level: Int,
       levelMod: Option[Int] = None
@@ -197,8 +197,12 @@ object GeometryUtils {
       val level = cellid.level()
       allCells += cellid
 
+      // println("looking at cell %s at level %d".format(cellid, level))
+
       if (level > minS2Level) {
-        level.until(minS2Level, levelMod.getOrElse(1)).drop(1).foreach(l => {
+        // println("need parents")
+        level.to(minS2Level, -levelMod.getOrElse(1)).drop(1).foreach(l => {
+          // println("adding parent at level %d".format(l))
           val p = cellid.parent(l)
           allCells += p
         })
@@ -207,19 +211,4 @@ object GeometryUtils {
 
     allCells.result.toSeq
   }
-
-  def coverAtAllLevels_Naive(geomCollection: Geometry,
-      minS2Level: Int,
-      maxS2Level: Int,
-      levelMod: Option[Int] = None
-    ): Seq[S2CellId] = {
-
-    minS2Level.to(maxS2Level, levelMod.getOrElse(1)).flatMap(l =>
-     s2PolygonCovering(geomCollection,
-        minS2Level = l,
-        maxS2Level = l,
-        levelMod = levelMod
-     )
-   ).distinct
- }
 }
