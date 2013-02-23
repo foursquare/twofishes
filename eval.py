@@ -12,7 +12,8 @@ import threading
 
 # TODO: move this to thrift
 
-serverA = "http://prodapp-geocoder-10:35000"
+#serverA = "http://prodapp-geocoder-10:35000"
+serverA = "http://dev-blackmad:8081"
 serverB = "http://dev-blackmad:8081"
 
 outputFile = open('eval-%s.html' % datetime.datetime.now(), 'w')
@@ -141,7 +142,7 @@ class GeocodeFetch(threading.Thread):
 
 if __name__ == '__main__':
   print "going"
-  for i in range(10):
+  for i in range(50):
     t = GeocodeFetch(queue)
     t.setDaemon(True)
     t.start()
