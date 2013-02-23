@@ -1228,7 +1228,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
 
   def logDuration[T](ostrichKey: String, what: String)(f: => T): T = {
     val (rv, duration) = Duration.inNanoseconds(f)
-    Stats.addMetric(ostrichKey, duration.inMicroseconds.toInt)
+    Stats.addMetric(ostrichKey + "_usec", duration.inMicroseconds.toInt)
     if (req.debug > 0) {
       logger.ifDebug(what + " in %s µs / %s ms".format(duration.inMicroseconds, duration.inMilliseconds))
     }
