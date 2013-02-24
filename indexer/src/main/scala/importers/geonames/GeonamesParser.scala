@@ -276,7 +276,7 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
     })
 
     val ids: List[StoredFeatureId] = List(geonameId).flatMap(a => a) ++ 
-      concordanceMap.get(geonameId.toString).flatMap(id =>
+      concordanceMap.get(geonameId.get.toString).flatMap(id =>
         if (id.contains(":")) {
           val parts = id.split(":")
           Some(StoredFeatureId(parts(0), parts(1)))
