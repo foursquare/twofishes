@@ -19,7 +19,7 @@ import scalaj.collection.Implicits._
 class HFileStorageService(basepath: String, shouldPreload: Boolean) extends GeocodeStorageReadService {
   val nameMap = new NameIndexHFileInput(basepath, shouldPreload)
   val oidMap = new GeocodeRecordHFileInput(basepath, shouldPreload)
-  val geomMap = new GeometryHFileInput(basepath, shouldPreload)
+  val geomMapOpt = GeometryHFileInput.readInput(basepath, shouldPreload)
   val s2mapOpt = ReverseGeocodeHFileInput.readInput(basepath, shouldPreload)
   val slugFidMap = new SlugFidHFileInput(basepath, shouldPreload)
 
@@ -59,7 +59,7 @@ class HFileStorageService(basepath: String, shouldPreload: Boolean) extends Geoc
   }
 
   def getPolygonByObjectId(id: ObjectId): Option[Array[Byte]] = {
-    geomMap.get(id)
+    geomMapOpt.flatMap(_.get(id))
   }
 
   def getMinS2Level: Int = s2map.minS2Level
@@ -224,6 +224,16 @@ class ReverseGeocodeHFileInput(basepath: String, shouldPreload: Boolean)
       deserializeBytes(geometries, bytes)
       geometries.cells
     })
+  }
+}
+
+object GeometryHFileInput {
+  def readInput(basepath: String, shouldPreload: Boolean) = {
+    if (new File(basepath, "geometry.hfile").exists()) {
+      Some(new GeometryHFileInput(basepath, shouldPreload))
+    } else {
+      None
+    }
   }
 }
 
