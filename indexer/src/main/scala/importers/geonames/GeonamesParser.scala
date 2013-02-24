@@ -174,16 +174,16 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
   lazy val aliasTable = new TsvHelperFileParser("data/custom/aliases.txt",
     "data/private/aliases.txt")
   // geonameid --> new center
-  lazy val moveTable = new GeoIdTsvHelperFileParser("data/custom/moves.txt")
+  lazy val moveTable = new GeoIdTsvHelperFileParser(geonameIdNamespace, "data/custom/moves.txt")
   // geonameid -> polygon
   lazy val polygonTable: Map[StoredFeatureId, Geometry] = PolygonLoader.load(geonameIdNamespace)
   // geonameid -> name to be deleted
-  lazy val nameDeleteTable = new GeoIdTsvHelperFileParser("data/custom/name-deletes.txt")
+  lazy val nameDeleteTable = new GeoIdTsvHelperFileParser(geonameIdNamespace, "data/custom/name-deletes.txt")
   // list of geoids (geonameid:XXX) to skip indexing
   lazy val ignoreList: List[StoredFeatureId] = scala.io.Source.fromFile(new File("data/custom/ignores.txt"))
     .getLines.toList.map(l => StoredFeatureId.fromString(l, Some(geonameIdNamespace)))
 
-  lazy val concordanceMap = new GeoIdTsvHelperFileParser("data/computed/concordances.txt")
+  lazy val concordanceMap = new GeoIdTsvHelperFileParser(geonameIdNamespace, "data/computed/concordances.txt")
 
   val bboxDirs = List(
     new File("data/computed/bboxes/"),

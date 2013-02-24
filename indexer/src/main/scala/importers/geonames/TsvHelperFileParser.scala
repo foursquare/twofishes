@@ -15,6 +15,10 @@ class GeoIdTsvHelperFileParser(defaultNamespace: String, filenames: String*) ext
     def markUsed { used = true}
   }
 
+  if (filenames.isEmpty) {
+    throw new Exception("no filenames specified for parse, maybe you forgot to add defaultNamespace")
+  }
+
   lazy val gidMap = new scala.collection.mutable.HashMap[String,TableEntry]()
   def parseInput() {
     filenames.foreach(filename => {
@@ -49,6 +53,8 @@ class GeoIdTsvHelperFileParser(defaultNamespace: String, filenames: String*) ext
     })
   }
 
+  parseInput()
+
   def get(key: StoredFeatureId): List[String] = {
     gidMap.get(key.toString) match {
       case Some(v) => {
@@ -75,6 +81,10 @@ class TsvHelperFileParser(filenames: String*) extends TsvHelperFileParserLogger 
   }
 
   lazy val gidMap = new scala.collection.mutable.HashMap[String,TableEntry]()
+
+  if (filenames.isEmpty) {
+    throw new Exception("no filenames specified for parse, maybe you forgot to add defaultNamespace")
+  }
 
   def parseInput() {
     filenames.foreach(filename => {
