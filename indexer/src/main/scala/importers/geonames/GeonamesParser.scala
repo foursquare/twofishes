@@ -19,6 +19,7 @@ import scalaj.collection.Implicits._
 
 // TODO
 // stop using string representations of "a:b" featureids everywhere, PLEASE
+// please, I'm begging you, be more disciplined about featureids in the parser
 
 object GeonamesParser {
   val geonameIdNamespace = "geonameid"
@@ -181,6 +182,8 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
   // list of geoids (geonameid:XXX) to skip indexing
   lazy val ignoreList: List[String] = scala.io.Source.fromFile(new File("data/custom/ignores.txt")).getLines.toList
 
+  lazy val concordanceMap = new TsvHelperFileParser("data/computed/concordances.txt")
+
   val bboxDirs = List(
     new File("data/computed/bboxes/"),
     new File("data/private/bboxes/")
@@ -272,7 +275,13 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
       }
     })
 
-    val ids: List[StoredFeatureId] = List(geonameId).flatMap(a => a)
+    val ids: List[StoredFeatureId] = List(geonameId).flatMap(a => a) ++ 
+      concordanceMap.get(geonameId.toString).flatMap(id =>
+        if (id.contains(":")) {
+          val parts = id.split(":")
+          Some(StoredFeatureId(parts(0), parts(1)))
+        } else { None }
+      )
 
     var displayNames: List[DisplayName] = processFeatureName(
       feature.countryCode, "en", feature.name, true, false)
