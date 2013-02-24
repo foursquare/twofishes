@@ -18,8 +18,9 @@ else:
   print "building buildings for the whole world"
   input = open("data/downloaded/allCountries.txt")
 
-# output = open("data/supplemental/buildings.txt", "w")
-output = open("data/custom/buildings.txt", "w")
+if not os.path.exists('data/supplemental'):
+  os.mkdir("data/supplemental")
+output = open("data/supplemental/buildings.txt", "w")
 
 gidList = set()
 
