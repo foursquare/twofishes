@@ -36,12 +36,12 @@ else
    curl -o $FILE http://download.geonames.org/export/dump/admin2Codes.txt
 fi
 
-file=data/downloaded/countryinfo.txt
+file=data/downloaded/countryInfo.txt
 if [ -f $file ];
 then
    echo "file $file exists."
 else
-   curl -o $file http://download.geonames.org/export/dump/countryinfo.txt
+   curl -o $file http://download.geonames.org/export/dump/countryInfo.txt
 fi
 
 file=data/downloaded/ne_10m_populated_places_simple.dbf

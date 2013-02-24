@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import os
+import os.path
 import sys
 from optparse import OptionParser
 import datetime
@@ -50,7 +51,8 @@ print(cmd)
 
 if not options.dry_run:
   os.system(cmd)
-  os.unlink("latest")
+  if os.path.exists("latest"):
+    os.unlink("latest")
   os.symlink(basepath, "latest")
 
 
