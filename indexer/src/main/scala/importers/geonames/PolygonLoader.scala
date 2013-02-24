@@ -14,7 +14,7 @@ import scala.collection.JavaConversions._
 import scalaj.collection.Implicits._
 
 object PolygonLoader {
- def load(): Map[String, Geometry] = {
+ def load(defaultNamespace: String): Map[StoredFeatureId, Geometry] = {
     val polygonDirs = List(
       new File("data/computed/polygons"),
       new File("data/private/polygons")
@@ -44,11 +44,7 @@ object PolygonLoader {
         })
       }
     }).map({case (k, v) => {
-      if (!k.contains(":")) {
-        ("%s:%s".format(GeonamesParser.geonameIdNamespace, k), v)
-      } else {
-        (k, v)
-      }
+      (StoredFeatureId.fromString(k, Some(defaultNamespace)), v)
     }}).toMap
   }
 }

@@ -14,8 +14,8 @@ case class AlternateNameEntry(
 )
 
 object AlternateNamesReader extends SimplePrintLogger {
-  def readAlternateNamesFile(filename: String): HashMap[String, List[AlternateNameEntry]] = {
-    val alternateNamesMap = new HashMap[String, List[AlternateNameEntry]]
+  def readAlternateNamesFile(filename: String): HashMap[StoredFeatureId, List[AlternateNameEntry]] = {
+    val alternateNamesMap = new HashMap[StoredFeatureId, List[AlternateNameEntry]]
     val lines = scala.io.Source.fromFile(new File(filename)).getLines
     lines.zipWithIndex.foreach({case (line, index) => {
       if (index % 100000 == 0) {
@@ -34,8 +34,8 @@ object AlternateNamesReader extends SimplePrintLogger {
           val isShortName = parts.lift(5).exists(_ == "1")
 
           val fid = StoredFeatureId(GeonamesParser.geonameIdNamespace, geonameid)
-          val names = alternateNamesMap.getOrElseUpdate(fid.toString, Nil)
-          alternateNamesMap(fid.toString) = AlternateNameEntry(
+          val names = alternateNamesMap.getOrElseUpdate(fid, Nil)
+          alternateNamesMap(fid) = AlternateNameEntry(
             nameId = nameid,
             name = name,
             lang = lang,

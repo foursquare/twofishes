@@ -17,6 +17,14 @@ class SlugIndexer {
   val slugEntryMap = new SlugEntryMap
   var missingSlugList = new HashSet[String]
 
+  def getBestSlug(id: StoredFeatureId): Option[String] = {
+    idToSlugMap.get(id.toString)
+  }
+
+  def addMissingId(id: StoredFeatureId) {
+    missingSlugList.add(id.toString)
+  }
+
   Helpers.duration("readSlugs") { readSlugs() }
 
   def readSlugs() {

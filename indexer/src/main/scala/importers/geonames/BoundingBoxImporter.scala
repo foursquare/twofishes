@@ -11,8 +11,8 @@ import scala.collection.mutable.HashMap
 // Please fix at some point.
 
 object BoundingBoxTsvImporter extends LogHelper {
-  def parse(filenames: List[File]): HashMap[String, BoundingBox] = {
-    val map = new HashMap[String, BoundingBox]
+  def parse(filenames: List[File]): HashMap[StoredFeatureId, BoundingBox] = {
+    val map = new HashMap[StoredFeatureId, BoundingBox]
     filenames.foreach(file => {
       val lines = scala.io.Source.fromFile(file).getLines
       lines.foreach(line => {
@@ -30,7 +30,7 @@ object BoundingBoxTsvImporter extends LogHelper {
             val s = parts(2).toDouble
             val e = parts(3).toDouble
             val n = parts(4).toDouble
-            map(StoredFeatureId(namespace, id).toString) = BoundingBox(Point(n, e), Point(s, w))
+            map(StoredFeatureId(namespace, id)) = BoundingBox(Point(n, e), Point(s, w))
           } catch {
             case e => 
             logger.error("%s: %s".format(line, e))

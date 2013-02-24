@@ -39,6 +39,25 @@ case class StoredFeatureId(
   override def toString = "%s:%s".format(namespace, id)
 }
 
+object StoredFeatureId {
+  def fromString(s: String, defaultNamespace: Option[String] = None) = {
+    val parts = s.split(":")
+    val k = if (parts.size == 2) {
+      parts(0)
+    } else {
+      defaultNamespace.get
+    }
+
+    val v = if (parts.size == 2) {
+      parts(1)
+    } else {
+      parts(0)
+    }
+
+    StoredFeatureId(k, v)
+  }
+}
+
 case class Point(lat: Double, lng: Double)
 
 case class BoundingBox(

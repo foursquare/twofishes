@@ -32,10 +32,10 @@ object GeonamesParser {
 
   var hasPolygonList = new HashSet[String]
 
-  lazy val naturalEarthPopulatedPlacesMap: Map[Int, SimpleFeature] = {
+  lazy val naturalEarthPopulatedPlacesMap: Map[StoredFeatureId, SimpleFeature] = {
     new ShapefileIterator("data/downloaded/ne_10m_populated_places_simple.shp").flatMap(f => {
       f.propMap.get("geonameid").map(id => {
-        (id.toDouble.toInt, f)
+        (StoredFeatureId.fromString(id.toDouble.toInt.toString, Some(geonameIdNamespace)), f)
       })
     }).toMap
   }
@@ -168,21 +168,22 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
   // tokenlist
   lazy val deletesList: List[String] = scala.io.Source.fromFile(new File("data/custom/deletes.txt")).getLines.toList
   // geonameid -> boost value
-  lazy val boostTable = new TsvHelperFileParser("data/custom/boosts.txt",
+  lazy val boostTable = new GeoIdTsvHelperFileParser(geonameIdNamespace, "data/custom/boosts.txt",
     "data/private/boosts.txt")
   // geonameid -> alias
   lazy val aliasTable = new TsvHelperFileParser("data/custom/aliases.txt",
     "data/private/aliases.txt")
   // geonameid --> new center
-  lazy val moveTable = new TsvHelperFileParser("data/custom/moves.txt")
+  lazy val moveTable = new GeoIdTsvHelperFileParser("data/custom/moves.txt")
   // geonameid -> polygon
-  lazy val polygonTable: Map[String, Geometry] = PolygonLoader.load()
+  lazy val polygonTable: Map[StoredFeatureId, Geometry] = PolygonLoader.load(geonameIdNamespace)
   // geonameid -> name to be deleted
-  lazy val nameDeleteTable = new TsvHelperFileParser("data/custom/name-deletes.txt")
+  lazy val nameDeleteTable = new GeoIdTsvHelperFileParser("data/custom/name-deletes.txt")
   // list of geoids (geonameid:XXX) to skip indexing
-  lazy val ignoreList: List[String] = scala.io.Source.fromFile(new File("data/custom/ignores.txt")).getLines.toList
+  lazy val ignoreList: List[StoredFeatureId] = scala.io.Source.fromFile(new File("data/custom/ignores.txt"))
+    .getLines.toList.map(l => StoredFeatureId.fromString(l, Some(geonameIdNamespace)))
 
-  lazy val concordanceMap = new TsvHelperFileParser("data/computed/concordances.txt")
+  lazy val concordanceMap = new GeoIdTsvHelperFileParser("data/computed/concordances.txt")
 
   val bboxDirs = List(
     new File("data/computed/bboxes/"),
@@ -239,7 +240,7 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
   def addDisplayNameToNameIndex(dn: DisplayName, fid: StoredFeatureId, record: Option[GeocodeRecord]) {
     val name = NameNormalizer.normalize(dn.name)
 
-    if (nameDeleteTable.get(fid.toString).exists(_ == dn.name)) {
+    if (nameDeleteTable.get(fid).exists(_ == dn.name)) {
       return
     }
 
@@ -273,10 +274,10 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
       } else {
         StoredFeatureId(geonameIdNamespace, id)
       }
-    })
+    }).get
 
-    val ids: List[StoredFeatureId] = List(geonameId).flatMap(a => a) ++ 
-      concordanceMap.get(geonameId.get.toString).flatMap(id =>
+    val ids: List[StoredFeatureId] = List(geonameId) ++ 
+      concordanceMap.get(geonameId).flatMap(id =>
         if (id.contains(":")) {
           val parts = id.split(":")
           Some(StoredFeatureId(parts(0), parts(1)))
@@ -306,9 +307,7 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
     }
 
     // Build names
-    val aliasedNames: List[String] = feature.geonameid.toList.flatMap(gid => {
-      aliasTable.get(gid)
-    })
+    val aliasedNames: List[String] = aliasTable.get(geonameId)
 
     // val allNames = feature.allNames ++ aliasedNames
     // val allModifiedNames = rewriteNames(allNames)
@@ -319,7 +318,7 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
       displayNames ::= DisplayName("en", n, FeatureNameFlags.ALT_NAME.getValue)
     )
 
-    displayNames ++= alternateNamesMap.getOrElse(geonameId.get.toString, Nil).flatMap(altName => {
+    displayNames ++= alternateNamesMap.getOrElse(geonameId, Nil).flatMap(altName => {
       processFeatureName(
         feature.countryCode, altName.lang, altName.name, altName.isPrefName, altName.isShortName)
     })
@@ -342,11 +341,9 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
 
     val boost: Option[Int] =
       feature.extraColumns.get("boost").map(_.toInt) orElse
-      feature.geonameid.flatMap(gid => {
-        boostTable.get(gid).headOption.flatMap(boost =>
+        boostTable.get(geonameId).headOption.flatMap(boost =>
           TryO { boost.toInt }
         )
-      }) 
 
     val bbox = feature.extraColumns.get("bbox").flatMap(bboxStr => {
       // west, south, east, north
@@ -360,37 +357,32 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
           None
         }
       }
-    }) orElse bboxTable.get(geonameId.get.toString)
+    }) orElse bboxTable.get(geonameId)
 
     var lat = feature.latitude
     var lng = feature.longitude
 
-    feature.geonameid.foreach(gid => {
-      val latlngs = moveTable.get(gid)
-      if (latlngs.size > 0) {
-        lat = latlngs(0).toDouble
-        lng = latlngs(1).toDouble
-      }
-    })
+    val latlngs = moveTable.get(geonameId)
+    if (latlngs.size > 0) {
+      lat = latlngs(0).toDouble
+      lng = latlngs(1).toDouble
+    }
 
     val canGeocode = feature.extraColumns.get("canGeocode").map(_.toInt).getOrElse(1) > 0
 
     val polygonExtraEntry: Option[Geometry] = feature.extraColumns.get("geometry").map(polygon => {
       wktReader.read(polygon)
     })
-    val polygonTableEntry: Option[Geometry] = polygonTable.get(geonameId.get.toString)
+    val polygonTableEntry: Option[Geometry] = polygonTable.get(geonameId)
     val polygon: Option[Array[Byte]] = (polygonTableEntry orElse polygonExtraEntry).map(geom =>
       wkbWriter.write(geom))
 
-    val slug: Option[String] = geonameId.flatMap(gid => {
-      slugIndexer.idToSlugMap.get(gid.toString)
-    })
+    val slug: Option[String] = slugIndexer.getBestSlug(geonameId)
+
     if (slug.isEmpty &&
       List(YahooWoeType.TOWN, YahooWoeType.SUBURB, YahooWoeType.COUNTRY, YahooWoeType.ADMIN1, YahooWoeType.ADMIN2).has(feature.featureClass.woeType)) {
-      geonameId.foreach(gid => slugIndexer.missingSlugList.add(gid.toString))
+      slugIndexer.missingSlugList.add(geonameId)
     }
-
-    val geonameIntId = TryO { feature.geonameid.getOrElse("-1").toInt } 
 
     var attributesSet = false
     lazy val attributes = {
@@ -398,7 +390,7 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
       new GeocodeFeatureAttributes()
     }
 
-    geonameIntId.flatMap(naturalEarthPopulatedPlacesMap.get).map(sfeature => {
+    naturalEarthPopulatedPlacesMap.get(geonameId).map(sfeature => {
       sfeature.propMap.get("adm0cap").foreach(v => 
         attributes.setAdm0cap(v.toDouble.toInt == 1)
       )
@@ -431,9 +423,8 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
 
     val objectId = (
       for {
-        fid <- geonameId
-        if fid.namespace == geonameIdNamespace
-        idInt <- Helpers.TryO(fid.id.toInt)
+        idInt <- Helpers.TryO(geonameId.id.toInt)
+        if geonameId.namespace == geonameIdNamespace
       } yield {
         // let's call geonames data
         objectIdFromLong((1 << 32) + idInt)
@@ -466,7 +457,7 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
     store.insert(record)
 
     displayNames.foreach(n =>
-      addDisplayNameToNameIndex(n, geonameId.get, Some(record))
+      addDisplayNameToNameIndex(n, geonameId, Some(record))
     )
 
     record
@@ -504,7 +495,7 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
     }})
   }
 
-  var alternateNamesMap = new HashMap[String, List[AlternateNameEntry]]
+  var alternateNamesMap = new HashMap[StoredFeatureId, List[AlternateNameEntry]]
   def loadAlternateNames() {
     alternateNamesMap = AlternateNamesReader.readAlternateNamesFile(
       "data/downloaded/alternateNames.txt")
