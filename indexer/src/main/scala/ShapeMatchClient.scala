@@ -106,11 +106,17 @@ object CommandLineMatcher {
         opt("s", "query_suffix", "string to append to all queries, like a countrycode",
           { v: String => querySuffix = Some(v) } )
 
-        opt("c", "colnames", "comma separated list of column names",
+        opt("c", "colnames", "comma separated list of column names to join to make geocode query",
           { v: String => queryColumnNames = v.split(",").toList } )
 
-        opt("w", "woe_restricts", "comma separated list of woe type names to restrict searches",
-          { v: String => woeRestricts = Some(v.split(",").toList.map(YahooWoeType.valueOf)) } )
+        opt("w", "woe_restricts", "comma separated list of woe type names to restrict searches (like SUBURB,TOWN or 22,7)",
+          { v: String => woeRestricts = Some(v.split(",").toList.map(v =>
+            Helpers.TryO ( v.toInt ) match {
+              case Some(intV) => YahooWoeType.findByValue(intV)
+              case None => YahooWoeType.valueOf(v)
+            }
+          ))
+        })
 
         opt("parser", "custom parser to use for makign queries. avail: nps",
           { v: String => parserName = v } )
@@ -123,6 +129,9 @@ object CommandLineMatcher {
       // arguments are bad, usage message will have been displayed
       System.exit(1)
     }
+
+    inputFilename = inputFilename.replace("~", System.getProperty("user.home"))
+    outputFilename = outputFilename.replace("~", System.getProperty("user.home"))
 
     if (parserName == "nps") {
       new NPSDataMatcher(new GeocoderFinagleThiftClient(host, port).client,
