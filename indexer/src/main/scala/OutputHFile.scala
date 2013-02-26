@@ -280,7 +280,28 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     buildPolygonIndex()
   }
 
-  def buildPolygonFeatureIndex(groupSize: Int) {
+  def buildPolygonFeatureIndex(groupSize: Int, includeParents: Boolean) {
+    class ParentMap {
+      val fidMap = new HashMap[String, Option[GeocodeFeature]]
+
+      def get(fid: String): Option[GeocodeFeature] = {
+        if (!fidMap.contains(fid)) {
+          val featureOpt = MongoGeocodeDAO.find(MongoDBObject("ids" -> fid)).toList.headOption
+          fidMap(fid) = featureOpt.map(_.toGeocodeServingFeature.feature)
+        }
+
+        fidMap.getOrElseUpdate(fid, None)
+      }
+    }
+
+    val parentMap = new ParentMap()
+
+    def findAndFixParents(servingFeature: GeocodeServingFeature) {
+      servingFeature.setParents(
+        servingFeature.scoringFeatures.parents.flatMap(p => parentMap.get(p))
+      )
+    }
+
     val polygons = 
       MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
         .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
@@ -295,9 +316,14 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
         println("written %d files of %d features, total: %d".format(index / groupSize, groupSize, index))
       }
 
+      val servingFeature = p.toGeocodeServingFeature
+
+      if (includeParents) {
+        findAndFixParents(servingFeature)
+      }
       writer.append(
         serializer.serialize(new StringWrapper().setValue(p._id.toString)),
-        serializer.serialize(p.toGeocodeServingFeature)
+        serializer.serialize(servingFeature)
       )
       
       index += 1
