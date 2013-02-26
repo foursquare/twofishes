@@ -339,14 +339,11 @@ abstract class GeocodeMatcher(client: Geocoder.ServiceToClient, inputFilename: S
         }
 
         if (!geonameids.isEmpty) {
+          println("successfully matched " + req)
           val writeFeature = outFeatureWriter.next()
           val attributes = shp.getAttributes()
-          //println(attributes)
           attributes.add(geonameids.mkString)
-          //println(attributes.size)
-          //println(attributes)
           writeFeature.setAttributes(attributes)
-          //writeFeature.setAttribute("geonameid", geonameid)
           outFeatureWriter.write()
         } else {
           println("failed to match " + req)
