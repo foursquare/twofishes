@@ -287,7 +287,11 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
       def get(fid: String): Option[GeocodeFeature] = {
         if (!fidMap.contains(fid)) {
           val featureOpt = MongoGeocodeDAO.find(MongoDBObject("ids" -> fid)).toList.headOption
-          fidMap(fid) = featureOpt.map(_.toGeocodeServingFeature.feature)
+          fidMap(fid) = featureOpt.map(f => {
+            val feature = f.toGeocodeServingFeature.feature
+            feature.geometry.unsetWkbGeometry()
+            feature
+          })
         }
 
         fidMap.getOrElseUpdate(fid, None)

@@ -1376,6 +1376,17 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     doReverseGeocode(cellids, geom)
   }
 
+  def timeResponse(ostrichKey: String)(f: GeocodeResponse) = {
+    val (rv, duration) = Duration.inNanoseconds(f)
+    Stats.addMetric(ostrichKey + "_usec", duration.inMicroseconds.toInt)
+    Stats.addMetric(ostrichKey + "_msec", duration.inMilliseconds.toInt)
+    if (rv.interpretations.size > 0) {
+      Stats.addMetric(ostrichKey + "_with_results_usec", duration.inMicroseconds.toInt)
+      Stats.addMetric(ostrichKey + "_with_results_msec", duration.inMilliseconds.toInt)
+    }
+    rv
+  }
+
   def reverseGeocode(): GeocodeResponse = {
     Stats.incr("revgeo-requests", 1)
     if (req.ll != null) {
@@ -1386,11 +1397,11 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
         gsf.setNumPoints(100)
         gsf.setCentre(new Coordinate(req.ll.lng, req.ll.lat))
         val geom = gsf.createCircle()
-        Stats.time("revgeo-geom") {
+        timeResponse("revgeo-geom") {
           doGeometryReverseGeocode(geom)
         }
       } else {
-        Stats.time("revgeo-point") {
+        timeResponse("revgeo-point") {
           reverseGeocodePoint(req.ll)
         }
       }
