@@ -119,7 +119,7 @@ object GeometryUtils {
     coveringCells
   }
 
-  // def coverAtAllLevels(geomCollection: Geometry, 
+  // def coverAtAllLevels(geomCollection: Geometry,
   //     minS2Level: Int,
   //     maxS2Level: Int,
   //     levelMod: Option[Int] = None
@@ -191,7 +191,13 @@ object GeometryUtils {
     )
 
     val allCells = Set.newBuilder[S2CellId]
-    allCells.sizeHint(initialCovering.size*(1+4+16))
+    // The final set of cells will be at most all the parents of the cells in
+    // the initial covering. Wolfram alpha says that'll top out at 4/3 the
+    // initial size:
+    // http://www.wolframalpha.com/input/?i=sum+from+0+to+30+of+1%2F%284%5En%29.
+    // In practice, it'll be less than that since we don't ask for all the
+    // levels. But this is a reasonable upper bound.
+    allCells.sizeHint((initialCovering.size*4)/3)
 
     initialCovering.foreach(cellid => {
       val level = cellid.level()
