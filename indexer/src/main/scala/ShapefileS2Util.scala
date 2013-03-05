@@ -9,12 +9,10 @@ import scala.collection.mutable
 import scalaj.collection.Imports._
 
 object ShapefileS2Util {
-  def clipGeometryToCell(
-    geom: Geometry,
-    cellid: S2CellId): (Geometry, Boolean) = {
-    val cell= new S2Cell(cellid)
+  def fullGeometryForCell(cellid: S2CellId): Geometry = {
+    val cell = new S2Cell(cellid)
 
-   val geomFactory = new GeometryFactory()
+    val geomFactory = new GeometryFactory()
     val vertexIndexes = List(0, 1, 2, 3, 0)
     val coords = vertexIndexes.map(vertexIndex => {
       val point = cell.getVertex(vertexIndex)
@@ -24,8 +22,13 @@ object ShapefileS2Util {
 
     val ring = geomFactory.createLinearRing(coords)
     val holes: Array[LinearRing] = null // use LinearRing[] to represent holes
-    val cellPolygon = geomFactory.createPolygon(ring, holes)
+    geomFactory.createPolygon(ring, holes)
+  }
 
+  def clipGeometryToCell(
+      geom: Geometry,
+      cellid: S2CellId): (Geometry, Boolean) = {
+    val cellPolygon = fullGeometryForCell(cellid)
     (cellPolygon.intersection(geom), cellPolygon.contains(geom))
   }
 }

@@ -82,6 +82,7 @@ object GeocoderBuild extends Build {
         libraryDependencies ++= Seq(
           "com.twitter" % "util-core" % "5.3.14",
           "com.twitter" % "util-logging" % "5.3.14",
+          "net.sf.opencsv" % "opencsv" % "2.0",
           "org.slf4j" % "slf4j-api" % "1.6.1",
           "org.apache.avro" % "avro" % "1.7.1.cloudera.2",
           "org.apache.hadoop" % "hadoop-client" % "2.0.0-cdh4.1.2" intransitive(),

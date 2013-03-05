@@ -4,7 +4,7 @@ package com.foursquare.twofishes.util
 
 import com.google.common.geometry.{S2CellId, S2LatLng, S2LatLngRect, S2Polygon, S2PolygonBuilder, S2RegionCoverer}
 import com.vividsolutions.jts.geom.{Geometry, Polygon}
-import java.io.{ByteArrayOutputStream, DataOutputStream}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, DataInputStream, DataOutputStream}
 import scala.collection.mutable.HashSet
 import scala.collection.JavaConversions._
 
@@ -12,9 +12,9 @@ object GeometryUtils {
   val minS2Level = 9
   val maxS2Level = 18
 
-   def getBytes(l: S2CellId): Array[Byte] = getBytes(l.id())
+  def getBytes(l: S2CellId): Array[Byte] = getBytes(l.id())
 
-   def getBytes(l: Long): Array[Byte] = {
+  def getBytes(l: Long): Array[Byte] = {
     val baos = new ByteArrayOutputStream()
     val dos = new DataOutputStream(baos)
     dos.writeLong(l)
@@ -26,6 +26,11 @@ object GeometryUtils {
     val dos = new DataOutputStream(baos)
     dos.writeInt(l)
     baos.toByteArray()
+  }
+
+  def getLongFromBytes(bytes: Array[Byte]): Long = {
+    val bais = new ByteArrayInputStream(bytes)
+    (new DataInputStream(bais)).readLong()
   }
 
   def getS2CellIdForLevel(lat: Double, long: Double, s2Level: Int): S2CellId = {

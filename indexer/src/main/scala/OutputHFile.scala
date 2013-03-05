@@ -11,18 +11,19 @@ import com.novus.salat.annotations._
 import com.novus.salat.dao._
 import com.novus.salat.global._
 import com.twitter.util.Duration
+import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter}
 import java.io._
 import java.net.URI
 import java.nio.ByteBuffer
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{LocalFileSystem, Path}
+import org.apache.hadoop.io.{MapFile, BytesWritable}
 import org.apache.hadoop.hbase.io.hfile.{Compression, HFile}
 import org.apache.hadoop.hbase.util.Bytes._
 import org.apache.thrift.TSerializer
 import org.apache.thrift.protocol.{TCompactProtocol, TProtocolFactory}
-import scala.collection.JavaConversions._
-import scala.collection.mutable.{HashMap, HashSet}
+import scala.collection.mutable.{HashMap, HashSet, ListBuffer}
 import scalaj.collection.Implicits._
 
 object HFileUtil {
@@ -40,7 +41,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
   val compressionAlgo = Compression.Algorithm.NONE.getName
 
   val conf = new Configuration()
-  
+
   val maxPrefixLength = 5
 
   def hasFlag(record: NameIndex, flag: FeatureNameFlags) =
@@ -69,13 +70,13 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
 
   def serializeGeocodeServingFeature(f: GeocodeServingFeature, fixParentId: IdFixer) = {
     val parents = for {
-      parent <- f.scoringFeatures.parents
+      parent <- f.scoringFeatures.parents.asScala
       parentId <- fixParentId(parent)
     } yield {
       parentId
     }
 
-    f.scoringFeatures.setParents(parents)
+    f.scoringFeatures.setParents(parents.asJava)
     serializer.serialize(f)
   }
 
@@ -83,7 +84,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
   def buildStandaloneRevGeoIndex() {
     val wkbReader = new WKBReader()
 
-    val records = 
+    val records =
       MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
     val ids = new HashSet[ObjectId]
     val total = MongoGeocodeDAO.count(MongoDBObject("hasPoly" -> true))
@@ -104,7 +105,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
         (cellid: S2CellId) => {
           val bucket = s2map.getOrElseUpdate(cellid.id, new HashSet[ObjectId]())
           bucket.add(record._id)
-        } 
+        }
       )
       if (index % 1000 == 0) {
         println("computed cover for %d of %d (%.2f%%) polys".format(index, total, index*100.0/total))
@@ -118,7 +119,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     val listMap: List[(Array[Byte], Array[Byte])] = s2map.toList.map({case (k, v) => {
       (
         serializer.serialize(new LongWrapper().setValue(k)),
-        serializer.serialize(listWrapper.setValues(s2map(k).toList.map(v => ByteBuffer.wrap(v.toByteArray()))))
+        serializer.serialize(listWrapper.setValues(s2map(k).toList.map(v => ByteBuffer.wrap(v.toByteArray())).asJava))
       )
     }})
 
@@ -156,7 +157,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
   }
 
   def buildPolygonIndex() {
-    val polygons = 
+    val polygons =
       MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
         .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
 
@@ -170,7 +171,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     } {
       if (index % 1000 == 0) {
         println("outputted %d polys so far".format(index))
-      } 
+      }
       writer.append(
         featureRecord._id.toByteArray(),
         polygon)
@@ -188,16 +189,21 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     rv
   }
 
-  def buildRevGeoIndex() { 
+  def buildRevGeoIndex() {
     val minS2Level = 8
     val maxS2Level = 12
     val maxCells = 1000
     val levelMod = 2
 
+    val writer = buildMapFileWriter(
+      "s2_index",
+      Map("minS2Level" -> minS2Level.toString, "maxS2Level" -> maxS2Level.toString, "levelMod" -> levelMod.toString))
+
     val ids = MongoGeocodeDAO.primitiveProjections[ObjectId](MongoDBObject("hasPoly" -> true), "_id").toList
     val numThreads = 5
     val subMaps = 0.until(numThreads).toList.map(offset => {
-      val s2map = new HashMap[ByteBuffer, HashSet[CellGeometry]]    
+      val s2map = new HashMap[Long, ListBuffer[CellGeometry]]
+      val s2shapes = new HashMap[Long, Geometry]
       val thread = new Thread(new Runnable {
         val wkbReader = new WKBReader()
         val wkbWriter = new WKBWriter()
@@ -221,19 +227,19 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
             logDuration("clipped and outputted cover for %d cells".format(cells.size)) {
               cells.foreach(
                 (cellid: S2CellId) => {
-                  val s2Bytes: Array[Byte] = GeometryUtils.getBytes(cellid)
-                  val bucket = s2map.getOrElseUpdate(ByteBuffer.wrap(s2Bytes), new HashSet[CellGeometry]())
+                  val bucket = s2map.getOrElseUpdate(cellid.id, new ListBuffer[CellGeometry]())
+                  val s2shape = s2shapes.getOrElseUpdate(cellid.id, ShapefileS2Util.fullGeometryForCell(cellid))
                   val cellGeometry = new CellGeometry()
-                  val (clippedGeom, isContained) = ShapefileS2Util.clipGeometryToCell(geom.buffer(0), cellid)
-                  if (isContained) {
+                  val recordShape = geom.buffer(0)
+                  if (s2shape.contains(recordShape)) {
                     cellGeometry.setFull(true)
                   } else {
-                    cellGeometry.setWkbGeometry(wkbWriter.write(clippedGeom))
+                    cellGeometry.setWkbGeometry(wkbWriter.write(s2shape.intersection(recordShape)))
                   }
                   cellGeometry.setWoeType(record.woeType)
                   cellGeometry.setOid(record._id.toByteArray())
-                  bucket.add(cellGeometry)
-                } 
+                  bucket += cellGeometry
+                }
               )
             }
           }
@@ -264,17 +270,20 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     // wait until everything finishes
     subMaps.foreach(_._2.join)
 
-    val sortedMapKeys = subMaps.flatMap(_._1.keys).toList.distinct.sort(byteBufferSort)
-    val writer = buildBasicV1Writer("s2_index.hfile", factory)
+    val sortedMapKeys =
+      subMaps.flatMap(_._1.keys)
+             .toList.distinct.map(longCellId => GeometryUtils.getBytes(longCellId))
+             .sorted(Ordering.comparatorToOrdering(comp))
+
     sortedMapKeys.foreach(k => {
-      val cells = subMaps.flatMap(_._1.get(k).map(_.toList).getOrElse(Nil))
-      val cellGeometries = new CellGeometries().setCells(cells)
-      writer.append(k.array(), serializer.serialize(cellGeometries))
+      val longKey = GeometryUtils.getLongFromBytes(k)
+      val cells: List[CellGeometry] = subMaps.flatMap(_._1.get(longKey)).flatMap(_.toList)
+      val cellGeometries = new CellGeometries().setCells(cells.asJava)
+      writer.append(new BytesWritable(k), new BytesWritable(serializer.serialize(cellGeometries)))
     })
 
-    writer.appendFileInfo("minS2Level".getBytes("UTF-8"), GeometryUtils.getBytes(minS2Level))
-    writer.appendFileInfo("maxS2Level".getBytes("UTF-8"), GeometryUtils.getBytes(maxS2Level))
-    writer.appendFileInfo("levelMod".getBytes("UTF-8"), GeometryUtils.getBytes(levelMod))
+    scala.util.Random.shuffle(ids).take(100).foreach(id => println("new ObjectId(\"%s\")".format(id)))
+
     writer.close()
 
     buildPolygonIndex()
@@ -302,11 +311,11 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
 
     def findAndFixParents(servingFeature: GeocodeServingFeature) {
       servingFeature.setParents(
-        servingFeature.scoringFeatures.parents.flatMap(p => parentMap.get(p))
+        servingFeature.scoringFeatures.parents.asScala.flatMap(p => parentMap.get(p)).asJava
       )
     }
 
-    val polygons = 
+    val polygons =
       MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
         .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
 
@@ -329,7 +338,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
         serializer.serialize(new StringWrapper().setValue(p._id.toString)),
         serializer.serialize(servingFeature)
       )
-      
+
       index += 1
     })
     writer.close()
@@ -343,14 +352,14 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     //   !hasFlag(r, FeatureNameFlags.DEACCENT)
     // })
 
-    val (prefPureNames, nonPrefPureNames) = 
+    val (prefPureNames, nonPrefPureNames) =
       records.partition(r =>
         (hasFlag(r, FeatureNameFlags.PREFERRED) || hasFlag(r, FeatureNameFlags.ALT_NAME)) &&
         (r.lang == "en" || hasFlag(r, FeatureNameFlags.LOCAL_LANG))
       )
 
     val (secondBestNames, worstNames) =
-      nonPrefPureNames.partition(r => 
+      nonPrefPureNames.partition(r =>
         r.lang == "en"
         || hasFlag(r, FeatureNameFlags.LOCAL_LANG)
       )
@@ -365,9 +374,13 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     ).sort(orderBy = MongoDBObject("pop" -> -1)).limit(limit)
   }
 
+  def buildMapFileWriter(path: String, info: Map[String, String]): MapFile.Writer = {
+    MapFileUtils.writerToLocalPath((new File(basepath, path)).toString, info)
+  }
+
   def buildBasicV1Writer(filename: String,
                          thriftProtocol: TProtocolFactory): HFile.Writer = {
-    val fs = new LocalFileSystem() 
+    val fs = new LocalFileSystem()
     val path = new Path(new File(basepath, filename).toString)
     fs.initialize(URI.create("file:///"), conf)
     val hadoopConfiguration: Configuration = new Configuration()
@@ -376,7 +389,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
       Compression.getCompressionAlgorithmByName("none")
 
     val writer = HFile.getWriterFactory(hadoopConfiguration).createWriter(fs,
-      path,  
+      path,
       blockSize, compressionAlgorithm,
       null)
     writer.appendFileInfo(HFileUtil.ThriftEncodingKeyBytes, thriftProtocol.getClass.getName.getBytes("UTF-8"))
@@ -406,7 +419,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     writer.appendFileInfo(HFileUtil.ThriftClassValueBytes, valueClassName)
     writer
   }
-  
+
   def writeCollection[T <: AnyRef, K <: Any](
     filename: String,
     callback: (T) => (Array[Byte], Array[Byte]),
@@ -477,7 +490,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
         if (lastName != "") {
           writer.append(lastName.getBytes(), fidStringsToByteArray(nameFids.toList))
           if (outputPrefixIndex) {
-            1.to(List(maxPrefixLength, lastName.size).min).foreach(length => 
+            1.to(List(maxPrefixLength, lastName.size).min).foreach(length =>
               prefixSet.add(lastName.substring(0, length))
             )
           }
@@ -499,7 +512,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
       doOutputPrefixIndex(prefixSet)
     }
   }
-  
+
   def doOutputPrefixIndex(prefixSet: HashSet[String]) {
     println("sorting prefix set")
     val sortedPrefixes = prefixSet.toList.sort(lexicalSort)
@@ -593,7 +606,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     val sortedEntries = (slugEntries ++ oidEntries).sortWith(bytePairSort).foreach({case (k, v) => {
       writer.append(k, v)
     }})
-    
+
     writer.close()
   }
 
@@ -601,7 +614,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     def fixParentId(fid: String) = fidMap.get(fid).map(_.toString)
 
     writeCollection("features.hfile",
-      (g: GeocodeRecord) => 
+      (g: GeocodeRecord) =>
         (g._id.toByteArray(), serializeGeocodeRecordWithoutGeometry(g, fixParentId)),
       MongoGeocodeDAO, "_id")
   }
@@ -622,7 +635,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
   //   def pickBestId(g: GeocodeRecord): String = {
   //     g.ids.find(_.startsWith("geonameid")).getOrElse(g.ids(0))
   //   }
-    
+
   //   val gidMap = new HashMap[String, String]
 
   //   val ids = MongoGeocodeDAO.find(MongoDBObject()).map(pickBestId)

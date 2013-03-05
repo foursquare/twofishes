@@ -8,9 +8,10 @@ import java.nio.ByteBuffer
 import java.util.Arrays
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{LocalFileSystem, Path}
+import org.apache.hadoop.io.BytesWritable
 import org.apache.hadoop.hbase.io.hfile.{BlockCache, CacheConfig, FoursquareCacheConfig, HFile, HFileScanner}
 import org.apache.hadoop.hbase.util.Bytes._
-import org.apache.thrift.{TBaseHelper, TDeserializer}
+import org.apache.thrift.{TBase, TBaseHelper, TDeserializer, TFieldIdEnum}
 import org.apache.thrift.protocol.TCompactProtocol
 import org.bson.types.ObjectId
 import scala.collection.JavaConversions._
@@ -20,7 +21,7 @@ class HFileStorageService(basepath: String, shouldPreload: Boolean) extends Geoc
   val nameMap = new NameIndexHFileInput(basepath, shouldPreload)
   val oidMap = new GeocodeRecordHFileInput(basepath, shouldPreload)
   val geomMapOpt = GeometryHFileInput.readInput(basepath, shouldPreload)
-  val s2mapOpt = ReverseGeocodeHFileInput.readInput(basepath, shouldPreload)
+  val s2mapOpt = ReverseGeocodeMapFileInput.readInput(basepath, shouldPreload)
   val slugFidMap = new SlugFidHFileInput(basepath, shouldPreload)
 
   // will only be hit if we get a reverse geocode query
@@ -42,7 +43,7 @@ class HFileStorageService(basepath: String, shouldPreload: Boolean) extends Geoc
   def getByObjectIds(oids: Seq[ObjectId]): Map[ObjectId, GeocodeServingFeature] = {
     oidMap.getByObjectIds(oids)
   }
- 
+
   def getBySlugOrFeatureIds(ids: Seq[String]) = {
     val oidMap = (for {
       id <- ids
@@ -67,7 +68,7 @@ class HFileStorageService(basepath: String, shouldPreload: Boolean) extends Geoc
   override  def getLevelMod: Int = s2map.levelMod
 }
 
-abstract class HFileInput(basepath: String, filename: String, shouldPreload: Boolean) {
+class HFileInput(basepath: String, filename: String, shouldPreload: Boolean) {
   val conf = new Configuration()
   val fs = new LocalFileSystem()
   fs.initialize(URI.create("file:///"), conf)
@@ -81,7 +82,7 @@ abstract class HFileInput(basepath: String, filename: String, shouldPreload: Boo
 
   // prefetch the hfile
   if (shouldPreload) {
-    val (rv, duration) = Duration.inMilliseconds({    
+    val (rv, duration) = Duration.inMilliseconds({
       val scanner = reader.getScanner(true, false) // Seek, caching.
       scanner.seekTo()
       while(scanner.next()) {}
@@ -123,29 +124,49 @@ abstract class HFileInput(basepath: String, filename: String, shouldPreload: Boo
 
     ret
   }
+}
 
-  def deserializeBytes[T <: org.apache.thrift.TBase[_ <: org.apache.thrift.TBase[_ <: AnyRef, _ <: org.apache.thrift.TFieldIdEnum], _ <: org.apache.thrift.TFieldIdEnum]](s: T, bytes: Array[Byte]): T = {
+class MapFileInput(basepath: String, dirname: String, shouldPreload: Boolean) {
+  val (reader, fileInfo) = {
+    val (rv, duration) = Duration.inMilliseconds({
+      MapFileUtils.readerAndInfoFromLocalPath(new File(basepath, dirname).toString, shouldPreload)
+    })
+    println("took %s seconds to read %s".format(duration.inSeconds, dirname))
+    rv
+  }
+
+  def lookup(key: Array[Byte]): Option[Array[Byte]] = {
+    val value = new BytesWritable
+    if (reader.get(new BytesWritable(key), value) != null) {
+      Some(value.getBytes)
+    } else {
+      None
+    }
+  }
+}
+
+trait ByteReaderUtils {
+  def decodeObjectIds(bytes: Array[Byte]): Seq[ObjectId] = {
+    0.until(bytes.length / 12).map(i => {
+      new ObjectId(Arrays.copyOfRange(bytes, i * 12, (i + 1) * 12))
+    })
+  }
+
+  def deserializeBytes[T <: TBase[_ <: TBase[_ <: AnyRef, _ <: TFieldIdEnum], _ <: TFieldIdEnum]](
+      s: T, bytes: Array[Byte]): T = {
     val deserializer = new TDeserializer(new TCompactProtocol.Factory());
     deserializer.deserialize(s, bytes);
     s
   }
 }
 
-trait ObjectIdReader {
-  def decodeObjectIds(bytes: Array[Byte]): Seq[ObjectId] = {
-    0.until(bytes.length / 12).map(i => {
-      new ObjectId(Arrays.copyOfRange(bytes, i * 12, (i + 1) * 12))
-    })
-  }
-}
-
-class NameIndexHFileInput(basepath: String, shouldPreload: Boolean)
-    extends HFileInput(basepath, "name_index.hfile", shouldPreload) with ObjectIdReader {
+class NameIndexHFileInput(basepath: String, shouldPreload: Boolean) extends ByteReaderUtils {
+  val nameIndex = new HFileInput(basepath, "name_index.hfile", shouldPreload)
   val prefixMapOpt = PrefixIndexHFileInput.readInput(basepath, shouldPreload)
 
   def get(name: String): List[ObjectId] = {
     val buf = ByteBuffer.wrap(name.getBytes())
-    lookup(buf).toList.flatMap(b => {
+    nameIndex.lookup(buf).toList.flatMap(b => {
       val bytes = TBaseHelper.byteBufferToByteArray(b)
       decodeObjectIds(bytes)
     })
@@ -157,7 +178,7 @@ class NameIndexHFileInput(basepath: String, shouldPreload: Boolean)
         prefixMap.get(name)
       }
       case _  => {
-        lookupPrefix(name).flatMap(bytes => {
+        nameIndex.lookupPrefix(name).flatMap(bytes => {
           decodeObjectIds(bytes)
         })
       }
@@ -172,54 +193,49 @@ object PrefixIndexHFileInput {
     } else {
       None
     }
-  } 
+  }
 }
 
-class PrefixIndexHFileInput(basepath: String, shouldPreload: Boolean)
-    extends HFileInput(basepath, "prefix_index.hfile", shouldPreload) with ObjectIdReader {
-  val maxPrefixLength = 5 // TODO: pull from hfile metadata  
+class PrefixIndexHFileInput(basepath: String, shouldPreload: Boolean) extends ByteReaderUtils {
+  val prefixIndex = new HFileInput(basepath, "prefix_index.hfile", shouldPreload)
+  val maxPrefixLength = 5 // TODO: pull from hfile metadata
 
   def get(name: String): List[ObjectId] = {
     val buf = ByteBuffer.wrap(name.getBytes())
-    lookup(buf).toList.flatMap(b => {
+    prefixIndex.lookup(buf).toList.flatMap(b => {
       val bytes = TBaseHelper.byteBufferToByteArray(b)
       decodeObjectIds(bytes)
     })
   }
 }
 
-object ReverseGeocodeHFileInput {
+object ReverseGeocodeMapFileInput {
   def readInput(basepath: String, shouldPreload: Boolean) = {
-    if (new File(basepath, "s2_index.hfile").exists()) {
-      Some(new ReverseGeocodeHFileInput(basepath, shouldPreload))
+    if (new File(basepath, "s2_index").exists()) {
+      Some(new ReverseGeocodeMapFileInput(basepath, shouldPreload))
     } else {
       None
     }
-  } 
+  }
 }
 
-class ReverseGeocodeHFileInput(basepath: String, shouldPreload: Boolean)
-    extends HFileInput(basepath, "s2_index.hfile", shouldPreload) with ObjectIdReader {
-  def fromByteArray(bytes: Array[Byte]) = {
-    ByteBuffer.wrap(bytes).getInt()
-  } 
+class ReverseGeocodeMapFileInput(basepath: String, shouldPreload: Boolean) extends ByteReaderUtils {
+  val s2Index = new MapFileInput(basepath, "s2_index", shouldPreload)
 
-  lazy val minS2Level = fromByteArray(fileInfo.getOrElse(
-    "minS2Level".getBytes("UTF-8"),
-    throw new Exception("missing minS2Level")))
+  lazy val minS2Level = s2Index.fileInfo.getOrElse(
+    "minS2Level",
+    throw new Exception("missing minS2Level")).toInt
 
-  lazy val maxS2Level = fromByteArray(fileInfo.getOrElse(
-    "maxS2Level".getBytes("UTF-8"),
-    throw new Exception("missing maxS2Level")))
+  lazy val maxS2Level = s2Index.fileInfo.getOrElse(
+    "maxS2Level",
+    throw new Exception("missing maxS2Level")).toInt
 
-  lazy val levelMod = fromByteArray(fileInfo.getOrElse(
-    "levelMod".getBytes("UTF-8"),
-    throw new Exception("missing levelMod")))
+  lazy val levelMod = s2Index.fileInfo.getOrElse(
+    "levelMod",
+    throw new Exception("missing levelMod")).toInt
 
   def get(cellid: Long): List[CellGeometry] = {
-    val buf = ByteBuffer.wrap(GeometryUtils.getBytes(cellid))
-    lookup(buf).toList.flatMap(b => {
-      val bytes = TBaseHelper.byteBufferToByteArray(b)
+    s2Index.lookup(GeometryUtils.getBytes(cellid)).toList.flatMap(bytes => {
       val geometries = new CellGeometries()
       deserializeBytes(geometries, bytes)
       geometries.cells
@@ -237,29 +253,30 @@ object GeometryHFileInput {
   }
 }
 
-class GeometryHFileInput(basepath: String, shouldPreload: Boolean)
-    extends HFileInput(basepath, "geometry.hfile", shouldPreload) with ObjectIdReader { 
+class GeometryHFileInput(basepath: String, shouldPreload: Boolean) extends ByteReaderUtils {
+  val geometryIndex = new HFileInput(basepath, "geometry.hfile", shouldPreload)
+
   def get(oid: ObjectId): Option[Array[Byte]] = {
     val buf = ByteBuffer.wrap(oid.toByteArray())
-    lookup(buf).map(b => {
+    geometryIndex.lookup(buf).map(b => {
       TBaseHelper.byteBufferToByteArray(b)
     })
   }
 }
 
-class SlugFidHFileInput(basepath: String, shouldPreload: Boolean)
-    extends HFileInput(basepath, "id-mapping.hfile", shouldPreload) with ObjectIdReader { 
+class SlugFidHFileInput(basepath: String, shouldPreload: Boolean) extends ByteReaderUtils {
+  val idMappingIndex = new HFileInput(basepath, "id-mapping.hfile", shouldPreload)
   def get(s: String): Option[ObjectId] = {
     val buf = ByteBuffer.wrap(s.getBytes("UTF-8"))
-    lookup(buf).flatMap(b => {
+    idMappingIndex.lookup(buf).flatMap(b => {
       val bytes = TBaseHelper.byteBufferToByteArray(b)
       decodeObjectIds(bytes).headOption
     })
   }
 }
 
-class GeocodeRecordHFileInput(basepath: String, shouldPreload: Boolean)
-    extends HFileInput(basepath, "features.hfile", shouldPreload) with ObjectIdReader { 
+class GeocodeRecordHFileInput(basepath: String, shouldPreload: Boolean) extends ByteReaderUtils {
+  val featureIndex = new HFileInput(basepath, "features.hfile", shouldPreload)
 
   def decodeFeature(b: ByteBuffer) = {
     val bytes = TBaseHelper.byteBufferToByteArray(b)
@@ -272,7 +289,7 @@ class GeocodeRecordHFileInput(basepath: String, shouldPreload: Boolean)
       comp.compare(a._1, b._1) < 0
     })
 
-    val scanner: HFileScanner = reader.getScanner(true, true)
+    val scanner: HFileScanner = featureIndex.reader.getScanner(true, true)
     def find(b: Array[Byte]) = {
       val key = ByteBuffer.wrap(b)
       if (scanner.seekTo(key.array, key.position, key.remaining) == 0) {
@@ -287,6 +304,6 @@ class GeocodeRecordHFileInput(basepath: String, shouldPreload: Boolean)
 
   def get(oid: ObjectId): Option[GeocodeServingFeature] = {
     val buf = ByteBuffer.wrap(oid.toByteArray())
-    lookup(buf).map(decodeFeature)
+    featureIndex.lookup(buf).map(decodeFeature)
   }
 }
