@@ -45,8 +45,8 @@ class MMapInputStream(filename: String, mmapChunkSize: Int = 64*1024)
     val file: File = new File(filename)
     val fileChannel: FileChannel = (new FileInputStream(file)).getChannel
     val fileSize: Long = file.length()
-    // Chunk the file into blocks. This is 1., because FileChannel.map only
-    // allows a max length of 2G so we have to chunk into something and 2., so
+    // Chunk the file into blocks. This is 1), because FileChannel.map only
+    // allows a max length of 2G so we have to chunk into something and 2), so
     // we can have finer-grained locks with less contention.
     val byteBuffers = (0L to fileSize by mmapChunkSize).map((offset: Long) =>
       fileChannel.map(FileChannel.MapMode.READ_ONLY, offset, math.min(mmapChunkSize, fileSize - offset))

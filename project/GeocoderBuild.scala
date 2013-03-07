@@ -87,6 +87,7 @@ object GeocoderBuild extends Build {
           "org.apache.hadoop" % "hadoop-client" % "2.0.0-cdh4.1.2" intransitive(),
           "org.apache.hadoop" % "hadoop-common" % "2.0.0-cdh4.1.2" ,
           "org.apache.hbase" % "hbase" % "0.92.1-cdh4.1.2" intransitive(),
+          "org.specs2" %% "specs2" % "1.8.2" % "test",
           "com.google.guava" % "guava" % "r09",
           "com.novus" % "salat-core_2.9.1" % "0.0.8",
           // "org.apache.thrift" % "libthrift" % "0.8.0",
