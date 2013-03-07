@@ -1,11 +1,10 @@
 package com.foursquare.twofishes
 
-import au.com.bytecode.opencsv.{CSVReader, CSVWriter}
 import java.net.URI
 import java.io.{File, FileReader, FileWriter}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FSDataInputStream, FileSystem, LocalFileSystem, Path, PositionedReadable, Seekable}
-import org.apache.hadoop.io.{BytesWritable, MapFile, SequenceFile, Writable, WritableComparator}
+import org.apache.hadoop.io.{BytesWritable, MapFile, SequenceFile, Text, Writable, WritableComparator}
 import org.apache.hadoop.util.Options
 import scalaj.collection.Implicits._
 
@@ -22,14 +21,33 @@ class MemoryMappedSequenceFileReader(conf: Configuration, val shouldPreload: Boo
   }
 }
 
+/** A custom MapFileReader that uses MMap under the covers, and exposes the
+  * Metadata from the MapFile's data file to mimic the fileInfo capability in
+  * HFile's.
+  *
+  * Note the crazy extends {} syntax is there so we can have that
+  * initialization happen before the parent's constructor is invoked. That way,
+  * metadataOpt is set to None before the parent's ctor is called, then when
+  * the parent's ctor calls createDataFileReader, metadataOpt gets set. If we
+  * just declared that variable normally, then the parent's ctor would call
+  * createDataFileReader, which would set metadataOpt, then the child ctor
+  * would run and overwrite it to None. Jorge suggested this workaround for
+  * that problem.
+  */
 class MemoryMappedMapFileReader(val path: Path, val conf: Configuration, val shouldPreload: Boolean)
-    extends MapFile.Reader(path, conf) {
+    extends { private var metadataOpt: Option[SequenceFile.Metadata] = None } with MapFile.Reader(path, conf) {
 
+  // Called by the parent's ctor.
   override protected def createDataFileReader(
       dataFile: Path, conf: Configuration, options: SequenceFile.Reader.Option*): SequenceFile.Reader = {
     val newOptions = Options.prependOptions(options.toArray, SequenceFile.Reader.file(dataFile))
-    return new MemoryMappedSequenceFileReader(conf, shouldPreload, newOptions: _*)
+    val dataReader = new MemoryMappedSequenceFileReader(conf, shouldPreload, newOptions: _*)
+    metadataOpt = Some(dataReader.getMetadata)
+    dataReader
   }
+
+  def metadata: SequenceFile.Metadata =
+    metadataOpt.getOrElse(throw new RuntimeException("Data SequenceFile has not yet been opened!"))
 }
 
 object MapFileUtils {
@@ -38,17 +56,11 @@ object MapFileUtils {
     val conf = new Configuration
     fs.initialize(URI.create("file:///"), conf)
 
-    val file = new File(path, "info.tsv")
-    val csv: Seq[Array[String]] = new CSVReader(new FileReader(file), '\t').readAll.asScala
-    if (csv.exists(_.size != 2)) {
-      throw new RuntimeException("Expected file info at %s to be a CSV with two columns per line.".format(file))
-    } else if (csv.size != csv.map(_.head).distinct.size) {
-      throw new RuntimeException("Expected first column at %s to be unique, got a duplicate key. All keys: %s".format(
-        file, csv.map(_.head).mkString(",")))
-    }
-
     val reader = new MemoryMappedMapFileReader(new Path(path), conf, shouldPreload)
-    (reader, csv.map(arr => (arr(0) -> arr(1))).toMap)
+    val fileInfo: Map[String, String] =
+      reader.metadata.getMetadata.asScala.toMap.map(kv => kv._1.toString -> kv._2.toString)
+
+    (reader, fileInfo)
   }
 
   case class WriteOptions[V <: Writable](
@@ -78,10 +90,8 @@ object MapFileUtils {
         "%s exists, will not overwrite it to create a MapFile.".format(dir))
     }
 
-    val file = new File(path, "info.tsv")
-    val csv = new CSVWriter(new FileWriter(file), '\t')
-    csv.writeAll(info.toList.map(kv => Array(kv._1, kv._2)).asJava)
-    csv.close
+    val infoMetadata = new SequenceFile.Metadata()
+    info.foreach(kv => infoMetadata.set(new Text(kv._1), new Text(kv._2)))
 
     val writer = new MapFile.Writer(
       conf,
@@ -89,7 +99,8 @@ object MapFileUtils {
       MapFile.Writer.comparator(writeOptions.keyComparator),
       MapFile.Writer.valueClass(writeOptions.valueClass),
       MapFile.Writer.compression(
-        if (writeOptions.compress) SequenceFile.CompressionType.BLOCK else SequenceFile.CompressionType.NONE))
+        if (writeOptions.compress) SequenceFile.CompressionType.BLOCK else SequenceFile.CompressionType.NONE),
+      SequenceFile.Writer.metadata(infoMetadata))
 
     writer.setIndexInterval(writeOptions.indexInterval)
 
