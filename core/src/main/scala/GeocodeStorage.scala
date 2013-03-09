@@ -80,8 +80,7 @@ case class GeocodeRecord(
   boundingbox: Option[BoundingBox] = None,
   canGeocode: Boolean = true,
   slug: Option[String] = None,
-  polygon: Option[Array[Byte]] = None,
-  hasPoly: Option[Boolean] = None,
+  polygon: Option[Array[Byte]] = None
   var attributes: Option[Array[Byte]] = None
 ) extends Ordered[GeocodeRecord] {
   val factory = new TCompactProtocol.Factory()

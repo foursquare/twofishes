@@ -30,8 +30,6 @@ object GeonamesParser {
   var countryNameMap = new HashMap[String, String]() 
   var adminIdMap = new HashMap[String, String]() 
 
-  var hasPolygonList = new HashSet[String]
-
   lazy val naturalEarthPopulatedPlacesMap: Map[StoredFeatureId, SimpleFeature] = {
     new ShapefileIterator("data/downloaded/ne_10m_populated_places_simple.shp").flatMap(f => {
       f.propMap.get("geonameid").map(id => {
@@ -92,6 +90,8 @@ object GeonamesParser {
 
   def loadIntoMongo() {
     val parser = new GeonamesParser(store, slugIndexer)
+
+    PolygonLoader.load(geonameIdNamespace)
 
     parseCountryInfo()
 
@@ -175,8 +175,7 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
     "data/private/aliases.txt")
   // geonameid --> new center
   lazy val moveTable = new GeoIdTsvHelperFileParser(geonameIdNamespace, "data/custom/moves.txt")
-  // geonameid -> polygon
-  lazy val polygonTable: Map[StoredFeatureId, Geometry] = PolygonLoader.load(geonameIdNamespace)
+  
   // geonameid -> name to be deleted
   lazy val nameDeleteTable = new GeoIdTsvHelperFileParser(geonameIdNamespace, "data/custom/name-deletes.txt")
   // list of geoids (geonameid:XXX) to skip indexing
@@ -373,9 +372,6 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
     val polygonExtraEntry: Option[Geometry] = feature.extraColumns.get("geometry").map(polygon => {
       wktReader.read(polygon)
     })
-    val polygonTableEntry: Option[Geometry] = polygonTable.get(geonameId)
-    val polygon: Option[Array[Byte]] = (polygonTableEntry orElse polygonExtraEntry).map(geom =>
-      wkbWriter.write(geom))
 
     val slug: Option[String] = slugIndexer.getBestSlug(geonameId)
 
@@ -446,8 +442,7 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
       boundingbox = bbox,
       canGeocode = canGeocode,
       slug = slug,
-      polygon = polygon,
-      hasPoly = polygon.map(p => true)
+      polygon = polygonExtraEntry
     )
 
     if (attributesSet) {
