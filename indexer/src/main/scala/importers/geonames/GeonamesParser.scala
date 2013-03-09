@@ -89,9 +89,7 @@ object GeonamesParser {
   }
 
   def loadIntoMongo() {
-    val parser = new GeonamesParser(store, slugIndexer)
-
-    PolygonLoader.load(geonameIdNamespace)
+    val parser = new GeonamesParser(store, slugIndexer, config.providerMapping.toMap)
 
     parseCountryInfo()
 
@@ -145,11 +143,17 @@ object GeonamesParser {
       slugIndexer.buildMissingSlugs()
       slugIndexer.writeMissingSlugs(store)  
     } 
+
+    PolygonLoader.load(store, geonameIdNamespace, writeToRecord = true)
   }
 }
 
 import GeonamesParser._
-class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer) extends SimplePrintLogger {
+class GeonamesParser(
+  store: GeocodeStorageWriteService,
+  slugIndexer: SlugIndexer,
+  providerMapping: Map[String, Int]
+) extends SimplePrintLogger {
   def objectIdFromLong(n: Long) = {
     val bytes = BigInt(n).toByteArray
     val arr = bytes.reverse.padTo(12, 0: Byte).reverse
@@ -420,10 +424,10 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
     val objectId = (
       for {
         idInt <- Helpers.TryO(geonameId.id.toInt)
-        if geonameId.namespace == geonameIdNamespace
+        providerId <- providerMapping.get(geonameId.namespace)
       } yield {
-        // let's call geonames data
-        objectIdFromLong((1 << 32) + idInt)
+        // let's call geonames data = 1
+        objectIdFromLong((providerId << 32) + idInt)
       }
     ).getOrElse(new ObjectId())
 
@@ -442,7 +446,8 @@ class GeonamesParser(store: GeocodeStorageWriteService, slugIndexer: SlugIndexer
       boundingbox = bbox,
       canGeocode = canGeocode,
       slug = slug,
-      polygon = polygonExtraEntry
+      polygon = polygonExtraEntry.map(wkbWriter.write),
+      hasPoly = polygonExtraEntry.map(e => true)
     )
 
     if (attributesSet) {

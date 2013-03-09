@@ -1,5 +1,6 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.importers.geonames
+import scala.collection.mutable.HashMap
 
 class GeonamesImporterConfig(args: Array[String]) {
   // Buildings are places like the eiffel tower, but also schools and federal offices.
@@ -30,6 +31,9 @@ class GeonamesImporterConfig(args: Array[String]) {
 
   private val config = this
 
+  val providerMapping = new HashMap[String, Int]
+  providerMapping(GeonamesParser.geonameIdNamespace) = 1
+
   val parser = 
     new scopt.OptionParser("twofishes", "0.12") {
       booleanOpt("parse_world", "parse the whole world, or one country",
@@ -46,8 +50,17 @@ class GeonamesImporterConfig(args: Array[String]) {
         { v: Boolean => config.outputPrefixIndex = v} )
       booleanOpt("build_missing_slugs", "build pretty hopefully stable slugs per feature",
         { v: Boolean => config.buildMissingSlugs = v } )
-      booleanOpt("output_revgeo_index", "wheter or not to output s2 revgeo index",
+      booleanOpt("output_revgeo_index", "whjeter or not to output s2 revgeo index",
         { v: Boolean => config.outputRevgeo = v} )
+      keyValueOpt("provider_mapping", "mapping from provider namespace to integer",
+        {(key: String, value: String) => { 
+          println(key)
+          println(value) 
+          if (value == "1") {
+            throw new Exception("1 is reserved for geonameid")
+          }
+          providerMapping(key) = value.toInt
+        } })
     }
 
   if (!parser.parse(args)) {

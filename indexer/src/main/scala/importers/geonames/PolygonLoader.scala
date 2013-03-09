@@ -8,13 +8,15 @@ import com.foursquare.twofishes._
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.vividsolutions.jts.geom.Geometry
-import com.vividsolutions.jts.io.WKTReader
+import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
 import java.io.File
 import scala.collection.JavaConversions._
 import scalaj.collection.Implicits._
 
 object PolygonLoader {
- def load(defaultNamespace: String): Map[StoredFeatureId, Geometry] = {
+ def load(store: GeocodeStorageWriteService,
+          defaultNamespace: String,
+          writeToRecord: Boolean = false): Unit = {
     val polygonDirs = List(
       new File("data/computed/polygons"),
       new File("data/private/polygons")
@@ -24,7 +26,9 @@ object PolygonLoader {
     }).sorted
 
     val wktReader = new WKTReader()
+    val wkbWriter = new WKBWriter()
     polygonFiles.flatMap(f => {
+      println("processing %s".format(f))
       val extension = f.getName().split("\\.").lastOption.getOrElse("")
       val shapeFileExtensions = List("shx", "dbf", "prj", "xml")
 
@@ -43,8 +47,13 @@ object PolygonLoader {
           (parts(0) -> wktReader.read(parts(1))) 
         })
       }
-    }).map({case (k, v) => {
-      (StoredFeatureId.fromString(k, Some(defaultNamespace)), v)
-    }}).toMap
+    }).map({case (k, geom) => {
+      val fid = StoredFeatureId.fromString(k, Some(defaultNamespace))
+      if (writeToRecord) {
+        store.addPolygonToRecord(fid, wkbWriter.write(geom))
+      } else {
+        store.savePolygon(fid, wkbWriter.write(geom))
+      }
+    }})
   }
 }

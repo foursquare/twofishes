@@ -72,7 +72,6 @@ object BuildPolygonShapefile {
 
     val total = MongoGeocodeDAO.count(MongoDBObject("hasPoly" -> true))
 
-
     val records = 
       MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
 

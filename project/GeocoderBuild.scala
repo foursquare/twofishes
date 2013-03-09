@@ -153,7 +153,7 @@ import com.novus.salat.global._
 
         val store = new MongoGeocodeStorageService()
         val slugIndexer = new SlugIndexer()
-        val parser = new GeonamesParser(store, slugIndexer)
+        val parser = new GeonamesParser(store, slugIndexer, Map.empty)
         """,
 
         publishArtifact := false,
