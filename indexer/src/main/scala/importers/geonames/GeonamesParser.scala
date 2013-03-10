@@ -83,6 +83,7 @@ object GeonamesParser {
   def writeHFileOutput() {
     val outputter = new OutputHFile(config.hfileBasePath, config.outputPrefixIndex, GeonamesParser.slugIndexer.slugEntryMap)
     outputter.process()
+    outputter.buildPolygonIndex()
     if (config.outputRevgeo) {
       outputter.buildRevGeoIndex()
     }

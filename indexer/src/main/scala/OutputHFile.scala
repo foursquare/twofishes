@@ -267,8 +267,6 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     scala.util.Random.shuffle(ids).take(100).foreach(id => println("new ObjectId(\"%s\")".format(id)))
 
     writer.close()
-
-    buildPolygonIndex()
   }
 
   def sortRecordsByNames(records: List[NameIndex]) = {

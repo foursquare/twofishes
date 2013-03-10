@@ -29,6 +29,8 @@ class GeonamesImporterConfig(args: Array[String]) {
   var outputPrefixIndex: Boolean = true
   var outputRevgeo: Boolean = false
 
+  var reloadData: Boolean = true
+
   private val config = this
 
   val providerMapping = new HashMap[String, Int]
@@ -50,8 +52,10 @@ class GeonamesImporterConfig(args: Array[String]) {
         { v: Boolean => config.outputPrefixIndex = v} )
       booleanOpt("build_missing_slugs", "build pretty hopefully stable slugs per feature",
         { v: Boolean => config.buildMissingSlugs = v } )
-      booleanOpt("output_revgeo_index", "whjeter or not to output s2 revgeo index",
+      booleanOpt("output_revgeo_index", "whether or not to output s2 revgeo index",
         { v: Boolean => config.outputRevgeo = v} )
+      booleanOpt("reload_data", "reload data into mongo",
+        { v: Boolean => config.reloadData = v} )
       keyValueOpt("provider_mapping", "mapping from provider namespace to integer",
         {(key: String, value: String) => { 
           println(key)

@@ -19,6 +19,8 @@ parser.add_option("--nooutput_prefix_index", dest="output_prefix_index",  action
 parser.add_option("-r", "--output_revgeo_index", dest="output_revgeo_index",  action="store_true", default=False,
   help="output s2 revgeo index (optional)")
 parser.add_option("-n", "--dry_run", dest="dry_run",  action="store_true", default=False)
+parser.add_option("--reload", dest="reload_data",  action="store_true", default=True, help="reload data into mongo")
+
 
 (options, args) = parser.parse_args()
 
@@ -31,20 +33,21 @@ os.mkdir(basepath)
 
 cmd_opts = ''
 
+def passBoolOpt(opt, value):
+  global cmd_opts
+  if not opt.startswith('-'):
+    opt = '--' + opt
+
+  cmd_opts += ' %s %s' % (opt, str(value).lower())
+
 if options.country:
   cmd_opts += ' --parse_country %s' % options.country
 else:
   cmd_opts += ' --parse_world true'
 
-if options.output_revgeo_index:
-  cmd_opts += ' --output_revgeo_index true'
-else:
-  cmd_opts += ' --output_revgeo_index false'
-
-if options.output_prefix_index:
-  cmd_opts += ' --output_prefix_index true'
-else:
-  cmd_opts += ' --output_prefix_index false'
+passBoolOpt('output_revgeo_index', options.output_revgeo_index)
+passBoolOpt('output_prefix_index', options.output_prefix_index)
+passBoolOpt('reload_data', options.reload_data)
   
 cmd = './sbt "indexer/run-main com.foursquare.twofishes.importers.geonames.GeonamesParser %s --hfile_basepath %s"' % (cmd_opts, basepath)
 print(cmd)
