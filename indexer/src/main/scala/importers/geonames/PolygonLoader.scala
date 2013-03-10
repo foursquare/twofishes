@@ -49,11 +49,7 @@ object PolygonLoader {
       }
     }).map({case (k, geom) => {
       val fid = StoredFeatureId.fromString(k, Some(defaultNamespace))
-      if (writeToRecord) {
-        store.addPolygonToRecord(fid, wkbWriter.write(geom))
-      } else {
-        store.savePolygon(fid, wkbWriter.write(geom))
-      }
+      store.addPolygonToRecord(fid, wkbWriter.write(geom))
     }})
   }
 }
