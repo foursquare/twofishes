@@ -20,6 +20,8 @@ parser.add_option("-r", "--output_revgeo_index", dest="output_revgeo_index",  ac
   help="output s2 revgeo index (optional)")
 parser.add_option("-n", "--dry_run", dest="dry_run",  action="store_true", default=False)
 parser.add_option("--reload", dest="reload_data",  action="store_true", default=True, help="reload data into mongo")
+parser.add_option("--noreload", dest="reload_data",  action="store_false", help="don't reload data into mongo")
+
 
 
 (options, args) = parser.parse_args()

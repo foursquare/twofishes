@@ -338,6 +338,8 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
 
     var lastName = ""
     var nameFids = new HashSet[String]
+    
+    val writer = buildMapFileWriter("name_index")
 
     def writeNames() {
       writer.append(lastName.getBytes(), fidStringsToByteArray(nameFids.toList))
@@ -348,7 +350,6 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
       }
     }
 
-    val writer = buildMapFileWriter("name_index")
     nameCursor.filterNot(_.name.isEmpty).foreach(n => {
       if (lastName != n.name) {
         if (lastName != "") {
