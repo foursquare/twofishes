@@ -26,7 +26,9 @@ parser.add_option("--reload", dest="reload_data",  action="store_true", default=
 
 basepath = '.'
 if len(args) != 0:
-  basepath = args[0]
+  if not args[0].startswith("-"):
+    basepath = args[0]
+    args = args[1:]
 basepath = os.path.join(basepath, str(datetime.datetime.now()).replace(' ', '-').replace(':', '-'))
 print "outputting index to %s" % basepath
 os.mkdir(basepath)
@@ -49,7 +51,7 @@ passBoolOpt('output_revgeo_index', options.output_revgeo_index)
 passBoolOpt('output_prefix_index', options.output_prefix_index)
 passBoolOpt('reload_data', options.reload_data)
   
-cmd = './sbt "indexer/run-main com.foursquare.twofishes.importers.geonames.GeonamesParser %s --hfile_basepath %s"' % (cmd_opts, basepath)
+cmd = './sbt "indexer/run-main com.foursquare.twofishes.importers.geonames.GeonamesParser %s --hfile_basepath %s %s"' % (cmd_opts, basepath, ' '.join(args))
 print(cmd)
 
 if not options.dry_run:
