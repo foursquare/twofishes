@@ -29,19 +29,22 @@ object AlternateNamesReader extends SimplePrintLogger {
           val nameid = parts(0)
           val geonameid = parts(1)
           val lang = parts(2)
-          val name = parts(3)
-          val isPrefName = parts.lift(4).exists(_ == "1")
-          val isShortName = parts.lift(5).exists(_ == "1")
 
-          val fid = StoredFeatureId(GeonamesParser.geonameIdNamespace, geonameid)
-          val names = alternateNamesMap.getOrElseUpdate(fid, Nil)
-          alternateNamesMap(fid) = AlternateNameEntry(
-            nameId = nameid,
-            name = name,
-            lang = lang,
-            isPrefName = isPrefName,
-            isShortName = isShortName
-          ) :: names
+          if (lang != "post") {
+            val name = parts(3)
+            val isPrefName = parts.lift(4).exists(_ == "1")
+            val isShortName = parts.lift(5).exists(_ == "1")
+
+            val fid = StoredFeatureId(GeonamesParser.geonameIdNamespace, geonameid)
+            val names = alternateNamesMap.getOrElseUpdate(fid, Nil)
+            alternateNamesMap(fid) = AlternateNameEntry(
+              nameId = nameid,
+              name = name,
+              lang = lang,
+              isPrefName = isPrefName,
+              isShortName = isShortName
+            ) :: names
+          }
       }
     }})
     alternateNamesMap
