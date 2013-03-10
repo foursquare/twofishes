@@ -71,7 +71,10 @@ object GeonamesParser {
 
   def main(args: Array[String]) {
     config = new GeonamesImporterConfig(args)
-    loadIntoMongo()
+
+    if (config.reloadData) {
+      loadIntoMongo()
+    }
     writeHFileOutput()
   }
 
