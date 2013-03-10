@@ -339,18 +339,22 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     var lastName = ""
     var nameFids = new HashSet[String]
 
+    def writeNames() {
+      writer.append(lastName.getBytes(), fidStringsToByteArray(nameFids.toList))
+      if (outputPrefixIndex) {
+        1.to(List(maxPrefixLength, lastName.size).min).foreach(length =>
+          prefixSet.add(lastName.substring(0, length))
+        )
+      }
+    }
+
     val writer = buildMapFileWriter("name_index")
     nameCursor.filterNot(_.name.isEmpty).foreach(n => {
       if (lastName != n.name) {
         if (lastName != "") {
-          writer.append(lastName.getBytes(), fidStringsToByteArray(nameFids.toList))
-          if (outputPrefixIndex) {
-            1.to(List(maxPrefixLength, lastName.size).min).foreach(length =>
-              prefixSet.add(lastName.substring(0, length))
-            )
-          }
+          writeNames()
         }
-        nameFids = new HashSet[String]
+        nameFids.clear()
         lastName = n.name
       }
 
@@ -361,6 +365,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
         println("processed %d of %d names".format(nameCount, nameSize))
       }
     })
+    writeNames()
     writer.close()
 
     if (outputPrefixIndex) {
