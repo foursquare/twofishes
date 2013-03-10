@@ -19,14 +19,14 @@ import scalaj.collection.Implicits._
 
 class HFileStorageService(basepath: String, shouldPreload: Boolean) extends GeocodeStorageReadService {
   val nameMap = new NameIndexHFileInput(basepath, shouldPreload)
-  val oidMap = new GeocodeRecordHFileInput(basepath, shouldPreload)
-  val geomMapOpt = GeometryHFileInput.readInput(basepath, shouldPreload)
+  val oidMap = new GeocodeRecordMapFileInput(basepath, shouldPreload)
+  val geomMapOpt = GeometryMapFileInput.readInput(basepath, shouldPreload)
   val s2mapOpt = ReverseGeocodeMapFileInput.readInput(basepath, shouldPreload)
-  val slugFidMap = new SlugFidHFileInput(basepath, shouldPreload)
+  val slugFidMap = new SlugFidMapFileInput(basepath, shouldPreload)
 
   // will only be hit if we get a reverse geocode query
   lazy val s2map = s2mapOpt.getOrElse(
-    throw new Exception("s2/revgeo index not built, please build s2_index.hfile"))
+    throw new Exception("s2/revgeo index not built, please build s2_index"))
 
   def getIdsByNamePrefix(name: String): Seq[ObjectId] = {
     nameMap.getPrefix(name)
@@ -243,67 +243,61 @@ class ReverseGeocodeMapFileInput(basepath: String, shouldPreload: Boolean) exten
   }
 }
 
-object GeometryHFileInput {
+object GeometryMapFileInput {
   def readInput(basepath: String, shouldPreload: Boolean) = {
-    if (new File(basepath, "geometry.hfile").exists()) {
-      Some(new GeometryHFileInput(basepath, shouldPreload))
+    if (new File(basepath, "geometry").exists()) {
+      Some(new GeometryMapFileInput(basepath, shouldPreload))
     } else {
       None
     }
   }
 }
 
-class GeometryHFileInput(basepath: String, shouldPreload: Boolean) extends ByteReaderUtils {
-  val geometryIndex = new HFileInput(basepath, "geometry.hfile", shouldPreload)
+class GeometryMapFileInput(basepath: String, shouldPreload: Boolean) extends ByteReaderUtils {
+  val geometryIndex = new MapFileInput(basepath, "geometry", shouldPreload)
 
   def get(oid: ObjectId): Option[Array[Byte]] = {
-    val buf = ByteBuffer.wrap(oid.toByteArray())
-    geometryIndex.lookup(buf).map(b => {
-      TBaseHelper.byteBufferToByteArray(b)
-    })
+    //val buf = ByteBuffer.wrap(oid.toByteArray())
+    val buf = oid.toByteArray()
+    geometryIndex.lookup(buf)
   }
 }
 
-class SlugFidHFileInput(basepath: String, shouldPreload: Boolean) extends ByteReaderUtils {
-  val idMappingIndex = new HFileInput(basepath, "id-mapping.hfile", shouldPreload)
+class SlugFidMapFileInput(basepath: String, shouldPreload: Boolean) extends ByteReaderUtils {
+  val idMappingIndex = new MapFileInput(basepath, "id-mapping", shouldPreload)
   def get(s: String): Option[ObjectId] = {
-    val buf = ByteBuffer.wrap(s.getBytes("UTF-8"))
+    // val buf = ByteBuffer.wrap(s.getBytes("UTF-8"))
+    val buf = s.getBytes("UTF-8")
     idMappingIndex.lookup(buf).flatMap(b => {
-      val bytes = TBaseHelper.byteBufferToByteArray(b)
-      decodeObjectIds(bytes).headOption
+      decodeObjectIds(b).headOption
     })
   }
 }
 
-class GeocodeRecordHFileInput(basepath: String, shouldPreload: Boolean) extends ByteReaderUtils {
-  val featureIndex = new HFileInput(basepath, "features.hfile", shouldPreload)
+class GeocodeRecordMapFileInput(basepath: String, shouldPreload: Boolean) extends ByteReaderUtils {
+  val featureIndex = new MapFileInput(basepath, "features", shouldPreload)
 
   def decodeFeature(b: ByteBuffer) = {
     val bytes = TBaseHelper.byteBufferToByteArray(b)
     deserializeBytes(new GeocodeServingFeature(), bytes)
   }
 
+  def decodeFeature(bytes: Array[Byte]) = {
+    deserializeBytes(new GeocodeServingFeature(), bytes)
+  }
+
   def getByObjectIds(oids: Seq[ObjectId]): Map[ObjectId, GeocodeServingFeature] = {
-    val comp = new ByteArrayComparator()
-    val sortedOids = oids.map(oid => (oid.toByteArray(), oid)).toList.sortWith((a, b) => {
-      comp.compare(a._1, b._1) < 0
-    })
-
-    val scanner: HFileScanner = featureIndex.reader.getScanner(true, true)
-    def find(b: Array[Byte]) = {
-      val key = ByteBuffer.wrap(b)
-      if (scanner.seekTo(key.array, key.position, key.remaining) == 0) {
-        Some(scanner.getValue.duplicate())
-      } else {
-        None
-      }
-    }
-
-    sortedOids.flatMap({case (oidBytes, oid) => find(oidBytes).map(f => (oid, decodeFeature(f)))}).toMap
+    (for {
+      oid <- oids
+      f <- get(oid)
+    } yield {
+      (oid, f)
+    }).toMap
   }
 
   def get(oid: ObjectId): Option[GeocodeServingFeature] = {
-    val buf = ByteBuffer.wrap(oid.toByteArray())
+    // val buf = ByteBuffer.wrap(oid.toByteArray())
+    val buf = oid.toByteArray()
     featureIndex.lookup(buf).map(decodeFeature)
   }
 }

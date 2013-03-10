@@ -26,21 +26,74 @@ import org.apache.thrift.protocol.{TCompactProtocol, TProtocolFactory}
 import scala.collection.mutable.{HashMap, HashSet, ListBuffer}
 import scalaj.collection.Implicits._
 
-object HFileUtil {
-  val ThriftClassValueBytes: Array[Byte] = "value.thrift.class".getBytes("UTF-8")
-  val ThriftClassKeyBytes: Array[Byte] = "key.thrift.class".getBytes("UTF-8")
-  val ThriftEncodingKeyBytes: Array[Byte] = "thrift.protocol.factory.class".getBytes("UTF-8")
+class WrappedByteMapWriter(writer: MapFile.Writer) {
+  def append(k: Array[Byte], v: Array[Byte]) {
+    writer.append(new BytesWritable(k), new BytesWritable(v))
+  }
+
+  def close() { writer.close() }
 }
 
 class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: SlugEntryMap) {
-  val blockSizeKey = "hbase.mapreduce.hfileoutputformat.blocksize"
-  val compressionKey = "hfile.compression"
+  val ThriftClassValue: String = "value.thrift.class"
+  val ThriftClassKey: String = "key.thrift.class"
+  val ThriftEncodingKey: String = "thrift.protocol.factory.class"
 
-  // val blockSize = HFile.DEFAULT_BLOCKSIZE
-  val blockSize = 16384
-  val compressionAlgo = Compression.Algorithm.NONE.getName
+  // this is all weirdly 4sq specific logic :-(
+  def fixThriftClassName(n: String) = {
+    if (n.contains("com.foursquare.twofishes.gen")) {
+      n
+    } else {
+      n.replace("com.foursquare.twofishes", "com.foursquare.twofishes.gen")
+        .replace("com.foursquare.base.thrift", "com.foursquare.base.gen")
 
-  val conf = new Configuration()
+    }
+  }
+
+  def buildHFileV1Writer(filename: String,
+                         info: Map[String, String] = Map.empty): HFile.Writer = {
+    val conf = new Configuration()
+    val blockSizeKey = "hbase.mapreduce.hfileoutputformat.blocksize"
+    val compressionKey = "hfile.compression"
+ 
+    val blockSize = 16384
+    val compressionAlgo = Compression.Algorithm.NONE.getName
+
+    val fs = new LocalFileSystem()
+    val path = new Path(new File(basepath, filename).toString)
+    fs.initialize(URI.create("file:///"), conf)
+    val hadoopConfiguration: Configuration = new Configuration()
+
+    val compressionAlgorithm: Compression.Algorithm =
+      Compression.getCompressionAlgorithmByName("none")
+
+    val writer = HFile.getWriterFactory(hadoopConfiguration).createWriter(fs,
+      path,
+      blockSize, compressionAlgorithm,
+      null)
+
+    info.foreach({case (k, v) => writer.appendFileInfo(k.getBytes("UTF-8"), v.getBytes("UTF-8")) })
+
+    writer
+  }
+
+  def buildMapFileWriter[K: Manifest, V: Manifest](
+      filename: String,
+      info: Map[String, String] = Map.empty) = {
+
+    val keyClassName = fixThriftClassName(manifest[K].erasure.getName)
+    val valueClassName = fixThriftClassName(manifest[V].erasure.getName)
+
+    val finalInfoMap = info ++ Map(
+      (ThriftClassKey, keyClassName),
+      (ThriftClassValue, valueClassName),
+      (ThriftEncodingKey, factory.getClass.getName)
+    )
+
+    new WrappedByteMapWriter(
+      MapFileUtils.writerToLocalPath((new File(basepath, filename)).toString, finalInfoMap)
+    )
+  }
 
   val maxPrefixLength = 5
 
@@ -87,7 +140,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
 
     var index: Int = 0
     // these types are a lie
-    var writer = buildV1Writer[StringWrapper, GeocodeServingFeature]("geometry.hfile", factory)
+    var writer = buildMapFileWriter[StringWrapper, GeocodeServingFeature]("geometry")
 
     for {
       (featureRecord, index) <- polygons.zipWithIndex
@@ -121,7 +174,12 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
 
     val writer = buildMapFileWriter(
       "s2_index",
-      Map("minS2Level" -> minS2Level.toString, "maxS2Level" -> maxS2Level.toString, "levelMod" -> levelMod.toString))
+      Map(
+        "minS2Level" -> minS2Level.toString,
+        "maxS2Level" -> maxS2Level.toString,
+        "levelMod" -> levelMod.toString
+      )
+    )
 
     val ids = MongoGeocodeDAO.primitiveProjections[ObjectId](MongoDBObject("hasPoly" -> true), "_id").toList
     val numThreads = 5
@@ -203,7 +261,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
       val longKey = GeometryUtils.getLongFromBytes(k)
       val cells: List[CellGeometry] = subMaps.flatMap(_._1.get(longKey)).flatMap(_.toList)
       val cellGeometries = new CellGeometries().setCells(cells.asJava)
-      writer.append(new BytesWritable(k), new BytesWritable(serializer.serialize(cellGeometries)))
+      writer.append(k, serializer.serialize(cellGeometries))
     })
 
     scala.util.Random.shuffle(ids).take(100).foreach(id => println("new ObjectId(\"%s\")".format(id)))
@@ -211,63 +269,6 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     writer.close()
 
     buildPolygonIndex()
-  }
-
-  def buildPolygonFeatureIndex(groupSize: Int, includeParents: Boolean) {
-    class ParentMap {
-      val fidMap = new HashMap[String, Option[GeocodeFeature]]
-
-      def get(fid: String): Option[GeocodeFeature] = {
-        if (!fidMap.contains(fid)) {
-          val featureOpt = MongoGeocodeDAO.find(MongoDBObject("ids" -> fid)).toList.headOption
-          fidMap(fid) = featureOpt.map(f => {
-            val feature = f.toGeocodeServingFeature.feature
-            feature.geometry.unsetWkbGeometry()
-            feature
-          })
-        }
-
-        fidMap.getOrElseUpdate(fid, None)
-      }
-    }
-
-    val parentMap = new ParentMap()
-
-    def findAndFixParents(servingFeature: GeocodeServingFeature) {
-      servingFeature.setParents(
-        servingFeature.scoringFeatures.parents.asScala.flatMap(p => parentMap.get(p)).asJava
-      )
-    }
-
-    val polygons =
-      MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
-        .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
-
-    var index: Int = 0
-    var writer = buildV1Writer[StringWrapper, GeocodeServingFeature]("polygon-features-%d.hfile".format(index / groupSize), factory)
-
-    polygons.foreach(p => {
-      if (index % groupSize == 0) {
-        writer.close()
-        writer = buildV1Writer[StringWrapper, GeocodeServingFeature]("polygon-features-%d.hfile".format(index / groupSize), factory)
-        println("written %d files of %d features, total: %d".format(index / groupSize, groupSize, index))
-      }
-
-      val servingFeature = p.toGeocodeServingFeature
-
-      if (includeParents) {
-        findAndFixParents(servingFeature)
-      }
-      writer.append(
-        serializer.serialize(new StringWrapper().setValue(p._id.toString)),
-        serializer.serialize(servingFeature)
-      )
-
-      index += 1
-    })
-    writer.close()
-
-    println("done")
   }
 
   def sortRecordsByNames(records: List[NameIndex]) = {
@@ -296,74 +297,6 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
       MongoDBObject(
         "name" -> MongoDBObject("$regex" -> "^%s".format(prefix)))
     ).sort(orderBy = MongoDBObject("pop" -> -1)).limit(limit)
-  }
-
-  def buildMapFileWriter(path: String, info: Map[String, String]): MapFile.Writer = {
-    MapFileUtils.writerToLocalPath((new File(basepath, path)).toString, info)
-  }
-
-  def buildBasicV1Writer(filename: String,
-                         thriftProtocol: TProtocolFactory): HFile.Writer = {
-    val fs = new LocalFileSystem()
-    val path = new Path(new File(basepath, filename).toString)
-    fs.initialize(URI.create("file:///"), conf)
-    val hadoopConfiguration: Configuration = new Configuration()
-
-    val compressionAlgorithm: Compression.Algorithm =
-      Compression.getCompressionAlgorithmByName("none")
-
-    val writer = HFile.getWriterFactory(hadoopConfiguration).createWriter(fs,
-      path,
-      blockSize, compressionAlgorithm,
-      null)
-    writer.appendFileInfo(HFileUtil.ThriftEncodingKeyBytes, thriftProtocol.getClass.getName.getBytes("UTF-8"))
-    writer
-  }
-
- def buildV1Writer[K: Manifest, V: Manifest](
-      filename: String,
-      thriftProtocol: TProtocolFactory): HFile.Writer = {
-
-    // this is all weirdly 4sq specific logic :-(
-    def fixName(n: String) = {
-      if (n.contains("com.foursquare.twofishes.gen")) {
-        n
-      } else {
-        n.replace("com.foursquare.twofishes", "com.foursquare.twofishes.gen")
-          .replace("com.foursquare.base.thrift", "com.foursquare.base.gen")
-
-      }
-    }
-
-    val writer = buildBasicV1Writer(filename, thriftProtocol)
-    val keyClassName = fixName(manifest[K].erasure.getName).getBytes("UTF-8")
-    val valueClassName = fixName(manifest[V].erasure.getName).getBytes("UTF-8")
-
-    writer.appendFileInfo(HFileUtil.ThriftClassKeyBytes, keyClassName)
-    writer.appendFileInfo(HFileUtil.ThriftClassValueBytes, valueClassName)
-    writer
-  }
-
-  def writeCollection[T <: AnyRef, K <: Any](
-    filename: String,
-    callback: (T) => (Array[Byte], Array[Byte]),
-    dao: SalatDAO[T, K],
-    sortField: String
-  ) {
-    val writer = buildBasicV1Writer(filename, factory)
-    var fidCount = 0
-    val fidSize = dao.collection.count
-    val fidCursor = dao.find(MongoDBObject())
-      .sort(orderBy = MongoDBObject(sortField -> 1)) // sort by _id asc
-    fidCursor.foreach(f => {
-      val (k, v) = callback(f)
-      writer.append(k, v)
-      fidCount += 1
-      if (fidCount % 100000 == 0) {
-        println("processed %d of %d %s".format(fidCount, fidSize, filename))
-      }
-    })
-    writer.close()
   }
 
   val comp = new ByteArrayComparator()
@@ -408,7 +341,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     var lastName = ""
     var nameFids = new HashSet[String]
 
-    val writer = buildBasicV1Writer("name_index.hfile", factory)
+    val writer = buildMapFileWriter("name_index")
     nameCursor.filterNot(_.name.isEmpty).foreach(n => {
       if (lastName != n.name) {
         if (lastName != "") {
@@ -451,7 +384,12 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
       YahooWoeType.COUNTRY
     ).map(_.getValue)
 
-    val prefixWriter = buildBasicV1Writer("prefix_index.hfile", factory)
+    val prefixWriter = buildHFileV1Writer("prefix_index",
+      Map(
+        ("MAX_PREFIX_LENGTH", maxPrefixLength.toString)
+      )
+    )
+
     val numPrefixes = sortedPrefixes.size
     for {
       (prefix, index) <- sortedPrefixes.zipWithIndex
@@ -485,7 +423,6 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
       prefixWriter.append(prefix.getBytes(), fidStringsToByteArray(fids.toList))
     }
 
-    prefixWriter.appendFileInfo("MAX_PREFIX_LENGTH".getBytes(), toBytes(maxPrefixLength))
     prefixWriter.close()
     println("done")
   }
@@ -525,7 +462,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     }).toList
 
     // these types are a lie
-    val writer = buildV1Writer[StringWrapper, ObjectIdListWrapper]("id-mapping.hfile", factory)
+    val writer = buildMapFileWriter[StringWrapper, ObjectIdListWrapper]("id-mapping")
 
     val sortedEntries = (slugEntries ++ oidEntries).sortWith(bytePairSort).foreach({case (k, v) => {
       writer.append(k, v)
@@ -537,10 +474,21 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
   def writeFeatures() {
     def fixParentId(fid: String) = fidMap.get(fid).map(_.toString)
 
-    writeCollection("features.hfile",
-      (g: GeocodeRecord) =>
-        (g._id.toByteArray(), serializeGeocodeRecordWithoutGeometry(g, fixParentId)),
-      MongoGeocodeDAO, "_id")
+    // these types are a lie
+    val writer = buildMapFileWriter[ObjectIdWrapper, GeocodeServingFeature]("features")
+    var fidCount = 0
+    val fidSize = MongoGeocodeDAO.collection.count
+    val fidCursor = MongoGeocodeDAO.find(MongoDBObject())
+      .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
+    fidCursor.foreach(f => {
+      writer.append(        
+        f._id.toByteArray(), serializeGeocodeRecordWithoutGeometry(f, fixParentId))
+      fidCount += 1
+      if (fidCount % 100000 == 0) {
+        println("processed %d of %d features".format(fidCount, fidSize))
+      }
+    })
+    writer.close()
   }
 
   def process() {
@@ -548,8 +496,4 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     writeSlugsAndIds()
     writeFeatures()
   }
-
-  val ThriftClassValueBytes: Array[Byte] = "value.thrift.class".getBytes("UTF-8")
-  val ThriftClassKeyBytes: Array[Byte] = "key.thrift.class".getBytes("UTF-8")
-  val ThriftEncodingKeyBytes: Array[Byte] = "thrift.protocol.factory.class".getBytes("UTF-8")
 }
