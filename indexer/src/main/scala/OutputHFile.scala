@@ -339,7 +339,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     var lastName = ""
     var nameFids = new HashSet[String]
     
-    val writer = buildMapFileWriter("name_index")
+    val writer = buildHFileV1Writer("name_index.hfile")
 
     def writeNames() {
       writer.append(lastName.getBytes(), fidStringsToByteArray(nameFids.toList))
