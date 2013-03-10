@@ -477,22 +477,31 @@ class GeonamesParser(
     lineProcessor: (Int, String) => Option[GeonamesFeature],
     typeName: String,
     allowBuildings: Boolean = false) {
-    val lines = scala.io.Source.fromFile(new File(filename), "UTF-8").getLines
-    lines.zipWithIndex.foreach({case (line, index) => {
-      if (index % 10000 == 0) {
-        logger.info("imported %d %s so far".format(index, typeName))
-      }
-      val feature = lineProcessor(index, line)
-      feature.foreach(f => {
-        if (
-          !f.featureClass.isStupid &&
-          !(f.name.contains(", Stadt") && f.countryCode == "DE") &&
-          !f.geonameid.exists(ignoreList.contains) &&
-          (!f.featureClass.isBuilding || config.shouldParseBuildings || allowBuildings)) {
-          parseFeature(f)
+
+    var processed = 0
+    val numThreads = 5
+    val workers = 0.until(numThreads).toList.map(offset => {
+      val lines = scala.io.Source.fromFile(new File(filename), "UTF-8").getLines
+
+      lines.zipWithIndex.foreach({case (line, index) => {
+        if (index % offset == 0) {
+          if (processed % 10000 == 0) {
+            logger.info("imported %d %s so far".format(index, typeName))
+          }
+          processed += 1
+          val feature = lineProcessor(index, line)
+          feature.foreach(f => {
+            if (
+              !f.featureClass.isStupid &&
+              !(f.name.contains(", Stadt") && f.countryCode == "DE") &&
+              !f.geonameid.exists(ignoreList.contains) &&
+              (!f.featureClass.isBuilding || config.shouldParseBuildings || allowBuildings)) {
+              parseFeature(f)
+            }
+          })
         }
-      })
-    }})
+      }})
+    })
   }
 
   var alternateNamesMap = new HashMap[StoredFeatureId, List[AlternateNameEntry]]
