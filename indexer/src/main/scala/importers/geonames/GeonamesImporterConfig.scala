@@ -34,7 +34,7 @@ class GeonamesImporterConfig(args: Array[String]) {
   private val config = this
 
   val providerMapping = new HashMap[String, Int]
-  providerMapping(GeonamesParser.geonameIdNamespace) = 1
+  providerMapping("geonameid") = 1
 
   val parser = 
     new scopt.OptionParser("twofishes", "0.12") {

@@ -210,6 +210,15 @@ class GeonamesParser(
   val wkbWriter = new WKBWriter()
   val wktReader = new WKTReader() 
 
+  def objectIdFromFeatureId(geonameId: StoredFeatureId) = {
+    for {
+      idInt <- Helpers.TryO(geonameId.id.toInt)
+      providerId <- providerMapping.get(geonameId.namespace)
+    } yield {
+      objectIdFromLong((providerId.toLong << 32) + idInt)
+    }
+  }
+
   def doRewrites(names: List[String]): List[String] = {
     val nameSet = new scala.collection.mutable.HashSet[String]()
     rewriteTable.gidMap.foreach({case(from, toList) => {
@@ -425,15 +434,7 @@ class GeonamesParser(
       attributes.setNeighborhoodType(NeighborhoodType.valueOf(v))
     )
 
-    val objectId = (
-      for {
-        idInt <- Helpers.TryO(geonameId.id.toInt)
-        providerId <- providerMapping.get(geonameId.namespace)
-      } yield {
-        // let's call geonames data = 1
-        objectIdFromLong((providerId << 32) + idInt)
-      }
-    ).getOrElse(new ObjectId())
+    val objectId = objectIdFromFeatureId(geonameId).getOrElse(new ObjectId()) 
 
     val record = GeocodeRecord(
       _id = objectId,
