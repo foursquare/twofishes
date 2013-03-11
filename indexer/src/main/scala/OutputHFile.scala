@@ -388,7 +388,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
       YahooWoeType.COUNTRY
     ).map(_.getValue)
 
-    val prefixWriter = buildHFileV1Writer("prefix_index",
+    val prefixWriter = buildHFileV1Writer("prefix_index.hfile",
       Map(
         ("MAX_PREFIX_LENGTH", maxPrefixLength.toString)
       )

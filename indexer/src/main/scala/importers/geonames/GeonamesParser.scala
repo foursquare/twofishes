@@ -434,7 +434,11 @@ class GeonamesParser(
       attributes.setNeighborhoodType(NeighborhoodType.valueOf(v))
     )
 
+<<<<<<< HEAD
     val objectId = objectIdFromFeatureId(geonameId).getOrElse(new ObjectId()) 
+=======
+    val objectId = objectIdFromFeatureId(geonameId).getOrElse(new ObjectId())
+>>>>>>> fix prefix index filename
 
     val record = GeocodeRecord(
       _id = objectId,
