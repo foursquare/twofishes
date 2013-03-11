@@ -52,6 +52,9 @@ else:
 passBoolOpt('output_revgeo_index', options.output_revgeo_index)
 passBoolOpt('output_prefix_index', options.output_prefix_index)
 passBoolOpt('reload_data', options.reload_data)
+
+if options.reload_data:
+  os.system("./init-database.sh")
   
 cmd = './sbt "indexer/run-main com.foursquare.twofishes.importers.geonames.GeonamesParser %s --hfile_basepath %s %s"' % (cmd_opts, basepath, ' '.join(args))
 print(cmd)
