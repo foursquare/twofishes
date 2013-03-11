@@ -28,7 +28,7 @@ class MockGeocodeStorageWriteService extends GeocodeStorageWriteService {
 class IndexerSpec extends Specification {
   var store = new MockGeocodeStorageWriteService()
   val slugIndexer = new SlugIndexer()
-  val parser = new GeonamesParser(store, slugIndexer)
+  val parser = new GeonamesParser(store, slugIndexer, Map.empty)
 
   "name deduping works" in {
     val record = GeocodeRecord(new ObjectId(),
