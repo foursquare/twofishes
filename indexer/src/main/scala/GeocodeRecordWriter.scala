@@ -24,17 +24,11 @@ case class IdPop(
   pop: Int
 )
 
-case class PolygonIndex(
-  @Key("_id") _id: String,
-  wkbGeometry: Array[Byte]
-)
-
 trait GeocodeStorageWriteService {
   def insert(record: GeocodeRecord): Unit
   def setRecordNames(id: StoredFeatureId, names: List[DisplayName])
   def addNameToRecord(name: DisplayName, id: StoredFeatureId)
   def addNameIndex(name: NameIndex)
-  def savePolygon(id: StoredFeatureId, wkbGeometry: Array[Byte])
   def addPolygonToRecord(id: StoredFeatureId, wkbGeometry: Array[Byte])
   def addSlugToRecord(id: StoredFeatureId, slug: String)
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord]
@@ -45,9 +39,6 @@ object MongoGeocodeDAO extends SalatDAO[GeocodeRecord, ObjectId](
 
 object NameIndexDAO extends SalatDAO[NameIndex, String](
   collection = MongoConnection()("geocoder")("name_index"))
-
-object PolygonIndexDAO extends SalatDAO[PolygonIndex, String](
-  collection = MongoConnection()("geocoder")("polygons"))
 
 class MongoGeocodeStorageService extends GeocodeStorageWriteService {
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = {
@@ -68,18 +59,11 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
     NameIndexDAO.insert(name)
   }
 
-
-  def savePolygon(id: StoredFeatureId, wkbGeometry: Array[Byte]) {
-    PolygonIndexDAO.insert(
-      PolygonIndex(id.toString, wkbGeometry)
-    )
-  }
-
   def addPolygonToRecord(id: StoredFeatureId, wkbGeometry: Array[Byte]) {
     MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))),
       MongoDBObject("$set" ->
         MongoDBObject(
-          "wkbGeometry" -> wkbGeometry,
+          "polygon" -> Some(wkbGeometry),
           "hasPoly" -> true
         )
       ),
