@@ -491,7 +491,7 @@ class GeonamesParser(
       lines.zipWithIndex.foreach({case (line, index) => {
         if (index % numThreads == offset) {
           if (processed % 10000 == 0) {
-            logger.info("imported %d %s so far".format(index, typeName))
+            logger.info("imported %d %s so far".format(processed, typeName))
           }
           processed += 1
           val feature = lineProcessor(index, line)
