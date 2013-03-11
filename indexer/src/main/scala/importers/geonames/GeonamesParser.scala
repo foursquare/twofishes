@@ -489,7 +489,7 @@ class GeonamesParser(
       val lines = scala.io.Source.fromFile(new File(filename), "UTF-8").getLines
 
       lines.zipWithIndex.foreach({case (line, index) => {
-        if (index % offset == 0) {
+        if (index % numThreads == offset) {
           if (processed % 10000 == 0) {
             logger.info("imported %d %s so far".format(index, typeName))
           }
