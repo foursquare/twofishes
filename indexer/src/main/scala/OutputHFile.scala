@@ -34,10 +34,33 @@ class WrappedByteMapWriter(writer: MapFile.Writer) {
   def close() { writer.close() }
 }
 
-class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: SlugEntryMap) {
+class FidMap {
+  val fidMap = new HashMap[String, Option[ObjectId]]
+
+  def get(fid: String): Option[ObjectId] = {
+    if (!fidMap.contains(fid)) {
+      val oidOpt = MongoGeocodeDAO.primitiveProjection[ObjectId](
+        MongoDBObject("ids" -> fid), "_id")
+      fidMap(fid) = oidOpt
+      if (oidOpt.isEmpty) {
+        //println("missing fid: %s".format(fid))
+      }
+    }
+
+    fidMap.getOrElseUpdate(fid, None)
+  }
+}
+
+abstract class Indexer {
+  def basepath: String
+  def fidMap: FidMap
+
   val ThriftClassValue: String = "value.thrift.class"
   val ThriftClassKey: String = "key.thrift.class"
   val ThriftEncodingKey: String = "thrift.protocol.factory.class"
+
+  val factory = new TCompactProtocol.Factory()
+  val serializer = new TSerializer(factory)
 
   // this is all weirdly 4sq specific logic :-(
   def fixThriftClassName(n: String) = {
@@ -95,8 +118,51 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     )
   }
 
-  val maxPrefixLength = 5
+  def logDuration[T](what: String)(f: => T): T = {
+    val (rv, duration) = Duration.inNanoseconds(f)
+    if (duration.inMilliseconds > 200) {
+      println(what + " in %s µs / %s ms".format(duration.inMicroseconds, duration.inMilliseconds))
+    }
+    rv
+  }
 
+  val comp = new ByteArrayComparator()
+  def byteBufferSort(a: ByteBuffer, b: ByteBuffer) = {
+    comp.compare(a.array(), b.array()) < 0
+  }
+  def byteSort(a: Array[Byte], b: Array[Byte]) = {
+    comp.compare(a, b) < 0
+  }
+  def bytePairSort(a: (Array[Byte], Array[Byte]),
+      b: (Array[Byte], Array[Byte])) = {
+    comp.compare(a._1, b._1) < 0
+  }
+  def lexicalSort(a: String, b: String) = {
+    comp.compare(a.getBytes(), b.getBytes()) < 0
+  }
+  def objectIdSort(a: ObjectId, b: ObjectId) = {
+    comp.compare(a.toByteArray(), b.toByteArray()) < 0
+  }
+
+  def fidStringsToByteArray(fids: List[String]): Array[Byte] = {
+    val oids: Set[ObjectId] = fids.flatMap(fid => fidMap.get(fid)).toSet
+    oidsToByteArray(oids)
+  }
+
+  def oidsToByteArray(oids: Iterable[ObjectId]): Array[Byte] = {
+    val os = new ByteArrayOutputStream(12 * oids.size)
+    oids.foreach(oid =>
+      os.write(oid.toByteArray)
+    )
+    os.toByteArray()
+  }
+}
+
+object PrefixIndexer {
+  val MaxPrefixLength = 5
+}
+
+class PrefixIndexer(override val basepath: String, override val fidMap: FidMap) extends Indexer {
   def hasFlag(record: NameIndex, flag: FeatureNameFlags) =
     (record.flags & flag.getValue) > 0
 
@@ -106,10 +172,144 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     })
   }
 
-  type IdFixer = (String) => Option[String]
+  def sortRecordsByNames(records: List[NameIndex]) = {
+    // val (pureNames, unpureNames) = records.partition(r => {
+    //   !hasFlag(r, FeatureNameFlags.ALIAS)
+    //   !hasFlag(r, FeatureNameFlags.DEACCENT)
+    // })
 
-  val factory = new TCompactProtocol.Factory()
-  val serializer = new TSerializer(factory)
+    val (prefPureNames, nonPrefPureNames) =
+      records.partition(r =>
+        (hasFlag(r, FeatureNameFlags.PREFERRED) || hasFlag(r, FeatureNameFlags.ALT_NAME)) &&
+        (r.lang == "en" || hasFlag(r, FeatureNameFlags.LOCAL_LANG))
+      )
+
+    val (secondBestNames, worstNames) =
+      nonPrefPureNames.partition(r =>
+        r.lang == "en"
+        || hasFlag(r, FeatureNameFlags.LOCAL_LANG)
+      )
+
+    (joinLists(prefPureNames), joinLists(secondBestNames, worstNames))
+  }
+
+  def getRecordsByPrefix(prefix: String, limit: Int) = {
+    NameIndexDAO.find(
+      MongoDBObject(
+        "name" -> MongoDBObject("$regex" -> "^%s".format(prefix)))
+    ).sort(orderBy = MongoDBObject("pop" -> -1)).limit(limit)
+  }
+
+  def doOutputPrefixIndex(prefixSet: HashSet[String]) {
+    println("sorting prefix set")
+    val sortedPrefixes = prefixSet.toList.sort(lexicalSort)
+    println("done sorting")
+
+    val bestWoeTypes = List(
+      YahooWoeType.POSTAL_CODE,
+      YahooWoeType.TOWN,
+      YahooWoeType.SUBURB,
+      YahooWoeType.ADMIN3,
+      YahooWoeType.AIRPORT,
+      YahooWoeType.COUNTRY
+    ).map(_.getValue)
+
+    val prefixWriter = buildMapFileWriter("prefix_index",
+      Map(
+        ("MAX_PREFIX_LENGTH", PrefixIndexer.MaxPrefixLength.toString)
+      )
+    )
+
+    val numPrefixes = sortedPrefixes.size
+    for {
+      (prefix, index) <- sortedPrefixes.zipWithIndex
+    } {
+      if (index % 1000 == 0) {
+        println("done with %d of %d prefixes".format(index, numPrefixes))
+      }
+      val records = getRecordsByPrefix(prefix, 1000)
+
+      val (woeMatches, woeMismatches) = records.partition(r =>
+        bestWoeTypes.contains(r.woeType))
+
+      val (prefSortedRecords, unprefSortedRecords) =
+        sortRecordsByNames(woeMatches.toList)
+
+      var fids = new HashSet[String]
+      prefSortedRecords.foreach(f => {
+        if (fids.size < 50) {
+          fids.add(f.fid)
+        }
+      })
+
+      if (fids.size < 3) {
+        unprefSortedRecords.foreach(f => {
+          if (fids.size < 50) {
+            fids.add(f.fid)
+          }
+        })
+      }
+
+      prefixWriter.append(prefix.getBytes(), fidStringsToByteArray(fids.toList))
+    }
+
+    prefixWriter.close()
+    println("done")
+  }
+}
+
+class NameIndexer(override val basepath: String, override val fidMap: FidMap, outputPrefixIndex: Boolean) extends Indexer {
+  val prefixIndexer = new PrefixIndexer(basepath, fidMap)
+
+  def writeNames() {
+    var nameCount = 0
+    val nameSize = NameIndexDAO.collection.count
+    val nameCursor = NameIndexDAO.find(MongoDBObject())
+      .sort(orderBy = MongoDBObject("name" -> 1)) // sort by nameBytes asc
+
+    var prefixSet = new HashSet[String]
+
+    var lastName = ""
+    var nameFids = new HashSet[String]
+
+    val writer = buildHFileV1Writer("name_index.hfile")
+
+    def writeFidsForLastName() {
+      writer.append(lastName.getBytes(), fidStringsToByteArray(nameFids.toList))
+      if (outputPrefixIndex) {
+        1.to(List(PrefixIndexer.MaxPrefixLength, lastName.size).min).foreach(length =>
+          prefixSet.add(lastName.substring(0, length))
+        )
+      }
+    }
+
+    nameCursor.filterNot(_.name.isEmpty).foreach(n => {
+      if (lastName != n.name) {
+        if (lastName != "") {
+          writeFidsForLastName()
+        }
+        nameFids.clear()
+        lastName = n.name
+      }
+
+      nameFids.add(n.fid)
+
+      nameCount += 1
+      if (nameCount % 100000 == 0) {
+        println("processed %d of %d names".format(nameCount, nameSize))
+      }
+    })
+    writeFidsForLastName()
+    writer.close()
+
+    if (outputPrefixIndex) {
+      prefixIndexer.doOutputPrefixIndex(prefixSet)
+    }
+  }
+}
+
+class FeatureIndexer(override val basepath: String, override val fidMap: FidMap) extends Indexer {
+  type IdFixer = (String) => Option[String]
 
   def serializeGeocodeRecordWithoutGeometry(g: GeocodeRecord, fixParentId: IdFixer) = {
     val f = g.toGeocodeServingFeature()
@@ -133,6 +333,28 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     serializer.serialize(f)
   }
 
+  def writeFeatures() {
+    def fixParentId(fid: String) = fidMap.get(fid).map(_.toString)
+
+    // these types are a lie
+    val writer = buildMapFileWriter[ObjectIdWrapper, GeocodeServingFeature]("features")
+    var fidCount = 0
+    val fidSize = MongoGeocodeDAO.collection.count
+    val fidCursor = MongoGeocodeDAO.find(MongoDBObject())
+      .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
+    fidCursor.foreach(f => {
+      writer.append(
+        f._id.toByteArray(), serializeGeocodeRecordWithoutGeometry(f, fixParentId))
+      fidCount += 1
+      if (fidCount % 100000 == 0) {
+        println("processed %d of %d features".format(fidCount, fidSize))
+      }
+    })
+    writer.close()
+  }
+}
+
+class PolygonIndexer(override val basepath: String, override val fidMap: FidMap) extends Indexer {
   def buildPolygonIndex() {
     val polygons =
       MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
@@ -157,15 +379,9 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
 
     println("done")
   }
+}
 
-  def logDuration[T](what: String)(f: => T): T = {
-    val (rv, duration) = Duration.inNanoseconds(f)
-    if (duration.inMilliseconds > 200) {
-      println(what + " in %s µs / %s ms".format(duration.inMicroseconds, duration.inMilliseconds))
-    }
-    rv
-  }
-
+class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) extends Indexer {
   def buildRevGeoIndex() {
     val minS2Level = 8
     val maxS2Level = 12
@@ -268,188 +484,9 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
 
     writer.close()
   }
+}
 
-  def sortRecordsByNames(records: List[NameIndex]) = {
-    // val (pureNames, unpureNames) = records.partition(r => {
-    //   !hasFlag(r, FeatureNameFlags.ALIAS)
-    //   !hasFlag(r, FeatureNameFlags.DEACCENT)
-    // })
-
-    val (prefPureNames, nonPrefPureNames) =
-      records.partition(r =>
-        (hasFlag(r, FeatureNameFlags.PREFERRED) || hasFlag(r, FeatureNameFlags.ALT_NAME)) &&
-        (r.lang == "en" || hasFlag(r, FeatureNameFlags.LOCAL_LANG))
-      )
-
-    val (secondBestNames, worstNames) =
-      nonPrefPureNames.partition(r =>
-        r.lang == "en"
-        || hasFlag(r, FeatureNameFlags.LOCAL_LANG)
-      )
-
-    (joinLists(prefPureNames), joinLists(secondBestNames, worstNames))
-  }
-
-  def getRecordsByPrefix(prefix: String, limit: Int) = {
-    NameIndexDAO.find(
-      MongoDBObject(
-        "name" -> MongoDBObject("$regex" -> "^%s".format(prefix)))
-    ).sort(orderBy = MongoDBObject("pop" -> -1)).limit(limit)
-  }
-
-  val comp = new ByteArrayComparator()
-  def byteBufferSort(a: ByteBuffer, b: ByteBuffer) = {
-    comp.compare(a.array(), b.array()) < 0
-  }
-  def byteSort(a: Array[Byte], b: Array[Byte]) = {
-    comp.compare(a, b) < 0
-  }
-  def bytePairSort(a: (Array[Byte], Array[Byte]),
-      b: (Array[Byte], Array[Byte])) = {
-    comp.compare(a._1, b._1) < 0
-  }
-  def lexicalSort(a: String, b: String) = {
-    comp.compare(a.getBytes(), b.getBytes()) < 0
-  }
-  def objectIdSort(a: ObjectId, b: ObjectId) = {
-    comp.compare(a.toByteArray(), b.toByteArray()) < 0
-  }
-
-  def fidStringsToByteArray(fids: List[String]): Array[Byte] = {
-    val oids: Set[ObjectId] = fids.flatMap(fid => fidMap.get(fid)).toSet
-    oidsToByteArray(oids)
-  }
-
-  def oidsToByteArray(oids: Iterable[ObjectId]): Array[Byte] = {
-    val os = new ByteArrayOutputStream(12 * oids.size)
-    oids.foreach(oid =>
-      os.write(oid.toByteArray)
-    )
-    os.toByteArray()
-  }
-
-  def writeNames() {
-    var nameCount = 0
-    val nameSize = NameIndexDAO.collection.count
-    val nameCursor = NameIndexDAO.find(MongoDBObject())
-      .sort(orderBy = MongoDBObject("name" -> 1)) // sort by nameBytes asc
-
-    var prefixSet = new HashSet[String]
-
-    var lastName = ""
-    var nameFids = new HashSet[String]
-
-    val writer = buildHFileV1Writer("name_index.hfile")
-
-    def writeFidsForLastName() {
-      writer.append(lastName.getBytes(), fidStringsToByteArray(nameFids.toList))
-      if (outputPrefixIndex) {
-        1.to(List(maxPrefixLength, lastName.size).min).foreach(length =>
-          prefixSet.add(lastName.substring(0, length))
-        )
-      }
-    }
-
-    nameCursor.filterNot(_.name.isEmpty).foreach(n => {
-      if (lastName != n.name) {
-        if (lastName != "") {
-          writeFidsForLastName()
-        }
-        nameFids.clear()
-        lastName = n.name
-      }
-
-      nameFids.add(n.fid)
-
-      nameCount += 1
-      if (nameCount % 100000 == 0) {
-        println("processed %d of %d names".format(nameCount, nameSize))
-      }
-    })
-    writeFidsForLastName()
-    writer.close()
-
-    if (outputPrefixIndex) {
-      doOutputPrefixIndex(prefixSet)
-    }
-  }
-
-  def doOutputPrefixIndex(prefixSet: HashSet[String]) {
-    println("sorting prefix set")
-    val sortedPrefixes = prefixSet.toList.sort(lexicalSort)
-    println("done sorting")
-
-    val bestWoeTypes = List(
-      YahooWoeType.POSTAL_CODE,
-      YahooWoeType.TOWN,
-      YahooWoeType.SUBURB,
-      YahooWoeType.ADMIN3,
-      YahooWoeType.AIRPORT,
-      YahooWoeType.COUNTRY
-    ).map(_.getValue)
-
-    val prefixWriter = buildMapFileWriter("prefix_index",
-      Map(
-        ("MAX_PREFIX_LENGTH", maxPrefixLength.toString)
-      )
-    )
-
-    val numPrefixes = sortedPrefixes.size
-    for {
-      (prefix, index) <- sortedPrefixes.zipWithIndex
-    } {
-      if (index % 1000 == 0) {
-        println("done with %d of %d prefixes".format(index, numPrefixes))
-      }
-      val records = getRecordsByPrefix(prefix, 1000)
-
-      val (woeMatches, woeMismatches) = records.partition(r =>
-        bestWoeTypes.contains(r.woeType))
-
-      val (prefSortedRecords, unprefSortedRecords) =
-        sortRecordsByNames(woeMatches.toList)
-
-      var fids = new HashSet[String]
-      prefSortedRecords.foreach(f => {
-        if (fids.size < 50) {
-          fids.add(f.fid)
-        }
-      })
-
-      if (fids.size < 3) {
-        unprefSortedRecords.foreach(f => {
-          if (fids.size < 50) {
-            fids.add(f.fid)
-          }
-        })
-      }
-
-      prefixWriter.append(prefix.getBytes(), fidStringsToByteArray(fids.toList))
-    }
-
-    prefixWriter.close()
-    println("done")
-  }
-
-  class FidMap {
-    val fidMap = new HashMap[String, Option[ObjectId]]
-
-    def get(fid: String): Option[ObjectId] = {
-      if (!fidMap.contains(fid)) {
-        val oidOpt = MongoGeocodeDAO.primitiveProjection[ObjectId](
-          MongoDBObject("ids" -> fid), "_id")
-        fidMap(fid) = oidOpt
-        if (oidOpt.isEmpty) {
-          //println("missing fid: %s".format(fid))
-        }
-      }
-
-      fidMap.getOrElseUpdate(fid, None)
-    }
-  }
-
-  val fidMap = new FidMap()
-
+class IdIndexer(override val basepath: String, override val fidMap: FidMap, slugEntryMap: SlugEntryMap) extends Indexer {
   def writeSlugsAndIds() {
     val slugEntries: List[(Array[Byte], Array[Byte])]  = for {
       (slug, entry) <- slugEntryMap.toList
@@ -474,30 +511,18 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
 
     writer.close()
   }
+}
 
-  def writeFeatures() {
-    def fixParentId(fid: String) = fidMap.get(fid).map(_.toString)
+class OutputIndexes(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: SlugEntryMap, outputRevgeo: Boolean) {
+  def buildIndexes() {
+    val fidMap = new FidMap()
 
-    // these types are a lie
-    val writer = buildMapFileWriter[ObjectIdWrapper, GeocodeServingFeature]("features")
-    var fidCount = 0
-    val fidSize = MongoGeocodeDAO.collection.count
-    val fidCursor = MongoGeocodeDAO.find(MongoDBObject())
-      .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
-    fidCursor.foreach(f => {
-      writer.append(
-        f._id.toByteArray(), serializeGeocodeRecordWithoutGeometry(f, fixParentId))
-      fidCount += 1
-      if (fidCount % 100000 == 0) {
-        println("processed %d of %d features".format(fidCount, fidSize))
-      }
-    })
-    writer.close()
-  }
-
-  def process() {
-    writeNames()
-    writeSlugsAndIds()
-    writeFeatures()
+    (new NameIndexer(basepath, fidMap, outputPrefixIndex)).writeNames()
+    (new IdIndexer(basepath, fidMap, slugEntryMap)).writeSlugsAndIds()
+    (new FeatureIndexer(basepath, fidMap)).writeFeatures()
+    (new PolygonIndexer(basepath, fidMap)).buildPolygonIndex()
+    if (outputRevgeo) {
+      (new RevGeoIndexer(basepath, fidMap)).buildRevGeoIndex()
+    }
   }
 }

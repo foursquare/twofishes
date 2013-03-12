@@ -26,9 +26,9 @@ object GeonamesParser {
 
   var config: GeonamesImporterConfig = null
 
-  var countryLangMap = new HashMap[String, List[String]]() 
-  var countryNameMap = new HashMap[String, String]() 
-  var adminIdMap = new HashMap[String, String]() 
+  var countryLangMap = new HashMap[String, List[String]]()
+  var countryNameMap = new HashMap[String, String]()
+  var adminIdMap = new HashMap[String, String]()
 
   lazy val naturalEarthPopulatedPlacesMap: Map[StoredFeatureId, SimpleFeature] = {
     new ShapefileIterator("data/downloaded/ne_10m_populated_places_simple.shp").flatMap(f => {
@@ -38,7 +38,7 @@ object GeonamesParser {
     }).toMap
   }
 
-  
+
   def parseCountryInfo() {
     val fileSource = scala.io.Source.fromFile(new File("data/downloaded/countryInfo.txt"))
     val lines = fileSource.getLines.filterNot(_.startsWith("#"))
@@ -75,21 +75,17 @@ object GeonamesParser {
     if (config.reloadData) {
       loadIntoMongo()
     }
-    writeHFileOutput()
+    writeIndexes()
   }
 
   def writeIndex(args: Array[String]) {
     config = new GeonamesImporterConfig(args)
-    writeHFileOutput()
+    writeIndexes()
   }
 
-  def writeHFileOutput() {
-    val outputter = new OutputHFile(config.hfileBasePath, config.outputPrefixIndex, GeonamesParser.slugIndexer.slugEntryMap)
-    outputter.process()
-    outputter.buildPolygonIndex()
-    if (config.outputRevgeo) {
-      outputter.buildRevGeoIndex()
-    }
+  def writeIndexes() {
+    val outputter = new OutputIndexes(config.hfileBasePath, config.outputPrefixIndex, GeonamesParser.slugIndexer.slugEntryMap, config.outputRevgeo)
+    outputter.buildIndexes()
   }
 
   def loadIntoMongo() {
@@ -145,8 +141,8 @@ object GeonamesParser {
     if (config.buildMissingSlugs) {
       println("building missing slugs")
       slugIndexer.buildMissingSlugs()
-      slugIndexer.writeMissingSlugs(store)  
-    } 
+      slugIndexer.writeMissingSlugs(store)
+    }
 
     PolygonLoader.load(store, geonameIdNamespace, writeToRecord = true)
   }
@@ -183,7 +179,7 @@ class GeonamesParser(
     "data/private/aliases.txt")
   // geonameid --> new center
   lazy val moveTable = new GeoIdTsvHelperFileParser(geonameIdNamespace, "data/custom/moves.txt")
-  
+
   // geonameid -> name to be deleted
   lazy val nameDeleteTable = new GeoIdTsvHelperFileParser(geonameIdNamespace, "data/custom/name-deletes.txt")
   // list of geoids (geonameid:XXX) to skip indexing
@@ -208,7 +204,7 @@ class GeonamesParser(
   }
 
   val wkbWriter = new WKBWriter()
-  val wktReader = new WKTReader() 
+  val wktReader = new WKTReader()
 
   def objectIdFromFeatureId(geonameId: StoredFeatureId) = {
     for {
@@ -260,9 +256,9 @@ class GeonamesParser(
       return
     }
 
-    val pop: Int = 
+    val pop: Int =
       record.flatMap(_.population).getOrElse(0) + record.flatMap(_.boost).getOrElse(0)
-    val woeType: Int = 
+    val woeType: Int =
       record.map(_._woeType).getOrElse(0)
     val nameIndex = NameIndex(name, fid.toString,
       pop, woeType, dn.flags, dn.lang, dn._id)
@@ -292,7 +288,7 @@ class GeonamesParser(
       }
     }).get
 
-    val ids: List[StoredFeatureId] = List(geonameId) ++ 
+    val ids: List[StoredFeatureId] = List(geonameId) ++
       concordanceMap.get(geonameId).flatMap(id =>
         if (id.contains(":")) {
           val parts = id.split(":")
@@ -309,7 +305,7 @@ class GeonamesParser(
           DisplayName("en", name, FeatureNameFlags.PREFERRED.getValue() | FeatureNameFlags.COLLOQUIAL.getValue())
       )
     }
-        
+
     feature.asciiname.foreach(asciiname => {
       if (feature.name != asciiname && asciiname.nonEmpty) {
         displayNames ::=
@@ -404,16 +400,16 @@ class GeonamesParser(
     }
 
     naturalEarthPopulatedPlacesMap.get(geonameId).map(sfeature => {
-      sfeature.propMap.get("adm0cap").foreach(v => 
+      sfeature.propMap.get("adm0cap").foreach(v =>
         attributes.setAdm0cap(v.toDouble.toInt == 1)
       )
-      sfeature.propMap.get("scalerank").foreach(v => 
+      sfeature.propMap.get("scalerank").foreach(v =>
         attributes.setScalerank(v.toInt)
       )
-      sfeature.propMap.get("natscale").foreach(v => 
+      sfeature.propMap.get("natscale").foreach(v =>
         attributes.setNatscale(v.toInt)
       )
-      sfeature.propMap.get("labelrank").foreach(v => 
+      sfeature.propMap.get("labelrank").foreach(v =>
         attributes.setLabelrank(v.toInt)
       )
     })
@@ -426,15 +422,15 @@ class GeonamesParser(
       attributes.setPopulation(pop)
     )
 
-    feature.extraColumns.get("sociallyRelevant").map(v => 
+    feature.extraColumns.get("sociallyRelevant").map(v =>
       attributes.setSociallyRelevant(v.toBoolean)
     )
 
-    feature.extraColumns.get("neighborhoodType").map(v => 
+    feature.extraColumns.get("neighborhoodType").map(v =>
       attributes.setNeighborhoodType(NeighborhoodType.valueOf(v))
     )
 
-    val objectId = objectIdFromFeatureId(geonameId).getOrElse(new ObjectId()) 
+    val objectId = objectIdFromFeatureId(geonameId).getOrElse(new ObjectId())
 
     val record = GeocodeRecord(
       _id = objectId,
@@ -469,12 +465,12 @@ class GeonamesParser(
   }
 
   def parseAdminFile(filename: String, allowBuildings: Boolean = false) {
-    parseFromFile(filename, (index: Int, line: String) => 
+    parseFromFile(filename, (index: Int, line: String) =>
       GeonamesFeature.parseFromAdminLine(index, line), "features", allowBuildings)
   }
 
   def parsePostalCodeFile(filename: String, countryFile: Boolean) {
-    parseFromFile(filename, (index: Int, line: String) => 
+    parseFromFile(filename, (index: Int, line: String) =>
       GeonamesFeature.parseFromPostalCodeLine(index, line), "postal codes")
   }
 
@@ -529,7 +525,7 @@ class GeonamesParser(
         DisplayName(lang, name, flags)
       }
 
-      def isLocalLang(lang: String) = 
+      def isLocalLang(lang: String) =
         countryLangMap.getOrElse(cc, Nil).contains(lang)
 
       def processNameList(names: List[String], flags: Int): List[DisplayName] = {
@@ -545,7 +541,7 @@ class GeonamesParser(
       val originalFlags = if (isPrefName) {
         FeatureNameFlags.PREFERRED.getValue
       } else { 0 }
-      
+
       processNameList(originalNames, originalFlags) ++
       processNameList(deaccentedNames, originalFlags | FeatureNameFlags.DEACCENT.getValue) ++
       processNameList(allModifiedNames, originalFlags | FeatureNameFlags.ALIAS.getValue)
@@ -585,10 +581,10 @@ class GeonamesParser(
             })
 
             val newNames = modifiedNames ++ (
-              if (foundName) { Nil } else { 
+              if (foundName) { Nil } else {
                 List(DisplayName(lang, name, FeatureNameFlags.PREFERRED.getValue))
               }
-            )            
+            )
 
             store.setRecordNames(StoredFeatureId(geonameIdNamespace, gid), newNames)
           }
