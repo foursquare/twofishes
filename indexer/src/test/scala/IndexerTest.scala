@@ -19,6 +19,7 @@ class MockGeocodeStorageWriteService extends GeocodeStorageWriteService {
 
     nameMap(id) = name :: nameMap(id)
   }
+  def addPolygonToRecord(id: StoredFeatureId, wkbGeometry: Array[Byte]) {}
   def addBoundingBoxToRecord(id: StoredFeatureId, bbox: BoundingBox) {}
   def addSlugToRecord(id: StoredFeatureId, slug: String) {}
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = Nil.iterator
@@ -74,7 +75,7 @@ class IndexerSpec extends Specification {
     names.size aka names.toString mustEqual 1
     names must contain("Griffiss AFB")
   }
-  
+
   "deletes work" in {
     val (deaccentedNames, otherModifiedNames) =
       parser.rewriteNames(List("Cook County", "Township of Brick"))
