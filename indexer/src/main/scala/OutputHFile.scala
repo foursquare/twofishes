@@ -26,6 +26,16 @@ import org.apache.thrift.protocol.{TCompactProtocol, TProtocolFactory}
 import scala.collection.mutable.{HashMap, HashSet, ListBuffer}
 import scalaj.collection.Implicits._
 
+trait DurationUtils {
+  def logDuration[T](what: String)(f: => T): T = {
+    val (rv, duration) = Duration.inNanoseconds(f)
+    if (duration.inMilliseconds > 200) {
+      println(what + " in %s µs / %s ms".format(duration.inMicroseconds, duration.inMilliseconds))
+    }
+    rv
+  }
+}
+
 class WrappedByteMapWriter(writer: MapFile.Writer) {
   def append(k: Array[Byte], v: Array[Byte]) {
     writer.append(new BytesWritable(k), new BytesWritable(v))
@@ -34,24 +44,45 @@ class WrappedByteMapWriter(writer: MapFile.Writer) {
   def close() { writer.close() }
 }
 
-class FidMap {
+class FidMap(preload: Boolean) extends DurationUtils {
   val fidMap = new HashMap[String, Option[ObjectId]]
 
-  def get(fid: String): Option[ObjectId] = {
-    if (!fidMap.contains(fid)) {
-      val oidOpt = MongoGeocodeDAO.primitiveProjection[ObjectId](
-        MongoDBObject("ids" -> fid), "_id")
-      fidMap(fid) = oidOpt
-      if (oidOpt.isEmpty) {
-        //println("missing fid: %s".format(fid))
-      }
+  if (preload) {
+    logDuration("preloading fids") {
+      var i = 0
+      val total = MongoGeocodeDAO.collection.count
+      val geocodeCursor = MongoGeocodeDAO.find(MongoDBObject())
+      geocodeCursor.foreach(geocodeRecord => {
+        geocodeRecord.ids.foreach(id => {
+          fidMap(id) = Some(geocodeRecord._id)
+        })
+        i += 1
+        if (i % (100*1000) == 0) {
+          println("preloaded %d/%d fids".format(i, total))
+        }
+      })
     }
+  }
 
-    fidMap.getOrElseUpdate(fid, None)
+  def get(fid: String): Option[ObjectId] = {
+    if (preload) {
+      fidMap.getOrElse(fid, None)
+    } else {
+      if (!fidMap.contains(fid)) {
+        val oidOpt = MongoGeocodeDAO.primitiveProjection[ObjectId](
+          MongoDBObject("ids" -> fid), "_id")
+        fidMap(fid) = oidOpt
+        if (oidOpt.isEmpty) {
+          //println("missing fid: %s".format(fid))
+        }
+      }
+
+      fidMap.getOrElseUpdate(fid, None)
+    }
   }
 }
 
-abstract class Indexer {
+abstract class Indexer extends DurationUtils {
   def basepath: String
   def fidMap: FidMap
 
@@ -116,14 +147,6 @@ abstract class Indexer {
     new WrappedByteMapWriter(
       MapFileUtils.writerToLocalPath((new File(basepath, filename)).toString, finalInfoMap)
     )
-  }
-
-  def logDuration[T](what: String)(f: => T): T = {
-    val (rv, duration) = Duration.inNanoseconds(f)
-    if (duration.inMilliseconds > 200) {
-      println(what + " in %s µs / %s ms".format(duration.inMicroseconds, duration.inMilliseconds))
-    }
-    rv
   }
 
   val comp = new ByteArrayComparator()
@@ -515,7 +538,7 @@ class IdIndexer(override val basepath: String, override val fidMap: FidMap, slug
 
 class OutputIndexes(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: SlugEntryMap, outputRevgeo: Boolean) {
   def buildIndexes() {
-    val fidMap = new FidMap()
+    val fidMap = new FidMap(preload = true)
 
     (new NameIndexer(basepath, fidMap, outputPrefixIndex)).writeNames()
     (new IdIndexer(basepath, fidMap, slugEntryMap)).writeSlugsAndIds()
