@@ -301,7 +301,7 @@ class GeonamesParser(
       )
 
     var displayNames: List[DisplayName] = processFeatureName(
-      feature.countryCode, "en", feature.name, true, false)
+      feature.countryCode, "en", feature.name, false, false)
 
     if (feature.featureClass.woeType == YahooWoeType.COUNTRY) {
       countryNameMap.get(feature.countryCode).foreach(name =>
