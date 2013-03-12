@@ -162,7 +162,7 @@ trait ByteReaderUtils {
 
 class NameIndexHFileInput(basepath: String, shouldPreload: Boolean) extends ByteReaderUtils {
   val nameIndex = new HFileInput(basepath, "name_index.hfile", shouldPreload)
-  val prefixMapOpt = PrefixIndexHFileInput.readInput(basepath, shouldPreload)
+  val prefixMapOpt = PrefixIndexMapFileInput.readInput(basepath, shouldPreload)
 
   def get(name: String): List[ObjectId] = {
     val buf = ByteBuffer.wrap(name.getBytes())
@@ -186,24 +186,25 @@ class NameIndexHFileInput(basepath: String, shouldPreload: Boolean) extends Byte
   }
 }
 
-object PrefixIndexHFileInput {
+
+object PrefixIndexMapFileInput {
   def readInput(basepath: String, shouldPreload: Boolean) = {
-    if (new File(basepath, "prefix_index.hfile").exists()) {
-      Some(new PrefixIndexHFileInput(basepath, shouldPreload))
+    if (new File(basepath, "prefix_index").exists()) {
+      Some(new PrefixIndexMapFileInput(basepath, shouldPreload))
     } else {
       None
     }
   }
 }
 
-class PrefixIndexHFileInput(basepath: String, shouldPreload: Boolean) extends ByteReaderUtils {
-  val prefixIndex = new HFileInput(basepath, "prefix_index.hfile", shouldPreload)
-  val maxPrefixLength = 5 // TODO: pull from hfile metadata
+class PrefixIndexMapFileInput(basepath: String, shouldPreload: Boolean) extends ByteReaderUtils {
+  val prefixIndex = new MapFileInput(basepath, "prefix_index", shouldPreload)
+  val maxPrefixLength = prefixIndex.fileInfo.getOrElse(
+    "MAX_PREFIX_LENGTH",
+    throw new Exception("missing MAX_PREFIX_LENGTH")).toInt
 
   def get(name: String): List[ObjectId] = {
-    val buf = ByteBuffer.wrap(name.getBytes())
-    prefixIndex.lookup(buf).toList.flatMap(b => {
-      val bytes = TBaseHelper.byteBufferToByteArray(b)
+    prefixIndex.lookup(name.getBytes).toList.flatMap(bytes => {
       decodeObjectIds(bytes)
     })
   }
@@ -257,7 +258,6 @@ class GeometryMapFileInput(basepath: String, shouldPreload: Boolean) extends Byt
   val geometryIndex = new MapFileInput(basepath, "geometry", shouldPreload)
 
   def get(oid: ObjectId): Option[Array[Byte]] = {
-    //val buf = ByteBuffer.wrap(oid.toByteArray())
     val buf = oid.toByteArray()
     geometryIndex.lookup(buf)
   }
@@ -266,7 +266,6 @@ class GeometryMapFileInput(basepath: String, shouldPreload: Boolean) extends Byt
 class SlugFidMapFileInput(basepath: String, shouldPreload: Boolean) extends ByteReaderUtils {
   val idMappingIndex = new MapFileInput(basepath, "id-mapping", shouldPreload)
   def get(s: String): Option[ObjectId] = {
-    // val buf = ByteBuffer.wrap(s.getBytes("UTF-8"))
     val buf = s.getBytes("UTF-8")
     idMappingIndex.lookup(buf).flatMap(b => {
       decodeObjectIds(b).headOption
@@ -276,11 +275,6 @@ class SlugFidMapFileInput(basepath: String, shouldPreload: Boolean) extends Byte
 
 class GeocodeRecordMapFileInput(basepath: String, shouldPreload: Boolean) extends ByteReaderUtils {
   val featureIndex = new MapFileInput(basepath, "features", shouldPreload)
-
-  def decodeFeature(b: ByteBuffer) = {
-    val bytes = TBaseHelper.byteBufferToByteArray(b)
-    deserializeBytes(new GeocodeServingFeature(), bytes)
-  }
 
   def decodeFeature(bytes: Array[Byte]) = {
     deserializeBytes(new GeocodeServingFeature(), bytes)
@@ -296,7 +290,6 @@ class GeocodeRecordMapFileInput(basepath: String, shouldPreload: Boolean) extend
   }
 
   def get(oid: ObjectId): Option[GeocodeServingFeature] = {
-    // val buf = ByteBuffer.wrap(oid.toByteArray())
     val buf = oid.toByteArray()
     featureIndex.lookup(buf).map(decodeFeature)
   }

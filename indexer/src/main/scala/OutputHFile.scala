@@ -55,7 +55,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     val conf = new Configuration()
     val blockSizeKey = "hbase.mapreduce.hfileoutputformat.blocksize"
     val compressionKey = "hfile.compression"
- 
+
     val blockSize = 16384
     val compressionAlgo = Compression.Algorithm.NONE.getName
 
@@ -338,10 +338,10 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
 
     var lastName = ""
     var nameFids = new HashSet[String]
-    
+
     val writer = buildHFileV1Writer("name_index.hfile")
 
-    def writeNames() {
+    def writeFidsForLastName() {
       writer.append(lastName.getBytes(), fidStringsToByteArray(nameFids.toList))
       if (outputPrefixIndex) {
         1.to(List(maxPrefixLength, lastName.size).min).foreach(length =>
@@ -353,7 +353,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     nameCursor.filterNot(_.name.isEmpty).foreach(n => {
       if (lastName != n.name) {
         if (lastName != "") {
-          writeNames()
+          writeFidsForLastName()
         }
         nameFids.clear()
         lastName = n.name
@@ -366,7 +366,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
         println("processed %d of %d names".format(nameCount, nameSize))
       }
     })
-    writeNames()
+    writeFidsForLastName()
     writer.close()
 
     if (outputPrefixIndex) {
@@ -388,7 +388,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
       YahooWoeType.COUNTRY
     ).map(_.getValue)
 
-    val prefixWriter = buildHFileV1Writer("prefix_index.hfile",
+    val prefixWriter = buildMapFileWriter("prefix_index",
       Map(
         ("MAX_PREFIX_LENGTH", maxPrefixLength.toString)
       )
@@ -485,7 +485,7 @@ class OutputHFile(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: Sl
     val fidCursor = MongoGeocodeDAO.find(MongoDBObject())
       .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
     fidCursor.foreach(f => {
-      writer.append(        
+      writer.append(
         f._id.toByteArray(), serializeGeocodeRecordWithoutGeometry(f, fixParentId))
       fidCount += 1
       if (fidCount % 100000 == 0) {
