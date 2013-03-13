@@ -12,24 +12,32 @@ import threading
 
 # TODO: move this to thrift
 
-#serverA = "http://prodapp-geocoder-10:35000"
-serverA = "http://dev-blackmad:8081"
-serverB = "http://dev-blackmad:8081"
+serverA = "http://prodapp-geocoder-10:35000"
+#serverA = "http://dev-blackmad:8081"
+serverB = "http://dev-blackmad:7110"
 
 outputFile = open('eval-%s.html' % datetime.datetime.now(), 'w')
 
 def getUrl(server, param):
-  return server + param
+  return server + '/' + param
 
 def getResponse(server, param):
   try:
     response = urllib2.urlopen(getUrl(server, param))
     json_response = json.loads(response.read())
     return json_response
-  except:
+  except Exception as e:
+    print e
     return None
 
+# Haversine formula, see http://www.movable-type.co.uk/scripts/gis-faq-5.1.html
 def earthDistance(lat_1, long_1, lat_2, long_2):
+  # Convert from decimal degrees to radians.
+  lat_1 = lat_1 * math.pi / 180
+  lat_2 = lat_2 * math.pi / 180
+  long_1 = long_1 * math.pi / 180
+  long_2 = long_2 * math.pi / 180
+
   dlong = long_2 - long_1
   dlat = lat_2 - lat_1
   a = (math.sin(dlat / 2))**2 + math.cos(lat_1) * math.cos(lat_2) * (math.sin(dlong / 2))**2
@@ -65,17 +73,17 @@ class GeocodeFetch(threading.Thread):
         param = '?' +  urllib.urlencode([('query', param)])
       param_str = param[param.find('?')+1:]
       params = urlparse.parse_qs(param_str)
-     
+
       responseA = getResponse(serverA, param)
       responseB = getResponse(serverB, param)
 
       def getId(response):
-        if (response and 
+        if (response and
             'interpretations' in response and
             len(response['interpretations']) and
             'feature' in response['interpretations'][0] and
             'ids' in response['interpretations'][0]['feature']):
-          return response['interpretations'][0]['feature']['ids'] 
+          return response['interpretations'][0]['feature']['ids']
         else:
           return ''
 
@@ -115,7 +123,8 @@ class GeocodeFetch(threading.Thread):
 
         if interpA['feature']['ids'] != interpB['feature']['ids'] and \
             interpA['feature']['woeType'] != 11 and \
-            interpB['feature']['woeType'] != 11:
+            interpB['feature']['woeType'] != 11 and \
+            interpA['feature']['ids'] != filter(lambda x: x['source'] != 'woeid', interpB['feature']['ids']):
           evallog('ids changed %s -> %s' % (interpA['feature']['ids'], interpB['feature']['ids']))
         else:
           geomA = interpA['feature']['geometry']
@@ -123,9 +132,9 @@ class GeocodeFetch(threading.Thread):
           centerA = geomA['center']
           centerB = geomB['center']
           distance = earthDistance(
-            centerA['lat'], 
-            centerA['lng'], 
-            centerB['lat'], 
+            centerA['lat'],
+            centerA['lng'],
+            centerB['lat'],
             centerB['lng'])
           if distance > 0.1:
             evallog('moved by %s miles' % distance)
