@@ -189,7 +189,9 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) {
   
   val featureClass = new GeonamesFeatureClass(values.get(FEATURE_CLASS), values.get(FEATURE_CODE))
 
-  def adminCode(level: AdminLevel.Value): Option[String] = {
+  def adminCode = getAdminCode(this.featureClass.adminLevel)
+
+  def getAdminCode(level: AdminLevel.Value): Option[String] = {
     level match {
       case COUNTRY => values.get(COUNTRY_CODE)
       case ADM1 => values.get(ADMIN1_CODE)
@@ -201,9 +203,9 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) {
   }
 
   def makeAdminId(level: AdminLevel.Value): Option[String] = {
-    if (adminCode(level).exists(_.nonEmpty)) {
+    if (getAdminCode(level).exists(_.nonEmpty)) {
       Some(
-        AdminLevel.values.toList.filter(_ <= level).flatMap(l => adminCode(l)).mkString(".")
+        AdminLevel.values.toList.filter(_ <= level).flatMap(l => getAdminCode(l)).mkString(".")
       )
     } else {
       None

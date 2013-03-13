@@ -174,9 +174,17 @@ class GeonamesParser(
   // geonameid -> boost value
   lazy val boostTable = new GeoIdTsvHelperFileParser(geonameIdNamespace, "data/custom/boosts.txt",
     "data/private/boosts.txt")
+  
   // geonameid -> alias
-  lazy val aliasTable = new GeoIdTsvHelperFileParser(geonameIdNamespace, "data/custom/aliases.txt",
-    "data/private/aliases.txt")
+  val aliasDirs = List(
+    new File("data/computed/aliases/"),
+    new File("data/private/aliases/")
+  )
+  val aliasFiles: List[String] = List("data/custom/aliases.txt", "data/private/aliases.txt") ++ aliasDirs.flatMap(aliasDir => {
+    if (aliasDir.exists) { aliasDir.listFiles.toList.map(_.toString) } else { Nil }
+  }).sorted
+  lazy val aliasTable = new GeoIdTsvHelperFileParser(geonameIdNamespace, aliasFiles:_*)
+
   // geonameid --> new center
   lazy val moveTable = new GeoIdTsvHelperFileParser(geonameIdNamespace, "data/custom/moves.txt")
 
@@ -333,6 +341,12 @@ class GeonamesParser(
     displayNames ++= alternateNamesMap.getOrElse(geonameId, Nil).flatMap(altName => {
       processFeatureName(
         feature.countryCode, altName.lang, altName.name, altName.isPrefName, altName.isShortName)
+    })
+
+    // the admincode is the internal geonames admin code, but is very often the
+    // same short name for the admin area that is actually used in the country
+    displayNames ++= feature.adminCode.toList.map(code => {
+      DisplayName("abbr", code, FeatureNameFlags.ABBREVIATION.getValue)
     })
 
     def fixParent(p: String): Option[String] = {
