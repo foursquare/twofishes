@@ -60,6 +60,10 @@ object MapFileUtils {
     val fileInfo: Map[String, String] =
       reader.metadata.getMetadata.asScala.toMap.map(kv => kv._1.toString -> kv._2.toString)
 
+    // Call reader.midKey to force the index to be read in immediately instead
+    // of on the first invocation.
+    reader.midKey
+
     (reader, fileInfo)
   }
 
