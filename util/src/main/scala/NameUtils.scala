@@ -178,21 +178,28 @@ trait NameUtils {
 
     def scoreName(name: FeatureName): Int = {
       var score = 0
-      if (Option(name.flags).exists(_.contains(FeatureNameFlags.COLLOQUIAL))) {
-        score += 10
-      }
-      if (Option(name.flags).exists(_.contains(FeatureNameFlags.PREFERRED))) {
-        score += 1
-      }
-      if (Option(name.flags).exists(_.contains(FeatureNameFlags.ALIAS))) {
-        score -= 1
-      }
       if (lang.exists(_ == name.lang)) {
         score += 2
       }
-      if (Option(name.flags).exists(_.contains(FeatureNameFlags.ABBREVIATION) && preferAbbrev)) {
-        score += 4
+
+      if (name.flags != null) {
+        score += (for {
+          flag <- name.flags
+        } yield {
+          flag match {
+            case FeatureNameFlags.COLLOQUIAL => 10
+            case FeatureNameFlags.PREFERRED => 1
+            case FeatureNameFlags.ALIAS => -1
+            case FeatureNameFlags.DEACCENT => -1
+            case FeatureNameFlags.ABBREVIATION => {
+              if (preferAbbrev) { 4 } else { 0 }
+            }
+            case FeatureNameFlags.ALT_NAME => 0
+            case FeatureNameFlags.LOCAL_LANG => 0
+          }
+        }).sum
       }
+
       score
     }
   }
