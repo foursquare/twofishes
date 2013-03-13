@@ -179,7 +179,7 @@ class GeonamesParser(
   lazy val boostTable = new GeoIdTsvHelperFileParser(geonameIdNamespace, "data/custom/boosts.txt",
     "data/private/boosts.txt")
   // geonameid -> alias
-  lazy val aliasTable = new TsvHelperFileParser("data/custom/aliases.txt",
+  lazy val aliasTable = new GeoIdTsvHelperFileParser(geonameIdNamespace, "data/custom/aliases.txt",
     "data/private/aliases.txt")
   // geonameid --> new center
   lazy val moveTable = new GeoIdTsvHelperFileParser(geonameIdNamespace, "data/custom/moves.txt")
