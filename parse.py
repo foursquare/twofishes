@@ -1,10 +1,11 @@
 #!/usr/bin/python
 
+import datetime
 import os
 import os.path
+import socket
 import sys
 from optparse import OptionParser
-import datetime
 
 usage = "usage: %prog [options] output_directory"
 parser = OptionParser(usage = usage)
@@ -31,7 +32,8 @@ if len(args) != 0:
   if not args[0].startswith("-"):
     basepath = args[0]
     args = args[1:]
-basepath = os.path.join(basepath, str(datetime.datetime.now()).replace(' ', '-').replace(':', '-'))
+now_str = str(datetime.datetime.now()).replace(' ', '-').replace(':', '-')
+basepath = os.path.join(basepath, now_str)
 print "outputting index to %s" % basepath
 os.mkdir(basepath)
 
@@ -55,9 +57,16 @@ passBoolOpt('reload_data', options.reload_data)
 
 if options.reload_data:
   os.system("./init-database.sh")
-  
+
 cmd = './sbt "indexer/run-main com.foursquare.twofishes.importers.geonames.GeonamesParser %s --hfile_basepath %s %s"' % (cmd_opts, basepath, ' '.join(args))
 print(cmd)
+
+version_file = open(os.path.join(basepath, 'index-gen-info-%s' % now_str), 'w')
+version_file.write('Command: %s\n' % ' '.join(sys.argv))
+version_file.write('User: %s\n' % os.getenv('USER'))
+version_file.write('Date: %s\n' % now_str)
+version_file.write('Host: %s\n' % socket.gethostname())
+version_file.close()
 
 if not options.dry_run:
   os.system(cmd)
