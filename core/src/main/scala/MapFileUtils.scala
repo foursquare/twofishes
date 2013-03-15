@@ -13,7 +13,7 @@ class MemoryMappedSequenceFileReader(conf: Configuration, val shouldPreload: Boo
 
   override protected def openFile(fs: FileSystem, path: Path, bufferSize: Int, length: Long): FSDataInputStream = {
     assert(fs.isInstanceOf[LocalFileSystem])
-    val mmapIS = new MMapInputStream(path.toString)
+    val mmapIS = new MMapInputStream(fs.asInstanceOf[LocalFileSystem].pathToFile(path).toString)
     if (shouldPreload) {
       mmapIS.preload
     }
@@ -56,7 +56,7 @@ object MapFileUtils {
     val conf = new Configuration
     fs.initialize(URI.create("file:///"), conf)
 
-    val reader = new MemoryMappedMapFileReader(new Path(path), conf, shouldPreload)
+    val reader = new MemoryMappedMapFileReader(new Path("file://" + path), conf, shouldPreload)
     val fileInfo: Map[String, String] =
       reader.metadata.getMetadata.asScala.toMap.map(kv => kv._1.toString -> kv._2.toString)
 
