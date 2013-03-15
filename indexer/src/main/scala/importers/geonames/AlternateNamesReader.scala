@@ -14,39 +14,41 @@ case class AlternateNameEntry(
 )
 
 object AlternateNamesReader extends SimplePrintLogger {
-  def readAlternateNamesFile(filename: String): HashMap[StoredFeatureId, List[AlternateNameEntry]] = {
+  def readAlternateNamesFiles(filenames: List[String]): HashMap[StoredFeatureId, List[AlternateNameEntry]] = {
     val alternateNamesMap = new HashMap[StoredFeatureId, List[AlternateNameEntry]]
-    val lines = scala.io.Source.fromFile(new File(filename)).getLines
-    lines.zipWithIndex.foreach({case (line, index) => {
-      if (index % 100000 == 0) {
-        logger.info("imported %d alternateNames so far".format(index))
-      }
+    filenames.foreach(filename => {
+      val lines = scala.io.Source.fromFile(new File(filename)).getLines
+      lines.zipWithIndex.foreach({case (line, index) => {
+        if (index % 100000 == 0) {
+          logger.info("imported %d alternateNames from %s so far".format(index, filename))
+        }
 
-      val parts = line.split("\t").toList
-      if (parts.size < 4) {
-          logger.error("line %d didn't have 5 parts: %s -- %s".format(index, line, parts.mkString(",")))
-        } else {
-          val nameid = parts(0)
-          val geonameid = parts(1)
-          val lang = parts(2)
+        val parts = line.split("\t").toList
+        if (parts.size < 3) {
+            logger.error("line %d didn't have 4 parts: %s -- %s".format(index, line, parts.mkString(",")))
+          } else {
+            val nameid = parts(0)
+            val geonameid = parts(1)
+            val lang = parts.lift(2).getOrElse("")
 
-          if (lang != "post") {
-            val name = parts(3)
-            val isPrefName = parts.lift(4).exists(_ == "1")
-            val isShortName = parts.lift(5).exists(_ == "1")
+            if (lang != "post") {
+              val name = parts(3)
+              val isPrefName = parts.lift(4).exists(_ == "1")
+              val isShortName = parts.lift(5).exists(_ == "1")
 
-            val fid = StoredFeatureId(GeonamesParser.geonameIdNamespace, geonameid)
-            val names = alternateNamesMap.getOrElseUpdate(fid, Nil)
-            alternateNamesMap(fid) = AlternateNameEntry(
-              nameId = nameid,
-              name = name,
-              lang = lang,
-              isPrefName = isPrefName,
-              isShortName = isShortName
-            ) :: names
-          }
-      }
-    }})
+              val fid = StoredFeatureId(GeonamesParser.geonameIdNamespace, geonameid)
+              val names = alternateNamesMap.getOrElseUpdate(fid, Nil)
+              alternateNamesMap(fid) = AlternateNameEntry(
+                nameId = nameid,
+                name = name,
+                lang = lang,
+                isPrefName = isPrefName,
+                isShortName = isShortName
+              ) :: names
+            }
+        }
+      }})
+    })
     alternateNamesMap
   }
 }

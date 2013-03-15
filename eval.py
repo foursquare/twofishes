@@ -9,12 +9,12 @@ import math
 import datetime
 import Queue
 import threading
+import traceback
 
 # TODO: move this to thrift
 
-serverA = "http://prodapp-geocoder-10:35000"
-#serverA = "http://dev-blackmad:8081"
-serverB = "http://dev-blackmad:7110"
+serverA = "http://prodproxy-b-2:35000"
+serverB = "http://dev-blackmad:8081"
 
 outputFile = open('eval-%s.html' % datetime.datetime.now(), 'w')
 
@@ -28,6 +28,7 @@ def getResponse(server, param):
     return json_response
   except Exception as e:
     print e
+    print getUrl(server, param)
     return None
 
 # Haversine formula, see http://www.movable-type.co.uk/scripts/gis-faq-5.1.html

@@ -176,13 +176,7 @@ class GeonamesParser(
     "data/private/boosts.txt")
   
   // geonameid -> alias
-  val aliasDirs = List(
-    new File("data/computed/aliases/"),
-    new File("data/private/aliases/")
-  )
-  val aliasFiles: List[String] = List("data/custom/aliases.txt", "data/private/aliases.txt") ++ aliasDirs.flatMap(aliasDir => {
-    if (aliasDir.exists) { aliasDir.listFiles.toList.map(_.toString) } else { Nil }
-  }).sorted
+  val aliasFiles: List[String] = List("data/custom/aliases.txt", "data/private/aliases.txt")
   lazy val aliasTable = new GeoIdTsvHelperFileParser(geonameIdNamespace, aliasFiles:_*)
 
   // geonameid --> new center
@@ -521,8 +515,15 @@ class GeonamesParser(
 
   var alternateNamesMap = new HashMap[StoredFeatureId, List[AlternateNameEntry]]
   def loadAlternateNames() {
-    alternateNamesMap = AlternateNamesReader.readAlternateNamesFile(
-      "data/downloaded/alternateNames.txt")
+    val altDirs = List(
+      new File("data/computed/alternateNames/"),
+      new File("data/private/alternateNames/")
+    )
+    val files: List[String] = List("data/downloaded/alternateNames.txt") ++ altDirs.flatMap(altDir => {
+        if (altDir.exists) { altDir.listFiles.toList.map(_.toString) } else { Nil }
+    }).sorted
+    
+    alternateNamesMap = AlternateNamesReader.readAlternateNamesFiles(files)
   }
 
   def processFeatureName(
