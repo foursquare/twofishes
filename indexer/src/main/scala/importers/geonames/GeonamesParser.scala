@@ -339,9 +339,12 @@ class GeonamesParser(
 
     // the admincode is the internal geonames admin code, but is very often the
     // same short name for the admin area that is actually used in the country
-    displayNames ++= feature.adminCode.toList.map(code => {
-      DisplayName("abbr", code, FeatureNameFlags.ABBREVIATION.getValue)
-    })
+   
+    if (feature.featureClass.isAdmin1 || feature.featureClass.isAdmin2) {
+      displayNames ++= feature.adminCode.toList.map(code => {
+        DisplayName("abbr", code, FeatureNameFlags.ABBREVIATION.getValue)
+      })
+    }
 
     def fixParent(p: String): Option[String] = {
       adminIdMap.get(p) orElse {

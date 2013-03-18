@@ -36,7 +36,7 @@ object AlternateNamesReader extends SimplePrintLogger {
               val isPrefName = parts.lift(4).exists(_ == "1")
               val isShortName = parts.lift(5).exists(_ == "1")
 
-              val fid = StoredFeatureId(GeonamesParser.geonameIdNamespace, geonameid)
+              val fid = StoredFeatureId.fromString(geonameid, Some(GeonamesParser.geonameIdNamespace))
               val names = alternateNamesMap.getOrElseUpdate(fid, Nil)
               alternateNamesMap(fid) = AlternateNameEntry(
                 nameId = nameid,

@@ -1390,7 +1390,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
   def reverseGeocode(): GeocodeResponse = {
     Stats.incr("revgeo-requests", 1)
     if (req.ll != null) {
-      if (req.isSetRadius) {
+      if (req.isSetRadius && req.radius > 0) {
         val sizeDegrees = req.radius / 111319.9
         val gsf = new GeometricShapeFactory()
         gsf.setSize(sizeDegrees)
