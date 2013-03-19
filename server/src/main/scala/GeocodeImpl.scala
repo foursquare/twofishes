@@ -68,6 +68,8 @@ case class Parse[T <: MaybeSorted](
   def iterator = fmatches.iterator
   def length = fmatches.length
 
+  def tokenLength = fmatches.map(pp => pp.tokenEnd - pp.tokenStart).sum
+
   def getSorted: Parse[Sorted] =
     Parse[Sorted](fmatches.sorted(FeatureMatchOrdering), scoringFeatures)
 
@@ -748,7 +750,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
   // Two jobs
   // 1) filter out woeRestrict mismatches
   // 2) try to filter out near dupe parses (based on formatting + latlng)
-  def filterParses(parses: SortedParseSeq, removeLowRankingParses: Boolean): SortedParseSeq = {
+  def filterParses(parses: SortedParseSeq, parseParams: ParseParams): SortedParseSeq = {
     if (req.debug > 0) {
       logger.ifDebug("have %d parses in filterParses".format(parses.size))
       parses.foreach(s => logger.ifDebug(s.toString))
@@ -771,12 +773,16 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     }
     logger.ifDebug("have %d parses after filtering types/woes/restricts".format(goodParses.size))
 
-    if (removeLowRankingParses) {
-      goodParses = goodParses.filter(p => p.headOption.exists(m => {
-        m.fmatch.scoringFeatures.population > 50000 || p.length > 1
-      }))
-      logger.ifDebug("have %d parses after removeLowRankingParses".format(goodParses.size))
-    }
+    // val removeLowRankingParses = (parseLength != tokens.size && parseLength == 1 && !tryHard)
+
+    goodParses = goodParses.filter(p => { 
+      val parseLength = p.tokenLength
+      parseParams.tryHard || parseLength == parseParams.tokens.size || parseLength != 1 ||
+        p.headOption.exists(m => {
+          m.fmatch.scoringFeatures.population > 50000 || p.length > 1
+        })
+    })
+    logger.ifDebug("have %d parses after removeLowRankingParses".format(goodParses.size))
 
     goodParses = goodParses.filter(p => p.headOption.exists(m => m.fmatch.scoringFeatures.canGeocode))
 
@@ -865,7 +871,6 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
   // Given a set of parses, create a geocode response which has fully formed
   // versions of all the features in it (names, parents)
   def hydrateParses(
-    longest: Int,
     sortedParses: SortedParseSeq,
     parseParams: ParseParams,
     polygonMap: Map[ObjectId, Array[Byte]],
@@ -891,16 +896,18 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     val parentMap = store.getByObjectIds(parentOids)
     logger.ifDebug(parentMap.toString)
 
-    val what = if (hadConnector) {
-      originalTokens.take(connectorStart).mkString(" ")
-    } else {
-      tokens.take(tokens.size - longest).mkString(" ")
-    }
-    val where = tokens.drop(tokens.size - longest).mkString(" ")
-    logger.ifDebug("%d sorted parses".format(sortedParses.size))
-    logger.ifDebug("%s".format(sortedParses))
-
     var interpretations = sortedParses.map(p => {
+      val parseLength = p.tokenLength
+
+      val what = if (hadConnector) {
+        originalTokens.take(connectorStart).mkString(" ")
+      } else {
+        tokens.take(tokens.size - parseLength).mkString(" ")
+      }
+      val where = tokens.drop(tokens.size - parseLength).mkString(" ")
+      logger.ifDebug("%d sorted parses".format(sortedParses.size))
+      logger.ifDebug("%s".format(sortedParses))
+
       val fmatch = p(0).fmatch
       val feature = p(0).fmatch.feature
 
@@ -1030,7 +1037,6 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
 
   def maybeRetryParsing(
     parses: SortedParseSeq,
-    parseLength: Int,
     parseParams: ParseParams
   ) = {
     val modifiedTokens = deleteCommonWords(parseParams.originalTokens)
@@ -1039,13 +1045,12 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
       logger.ifDebug("RESTARTING common words query: %s".format(modifiedTokens.mkString(" ")))
       geocode(modifiedTokens, isRetry=true)
     } else {
-      buildFinalParses(parses, parseLength, parseParams)
+      buildFinalParses(parses, parseParams)
     }
   }
 
   def buildFinalParses(
     parses: SortedParseSeq,
-    parseLength: Int,
     parseParams: ParseParams
   ) = {
     val tokens = parseParams.tokens
@@ -1053,8 +1058,6 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     val tryHard = parseParams.tryHard
     val connectorStart = parseParams.connectorStart
     val connectorEnd = parseParams.connectorEnd
-
-    val removeLowRankingParses = (parseLength != tokens.size && parseLength == 1 && !tryHard)
 
     // filter out parses that are really the same feature
     val parsesByMainId = parses.groupBy(_.headOption.map(_.fmatch.id))
@@ -1068,10 +1071,14 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
 
     val sortedParses = actualParses.sorted(new ParseOrdering)
 
-    val filteredParses = filterParses(sortedParses, removeLowRankingParses)
+    val filteredParses = filterParses(sortedParses, parseParams)
 
     val maxInterpretations = if (req.maxInterpretations <= 0) {
-      3
+      if (req.autocomplete) {
+        3
+      } else {
+        1
+      }
     } else {
       req.maxInterpretations
     }
@@ -1090,7 +1097,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     val sortedDedupedParses: SortedParseSeq = dedupedParses.sorted(new ParseOrdering).take(3)
     val polygonMap: Map[ObjectId, Array[Byte]] = getPolygonMap(
       sortedDedupedParses.map(p => new ObjectId(p(0).fmatch.id)))
-    hydrateParses(parseLength, sortedDedupedParses, parseParams, polygonMap,
+    hydrateParses(sortedDedupedParses, parseParams, polygonMap,
       fixAmbiguousNames = true)
   }
 
@@ -1113,11 +1120,14 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
       if (hadConnector && longest != tokens.size) {
         generateResponse(Nil)
       } else {
-        val longestParses = validParseCaches.find(_._1 == longest).get._2
+        val parses = longest.to(1, -1).flatMap(length => {
+          validParseCaches.find(_._1 == length).map(_._2)
+        })
+
         if (longest != tokens.size) {
-          maybeRetryParsing(longestParses, longest, parseParams)
+          maybeRetryParsing(parses, parseParams)
         } else {
-          buildFinalParses(longestParses, longest, parseParams)
+          buildFinalParses(parses, parseParams)
         }
       }
     } else {
@@ -1135,7 +1145,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
         logger.ifDebug("parse ids: %s".format(p.map(_.fmatch.id)))
       })
     }
-    buildFinalParses(parses, 0, parseParams)
+    buildFinalParses(parses, parseParams)
   }
 
   def doSlugGeocode(slug: String): GeocodeResponse = {
@@ -1153,7 +1163,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
       FeatureMatch(0, 0, "", servingFeature)
     }).toList)
 
-    buildFinalParses(List(parse), 0, parseParams)
+    buildFinalParses(List(parse), parseParams)
   }
 
   def geocode(originalTokens: List[String],
@@ -1329,7 +1339,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     }
 
     val sortedParses = parses.sorted(new ReverseGeocodeParseOrdering).take(maxInterpretations)
-    val response = hydrateParses(0, sortedParses, parseParams, polygonMap,
+    val response = hydrateParses(sortedParses, parseParams, polygonMap,
       fixAmbiguousNames = false)
     if (req.debug > 0) {
       val wktWriter = new WKTWriter
