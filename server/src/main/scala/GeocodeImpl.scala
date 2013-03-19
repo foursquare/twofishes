@@ -1120,9 +1120,9 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
       if (hadConnector && longest != tokens.size) {
         generateResponse(Nil)
       } else {
-        val parses = longest.to(1, -1).flatMap(length => {
+        val parses: Seq[Parse[Sorted]] = longest.to(1, -1).flatMap(length => {
           validParseCaches.find(_._1 == length).map(_._2)
-        })
+        }).flatten
 
         if (longest != tokens.size) {
           maybeRetryParsing(parses, parseParams)
