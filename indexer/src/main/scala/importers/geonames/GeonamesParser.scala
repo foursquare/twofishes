@@ -298,8 +298,17 @@ class GeonamesParser(
         } else { None }
       )
 
+    val hasPreferredEnglishAltName = alternateNamesMap.getOrElse(geonameId, Nil).exists(altName =>
+      altName.lang == "en" && altName.isPrefName
+    )
+
+    // If we don't have an altname with lang=en marked as preferred, then assume that
+    // the primary name geonames gives us is english preferred
     var displayNames: List[DisplayName] = processFeatureName(
-      feature.countryCode, "en", feature.name, false, false)
+      feature.countryCode, "en", feature.name,
+      isPrefName = !hasPreferredEnglishAltName,
+      isShortName = false
+    )
 
     if (feature.featureClass.woeType == YahooWoeType.COUNTRY) {
       countryNameMap.get(feature.countryCode).foreach(name =>
@@ -312,7 +321,7 @@ class GeonamesParser(
       if (feature.name != asciiname && asciiname.nonEmpty) {
         displayNames ::=
           DisplayName("en", asciiname,
-            FeatureNameFlags.DEACCENT.getValue | FeatureNameFlags.PREFERRED.getValue)
+            FeatureNameFlags.DEACCENT.getValue)
       }
     })
 

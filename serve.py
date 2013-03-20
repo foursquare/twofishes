@@ -22,7 +22,7 @@ if len(args) != 1:
   parser.print_usage()
   sys.exit(1)
 
-basepath = args[0]
+basepath = os.path.abspath(args[0])
 
 sbt = './sbt'
 if options.rebel:

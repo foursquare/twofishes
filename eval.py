@@ -19,7 +19,7 @@ serverB = "http://dev-blackmad:8081"
 outputFile = open('eval-%s.html' % datetime.datetime.now(), 'w')
 
 def getUrl(server, param):
-  return server + '/' + param
+  return server.rstrip('/') + '/' + param.lstrip('/')
 
 def getResponse(server, param):
   try:
@@ -147,6 +147,8 @@ class GeocodeFetch(threading.Thread):
             evallog('bounds differ')
           elif (len(responseA['interpretations']) != len(responseB['interpretations'])):
             evallog('# of interpretations differ')
+          elif interpA['feature']['displayName'] != interpB['feature']['displayName']:
+            evallog('displayName changed')
 
       self.queue.task_done()
 
