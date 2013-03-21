@@ -80,6 +80,7 @@ object GeocoderBuild extends Build {
       settings = defaultSettings ++ Seq(
         publishArtifact := true,
         libraryDependencies ++= Seq(
+          "com.twitter" % "ostrich" % "8.2.3",
           "com.twitter" % "util-core" % "5.3.14",
           "com.twitter" % "util-logging" % "5.3.14",
           "org.slf4j" % "slf4j-api" % "1.6.1",

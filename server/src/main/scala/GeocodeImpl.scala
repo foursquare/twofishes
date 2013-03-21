@@ -77,6 +77,8 @@ case class Parse[T <: MaybeSorted](
 }
 
 trait GeocoderImplTypes {
+  case class SortedParseWithPosition(parse: Parse[Sorted], position: Int)
+
   val NullParse = Parse[Sorted](Nil)
   // ParseSeq = multiple interpretations
   type ParseSeq = Seq[Parse[Unsorted]]
@@ -672,7 +674,11 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
         // logger.ifDebug("parts to use: " + partsToUse)
         var i = 0
         namesToUse = partsToUse.flatMap({case(fmatchOpt, servingFeature) => {
-          val name = bestNameWithMatch(servingFeature.feature, Some(req.lang), i != 0,
+          // awful hack because most states outside the US don't actually
+          // use their abbrev names
+          val inUsOrCA = servingFeature.feature.cc == "US" ||  servingFeature.feature.cc == "CA"
+          val name = bestNameWithMatch(servingFeature.feature, Some(req.lang), 
+            preferAbbrev = (i != 0 && inUsOrCA),
             fmatchOpt.map(_.phrase))
           i += 1
           name
@@ -965,7 +971,13 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
       // are the names we get if we only take one parent component from each.
       // Find ambiguous geocodes, tell them to take more name component
       val ambiguousInterpretationsMap: Map[String, Seq[GeocodeInterpretation]] = 
-        interpretations.groupBy(_.feature.displayName).filter(_._2.size > 1)
+        interpretations.groupBy(interp => {
+          if (req.autocomplete) {
+            interp.feature.matchedName
+          } else {
+            interp.feature.displayName
+          }
+        }).filter(_._2.size > 1)
       val ambiguousInterpretations: Iterable[GeocodeInterpretation] = 
         ambiguousInterpretationsMap.flatMap(_._2).toList
       val ambiguousIdMap: Map[String, Iterable[GeocodeInterpretation]] =
@@ -973,7 +985,8 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
 
       if (ambiguousInterpretations.size > 0) {
         logger.ifDebug("had ambiguous interpretations")
-        ambiguousInterpretationsMap.foreach({case (k, v) => logger.ifDebug("have %d of %s".format(v.size, k)) })
+        ambiguousInterpretationsMap.foreach({case (k, v) =>
+          logger.ifDebug("have %d of %s".format(v.size, k)) })
         sortedParses.foreach(p => {
           val fmatch = p(0).fmatch
           val feature = p(0).fmatch.feature
@@ -981,7 +994,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
             val sortedParents = p(0).fmatch.scoringFeatures.parents
               .flatMap(parent =>
                 parentMap.get(new ObjectId(parent))).sorted(GeocodeServingFeatureOrdering)
-            fixFeature(interp.feature, sortedParents, Some(p), 2)
+            fixFeature(interp.feature, sortedParents, Some(p), p.size - 1)
           })
         })
       }
@@ -1060,18 +1073,32 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     val connectorEnd = parseParams.connectorEnd
 
     // filter out parses that are really the same feature
-    val parsesByMainId = parses.groupBy(_.headOption.map(_.fmatch.id))
+    // this code is gross gross gross
+
+    // build a map from
+    // primary feature id -> list of parses containing that id, sorted by 
+    val parsesByMainId: Map[String, Seq[SortedParseWithPosition]] = parses.zipWithIndex.map({
+      case (parse, index) => SortedParseWithPosition(parse, index)
+    }).groupBy(_.parse.headOption.map(_.fmatch.id).getOrElse("")).mapValues(parses => {
+      parses.sortBy(p => {
+        // prefer interpretations that are shorter and don't have reused features
+        val dupeWeight = if (parseHasDupeFeature(p.parse)) { 10 } else { 0 }
+        p.parse.size + dupeWeight - p.parse.tokenLength*1000
+      })
+    })
+
     val actualParses = 
-      parsesByMainId
-        .flatMap({case (k, v) => v.sortBy(p => {
-          // prefer interpretations that are shorter and don't have reused features
-          val dupeWeight = if (parseHasDupeFeature(p)) { 10 } else { 0 }
-          p.size + dupeWeight
-        }).headOption}).toList
+      parses.zipWithIndex.filter({case (p, index) => {
+        (for {
+          primaryFeature <- p.headOption
+          parses: Seq[SortedParseWithPosition] <- parsesByMainId.get(primaryFeature.fmatch.id)
+          bestParse <- parses.headOption
+        } yield {
+          bestParse.position == index
+        }).getOrElse(false)
+      }}).map(_._1)
 
-    val sortedParses = actualParses.sorted(new ParseOrdering)
-
-    val filteredParses = filterParses(sortedParses, parseParams)
+    val filteredParses = filterParses(actualParses, parseParams)
 
     val maxInterpretations = if (req.maxInterpretations <= 0) {
       if (req.autocomplete) {
@@ -1089,12 +1116,13 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
       dedupeParses(filteredParses.take(maxInterpretations))
     }
     logger.ifDebug("%d parses after deduping".format(dedupedParses.size))
-    dedupedParses.foreach(p =>
-      logger.ifDebug("deduped parse ids: %s".format(p.map(_.fmatch.id)))
-    )
+    dedupedParses.zipWithIndex.foreach({case (parse, index) =>
+      logger.ifDebug("deduped parse ids: %s".format(parse.map(_.fmatch.id)))
+    })
 
     // TODO: make this configurable
-    val sortedDedupedParses: SortedParseSeq = dedupedParses.sorted(new ParseOrdering).take(3)
+    // val sortedDedupedParses: SortedParseSeq = dedupedParses.sorted(new ParseOrdering).take(3)
+    val sortedDedupedParses: SortedParseSeq = dedupedParses.take(3)
     val polygonMap: Map[ObjectId, Array[Byte]] = getPolygonMap(
       sortedDedupedParses.map(p => new ObjectId(p(0).fmatch.id)))
     hydrateParses(sortedDedupedParses, parseParams, polygonMap,
@@ -1120,14 +1148,31 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
       if (hadConnector && longest != tokens.size) {
         generateResponse(Nil)
       } else {
-        val parses: Seq[Parse[Sorted]] = longest.to(1, -1).flatMap(length => {
-          validParseCaches.find(_._1 == length).map(_._2)
-        }).flatten
+        val parsesToConsider = new ListBuffer[Parse[Sorted]]
+
+        // take a maximum of 10 interps total for now
+        val maxInterpretationsToConsider = {
+          if (req.maxInterpretations <= 0) {
+            1
+          } else {
+            req.maxInterpretations * 2
+          }
+        }
+
+        for {
+          length <- longest.to(1, -1)
+          if (parsesToConsider.size < maxInterpretationsToConsider)
+          (size, parses) <- validParseCaches.find(_._1 == length)
+        } {
+          parsesToConsider.appendAll(
+            parses.sorted(new ParseOrdering)
+          )
+        }
 
         if (longest != tokens.size) {
-          maybeRetryParsing(parses, parseParams)
+          maybeRetryParsing(parsesToConsider, parseParams)
         } else {
-          buildFinalParses(parses, parseParams)
+          buildFinalParses(parsesToConsider, parseParams)
         }
       }
     } else {

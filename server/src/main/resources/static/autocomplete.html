@@ -1,7 +1,7 @@
 <html>
 <head>
-  <link rel="stylesheet" href="leaflet/leaflet.css" />
-  <script src="leaflet/leaflet.js"></script>
+  <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.4.4/leaflet.css" />
+  <script src="http://cdn.leafletjs.com/leaflet-0.4.4/leaflet.js"></script>
   <script src="TileLayer.Common.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
   <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.3.1/underscore-min.js"></script>
@@ -9,7 +9,8 @@
     b { font-size: 110%;  color: red; }
     #debug { width: 600px; white-space: nowrap; overflow: scroll;}
   </style>
-<head>
+  <meta charset="UTF-8">
+</head>
 <body>
   <div id="map" style="height: 600px; width: 600px; float: left"></div> <!-- width equals available horizontal space by default -->
   <div id="notmap" style="width: 400px; float: left">
@@ -116,13 +117,12 @@
     function failure() {
     }
   
-     var defaults = {
+    var opts = {
        layers: new L.TileLayer.MapQuestOpen.OSM(),
-       attributionControl: false
-     }
-     var opts = {}
-
-     var map = new L.Map('map', _.extend(defaults, opts));
+      attributionControl: false
+    }
+     var map = new L.Map('map', opts);
+     map.setView(new L.LatLng(40.74, -74.0), 13)
      geocode();
   </script>
 </body>

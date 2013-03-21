@@ -1,5 +1,6 @@
 <html>
 <head>
+<meta charset="UTF-8">
 <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.4.4/leaflet.css" />
 <!--[if lte IE 8]>
     <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.4.4/leaflet.ie.css" />
@@ -101,7 +102,7 @@
         $.getJSON('http://' + window.location.host + '/?debug=1&responseIncludes=EVERYTHING&ll=' + query,
           success, failure);
       } else {
-        $.getJSON('http://' + window.location.host + '/?debug=1&maxInterpretations=3&responseIncludes=EVERYTHING&query=' + query,
+        $.getJSON('http://' + window.location.host + '/?debug=1&responseIncludes=EVERYTHING&query=' + query,
           success, failure);
       }
     }
@@ -132,7 +133,7 @@
           sectionDiv.append(mapDiv);
 
           var opts = {
-           layers: new L.TileLayer.MapQuestOpen.OSM(),
+             layers: new L.TileLayer.MapQuestOpen.OSM(),
             attributionControl: false
           }
 
@@ -195,9 +196,6 @@
 
     function failure() {
     }
-
-     var mapUrl = 'http://{s}.tiles.mapbox.com/v3/blackmad.map-yqfgdgkv/{z}/{x}/{y}.png'
-     var subdomains = ['a','b','c','d'];
 
      geocode();
   </script>

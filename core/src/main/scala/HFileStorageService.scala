@@ -1,6 +1,7 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.util.GeometryUtils
+import com.twitter.ostrich.stats.{Stats, StatsProvider}
 import com.twitter.util.{Duration, FuturePool}
 import java.io._
 import java.net.URI
@@ -22,7 +23,23 @@ class HFileStorageService(basepath: String, shouldPreload: Boolean) extends Geoc
   val oidMap = new GeocodeRecordMapFileInput(basepath, shouldPreload)
   val geomMapOpt = GeometryMapFileInput.readInput(basepath, shouldPreload)
   val s2mapOpt = ReverseGeocodeMapFileInput.readInput(basepath, shouldPreload)
-  val slugFidMap = new SlugFidMapFileInput(basepath, shouldPreload)
+  val slugFidMap = SlugFidMapFileInput.readInput(basepath, shouldPreload)
+
+  val infoFile = new File(basepath, "upload-info")
+  if (infoFile.exists) {
+    scala.io.Source.fromFile(infoFile).getLines.foreach(line => {
+      val parts = line.split(": ")
+      if (parts.size != 2) {
+        println("badly formatted info line: " + line)
+      }
+      for {
+        key <- parts.lift(0)
+        value <- parts.lift(1)
+      } {
+        Stats.setLabel(key, value)
+      }
+    })
+  }
 
   // will only be hit if we get a reverse geocode query
   lazy val s2map = s2mapOpt.getOrElse(
@@ -47,7 +64,7 @@ class HFileStorageService(basepath: String, shouldPreload: Boolean) extends Geoc
   def getBySlugOrFeatureIds(ids: Seq[String]) = {
     val oidMap = (for {
       id <- ids
-      oid <- slugFidMap.get(id)
+      oid <- slugFidMap.flatMap(_.get(id))
     } yield { (oid, id) }).toMap
 
     getByObjectIds(oidMap.keys.toList).map({
@@ -260,6 +277,16 @@ class GeometryMapFileInput(basepath: String, shouldPreload: Boolean) extends Byt
   def get(oid: ObjectId): Option[Array[Byte]] = {
     val buf = oid.toByteArray()
     geometryIndex.lookup(buf)
+  }
+}
+
+object SlugFidMapFileInput {
+  def readInput(basepath: String, shouldPreload: Boolean) = {
+    if (new File(basepath, "id-mapping").exists()) {
+      Some(new SlugFidMapFileInput(basepath, shouldPreload))
+    } else {
+      None
+    }
   }
 }
 
