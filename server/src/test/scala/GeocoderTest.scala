@@ -262,6 +262,7 @@ class GeocoderSpec extends Specification {
     addParisFrance(store)
 
     val req = new GeocodeRequest().setQuery("Paris")
+    req.setMaxInterpretations(2)
     req.setDebug(1)
     val r = new GeocoderImpl(store, req).geocode()
     r.interpretations.size must_== 2 
@@ -351,6 +352,7 @@ class GeocoderSpec extends Specification {
     val parisAdmin1Record = store.addGeocode("Paris", Nil, 10, 11, YahooWoeType.ADMIN1, cc="FR")
 
     val req = new GeocodeRequest().setQuery("paris")
+    req.setMaxInterpretations(2)
     req.setWoeHint(List(YahooWoeType.ADMIN1).asJava)
 
     val r = new GeocoderImpl(store, req).geocode()
