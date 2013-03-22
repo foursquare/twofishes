@@ -17,8 +17,17 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable.{HashMap, ListBuffer}
 import scalaj.collection.Implicits._
 
-// TODO
-// 
+sealed class Identity[A](protected val _value: A) {
+  def =?(other: A) = _value == other
+  def !=?(other: A) = _value != other
+}
+
+object Identity {
+  implicit def wrapIdentity[A](anything: A): Identity[A] = new Identity(anything)
+  implicit def unwrapIdentity[A](id: Identity[A]): A = id._value
+}
+
+import Identity._
 
 // TODO
 // --make autocomplete faster
@@ -514,6 +523,10 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
           modifySignal(primaryFeature.scoringFeatures.boost, "manual boost")
         }
 
+        store.hotfixesBoosts.get(new ObjectId(primaryFeature.id)).foreach(boost => 
+          modifySignal(boost, "hotfix boost")
+        )
+
         // as a terrible tie break, things in the US > elsewhere
         // meant primarily for zipcodes
         if (primaryFeature.feature.cc == "US") {
@@ -621,34 +634,24 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
       f: GeocodeFeature,
       parents: Seq[GeocodeServingFeature],
       parse: Option[Parse[Sorted]],
-      numParentsRequired: Int = 0) {
+      numExtraParentsRequired: Int = 0) {
     // set name
     val name = NameUtils.bestName(f, Some(req.lang), false).map(_.name).getOrElse("")
     f.setName(name)
 
-    // Take the least specific parent, hopefully a state
-    // Yields names like "Brick, NJ, US"
-    // should already be sorted, so we don't need to do: // .sorted(GeocodeServingFeatureOrdering)
-    val parentsToUse: List[GeocodeServingFeature] =
-      parents
-        .filter(p => p.feature.woeType != YahooWoeType.COUNTRY)
-        .filter(p => p.feature.woeType != YahooWoeType.CONTINENT)
-        .filter(p => {
-          if (f.cc != "US" && f.cc != "CA") {
-            p.feature.woeType == YahooWoeType.TOWN || 
-            p.feature.woeType == YahooWoeType.SUBURB ||
-            (numParentsRequired > 0)
-          } else {
-            true
-          }
-        })
-        .takeRight(
-          if (f.cc == "US" || f.cc == "CA") {
-            numParentsRequired + 1
-          } else {
-            numParentsRequired
-          }
-        ).toList
+    // rules
+    // if you have a city parent, use it
+    // if you're in the US or CA, use state parent
+    // if you need an extra parent, use it
+
+    val parentsToUse = new ListBuffer[GeocodeServingFeature]
+    parentsToUse.appendAll(
+      parents.filter(p => p.feature.woeType == YahooWoeType.TOWN))
+
+    if (f.cc == "US" || f.cc == "CA") {
+      parentsToUse.appendAll(
+        parents.filter(p => p.feature.woeType == YahooWoeType.ADMIN1))
+    }
 
     val countryAbbrev: Option[String] = if (f.cc != req.cc) {
       if (f.cc == "GB") {
@@ -667,10 +670,22 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
       parse.foreach(p => {
         val partsFromParse: Seq[(Option[FeatureMatch], GeocodeServingFeature)] =
           p.map(fmatch => (Some(fmatch), fmatch.fmatch))
+
         val partsFromParents: Seq[(Option[FeatureMatch], GeocodeServingFeature)] =
-         parentsToUse.filterNot(f => partsFromParse.exists(_._2 == f))
-          .map(f => (None, f))
-        val partsToUse = (partsFromParse ++ partsFromParents).sortBy(_._2)(GeocodeServingFeatureOrdering)
+          parentsToUse.filterNot((f: GeocodeServingFeature) => {
+            partsFromParse.exists(_._2.id =? f.id)
+          })
+            .map(f => (None, f))
+
+        val extraParents: Seq[(Option[FeatureMatch], GeocodeServingFeature)] =
+          parents
+            .filterNot(f => partsFromParse.exists(_._2.id =? f.id))
+            .filterNot(f => partsFromParents.exists(_._2.id =? f.id))
+            .filterNot(p => p.feature.woeType == YahooWoeType.COUNTRY)
+            .takeRight(numExtraParentsRequired)
+            .map(f => (None, f))
+
+        val partsToUse = (partsFromParse ++ partsFromParents ++ extraParents).sortBy(_._2)(GeocodeServingFeatureOrdering)
         // logger.ifDebug("parts to use: " + partsToUse)
         var i = 0
         namesToUse = partsToUse.flatMap({case(fmatchOpt, servingFeature) => {
@@ -715,8 +730,18 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
       namesToUse.contains(n)
     ))
 
-    val parentNames = parentsToUse.map(p =>
-      NameUtils.bestName(p.feature, Some(req.lang), true).map(_.name).getOrElse(""))
+    // now pull in extra parents
+    parentsToUse.appendAll(
+      parents
+        .filterNot(p => parentsToUse.has(p))
+        .filterNot(p => p.feature.woeType == YahooWoeType.COUNTRY)
+        .takeRight(numExtraParentsRequired)
+    )
+
+    val parentNames = parentsToUse
+      .sorted(GeocodeServingFeatureOrdering)
+      .map(p =>
+        NameUtils.bestName(p.feature, Some(req.lang), true).map(_.name).getOrElse(""))
        .filterNot(parentName => {
          name == parentName
        })
@@ -778,6 +803,13 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
       parses
     }
     logger.ifDebug("have %d parses after filtering types/woes/restricts".format(goodParses.size))
+
+    goodParses = goodParses.filterNot(p => {
+      p.headOption.exists(f => store.hotfixesDeletes.has(new ObjectId(f.fmatch.id)))
+    })
+
+    logger.ifDebug("have %d parses after filtering from delete hotfixes".format(goodParses.size))
+
 
     // val removeLowRankingParses = (parseLength != tokens.size && parseLength == 1 && !tryHard)
 
@@ -994,7 +1026,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
             val sortedParents = p(0).fmatch.scoringFeatures.parents
               .flatMap(parent =>
                 parentMap.get(new ObjectId(parent))).sorted(GeocodeServingFeatureOrdering)
-            fixFeature(interp.feature, sortedParents, Some(p), p.size - 1)
+            fixFeature(interp.feature, sortedParents, Some(p), 1)
           })
         })
       }
@@ -1110,7 +1142,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
       req.maxInterpretations
     }
 
-    val dedupedParses = if (req.autocomplete) {
+    val dedupedParses = if (req.autocomplete || maxInterpretations > 1) {
       dedupeParses(filteredParses.take(maxInterpretations * 2)).take(maxInterpretations)
     } else {
       dedupeParses(filteredParses.take(maxInterpretations))

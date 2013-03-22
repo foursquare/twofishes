@@ -82,7 +82,32 @@ class HFileStorageService(basepath: String, shouldPreload: Boolean) extends Geoc
 
   def getMinS2Level: Int = s2map.minS2Level
   def getMaxS2Level: Int = s2map.maxS2Level
-  override  def getLevelMod: Int = s2map.levelMod
+  override def getLevelMod: Int = s2map.levelMod
+
+  override val hotfixesDeletes: Seq[ObjectId] = {
+    val file = new File(basepath, "hotfixes_deletes.txt")
+    if (file.exists()) {
+      scala.io.Source.fromFile(file).getLines.toList.map(i => new ObjectId(i))
+    } else {
+      Nil
+    }
+  }
+
+  override val hotfixesBoosts: Map[ObjectId, Int] = {
+    val file = new File(basepath, "hotfixes_boosts.txt")
+    if (file.exists()) {
+      scala.io.Source.fromFile(file).getLines.toList.map(l => {
+        val parts = l.split("[\\|\t, ]")
+        try {
+          (new ObjectId(parts(0)), parts(1).toInt)
+        } catch {
+          case _ => throw new Exception("malformed boost line: %s --> %s".format(l, parts.toList))
+        }
+      }).toMap
+    } else {
+      Map.empty
+    }
+  }
 }
 
 class HFileInput(basepath: String, filename: String, shouldPreload: Boolean) {

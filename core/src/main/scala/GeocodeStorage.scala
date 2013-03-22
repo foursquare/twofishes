@@ -255,4 +255,7 @@ trait GeocodeStorageReadService {
   def getLevelMod: Int
   def getByS2CellId(id: Long): Seq[CellGeometry]
   def getPolygonByObjectId(id: ObjectId): Option[Array[Byte]]
+
+  def hotfixesDeletes: Seq[ObjectId] = Nil
+  def hotfixesBoosts: Map[ObjectId, Int] = Map.empty
 }

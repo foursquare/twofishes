@@ -192,7 +192,7 @@ trait NameUtils {
             case FeatureNameFlags.ALIAS => -1
             case FeatureNameFlags.DEACCENT => -1
             case FeatureNameFlags.ABBREVIATION => {
-              if (preferAbbrev) { 4 } else { 0 }
+              if (preferAbbrev && !name.name.matches("\\d+") ) { 4 } else { 0 }
             }
             case FeatureNameFlags.ALT_NAME => 0
             case FeatureNameFlags.LOCAL_LANG => 0
@@ -212,7 +212,10 @@ trait NameUtils {
     if (preferAbbrev && f.woeType == YahooWoeType.COUNTRY) {
       f.names.find(n => n.name.size == 2 && Option(n.flags).exists(_.contains(FeatureNameFlags.ABBREVIATION)))
     } else {
-      f.names.sorted(new FeatureNameComparator(lang, preferAbbrev)).headOption
+      val modifiedPreferAbbrev = preferAbbrev &&
+        f.woeType == YahooWoeType.ADMIN1 &&
+        (f.cc == "US" || f.cc == "CA")
+      f.names.sorted(new FeatureNameComparator(lang, modifiedPreferAbbrev)).headOption
     }
   }
 
@@ -239,8 +242,12 @@ trait NameUtils {
       } else {
         exactMatchNameCandidates
       }
+      
+      val modifiedPreferAbbrev = preferAbbrev &&
+        f.woeType == YahooWoeType.ADMIN1 &&
+        (f.cc == "US" || f.cc == "CA")
 
-      val bestNameMatch = nameCandidates.sorted(new FeatureNameComparator(lang, preferAbbrev)).headOption
+      val bestNameMatch = nameCandidates.sorted(new FeatureNameComparator(lang, modifiedPreferAbbrev)).headOption
       if (debugLevel > 1) {
         logger.ifDebug("name candidates: " + nameCandidates)
         logger.ifDebug("best name match: " + bestNameMatch)
