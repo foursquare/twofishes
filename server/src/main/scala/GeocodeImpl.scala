@@ -1247,7 +1247,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
         logger.ifDebug("parse ids: %s".format(p.map(_.fmatch.id)))
       })
     }
-    buildFinalParses(parses, parseParams)
+    buildFinalParses(parses.sorted(new ParseOrdering), parseParams)
   }
 
   def doSlugGeocode(slug: String): GeocodeResponse = {
