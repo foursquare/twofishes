@@ -74,6 +74,7 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
     val featureName = new FeatureName()
     featureName.setName(name)
     featureName.setLang("en")
+    featureName.setFlags(List(FeatureNameFlags.PREFERRED).asJava)
     feature.setNames(List(featureName).asJava)
 
     val fid = new FeatureId()
@@ -227,7 +228,6 @@ class GeocoderSpec extends Specification {
     val req = new GeocodeRequest().setQuery("Rego Park, California")
     req.setDebug(4)
     val r = new GeocoderImpl(store, req).geocode()
-    println(r.debugLines.asScala.mkString("\n"))
     r.interpretations must haveSize(1)
     r.interpretations.size must_== 1
     val interp = r.interpretations.asScala(0)
@@ -310,6 +310,14 @@ class GeocoderSpec extends Specification {
     r.interpretations must haveSize(2)
 
     val interp = r.interpretations.asScala(0)
+    interp.what must_== ""
+    interp.where must_== "rego"
+    interp.feature.highlightedName must_== "<b>Rego</b>, US"
+
+    val interp2 = r.interpretations.asScala(1)
+    interp2.what must_== ""
+    interp2.where must_== "rego"
+    interp2.feature.highlightedName must_== "<b>Rego</b> Park, New York, US"
   } 
 
   "autocomplete 2" in {
@@ -319,11 +327,36 @@ class GeocoderSpec extends Specification {
     val req = new GeocodeRequest().setQuery("Rego P")
     req.setAutocomplete(true)
 
+    // validating our test harness
     store.getIdsByNamePrefix("rego p").size must_== 1
 
     val r = new GeocoderImpl(store, req).geocode()
     r.interpretations.size must_== 1
+
     val interp = r.interpretations.asScala(0)
+    interp.what must_== ""
+    interp.where must_== "rego p"
+    interp.feature.highlightedName must_== "<b>Rego P</b>ark, New York, US"
+  } 
+
+  "autocomplete 3" in {
+    val store = buildRegoPark()
+    addRego(store)
+
+    val req = new GeocodeRequest().setQuery("Rego Park New")
+    req.setAutocomplete(true).setDebug(1)
+
+    // validating our test harness
+    store.getIdsByNamePrefix("rego park").size must_== 1
+    store.getIdsByNamePrefix("new").size must_== 1
+
+    val r = new GeocoderImpl(store, req).geocode()
+    r.interpretations.size aka r.debugLines.asScala.mkString("\n") must_== 1 
+
+    // val interp = r.interpretations.asScala(0)
+    // interp.what must_== ""
+    // interp.where must_== "rego park new"
+    // interp.feature.highlightedName must_== "<b>Rego Park, New</b> York, US"
   } 
 
   "woe restrict works" in {
@@ -366,7 +399,6 @@ class GeocoderSpec extends Specification {
     val store = getStore
     val parisTownRecord = store.addGeocode("Paris", Nil, 5, 6, YahooWoeType.TOWN, cc="FR")
     parisTownRecord.feature.setSlug("paris-fr")
-
 
     val req = new GeocodeRequest().setSlug("paris-fr")
 

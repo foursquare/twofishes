@@ -182,13 +182,24 @@ struct InterpretationScoringFeatures {
   3: optional double percentOfFeatureCovered = 0.0
 }
 
+struct DebugScoreComponent {
+  1: required string key
+  2: required i32 value
+}
+
+struct InterpretationDebugInfo {
+  1: optional list<DebugScoreComponent> scoreComponents,
+  2: optional i32 finalScore
+}
+
 struct GeocodeInterpretation {
   1: string what,
   2: string where,
   3: GeocodeFeature feature
   4: optional list<GeocodeFeature> parents,
   5: optional ScoringFeatures scoringFeatures_DEPRECATED,
-  6: optional InterpretationScoringFeatures scores
+  6: optional InterpretationScoringFeatures scores,
+  7: optional InterpretationDebugInfo debugInfo
 }
 
 struct GeocodeResponse {
