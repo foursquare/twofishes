@@ -44,7 +44,7 @@ object PolygonLoader {
       } else {
         scala.io.Source.fromFile(f).getLines.filterNot(_.startsWith("#")).toList.map(l => {
           val parts = l.split("\t")
-          (parts(0) -> wktReader.read(parts(1))) 
+          (parts(0) -> wktReader.read(parts(1)).buffer(0))
         })
       }
     }).map({case (k, geom) => {
