@@ -308,16 +308,16 @@ class GeocoderSpec extends Specification {
 
     val r = new GeocoderImpl(store, req).geocode()
     r.interpretations must haveSize(2)
-
-    val interp = r.interpretations.asScala(0)
+ 
+    var interp = r.interpretations.asScala(0)
+    interp.what must_== ""
+    interp.where must_== "rego"
+    interp.feature.highlightedName must_== "<b>Rego</b> Park, New York, US"
+    
+    interp = r.interpretations.asScala(1)
     interp.what must_== ""
     interp.where must_== "rego"
     interp.feature.highlightedName must_== "<b>Rego</b>, US"
-
-    val interp2 = r.interpretations.asScala(1)
-    interp2.what must_== ""
-    interp2.where must_== "rego"
-    interp2.feature.highlightedName must_== "<b>Rego</b> Park, New York, US"
   } 
 
   "autocomplete 2" in {
