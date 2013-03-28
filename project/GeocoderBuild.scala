@@ -103,6 +103,9 @@ object GeocoderBuild extends Build {
           <dependencies>
             <exclude org="thrift"/>
             <exclude org="org.apache.thrift" module="thrift"/>
+            <exclude org="commons-beanutils" module="commons-beanutils"/>
+            <exclude org="commons-beanutils" module="commons-beanutils-core"/>
+            <exclude org="org.mockito" module="mockito-all"/>
           </dependencies>
         )
       )
