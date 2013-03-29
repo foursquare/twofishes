@@ -452,7 +452,7 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
                   val s2shape = s2shapes.getOrElseUpdate(cellid.id, ShapefileS2Util.fullGeometryForCell(cellid))
                   val cellGeometry = new CellGeometry()
                   val recordShape = geom.buffer(0)
-                  if (s2shape.contains(recordShape)) {
+                  if (recordShape.contains(s2shape)) {
                     cellGeometry.setFull(true)
                   } else {
                     cellGeometry.setWkbGeometry(wkbWriter.write(s2shape.intersection(recordShape)))
