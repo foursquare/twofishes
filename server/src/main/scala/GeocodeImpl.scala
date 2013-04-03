@@ -60,11 +60,6 @@ object FeatureMatchOrdering extends Ordering[FeatureMatch] {
   }
 }
 
-// I should really do this with shadow types :-(
-case class SortedParse(
-  fmatches: Seq[FeatureMatch]
-)
-
 trait MaybeSorted
 trait Sorted extends MaybeSorted
 trait Unsorted extends MaybeSorted
@@ -79,12 +74,22 @@ case class Parse[T <: MaybeSorted](
   def iterator = fmatches.iterator
   def length = fmatches.length
 
+  override def toString: String = {
+    val name = this.flatMap(_.fmatch.feature.names.headOption).map(_.name).mkString(", ")
+    // god forgive this line of code
+    val id = this.headOption.toList.flatMap(f => Option(f.fmatch.feature.ids)).flatten.headOption.map(fid =>
+      "%s:%s".format(fid.source, fid.id)).getOrElse("no:id")
+    "%s %s".format(id, name)
+  }
+
   def tokenLength = fmatches.map(pp => pp.tokenEnd - pp.tokenStart).sum
 
   def getSorted: Parse[Sorted] =
     Parse[Sorted](fmatches.sorted(FeatureMatchOrdering), scoringFeatures)
 
   def addFeature(f: FeatureMatch) = Parse[Unsorted](fmatches ++ List(f))
+
+  def countryCode = fmatches.headOption.map(_.fmatch.feature.cc).getOrElse("XX")
 }
 
 trait GeocoderImplTypes {
@@ -109,9 +114,13 @@ class MemoryLogger(req: GeocodeRequest) extends TwofishesLogger {
 
   val lines: ListBuffer[String] = new ListBuffer()
 
-  def ifDebug(s: => String, level: Int = 0) {
+  def ifDebug(formatSpecifier: String, va: Any*) {
+    ifLevelDebug(1, formatSpecifier, va:_*)
+  }
+
+  def ifLevelDebug(level: Int, formatSpecifier: String, va: Any*) {
     if (level >= 0 && req.debug >= level) {
-      lines.append("%d: %s".format(timeSinceStart, s))
+      lines.append("%d: %s".format(timeSinceStart, formatSpecifier.format(va:_*)))
     }
   }
 
@@ -164,11 +173,21 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
       val validParses = generateParsesHelper(subTokens, offset, cache)
       val cacheKey = subTokens.size
       if (req.debug > 1) {
-        logger.ifDebug("setting %d to %s".format(cacheKey, validParses))
+        logger.ifDebug("setting %d to %s", cacheKey, validParses)
       }
       cache(cacheKey) = validParses
     })
     cache
+  }
+
+  def buildParse(f: FeatureMatch, p: Parse[Sorted]): Option[Parse[Sorted]] = {
+    val parse = p.addFeature(f)
+    val sortedParse = parse.getSorted
+    if (isValidParse(sortedParse)) {
+      Some(sortedParse)
+    } else {
+      None
+    }
   }
 
   def generateParsesHelper(tokens: List[String], offset: Int, cache: ParseCache): SortedParseSeq = {
@@ -179,25 +198,24 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
           FeatureMatch(offset, offset + i, searchStr, f)
         )
       }
-      logger.ifDebug("got %d features for %s".format(featureMatches.size, searchStr))
-      val subParses = cache(tokens.size - i)
-      (for {
-        f <- featureMatches
-        p <- subParses
-        val _ = logger.ifDebug("looking at %s".format(f), 3)
-        val _ = logger.ifDebug("sub_parse: %s".format(p), 3)
-      } yield {
-        val parse = p.addFeature(f)
-        val sortedParse = parse.getSorted
-        if (isValidParse(sortedParse)) {
-          logger.ifDebug("VALID", 4)
-          logger.ifDebug("sorted " + sortedParse, 4)
-          Some(sortedParse)
-        } else {
-          logger.ifDebug("INVALID", 4)
-          None
-        }
-      }).flatten
+      logger.ifDebug("got %d features for %s", featureMatches.size, searchStr)
+
+      if ((tokens.size - i) == 0) {
+        featureMatches.flatMap(f => buildParse(f, NullParse))
+      } else {
+        val subParses = cache(tokens.size - i)
+
+        val subParsesByCountry: Map[String, SortedParseSeq] = subParses.groupBy(_.countryCode)
+        val featuresByCountry: Map[String, Seq[FeatureMatch]] = featureMatches.groupBy(_.fmatch.feature.cc)
+
+        (for {
+          cc <- subParsesByCountry.keys
+          f <- featuresByCountry.getOrElse(cc, Nil)
+          p <- subParsesByCountry.getOrElse(cc, Nil)
+        } yield {
+          buildParse(f, p)   
+        }).flatten
+      }
     })
   }
 
@@ -277,8 +295,8 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     } else {
       parses.flatMap(parse => {
         if (req.debug > 0) {
-          logger.ifDebug("checking %d fids against %s".format(matches.size, parse.map(_.fmatch.id)))
-          logger.ifDebug("these are the fids of my parse: %s".format(matches.map(_.fmatch.id)))
+          logger.ifDebug("checking %d fids against %s", matches.size, parse.map(_.fmatch.id))
+          logger.ifDebug("these are the fids of my parse: %s", matches.map(_.fmatch.id))
         }
 
         val allowedLanguages =
@@ -288,8 +306,8 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
         matches.flatMap(featureMatch => {
           val fid = featureMatch.fmatch.id
           if (req.debug > 0) {
-            logger.ifDebug("checking if %s is an unused parent of %s".format(
-              fid, parse.map(_.fmatch.id)))
+            logger.ifDebug("checking if %s is an unused parent of %s",
+              fid, parse.map(_.fmatch.id))
           }
 
           val isValid = parse.exists(_.fmatch.scoringFeatures.parents.asScala.has(fid.toString)) &&
@@ -298,7 +316,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
 
           if (isValid) {
             if (req.debug > 0) {
-              logger.ifDebug("HAD %s as a parent".format(fid))
+              logger.ifDebug("HAD %s as a parent", fid)
             }
             Some(parse.addFeature(featureMatch))
           } else {
@@ -365,7 +383,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
         val featuresMatches: Seq[FeatureMatch] = 
           if (parses.size == 0) {
             val featureIds = if (isEnd) {
-              logger.ifDebug("looking at prefix: %s".format(query))
+              logger.ifDebug("looking at prefix: %s", query)
               if (spaceAtEnd) {
                 List(
                   store.getIdsByNamePrefix(query + " "),
@@ -383,9 +401,10 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
                 servingFeature.feature.names.filter(n => matchName(n, query, isEnd)))
             }}).toSeq
           } else {
-            logger.ifDebug("looking for %s in parents: %s".format(query, store.getByObjectIds(possibleParents).toSeq))
+            val parents = store.getByObjectIds(possibleParents).toSeq
+            logger.ifDebug("looking for %s in parents: %s", query, parents)
             for {
-              (oid, servingFeature) <- store.getByObjectIds(possibleParents).toSeq
+              (oid, servingFeature) <- parents
               names = servingFeature.feature.names.filter(n => matchName(n, query, isEnd))
               if names.nonEmpty
             } yield {
@@ -394,9 +413,9 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
           }
 
         if (req.debug > 0) {
-          logger.ifDebug("%d-%d: looking at: %s (is end? %s)".format(offset, i, query, isEnd))
-          logger.ifDebug("%d-%d: %d previous parses: %s".format(offset, i, parses.size,   parses))
-          logger.ifDebug("%d-%d: examining %d featureIds against parse".format(offset, i, featuresMatches.size))
+          logger.ifDebug("%d-%d: looking at: %s (is end? %s)", offset, i, query, isEnd)
+          logger.ifDebug("%d-%d: %d previous parses: %s", offset, i, parses.size,   parses)
+          logger.ifDebug("%d-%d: examining %d featureIds against parse", offset, i, featuresMatches.size)
         }
 
         val nextParses: ParseSeq = buildValidAutocompleteParses(parses, featuresMatches, offset, i, query)
@@ -453,8 +472,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
 
         def modifySignal(value: Int, debug: String) {
           if (req.debug > 0) {
-            logger.ifDebug("%s: %s + %s = %s".format(
-              debug, signal, value, signal + value))
+            logger.ifDebug("%s: %s + %s = %s", debug, signal, value, signal + value)
             parse.debugInfo.foreach(_.addToScoreComponents(
               new DebugScoreComponent(debug, value)
             ))
@@ -463,7 +481,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
         }
       
         if (req.debug > 0) {
-          logger.ifDebug("Scoring %s".format(printDebugParse(parse)))
+          logger.ifDebug("Scoring %s", parse)
         }
 
         // if we have a repeated feature, downweight this like crazy
@@ -572,7 +590,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
         modifySignal( -1 * YahooWoeTypes.getOrdering(primaryFeature.feature.woeType), "prefer smaller interpretation")
 
         if (req.debug > 0) {
-          logger.ifDebug("final score %s".format(signal))
+          logger.ifDebug("final score %s", signal)
           parse.debugInfo.foreach(_.setFinalScore(signal))
         }
         signal
@@ -621,14 +639,14 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
           if (aFeature.fmatch.scoringFeatures.parents.asScala.has(bFeature.fmatch.id) &&
             (aFeature.fmatch.scoringFeatures.population * 1.0 / bFeature.fmatch.scoringFeatures.population) > 0.05
           ) {
-            logger.ifDebug("Preferring %s because it's a child of %s".format(printDebugParse(a), printDebugParse(b)))
+            logger.ifDebug("Preferring %s because it's a child of %s", a, b)
             return -1
           }
           // if b is a parent of a, prefer a
           if (bFeature.fmatch.scoringFeatures.parents.asScala.has(aFeature.fmatch.id) &&
              (bFeature.fmatch.scoringFeatures.population * 1.0 / aFeature.fmatch.scoringFeatures.population) > 0.05
             ) {
-            logger.ifDebug("Preferring %s because it's a child of %s".format(printDebugParse(b), printDebugParse(a)))
+            logger.ifDebug("Preferring %s because it's a child of %s", a, b)
             return 1
           }
         }
@@ -804,7 +822,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
   def filterParses(parses: SortedParseSeq, parseParams: ParseParams): SortedParseSeq = {
     if (req.debug > 0) {
       logger.ifDebug("have %d parses in filterParses".format(parses.size))
-      parses.foreach(s => logger.ifDebug(s.toString))
+      parses.foreach(s => logger.ifLevelDebug(2, "examining: %s", s))
     }
 
     var goodParses = if (req.woeRestrict.size > 0) {
@@ -872,9 +890,9 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
 
     if (req.debug > 0) {
       parseMap.foreach({case(name, parseSeq) => {
-        logger.ifDebug("have %d parses for %s".format(parseSeq.size, name))
+        logger.ifDebug("have %d parses for %s", parseSeq.size, name)
         parseSeq.foreach(p => {
-          logger.ifDebug("%s: %s".format(name, printDebugParse(p._1)))
+          logger.ifDebug("%s: %s", name, p._1)
         })
       }})
     }
@@ -910,14 +928,6 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
       resp.setDebugLines(logger.getLines)
     }
     resp
-  }
-
-  def printDebugParse(p: Parse[_ <: MaybeSorted]): String = {
-    val name = p.flatMap(_.fmatch.feature.names.headOption).map(_.name).mkString(", ")
-    // god forgive this line of code
-    val id = p.headOption.toList.flatMap(f => Option(f.fmatch.feature.ids)).flatten.headOption.map(fid =>
-      "%s:%s".format(fid.source, fid.id)).getOrElse("no:id")
-    "%s %s".format(id, name)
   }
 
   def responseIncludes(include: ResponseIncludes): Boolean = {
@@ -1073,10 +1083,10 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
 
     val query = req.query
     if (query != null) {
-      logger.ifDebug("%s --> %s".format(query, NameNormalizer.normalize(query)))
+      val normalizedQuery = NameNormalizer.normalize(query)
+      logger.ifDebug("%s --> %s", query, normalizedQuery)
 
-      var originalTokens =
-        NameNormalizer.tokenize(NameNormalizer.normalize(query))
+      var originalTokens = NameNormalizer.tokenize(normalizedQuery)
 
       val spaceAtEnd = query.takeRight(1) == " "
 
@@ -1110,9 +1120,9 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     parseParams: ParseParams
   ) = {
     val modifiedTokens = deleteCommonWords(parseParams.originalTokens)
-    logger.ifDebug("common words deleted: %s".format(modifiedTokens.mkString(" ")))
+    logger.ifDebug("common words deleted: %s", modifiedTokens)
     if (modifiedTokens.size != parseParams.originalTokens.size && !parseParams.isRetry) {
-      logger.ifDebug("RESTARTING common words query: %s".format(modifiedTokens.mkString(" ")))
+      logger.ifDebug("RESTARTING common words query: %s", modifiedTokens)
       geocode(modifiedTokens, isRetry=true)
     } else {
       buildFinalParses(parses, parseParams)
@@ -1172,10 +1182,13 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     } else {
       dedupeParses(filteredParses.take(maxInterpretations))
     }
-    logger.ifDebug("%d parses after deduping".format(dedupedParses.size))
-    dedupedParses.zipWithIndex.foreach({case (parse, index) =>
-      logger.ifDebug("deduped parse ids: %s".format(parse.map(_.fmatch.id)))
-    })
+
+    if (req.debug > 0) {
+      logger.ifDebug("%d parses after deduping", dedupedParses.size)
+      dedupedParses.zipWithIndex.foreach({case (parse, index) =>
+        logger.ifDebug("deduped parse ids: %s", parse.map(_.fmatch.id))
+      })
+    }
 
     // TODO: make this configurable
     // val sortedDedupedParses: SortedParseSeq = dedupedParses.sorted(new ParseOrdering).take(3)
@@ -1242,9 +1255,9 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     parseParams: ParseParams
   ) = {
     val parses = generateAutoParses(parseParams.tokens, spaceAtEnd)
-    if (req.debug > 1) {
+    if (req.debug > 0) {
       parses.foreach(p => {
-        logger.ifDebug("parse ids: %s".format(p.map(_.fmatch.id)))
+        logger.ifDebug("parse ids: %s", p.map(_.fmatch.id))
       })
     }
     buildFinalParses(parses.sorted(new ParseOrdering), parseParams)
@@ -1272,7 +1285,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
               isRetry: Boolean = false,
               spaceAtEnd: Boolean = false
       ): GeocodeResponse = {
-    logger.ifDebug("--> %s".format(originalTokens.mkString("_|_")))
+    logger.ifDebug("--> %s", originalTokens.mkString("_|_"))
 
     // This is awful connector parsing
     val connectorStart = originalTokens.findIndexOf(_ == "near")
@@ -1341,9 +1354,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
   def logDuration[T](ostrichKey: String, what: String)(f: => T): T = {
     val (rv, duration) = Duration.inNanoseconds(f)
     Stats.addMetric(ostrichKey + "_usec", duration.inMicroseconds.toInt)
-    if (req.debug > 0) {
-      logger.ifDebug(what + " in %s µs / %s ms".format(duration.inMicroseconds, duration.inMilliseconds))
-    }
+    logger.ifDebug("%s in %s µs / %s ms", what, duration.inMicroseconds, duration.inMilliseconds)
     rv
   }
 
@@ -1387,7 +1398,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
 
     val featureOids: Seq[ObjectId] = {
       if (req.debug > 0) {
-        logger.ifDebug("had %d candidates".format(cellGeometries.size))
+        logger.ifDebug("had %d candidates", cellGeometries.size)
       }
       (for {
         cellGeometry <- cellGeometries
@@ -1459,13 +1470,13 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
 
   def reverseGeocodePoint(ll: GeocodePoint): GeocodeResponse = {
     val levels = getAllLevels()
-    logger.ifDebug("doing point revgeo on %s at levels %s".format(ll, levels.mkString(",")))
+    logger.ifDebug("doing point revgeo on %s at levels %s", ll, levels)
 
     val cellids: Seq[Long] = 
       levels.map(level =>
         GeometryUtils.getS2CellIdForLevel(ll.lat, ll.lng, level).id()
       )
-    logger.ifDebug("looking up: " + cellids.mkString(" "))
+    logger.ifDebug("looking up: ", cellids)
 
     val geomFactory = new GeometryFactory()
     val point = geomFactory.createPoint(

@@ -2,5 +2,5 @@
 package com.foursquare.twofishes.util
 
 trait TwofishesLogger {
-  def ifDebug(s: => String, level: Int = 0)
+  def ifDebug(formatSpecifier: String, va: Any*)
 }
