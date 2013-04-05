@@ -3,7 +3,7 @@ package com.foursquare.twofishes
 
 import collection.JavaConverters._
 import com.foursquare.twofishes.importers.geonames._
-import com.foursquare.twofishes.util.GeometryUtils
+import com.foursquare.twofishes.util.{GeometryUtils, StoredFeatureId}
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTReader, WKTWriter}
 import org.bson.types.ObjectId
@@ -33,6 +33,11 @@ class IndexerSpec extends Specification {
   var store = new MockGeocodeStorageWriteService()
   val slugIndexer = new SlugIndexer()
   val parser = new GeonamesParser(store, slugIndexer, Map.empty)
+
+  "processFeatureName" in {
+    val names = parser.processFeatureName("US", "en", "New York", false, false)
+    names.size mustEqual 1
+  }
 
   "name deduping works" in {
     val record = GeocodeRecord(new ObjectId(),

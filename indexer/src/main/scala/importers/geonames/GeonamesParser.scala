@@ -289,9 +289,11 @@ class GeonamesParser(
         } else { None }
       )
 
-    val hasPreferredEnglishAltName = alternateNamesMap.getOrElse(geonameId, Nil).exists(altName =>
+    val preferredEnglishAltName = alternateNamesMap.getOrElse(geonameId, Nil).find(altName =>
       altName.lang == "en" && altName.isPrefName
     )
+
+    val hasPreferredEnglishAltName = preferredEnglishAltName.isDefined
 
     // If we don't have an altname with lang=en marked as preferred, then assume that
     // the primary name geonames gives us is english preferred
@@ -332,7 +334,11 @@ class GeonamesParser(
       displayNames ::= DisplayName("en", n, FeatureNameFlags.ALT_NAME.getValue)
     )
 
-    displayNames ++= alternateNamesMap.getOrElse(geonameId, Nil).flatMap(altName => {
+    val englishName = preferredEnglishAltName.getOrElse(feature.name)
+    val alternateNames = alternateNamesMap.getOrElse(geonameId, Nil).filterNot(n => 
+      (n.name == englishName) && (n.lang != "en")
+    )
+    displayNames ++= alternateNames.flatMap(altName => {
       processFeatureName(
         feature.countryCode, altName.lang, altName.name, altName.isPrefName, altName.isShortName)
     })
