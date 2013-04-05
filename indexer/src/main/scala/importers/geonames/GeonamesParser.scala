@@ -297,11 +297,15 @@ class GeonamesParser(
 
     // If we don't have an altname with lang=en marked as preferred, then assume that
     // the primary name geonames gives us is english preferred
-    var displayNames: List[DisplayName] = processFeatureName(
-      feature.countryCode, "en", feature.name,
-      isPrefName = !hasPreferredEnglishAltName,
-      isShortName = false
-    )
+    var displayNames: List[DisplayName] = Nil
+
+    if (!preferredEnglishAltName.exists(_ == feature.name)) {
+      displayNames ++= processFeatureName(
+        feature.countryCode, "en", feature.name,
+        isPrefName = !hasPreferredEnglishAltName,
+        isShortName = false
+      )
+    }
 
     if (feature.featureClass.woeType == YahooWoeType.COUNTRY) {
       countryNameMap.get(feature.countryCode).foreach(name =>
