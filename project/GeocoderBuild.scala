@@ -178,7 +178,8 @@ import com.novus.salat.global._
         libraryDependencies ++= Seq(
           "org.geotools" % "gt-shapefile" % "8.0-M1",
           "org.geotools" % "gt-epsg-hsql" % "8.0-M1",
-          "com.google.caliper" % "caliper" % "0.5-rc1"
+          "com.google.caliper" % "caliper" % "0.5-rc1",
+          "org.mongodb" % "bson" % "2.10.1"
         )
       )
     ) dependsOn(interface)

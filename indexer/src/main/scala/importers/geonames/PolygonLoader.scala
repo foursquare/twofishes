@@ -7,6 +7,7 @@ import com.foursquare.twofishes.Implicits._
 import com.foursquare.twofishes._
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
+import com.foursquare.twofishes.util.StoredFeatureId
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
 import java.io.File
@@ -42,9 +43,15 @@ object PolygonLoader {
         // do nothing, shapefile aux file
         Nil
       } else {
-        scala.io.Source.fromFile(f).getLines.filterNot(_.startsWith("#")).toList.map(l => {
+        scala.io.Source.fromFile(f).getLines.filterNot(_.startsWith("#")).toList.flatMap(l => {
           val parts = l.split("\t")
-          (parts(0) -> wktReader.read(parts(1)).buffer(0))
+          val geom = wktReader.read(parts(1)).buffer(0)
+          if (geom.isValid) {
+            Some((parts(0) -> geom))
+          } else {
+            println("geom is not valid for %s: %s".format(parts(0), geom))
+            None
+          }
         })
       }
     }).map({case (k, geom) => {

@@ -5,12 +5,12 @@ import com.foursquare.geo.shapes.FsqSimpleFeatureImplicits._
 import com.foursquare.geo.shapes.ShapefileIterator
 import com.foursquare.twofishes.Implicits._
 import com.foursquare.twofishes._
-import com.foursquare.twofishes.util.{Helpers, NameNormalizer}
+import com.foursquare.twofishes.util.{Helpers, NameNormalizer, StoredFeatureId, GeocodeFeatureIdUtils}
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
-import java.io.File
+import java.io.{File, FileWriter}
 import org.bson.types.ObjectId
 import org.opengis.feature.simple.SimpleFeature
 import scala.collection.JavaConversions._
@@ -84,6 +84,12 @@ object GeonamesParser {
   }
 
   def writeIndexes() {
+    val writer = new FileWriter(new File(config.hfileBasePath, "provider_mapping.txt"))
+    config.providerMapping.foreach({case (k, v) => {
+      writer.write("%s\t%s\n".format(k, v))
+    }})
+    writer.close()
+
     val outputter = new OutputIndexes(config.hfileBasePath, config.outputPrefixIndex, GeonamesParser.slugIndexer.slugEntryMap, config.outputRevgeo)
     outputter.buildIndexes()
   }
@@ -154,12 +160,6 @@ class GeonamesParser(
   slugIndexer: SlugIndexer,
   providerMapping: Map[String, Int]
 ) extends SimplePrintLogger {
-  def objectIdFromLong(n: Long) = {
-    val bytes = BigInt(n).toByteArray
-    val arr = bytes.reverse.padTo(12, 0: Byte).reverse
-    new ObjectId(arr)
-  }
-
   lazy val hierarchyTable = HierarchyParser.parseHierarchy(List(
     "data/downloaded/hierarchy.txt",
     "data/private/hierarchy.txt",
@@ -207,15 +207,6 @@ class GeonamesParser(
 
   val wkbWriter = new WKBWriter()
   val wktReader = new WKTReader()
-
-  def objectIdFromFeatureId(geonameId: StoredFeatureId) = {
-    for {
-      idInt <- Helpers.TryO(geonameId.id.toInt)
-      providerId <- providerMapping.get(geonameId.namespace)
-    } yield {
-      objectIdFromLong((providerId.toLong << 32) + idInt)
-    }
-  }
 
   def doRewrites(names: List[String]): List[String] = {
     val nameSet = new scala.collection.mutable.HashSet[String]()
@@ -450,7 +441,7 @@ class GeonamesParser(
       attributes.setNeighborhoodType(NeighborhoodType.valueOf(v))
     )
 
-    val objectId = objectIdFromFeatureId(geonameId).getOrElse(new ObjectId())
+    val objectId = GeocodeFeatureIdUtils.objectIdFromFeatureId(geonameId, providerMapping).getOrElse(new ObjectId())
 
     val record = GeocodeRecord(
       _id = objectId,

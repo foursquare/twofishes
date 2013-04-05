@@ -8,6 +8,7 @@ import com.novus.salat.annotations._
 import com.novus.salat.dao._
 import com.novus.salat.global._
 import scala.collection.JavaConversions._
+import com.foursquare.twofishes.util.StoredFeatureId
 
 case class NameIndex(
   name: String,

@@ -2,7 +2,7 @@
 package com.foursquare.twofishes.importers.geonames
 
 import com.foursquare.twofishes._
-import com.foursquare.twofishes.util.{Helpers, NameUtils, SlugBuilder}
+import com.foursquare.twofishes.util.{Helpers, NameUtils, SlugBuilder, StoredFeatureId}
 import java.io.File
 import scala.collection.JavaConversions._
 import scala.collection.mutable.{HashMap, HashSet}

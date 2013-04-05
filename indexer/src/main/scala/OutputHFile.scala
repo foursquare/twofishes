@@ -520,17 +520,17 @@ class IdIndexer(override val basepath: String, override val fidMap: FidMap, slug
       (slug.getBytes("UTF-8"), oid.toByteArray)
     }
 
-    val oidEntries: List[(Array[Byte], Array[Byte])] = (for {
-      geocodeRecord <- MongoGeocodeDAO.find(MongoDBObject())
-      id <- geocodeRecord.ids
-    } yield {
-      (id.getBytes("UTF-8"), geocodeRecord._id.toByteArray)
-    }).toList
+    // val oidEntries: List[(Array[Byte], Array[Byte])] = (for {
+    //   geocodeRecord <- MongoGeocodeDAO.find(MongoDBObject())
+    //   id <- geocodeRecord.ids
+    // } yield {
+    //   (id.getBytes("UTF-8"), geocodeRecord._id.toByteArray)
+    // }).toList
 
     // these types are a lie
     val writer = buildMapFileWriter[StringWrapper, ObjectIdListWrapper]("id-mapping")
 
-    val sortedEntries = (slugEntries ++ oidEntries).sortWith(bytePairSort).foreach({case (k, v) => {
+    val sortedEntries = slugEntries.sortWith(bytePairSort).foreach({case (k, v) => {
       writer.append(k, v)
     }})
 

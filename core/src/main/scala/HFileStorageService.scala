@@ -1,6 +1,6 @@
 package com.foursquare.twofishes
 
-import com.foursquare.twofishes.util.GeometryUtils
+import com.foursquare.twofishes.util.{GeocodeFeatureIdUtils, GeometryUtils, StoredFeatureId}
 import com.twitter.ostrich.stats.{Stats, StatsProvider}
 import com.twitter.util.{Duration, FuturePool}
 import java.io._
@@ -317,11 +317,30 @@ object SlugFidMapFileInput {
 
 class SlugFidMapFileInput(basepath: String, shouldPreload: Boolean) extends ByteReaderUtils {
   val idMappingIndex = new MapFileInput(basepath, "id-mapping", shouldPreload)
+  
+  val providerMapping: Map[String, Int] = {
+    val file = new File(basepath, "provider_mapping.txt")
+    if (file.exists()) {
+      scala.io.Source.fromFile(file).getLines.map(l => {
+        val parts = l.split("\t")
+        (parts(0) -> parts(1).toInt)
+      }).toMap
+    } else {
+      Map.empty
+    }
+  }
+
   def get(s: String): Option[ObjectId] = {
-    val buf = s.getBytes("UTF-8")
-    idMappingIndex.lookup(buf).flatMap(b => {
-      decodeObjectIds(b).headOption
-    })
+    if (s.contains(":")) {
+      GeocodeFeatureIdUtils.objectIdFromFeatureId(
+        StoredFeatureId.fromString(s), providerMapping
+      )
+    } else {
+      val buf = s.getBytes("UTF-8")
+      idMappingIndex.lookup(buf).flatMap(b => {
+        decodeObjectIds(b).headOption
+      })
+    }
   }
 }
 
