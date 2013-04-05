@@ -115,12 +115,21 @@ class MemoryLogger(req: GeocodeRequest) extends TwofishesLogger {
   val lines: ListBuffer[String] = new ListBuffer()
 
   def ifDebug(formatSpecifier: String, va: Any*) {
-    ifLevelDebug(1, formatSpecifier, va:_*)
+    if (va.isEmpty) {
+      ifLevelDebug(1, "%s", formatSpecifier)
+    } else {
+      ifLevelDebug(1, formatSpecifier, va:_*)
+    }
   }
 
   def ifLevelDebug(level: Int, formatSpecifier: String, va: Any*) {
     if (level >= 0 && req.debug >= level) {
-      lines.append("%d: %s".format(timeSinceStart, formatSpecifier.format(va:_*)))
+      val finalString = if (va.isEmpty) {
+        formatSpecifier
+      } else {
+        formatSpecifier.format(va:_*)
+      }
+      lines.append("%d: %s".format(timeSinceStart, finalString))
     }
   }
 
@@ -821,7 +830,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
   // 2) try to filter out near dupe parses (based on formatting + latlng)
   def filterParses(parses: SortedParseSeq, parseParams: ParseParams): SortedParseSeq = {
     if (req.debug > 0) {
-      logger.ifDebug("have %d parses in filterParses".format(parses.size))
+      logger.ifDebug("have %d parses in filterParses", parses.size)
       parses.foreach(s => logger.ifLevelDebug(2, "examining: %s", s))
     }
 
@@ -840,13 +849,13 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     } else {
       parses
     }
-    logger.ifDebug("have %d parses after filtering types/woes/restricts".format(goodParses.size))
+    logger.ifDebug("have %d parses after filtering types/woes/restricts", goodParses.size)
 
     goodParses = goodParses.filterNot(p => {
       p.headOption.exists(f => store.hotfixesDeletes.has(new ObjectId(f.fmatch.id)))
     })
 
-    logger.ifDebug("have %d parses after filtering from delete hotfixes".format(goodParses.size))
+    logger.ifDebug("have %d parses after filtering from delete hotfixes", goodParses.size)
 
 
     // val removeLowRankingParses = (parseLength != tokens.size && parseLength == 1 && !tryHard)
@@ -859,7 +868,7 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
             m.fmatch.scoringFeatures.population > 50000 || p.length > 1
           })
     })
-    logger.ifDebug("have %d parses after removeLowRankingParses".format(goodParses.size))
+    logger.ifDebug("have %d parses after removeLowRankingParses", goodParses.size)
 
     goodParses = goodParses.filter(p => p.headOption.exists(m => m.fmatch.scoringFeatures.canGeocode))
 
@@ -959,11 +968,11 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     val parentIds = sortedParses.flatMap(
       _.headOption.toList.flatMap(_.fmatch.scoringFeatures.parents))
     val parentOids = parentIds.map(parent => new ObjectId(parent))
-    logger.ifDebug("parent ids: " + parentOids)
+    logger.ifDebug("parent ids: %s", parentOids)
 
     // possible optimization here: add in features we already have in our parses and don't refetch them
     val parentMap = store.getByObjectIds(parentOids)
-    logger.ifDebug(parentMap.toString)
+    logger.ifDebug("parentMap: %s", parentMap)
 
     var interpretations = sortedParses.map(p => {
       val parseLength = p.tokenLength
@@ -974,8 +983,8 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
         tokens.take(tokens.size - parseLength).mkString(" ")
       }
       val where = tokens.drop(tokens.size - parseLength).mkString(" ")
-      logger.ifDebug("%d sorted parses".format(sortedParses.size))
-      logger.ifDebug("%s".format(sortedParses))
+      logger.ifDebug("%d sorted parses", sortedParses.size)
+      logger.ifDebug("sortedParses: %s", sortedParses)
 
       val fmatch = p(0).fmatch
       val feature = p(0).fmatch.feature
@@ -1053,7 +1062,8 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
       if (ambiguousInterpretations.size > 0) {
         logger.ifDebug("had ambiguous interpretations")
         ambiguousInterpretationsMap.foreach({case (k, v) =>
-          logger.ifDebug("have %d of %s".format(v.size, k)) })
+          logger.ifDebug("have %d of %s", v.size, k)
+        })
         sortedParses.foreach(p => {
           val fmatch = p(0).fmatch
           val feature = p(0).fmatch.feature

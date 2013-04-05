@@ -249,8 +249,8 @@ trait NameUtils {
 
       val bestNameMatch = nameCandidates.sorted(new FeatureNameComparator(lang, modifiedPreferAbbrev)).headOption
       if (debugLevel > 1) {
-        logger.ifDebug("name candidates: " + nameCandidates)
-        logger.ifDebug("best name match: " + bestNameMatch)
+        logger.ifDebug("name candidates: %s", nameCandidates)
+        logger.ifDebug("best name match: %s", bestNameMatch)
       }
       bestNameMatch.map(name => 
           (name,
