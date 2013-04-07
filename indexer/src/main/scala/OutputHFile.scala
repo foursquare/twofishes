@@ -540,7 +540,7 @@ class IdIndexer(override val basepath: String, override val fidMap: FidMap, slug
 
 class OutputIndexes(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: SlugEntryMap, outputRevgeo: Boolean) {
   def buildIndexes() {
-    val fidMap = new FidMap(preload = true)
+    val fidMap = new FidMap(preload = false)
 
     (new NameIndexer(basepath, fidMap, outputPrefixIndex)).writeNames()
     (new IdIndexer(basepath, fidMap, slugEntryMap)).writeSlugsAndIds()
