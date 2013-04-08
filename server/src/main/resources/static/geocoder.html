@@ -95,11 +95,13 @@
     function geocode() {
       var query = getQuery()
 
+      var maxInterpretations = 3;
+
       if (query.match(/.*=.*/)) {
-        $.getJSON('http://' + window.location.host + '/?debug=1&maxInterpretations=3&responseIncludes=EVERYTHING&maxInterpretations=3&' + query,
+        $.getJSON('http://' + window.location.host + '/?debug=1&maxInterpretations=3&responseIncludes=EVERYTHING&' + query,
           success, failure);
       } else if (query.match(/^([-+]?\d{1,2}([.]\d+)?),\s*([-+]?\d{1,3}([.]\d+)?)$/)) {
-        $.getJSON('http://' + window.location.host + '/?debug=1&maxInterpretations=3&responseIncludes=EVERYTHING&ll=' + query,
+        $.getJSON('http://' + window.location.host + '/?debug=1&&responseIncludes=EVERYTHING&ll=' + query,
           success, failure);
       } else {
         $.getJSON('http://' + window.location.host + '/?debug=1&maxInterpretations=3&responseIncludes=EVERYTHING&query=' + query,

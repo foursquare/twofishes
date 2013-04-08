@@ -1409,16 +1409,17 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     val featureOids: Seq[ObjectId] = {
       if (req.debug > 0) {
         logger.ifDebug("had %d candidates", cellGeometries.size)
+        logger.ifDebug("s2 cells: %s", cellids)
       }
       (for {
         cellGeometry <- cellGeometries
         if (req.woeRestrict.isEmpty || req.woeRestrict.asScala.has(cellGeometry.woeType))
-        if (cellGeometry.wkbGeometry != null)
       } yield {
         val oid = new ObjectId(cellGeometry.getOid())
         if (cellGeometry.isFull) {
+          logger.ifDebug("was full: %s", oid)
           Some(oid)
-        } else {
+        } else if (cellGeometry.wkbGeometry != null) {
           val (geom, intersects) = logDuration("intersectionCheck", "intersecting %s".format(oid)) {
             featureGeometryIntersections(cellGeometry.getWkbGeometry(), otherGeom)
           }
@@ -1427,6 +1428,9 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
           } else {
             None
           }
+        } else {
+          logger.ifDebug("not full and no geometry for: %s", oid)
+          None
         }
       }).flatten
     }
