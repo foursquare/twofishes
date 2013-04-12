@@ -1524,10 +1524,16 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     rv
   }
 
+  val maxRadius = 10000
+
   def reverseGeocode(): GeocodeResponse = {
     Stats.incr("revgeo-requests", 1)
     if (req.ll != null) {
       if (req.isSetRadius && req.radius > 0) {
+        if (req.radius > maxRadius) {
+          println("too large revgeo: " + req)
+          throw new Exception("radius too big (%d > %d)".format(req.radius, maxRadius))
+        }
         val sizeDegrees = req.radius / 111319.9
         val gsf = new GeometricShapeFactory()
         gsf.setSize(sizeDegrees)

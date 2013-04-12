@@ -14,7 +14,8 @@ import traceback
 # TODO: move this to thrift
 
 serverA = "http://prodproxy-b-2:35000"
-serverB = "http://dev-blackmad:8081"
+serverB = "http://localhost:8080"
+serverA = "http://localhost:8080"
 
 outputFile = open('eval-%s.html' % datetime.datetime.now(), 'w')
 
