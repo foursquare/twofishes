@@ -138,7 +138,11 @@ class MemoryLogger(req: GeocodeRequest) extends TwofishesLogger {
   def toOutput(): String = lines.mkString("<br>\n");
 }
 
-class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extends GeocoderImplTypes {
+class GeocoderImpl(
+  store: GeocodeStorageReadService,
+  req: GeocodeRequest,
+  maxRadius: Int = 50000
+) extends GeocoderImplTypes {
   val logger = new MemoryLogger(req)
 
   /*
@@ -1523,8 +1527,6 @@ class GeocoderImpl(store: GeocodeStorageReadService, req: GeocodeRequest) extend
     }
     rv
   }
-
-  val maxRadius = 10000
 
   def reverseGeocode(): GeocodeResponse = {
     Stats.incr("revgeo-requests", 1)
