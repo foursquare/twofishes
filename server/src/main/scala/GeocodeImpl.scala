@@ -1534,16 +1534,18 @@ class GeocoderImpl(
       if (req.isSetRadius && req.radius > 0) {
         if (req.radius > maxRadius) {
           println("too large revgeo: " + req)
-          throw new Exception("radius too big (%d > %d)".format(req.radius, maxRadius))
-        }
-        val sizeDegrees = req.radius / 111319.9
-        val gsf = new GeometricShapeFactory()
-        gsf.setSize(sizeDegrees)
-        gsf.setNumPoints(100)
-        gsf.setCentre(new Coordinate(req.ll.lng, req.ll.lat))
-        val geom = gsf.createCircle()
-        timeResponse("revgeo-geom") {
-          doGeometryReverseGeocode(geom)
+          //throw new Exception("radius too big (%d > %d)".format(req.radius, maxRadius))
+          new GeocodeResponse()
+        } else {
+          val sizeDegrees = req.radius / 111319.9
+          val gsf = new GeometricShapeFactory()
+          gsf.setSize(sizeDegrees)
+          gsf.setNumPoints(100)
+          gsf.setCentre(new Coordinate(req.ll.lng, req.ll.lat))
+          val geom = gsf.createCircle()
+          timeResponse("revgeo-geom") {
+            doGeometryReverseGeocode(geom)
+          }
         }
       } else {
         timeResponse("revgeo-point") {
