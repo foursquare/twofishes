@@ -1,7 +1,7 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes
 
-import com.foursquare.twofishes.util.{GAdminNamespace, StoredFeatureId}
+import com.foursquare.twofishes.util.StoredFeatureId
 import com.vividsolutions.jts.io.WKBReader
 import org.apache.thrift.{TDeserializer, TSerializer}
 import org.apache.thrift.protocol.TCompactProtocol
@@ -127,7 +127,7 @@ case class GeocodeRecord(
 
     feature.setWoeType(this.woeType)
 
-    feature.setIds(featureIds.filterNot(_.namespace == GAdminNamespace).map(_.thriftFeatureId))
+    feature.setIds(featureIds.map(_.thriftFeatureId))
 
     feature.ids.headOption.foreach(id => feature.setId("%s:%s".format(id.source, id.id)))
 
