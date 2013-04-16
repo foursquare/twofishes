@@ -1,7 +1,6 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
-import com.foursquare.twofishes.Implicits._
 import com.foursquare.twofishes.util.{GeoTools, GeometryUtils, NameNormalizer, NameUtils, TwofishesLogger}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.foursquare.twofishes.util.NameUtils.BestNameMatch
@@ -152,7 +151,7 @@ class GeocoderImpl(
       (at the first level, for "rego park ny", we'd try rego, rego park, rego park ny)
     - for every feature found matching one of our token sets, recursively try to geocode the remaining tokens
     - return early from a branch of our parse tree if the parse becomes invalid/inconsistent, that is,
-      if the feature found does not occur in the parents of the smaller feature found 
+      if the feature found does not occur in the parents of the smaller feature found
       (we would about the parse of "los angeles, new york, united states" when we'd consumed "los angeles"
        its parents were CA & US, and then consumed "new york" because NY is not in the parents of LA)
 
@@ -164,10 +163,10 @@ class GeocoderImpl(
     - save our work in a map[int -> parses], where the int is the total number of tokens those parses consume.
        we do this because:
        if two separate parses made it to the same point in the input, we don't need to redo the work
-         (contrived example: Laurel Mt United States, can both be parsed as "Laurel" in "Mt" (Montana), 
+         (contrived example: Laurel Mt United States, can both be parsed as "Laurel" in "Mt" (Montana),
           and "Laurel Mt" (Mountain), both consistent & valid parses. One of those parses would have already
          completely explored "united states" before the second one gets to it)
-    - we return the entire cache, which is a little silly. The caller knows to look for the cache for the 
+    - we return the entire cache, which is a little silly. The caller knows to look for the cache for the
       largest key (the longest parse), and to take all the tokens before that and make the "what" (the
       non-geocoded tokens) in the final interpretation.
    */
@@ -180,7 +179,7 @@ class GeocoderImpl(
    def generateParses(tokens: List[String]): ParseCache = {
     val cache = new ParseCache
     cache(0) = List(NullParse)
- 
+
     (tokens.size - 1).to(0, -1).foreach(offset => {
       val subTokens = tokens.drop(offset)
       val validParses = generateParsesHelper(subTokens, offset, cache)
@@ -207,7 +206,7 @@ class GeocoderImpl(
     1.to(tokens.size).flatMap(i => {
       val searchStr = tokens.take(i).mkString(" ")
       val featureMatches = logDuration("get-by-name", "get-by-name for %s".format(searchStr)) {
-        store.getByName(searchStr).map((f: GeocodeServingFeature) => 
+        store.getByName(searchStr).map((f: GeocodeServingFeature) =>
           FeatureMatch(offset, offset + i, searchStr, f)
         )
       }
@@ -226,7 +225,7 @@ class GeocoderImpl(
           f <- featuresByCountry.getOrElse(cc, Nil)
           p <- subParsesByCountry.getOrElse(cc, Nil)
         } yield {
-          buildParse(f, p)   
+          buildParse(f, p)
         }).flatten
       }
     })
@@ -278,13 +277,13 @@ class GeocoderImpl(
 
   /**** AUTOCOMPLETION LOGIC ****/
   /*
-   In an effort to make autocomplete much faster, we throw out a number of the 
+   In an effort to make autocomplete much faster, we throw out a number of the
    features and hacks of the primary matching logic. We assume that the query
    is being entered right-to-left, smallest-to-biggest. We also skip out on most
    of the zip-code hacks. Since zip-codes aren't really in the political hierarchy,
    they don't have all the parents one might expect them to. In the full scorer, we
    need to hydrate the full features for our name hits so that we can check the
-   feature type and compare the distances as a hack for zip-code containment. 
+   feature type and compare the distances as a hack for zip-code containment.
 
    In this scorer, we assume the left-most strings that we match are matched to the
    smallest feature, and then we don't need to hydrate any future matches to determine
@@ -302,7 +301,7 @@ class GeocoderImpl(
       matchString: String): ParseSeq = {
     if (parses.size == 0) {
       logger.ifDebug("parses == 0, so accepting everything")
-      matches.map(m => 
+      matches.map(m =>
         Parse[Unsorted](List(m))
       ).toList
     } else {
@@ -314,7 +313,7 @@ class GeocoderImpl(
 
         val allowedLanguages =
           Set("en", "abbr") ++
-          parse.headOption.toList.flatMap(_.possibleNameHits.map(_.lang)).toSet 
+          parse.headOption.toList.flatMap(_.possibleNameHits.map(_.lang)).toSet
 
         matches.flatMap(featureMatch => {
           val fid = featureMatch.fmatch.id
@@ -351,7 +350,7 @@ class GeocoderImpl(
     if (name.flags.contains(FeatureNameFlags.PREFERRED) ||
         name.flags.contains(FeatureNameFlags.ABBREVIATION) ||
         name.flags.contains(FeatureNameFlags.LOCAL_LANG) ||
-        name.flags.contains(FeatureNameFlags.ALT_NAME)) { 
+        name.flags.contains(FeatureNameFlags.ALT_NAME)) {
       val normalizedName = NameNormalizer.normalize(name.name)
       if (isEnd) {
         normalizedName.startsWith(query)
@@ -369,7 +368,7 @@ class GeocoderImpl(
       f._2.feature.woeType == YahooWoeType.POSTAL_CODE ||
       {
         val nameMatch = bestNameWithMatch(f._2.feature, Some(req.lang), false, Some(phrase))
-        nameMatch.exists(nm => 
+        nameMatch.exists(nm =>
           nm._1.flags.contains(FeatureNameFlags.PREFERRED) ||
           nm._1.flags.contains(FeatureNameFlags.ALT_NAME)
         )
@@ -393,7 +392,7 @@ class GeocoderImpl(
           new ObjectId(featureParentIds)
         }
 
-        val featuresMatches: Seq[FeatureMatch] = 
+        val featuresMatches: Seq[FeatureMatch] =
           if (parses.size == 0) {
             val featureIds = if (isEnd) {
               logger.ifDebug("looking at prefix: %s", query)
@@ -472,7 +471,7 @@ class GeocoderImpl(
   }
 
   // Comparator for parses, we score by a number of different features
-  // 
+  //
   class ParseOrdering extends Ordering[Parse[Sorted]] {
     var scoreMap = new scala.collection.mutable.HashMap[String, Int]
 
@@ -492,7 +491,7 @@ class GeocoderImpl(
           }
           signal += value
         }
-      
+
         if (req.debug > 0) {
           logger.ifDebug("Scoring %s", parse)
         }
@@ -533,7 +532,7 @@ class GeocoderImpl(
           if (distance < 5000) {
             modifySignal(200000, "5km distance BONUS for being %s meters away".format(distance))
           } else {
-            modifySignal(-distancePenalty, "distance penalty for being %s meters away".format(distance)) 
+            modifySignal(-distancePenalty, "distance penalty for being %s meters away".format(distance))
           }
         }
 
@@ -547,9 +546,9 @@ class GeocoderImpl(
             // distance in meters of the hypotenuse
             // if it's smaller than looking at 1/4 of new york state, then
             // boost everything in it by a lot
-            val bboxContainsCenter = 
+            val bboxContainsCenter =
               GeoTools.boundsContains(bounds, primaryFeature.feature.geometry.center)
-            val bboxesIntersect = 
+            val bboxesIntersect =
               Option(primaryFeature.feature.geometry.bounds).map(fBounds =>
                 GeoTools.boundsIntersect(bounds, fBounds)).getOrElse(false)
 
@@ -571,7 +570,7 @@ class GeocoderImpl(
           modifySignal(primaryFeature.scoringFeatures.boost, "manual boost")
         }
 
-        store.hotfixesBoosts.get(new ObjectId(primaryFeature.id)).foreach(boost => 
+        store.hotfixesBoosts.get(new ObjectId(primaryFeature.id)).foreach(boost =>
           modifySignal(boost, "hotfix boost")
         )
 
@@ -587,7 +586,7 @@ class GeocoderImpl(
         }
 
         // In autocomplete mode, prefer "tighter" interpretations
-        // That is, prefer "<b>Rego Park</b>, <b>N</b>Y" to 
+        // That is, prefer "<b>Rego Park</b>, <b>N</b>Y" to
         // <b>Rego Park</b>, NY, <b>N</b>aalagaaffeqatigiit
         //
         // getOrdering returns a smaller # for a smaller thing
@@ -639,16 +638,16 @@ class GeocoderImpl(
         }
 
         if (performContainHackCheck &&
-            aFeature.tokenStart == bFeature.tokenStart && 
+            aFeature.tokenStart == bFeature.tokenStart &&
             aFeature.tokenEnd == bFeature.tokenEnd &&
             aFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY &&
             bFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY &&
-            // if we have a hint that we want one of the types, then let the 
+            // if we have a hint that we want one of the types, then let the
             // scoring happen naturally
             !req.woeHint.asScala.has(aFeature.fmatch.feature.woeType) &&
             !req.woeHint.asScala.has(bFeature.fmatch.feature.woeType)
           ) {
-          // if a is a parent of b, prefer b 
+          // if a is a parent of b, prefer b
           if (aFeature.fmatch.scoringFeatures.parents.asScala.has(bFeature.fmatch.id) &&
             (aFeature.fmatch.scoringFeatures.population * 1.0 / bFeature.fmatch.scoringFeatures.population) > 0.05
           ) {
@@ -743,7 +742,7 @@ class GeocoderImpl(
           // awful hack because most states outside the US don't actually
           // use their abbrev names
           val inUsOrCA = servingFeature.feature.cc == "US" ||  servingFeature.feature.cc == "CA"
-          val name = bestNameWithMatch(servingFeature.feature, Some(req.lang), 
+          val name = bestNameWithMatch(servingFeature.feature, Some(req.lang),
             preferAbbrev = (i != 0 && inUsOrCA),
             fmatchOpt.map(_.phrase))
           i += 1
@@ -756,8 +755,8 @@ class GeocoderImpl(
         namesToUse = namesToUse.zipWithIndex.filterNot({case (nameMatch, index) => {
           index != 0 && nameMatch._2.isEmpty && nameMatch._1.name == namesToUse(0)._1.name
         }}).map(_._1)
-      
-        var (matchedNameParts, highlightedNameParts) = 
+
+        var (matchedNameParts, highlightedNameParts) =
           (namesToUse.map(_._1.name),
            namesToUse.map({case(fname, highlightedName) => {
             highlightedName.getOrElse(fname.name)
@@ -774,7 +773,7 @@ class GeocoderImpl(
 
     // possibly clear names
     val names = f.names
-    f.setNames(names.filter(n => 
+    f.setNames(names.filter(n =>
       Option(n.flags).exists(_.contains(FeatureNameFlags.ABBREVIATION)) ||
       n.lang == req.lang ||
       n.lang == "en" ||
@@ -828,7 +827,7 @@ class GeocoderImpl(
       case _ => false
     }
   }
-  
+
   // Two jobs
   // 1) filter out woeRestrict mismatches
   // 2) try to filter out near dupe parses (based on formatting + latlng)
@@ -924,7 +923,7 @@ class GeocoderImpl(
           // if we don't have the clause in this line, we end up losing both nearby interps
           ((otherIndex < index && !(isAliasName(otherIndex) && !isAliasName(index)))
             || (!isAliasName(otherIndex) && isAliasName(index))) &&
-            parsesNear(parse, otherParse) 
+            parsesNear(parse, otherParse)
         }})
       }})
     })
@@ -1050,7 +1049,7 @@ class GeocoderImpl(
       // happens outside this function). ie, there are 3 "Cobble Hill, NY"s. Which
       // are the names we get if we only take one parent component from each.
       // Find ambiguous geocodes, tell them to take more name component
-      val ambiguousInterpretationsMap: Map[String, Seq[GeocodeInterpretation]] = 
+      val ambiguousInterpretationsMap: Map[String, Seq[GeocodeInterpretation]] =
         interpretations.groupBy(interp => {
           if (req.autocomplete) {
             interp.feature.matchedName
@@ -1058,7 +1057,7 @@ class GeocoderImpl(
             interp.feature.displayName
           }
         }).filter(_._2.size > 1)
-      val ambiguousInterpretations: Iterable[GeocodeInterpretation] = 
+      val ambiguousInterpretations: Iterable[GeocodeInterpretation] =
         ambiguousInterpretationsMap.flatMap(_._2).toList
       val ambiguousIdMap: Map[String, Iterable[GeocodeInterpretation]] =
         ambiguousInterpretations.groupBy(_.feature.ids.toString)
@@ -1117,7 +1116,7 @@ class GeocoderImpl(
     )
 
     tokens.filterNot(t => commonWords.contains(t))
-  } 
+  }
 
   case class ParseParams(
     tokens: List[String] = Nil,
@@ -1157,7 +1156,7 @@ class GeocoderImpl(
     // this code is gross gross gross
 
     // build a map from
-    // primary feature id -> list of parses containing that id, sorted by 
+    // primary feature id -> list of parses containing that id, sorted by
     val parsesByMainId: Map[String, Seq[SortedParseWithPosition]] = parses.zipWithIndex.map({
       case (parse, index) => SortedParseWithPosition(parse, index)
     }).groupBy(_.parse.headOption.map(_.fmatch.id).getOrElse("")).mapValues(parses => {
@@ -1168,7 +1167,7 @@ class GeocoderImpl(
       })
     })
 
-    val actualParses = 
+    val actualParses =
       parses.zipWithIndex.filter({case (p, index) => {
         (for {
           primaryFeature <- p.headOption
@@ -1356,7 +1355,7 @@ class GeocoderImpl(
         if (aWoeTypeOrder != bWoeTypeOrder) {
            aWoeTypeOrder - bWoeTypeOrder
         } else {
-          bServingFeature.scoringFeatures.boost - 
+          bServingFeature.scoringFeatures.boost -
             aServingFeature.scoringFeatures.boost
         }
       }
@@ -1386,7 +1385,7 @@ class GeocoderImpl(
     math.min(1, intersection.getArea() / requestGeometry.getArea())
   }
 
-  lazy val shouldFetchPolygon = 
+  lazy val shouldFetchPolygon =
     responseIncludes(ResponseIncludes.WKB_GEOMETRY) ||
     responseIncludes(ResponseIncludes.WKT_GEOMETRY) ||
     responseIncludes(ResponseIncludes.REVGEO_COVERAGE) ||
@@ -1394,7 +1393,7 @@ class GeocoderImpl(
 
   def getPolygonMap(featureOids: Seq[ObjectId]): Map[ObjectId, Array[Byte]] = {
     if (shouldFetchPolygon) {
-      val polygonMapSeq: Seq[(ObjectId, Array[Byte])] = 
+      val polygonMapSeq: Seq[(ObjectId, Array[Byte])] =
         for {
           oid <- featureOids
           polygon <- store.getPolygonByObjectId(oid)
@@ -1443,7 +1442,7 @@ class GeocoderImpl(
       store.getByObjectIds(featureOids.toSet.toList)
 
     // need to get polygons if we need to calculate coverage
-    val polygonMap: Map[ObjectId, Array[Byte]] = getPolygonMap(featureOids) 
+    val polygonMap: Map[ObjectId, Array[Byte]] = getPolygonMap(featureOids)
     val wkbReader = new WKBReader()
     // for each, check if we're really in it
     val parses: SortedParseSeq = servingFeaturesMap.map({ case (oid, f) => {
@@ -1464,7 +1463,7 @@ class GeocoderImpl(
     val parseParams = ParseParams()
 
     val maxInterpretations = if (req.maxInterpretations <= 0) {
-      parses.size  
+      parses.size
     } else {
       req.maxInterpretations
     }
@@ -1490,7 +1489,7 @@ class GeocoderImpl(
     val levels = getAllLevels()
     logger.ifDebug("doing point revgeo on %s at levels %s", ll, levels)
 
-    val cellids: Seq[Long] = 
+    val cellids: Seq[Long] =
       levels.map(level =>
         GeometryUtils.getS2CellIdForLevel(ll.lat, ll.lng, level).id()
       )

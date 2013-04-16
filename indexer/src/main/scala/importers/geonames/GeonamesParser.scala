@@ -3,9 +3,8 @@ package com.foursquare.twofishes.importers.geonames
 
 import com.foursquare.geo.shapes.FsqSimpleFeatureImplicits._
 import com.foursquare.geo.shapes.ShapefileIterator
-import com.foursquare.twofishes.Implicits._
 import com.foursquare.twofishes._
-import com.foursquare.twofishes.util.{Helpers, NameNormalizer, StoredFeatureId, GeocodeFeatureIdUtils}
+import com.foursquare.twofishes.util.{GeonamesId, GeonamesNamespace, Helpers, NameNormalizer, StoredFeatureId}
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.vividsolutions.jts.geom.Geometry
@@ -13,7 +12,6 @@ import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
 import java.io.{File, FileWriter}
 import org.bson.types.ObjectId
 import org.opengis.feature.simple.SimpleFeature
-import scala.collection.JavaConversions._
 import scala.collection.mutable.{HashMap, HashSet}
 import scalaj.collection.Implicits._
 
@@ -22,8 +20,6 @@ import scalaj.collection.Implicits._
 // please, I'm begging you, be more disciplined about featureids in the parser
 
 object GeonamesParser {
-  val geonameIdNamespace = "geonameid"
-
   var config: GeonamesImporterConfig = null
 
   var countryLangMap = new HashMap[String, List[String]]()
@@ -33,7 +29,7 @@ object GeonamesParser {
   lazy val naturalEarthPopulatedPlacesMap: Map[StoredFeatureId, SimpleFeature] = {
     new ShapefileIterator("data/downloaded/ne_10m_populated_places_simple.shp").flatMap(f => {
       f.propMap.get("geonameid").map(id => {
-        (StoredFeatureId.fromString(id.toDouble.toInt.toString, Some(geonameIdNamespace)), f)
+        (GeonamesId(id.toDouble.toLong) -> f)
       })
     }).toMap
   }
@@ -150,7 +146,7 @@ object GeonamesParser {
       slugIndexer.writeMissingSlugs(store)
     }
 
-    PolygonLoader.load(store, geonameIdNamespace, writeToRecord = true)
+    PolygonLoader.load(store, GeonamesNamespace, writeToRecord = true)
   }
 }
 
@@ -172,23 +168,23 @@ class GeonamesParser(
   // tokenlist
   lazy val deletesList: List[String] = scala.io.Source.fromFile(new File("data/custom/deletes.txt")).getLines.toList
   // geonameid -> boost value
-  lazy val boostTable = new GeoIdTsvHelperFileParser(geonameIdNamespace, "data/custom/boosts.txt",
+  lazy val boostTable = new GeoIdTsvHelperFileParser(GeonamesNamespace, "data/custom/boosts.txt",
     "data/private/boosts.txt")
-  
+
   // geonameid -> alias
   val aliasFiles: List[String] = List("data/custom/aliases.txt", "data/private/aliases.txt")
-  lazy val aliasTable = new GeoIdTsvHelperFileParser(geonameIdNamespace, aliasFiles:_*)
+  lazy val aliasTable = new GeoIdTsvHelperFileParser(GeonamesNamespace, aliasFiles:_*)
 
   // geonameid --> new center
-  lazy val moveTable = new GeoIdTsvHelperFileParser(geonameIdNamespace, "data/custom/moves.txt")
+  lazy val moveTable = new GeoIdTsvHelperFileParser(GeonamesNamespace, "data/custom/moves.txt")
 
   // geonameid -> name to be deleted
-  lazy val nameDeleteTable = new GeoIdTsvHelperFileParser(geonameIdNamespace, "data/custom/name-deletes.txt")
+  lazy val nameDeleteTable = new GeoIdTsvHelperFileParser(GeonamesNamespace, "data/custom/name-deletes.txt")
   // list of geoids (geonameid:XXX) to skip indexing
   lazy val ignoreList: List[StoredFeatureId] = scala.io.Source.fromFile(new File("data/custom/ignores.txt"))
-    .getLines.toList.map(l => StoredFeatureId.fromString(l, Some(geonameIdNamespace)))
+    .getLines.toList.map(l => GeonamesId(l.toLong))
 
-  lazy val concordanceMap = new GeoIdTsvHelperFileParser(geonameIdNamespace, "data/computed/concordances.txt")
+  lazy val concordanceMap = new GeoIdTsvHelperFileParser(GeonamesNamespace, "data/computed/concordances.txt")
 
   val bboxDirs = List(
     new File("data/computed/bboxes/"),
@@ -272,12 +268,11 @@ class GeonamesParser(
 
   def parseFeature(feature: GeonamesFeature): GeocodeRecord = {
     // Build ids
-    val geonameId = feature.geonameid.map(id => {
+    val geonameId = feature.geonameid.flatMap(id => {
       if (id.contains(":")) {
-        val parts = id.split(":")
-        StoredFeatureId(parts(0), parts(1))
+        StoredFeatureId.fromHumanReadableString(id)
       } else {
-        StoredFeatureId(geonameIdNamespace, id)
+        Some(GeonamesId(id.toLong))
       }
     }).get
 
@@ -285,7 +280,7 @@ class GeonamesParser(
       concordanceMap.get(geonameId).flatMap(id =>
         if (id.contains(":")) {
           val parts = id.split(":")
-          Some(StoredFeatureId(parts(0), parts(1)))
+          StoredFeatureId.fromHumanReadableString(id)
         } else { None }
       )
 
@@ -339,7 +334,7 @@ class GeonamesParser(
     )
 
     val englishName = preferredEnglishAltName.getOrElse(feature.name)
-    val alternateNames = alternateNamesMap.getOrElse(geonameId, Nil).filterNot(n => 
+    val alternateNames = alternateNamesMap.getOrElse(geonameId, Nil).filterNot(n =>
       (n.name == englishName) && (n.lang != "en")
     )
     displayNames ++= alternateNames.flatMap(altName => {
@@ -349,7 +344,7 @@ class GeonamesParser(
 
     // the admincode is the internal geonames admin code, but is very often the
     // same short name for the admin area that is actually used in the country
-   
+
     if (feature.featureClass.isAdmin1 || feature.featureClass.isAdmin2) {
       displayNames ++= feature.adminCode.toList.map(code => {
         DisplayName("abbr", code, FeatureNameFlags.ABBREVIATION.getValue)
@@ -366,10 +361,10 @@ class GeonamesParser(
     // Build parents
     val extraParents: List[String] = feature.extraColumns.get("parents").toList.flatMap(_.split(",").toList)
     val parents: List[String] =
-      feature.parents.flatMap(fixParent).map(p => StoredFeatureId(geonameIdNamespace, p))
+      feature.parents.flatMap(fixParent).map(p => GeonamesId(p.toLong).humanReadableString)
     var allParents: List[String] = extraParents ++ parents
     val hierarchyParents = hierarchyTable.getOrElse(feature.geonameid.getOrElse(""), Nil).filterNot(p =>
-      parents.has(p)).map(pid => "%s:%s".format(geonameIdNamespace, pid))
+      parents.has(p)).map(pid => GeonamesId(pid.toLong).humanReadableString)
     allParents = allParents ++ hierarchyParents
 
     val boost: Option[Int] =
@@ -411,7 +406,7 @@ class GeonamesParser(
 
     if (slug.isEmpty &&
       List(YahooWoeType.TOWN, YahooWoeType.SUBURB, YahooWoeType.COUNTRY, YahooWoeType.ADMIN1, YahooWoeType.ADMIN2).has(feature.featureClass.woeType)) {
-      slugIndexer.missingSlugList.add(geonameId)
+      slugIndexer.missingSlugList.add(geonameId.humanReadableString)
     }
 
     var attributesSet = false
@@ -451,11 +446,11 @@ class GeonamesParser(
       attributes.setNeighborhoodType(NeighborhoodType.valueOf(v))
     )
 
-    val objectId = GeocodeFeatureIdUtils.objectIdFromFeatureId(geonameId, providerMapping).getOrElse(new ObjectId())
+    val objectId = geonameId.legacyObjectId
 
     val record = GeocodeRecord(
       _id = objectId,
-      ids = ids,
+      ids = ids.map(_.toString),
       names = Nil,
       cc = feature.countryCode,
       _woeType = feature.featureClass.woeType.getValue,
@@ -535,7 +530,7 @@ class GeonamesParser(
     val files: List[String] = List("data/downloaded/alternateNames.txt") ++ altDirs.flatMap(altDir => {
         if (altDir.exists) { altDir.listFiles.toList.map(_.toString) } else { Nil }
     }).sorted
-    
+
     alternateNamesMap = AlternateNamesReader.readAlternateNamesFiles(files)
   }
 
@@ -590,7 +585,7 @@ class GeonamesParser(
         lang <- parts.lift(1).flatMap(_.split("\\|").lift(0))
         name <- parts.lift(1).flatMap(_.split("\\|").lift(1))
       } {
-        val records = store.getById(StoredFeatureId(geonameIdNamespace, gid)).toList
+        val records = store.getById(StoredFeatureId(GeonamesNamespace, gid)).toList
         records match {
           case Nil => logger.error("no match for id %s".format(gid))
           case record :: Nil => {
@@ -614,7 +609,7 @@ class GeonamesParser(
               }
             )
 
-            store.setRecordNames(StoredFeatureId(geonameIdNamespace, gid), newNames)
+            store.setRecordNames(StoredFeatureId(GeonamesNamespace, gid), newNames)
           }
         }
       }

@@ -142,7 +142,6 @@ object GeocoderBuild extends Build {
         baseDirectory in run := file("."),
         mainClass in assembly := Some("com.foursquare.twofishes.importers.geonames.GeonamesParser"),
         initialCommands := """
-        import com.foursquare.twofishes.Implicits._
         import com.foursquare.twofishes._
         import com.foursquare.twofishes.importers.geonames._
         import com.foursquare.twofishes.util.Helpers._
@@ -176,10 +175,11 @@ import com.novus.salat.global._
       settings = defaultSettings ++ assemblySettings ++ Seq(
         publishArtifact := true,
         libraryDependencies ++= Seq(
+          "com.google.caliper" % "caliper" % "0.5-rc1",
           "org.geotools" % "gt-shapefile" % "8.0-M1",
           "org.geotools" % "gt-epsg-hsql" % "8.0-M1",
-          "com.google.caliper" % "caliper" % "0.5-rc1",
-          "org.mongodb" % "bson" % "2.10.1"
+          "org.mongodb" % "bson" % "2.10.1",
+          "org.specs2" %% "specs2" % "1.8.2" % "test"
         )
       )
     ) dependsOn(interface)

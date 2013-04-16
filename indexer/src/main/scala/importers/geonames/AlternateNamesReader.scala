@@ -2,7 +2,7 @@
 package com.foursquare.twofishes.importers.geonames
 
 import com.foursquare.twofishes._
-import com.foursquare.twofishes.util.StoredFeatureId
+import com.foursquare.twofishes.util.{GeonamesNamespace, StoredFeatureId}
 import java.io.File
 import scala.collection.mutable.HashMap
 
@@ -37,15 +37,16 @@ object AlternateNamesReader extends SimplePrintLogger {
               val isPrefName = parts.lift(4).exists(_ == "1")
               val isShortName = parts.lift(5).exists(_ == "1")
 
-              val fid = StoredFeatureId.fromString(geonameid, Some(GeonamesParser.geonameIdNamespace))
-              val names = alternateNamesMap.getOrElseUpdate(fid, Nil)
-              alternateNamesMap(fid) = AlternateNameEntry(
-                nameId = nameid,
-                name = name,
-                lang = lang,
-                isPrefName = isPrefName,
-                isShortName = isShortName
-              ) :: names
+              StoredFeatureId.fromHumanReadableString(geonameid, Some(GeonamesNamespace)).foreach(fid => {
+                val names = alternateNamesMap.getOrElseUpdate(fid, Nil)
+                alternateNamesMap(fid) = AlternateNameEntry(
+                  nameId = nameid,
+                  name = name,
+                  lang = lang,
+                  isPrefName = isPrefName,
+                  isShortName = isShortName
+                ) :: names
+              })
             }
         }
       }})

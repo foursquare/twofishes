@@ -14,24 +14,9 @@ object GeometryUtils {
 
   def getBytes(l: S2CellId): Array[Byte] = getBytes(l.id())
 
-  def getBytes(l: Long): Array[Byte] = {
-    val baos = new ByteArrayOutputStream()
-    val dos = new DataOutputStream(baos)
-    dos.writeLong(l)
-    baos.toByteArray()
-  }
-
-   def getBytes(l: Int): Array[Byte] = {
-    val baos = new ByteArrayOutputStream()
-    val dos = new DataOutputStream(baos)
-    dos.writeInt(l)
-    baos.toByteArray()
-  }
-
-  def getLongFromBytes(bytes: Array[Byte]): Long = {
-    val bais = new ByteArrayInputStream(bytes)
-    (new DataInputStream(bais)).readLong()
-  }
+  def getBytes(l: Long): Array[Byte] = ByteUtils.longToBytes(l)
+  def getBytes(i: Int): Array[Byte] = ByteUtils.intToBytes(i)
+  def getLongFromBytes(bytes: Array[Byte]): Long = ByteUtils.getLongFromBytes(bytes)
 
   def getS2CellIdForLevel(lat: Double, long: Double, s2Level: Int): S2CellId = {
     val ll = S2LatLng.fromDegrees(lat, long)

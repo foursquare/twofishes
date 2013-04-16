@@ -1,18 +1,13 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes
 
+import com.foursquare.twofishes.util.{GAdminNamespace, StoredFeatureId}
 import com.vividsolutions.jts.io.WKBReader
-import com.foursquare.twofishes.util.StoredFeatureId
 import org.apache.thrift.{TDeserializer, TSerializer}
 import org.apache.thrift.protocol.TCompactProtocol
 import org.bson.types.ObjectId
 import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
-
-object Implicits {
-  implicit def fidToString(fid: StoredFeatureId): String = fid.toString
-  implicit def fidListToString(fids: List[StoredFeatureId]): List[String] = fids.map(_.toString)
-}
 
 class SlugEntryMap extends HashMap[String, SlugEntry]
 
@@ -76,13 +71,10 @@ case class GeocodeRecord(
     })
   }
 
-  def featureIds = ids.map(id => {
-    val parts = id.split(":")
-    StoredFeatureId(parts(0), parts(1))
-  })
+  def featureIds: List[StoredFeatureId] = ids.flatMap(id => StoredFeatureId.fromHumanReadableString(id))
 
   lazy val woeType = YahooWoeType.findByValue(_woeType)
-  
+
   def compare(that: GeocodeRecord): Int = {
     YahooWoeTypes.getOrdering(this.woeType) - YahooWoeTypes.getOrdering(that.woeType)
   }
@@ -110,7 +102,7 @@ case class GeocodeRecord(
       geometry.setBounds(new GeocodeBoundingBox(
         new GeocodePoint(finalBounds._1, finalBounds._2),
         new GeocodePoint(finalBounds._3, finalBounds._4)
-      ))  
+      ))
     })
 
     polygon.foreach(poly => {
@@ -135,9 +127,7 @@ case class GeocodeRecord(
 
     feature.setWoeType(this.woeType)
 
-    feature.setIds(featureIds.filterNot(_.namespace == "gadminid").map(i => {
-      new FeatureId(i.namespace, i.id)
-    }))
+    feature.setIds(featureIds.filterNot(_.namespace == GAdminNamespace).map(_.thriftFeatureId))
 
     feature.ids.headOption.foreach(id => feature.setId("%s:%s".format(id.source, id.id)))
 
@@ -146,13 +136,13 @@ case class GeocodeRecord(
 
     // HACK(blackmad)
     if (this.woeType == YahooWoeType.ADMIN1 && cc == "JP") {
-      hackedNames ++= 
+      hackedNames ++=
         filteredNames.filter(n => n.lang == "en" || n.lang == "" || n.lang == "alias")
           .map(n => DisplayName(n.lang, n.name + " Prefecture", FeatureNameFlags.ALIAS.getValue))
     }
 
     if (this.woeType == YahooWoeType.TOWN && cc == "TW") {
-      hackedNames ++= 
+      hackedNames ++=
         filteredNames.filter(n => n.lang == "en" || n.lang == "" || n.lang == "alias")
           .map(n => DisplayName(n.lang, n.name + " County", FeatureNameFlags.ALIAS.getValue))
     }
@@ -205,7 +195,7 @@ case class GeocodeRecord(
     if (!canGeocode) {
       scoring.setCanGeocode(false)
     }
-    
+
     val servingFeature = new GeocodeServingFeature()
     servingFeature.setId(_id.toString)
     servingFeature.setScoringFeatures(scoring)

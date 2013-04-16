@@ -3,6 +3,7 @@ package com.foursquare.twofishes.batch
 
 import com.foursquare.twofishes.importers.geonames._
 import com.foursquare.twofishes._
+import com.foursquare.twofishes.util.GeonamesNamespace
 import com.mongodb.casbah.Imports._
 import com.novus.salat._
 import com.novus.salat.annotations._
@@ -14,6 +15,6 @@ import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
 object UpdatePolys {
   def main(args: Array[String]) {
     val store = new MongoGeocodeStorageService()
-    PolygonLoader.load(store, GeonamesParser.geonameIdNamespace)
+    PolygonLoader.load(store, GeonamesNamespace)
   }
 }

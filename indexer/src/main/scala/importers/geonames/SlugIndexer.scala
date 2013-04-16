@@ -33,7 +33,7 @@ class SlugIndexer {
       new File("data/computed/slugs.txt"),
       new File("data/private/slugs.txt")
     )
-    files.foreach(file => 
+    files.foreach(file =>
       if (file.exists) {
         val fileSource = scala.io.Source.fromFile(file)
         val lines = fileSource.getLines.toList.filterNot(_.startsWith("#"))
@@ -100,7 +100,7 @@ class SlugIndexer {
           idToSlugMap(id) = slug
           return Some(slug)
         }
-      } 
+      }
     })
   // println("failed to find any slug")
     return None
@@ -110,7 +110,7 @@ class SlugIndexer {
     val oldSlug = idToSlugMap.get(id)
     val oldEntry = oldSlug.map(slug => slugEntryMap(slug))
     var newSlug: Option[String] = None
-          
+
     for {
       servingFeature <- findFeature(id)
       if (servingFeature.scoringFeatures.population > 0 ||
@@ -164,7 +164,7 @@ class SlugIndexer {
     // step 3 -- write new slug file
     println("writing new slug map for %d features".format(slugEntryMap.size))
     val p = new java.io.PrintWriter(new File("data/computed/slugs.txt"))
-    slugEntryMap.keys.toList.sorted.foreach(slug => 
+    slugEntryMap.keys.toList.sorted.foreach(slug =>
      p.println("%s\t%s".format(slug, slugEntryMap(slug)))
     )
     p.close()
@@ -174,15 +174,12 @@ class SlugIndexer {
     for {
       (id, index) <- missingSlugList.zipWithIndex
       slug <- idToSlugMap.get(id)
-      val parts = id.split(":")
-      fid1 <- parts.lift(0)
-      fid2 <- parts.lift(1)
+      fid <- StoredFeatureId.fromHumanReadableString(id)
     } {
       if (index % 10000 == 0) {
         println("flushed %d of %d slug to mongo".format(index, missingSlugList.size))
       }
-      val fid = StoredFeatureId(fid1, fid2)
       store.addSlugToRecord(fid, slug)
     }
-  } 
+  }
 }

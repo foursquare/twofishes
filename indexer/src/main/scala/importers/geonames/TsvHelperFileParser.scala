@@ -1,15 +1,15 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.importers.geonames
 
-import com.foursquare.twofishes.util.StoredFeatureId
 import com.foursquare.twofishes.LogHelper
+import com.foursquare.twofishes.util.{FeatureNamespace, StoredFeatureId}
 import java.io.File
 
 trait TsvHelperFileParserLogger {
   def logUnused
 }
 
-class GeoIdTsvHelperFileParser(defaultNamespace: String, filenames: String*) extends TsvHelperFileParserLogger with LogHelper {
+class GeoIdTsvHelperFileParser(defaultNamespace: FeatureNamespace, filenames: String*) extends TsvHelperFileParserLogger with LogHelper {
   class TableEntry(val values: List[String]) {
     var used = false
     def markUsed { used = true}
@@ -34,19 +34,14 @@ class GeoIdTsvHelperFileParser(defaultNamespace: String, filenames: String*) ext
           if (parts.length != 2) {
             logger.error("Broken line in %s: %s (%d parts, needs 2)".format(filename, line, parts.length))
           } else {
-            val key = {
-              if (parts(0).contains(":")) {
-                parts(0)
-              } else {
-                defaultNamespace + ":" + parts(0)
-              }
-            }
-            var values: List[String] = parts(1).split(",").toList
+            StoredFeatureId.fromHumanReadableString(parts(0), Some(defaultNamespace)).foreach(key => {
+              var values: List[String] = parts(1).split(",").toList
 
-            gidMap.get(key).foreach(te => 
-              values ++= te.values
-            )
-            gidMap += (key -> new TableEntry(values))
+              gidMap.get(key.humanReadableString).foreach(te =>
+                values ++= te.values
+              )
+              gidMap += (key.humanReadableString -> new TableEntry(values))
+            })
           }
         })
       }
@@ -103,7 +98,7 @@ class TsvHelperFileParser(filenames: String*) extends TsvHelperFileParserLogger 
             val key = parts(0)
             var values: List[String] = parts(1).split(",").toList
 
-            gidMap.get(key).foreach(te => 
+            gidMap.get(key).foreach(te =>
               values ++= te.values
             )
             gidMap += (key -> new TableEntry(values))

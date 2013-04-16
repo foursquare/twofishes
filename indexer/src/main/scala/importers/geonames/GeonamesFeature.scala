@@ -2,6 +2,7 @@
 package com.foursquare.twofishes.importers.geonames
 
 import com.foursquare.twofishes.{LogHelper, YahooWoeType}
+import com.foursquare.twofishes.util.GeonamesZip
 import com.foursquare.twofishes.util.Helpers._
 
 object GeonamesFeatureColumns extends Enumeration {
@@ -63,9 +64,7 @@ object GeonamesFeature extends LogHelper {
     def cb(in: Map[GeonamesFeatureColumns.Value, String]) = {
       in ++ List(
         (GeonamesFeatureColumns.FEATURE_CLASS -> "Z"),
-        (GeonamesFeatureColumns.GEONAMEID -> "geonamezip:%s-%s".format(
-          in(COUNTRY_CODE), in(NAME)
-        ))
+        (GeonamesFeatureColumns.GEONAMEID -> (new GeonamesZip(in(COUNTRY_CODE), in(NAME))).humanReadableString)
       )
     }
 
@@ -140,7 +139,7 @@ class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[Str
     if (isIsland) {
       YahooWoeType.ISLAND
     } else if (isSuburb) {
-      YahooWoeType.SUBURB 
+      YahooWoeType.SUBURB
     } else if (isContinent) {
       YahooWoeType.CONTINENT
     } else if (isPark) {
@@ -176,7 +175,7 @@ class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[Str
         case "ADM3" => ADM3
         case "ADM4" => ADM4
         case _ => OTHER
-      }).getOrElse(OTHER) 
+      }).getOrElse(OTHER)
     }
   }
 }
@@ -184,12 +183,12 @@ class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[Str
 class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) {
   def isValid = {
     values.contains(NAME) &&
-    values.contains(LATITUDE) && 
+    values.contains(LATITUDE) &&
     values.contains(LONGITUDE) &&
     TryO { values(LATITUDE).toDouble }.isDefined &&
     TryO { values(LONGITUDE).toDouble }.isDefined
   }
-  
+
   val featureClass = new GeonamesFeatureClass(values.get(FEATURE_CLASS), values.get(FEATURE_CODE))
 
   def adminCode = getAdminCode(this.featureClass.adminLevel)
