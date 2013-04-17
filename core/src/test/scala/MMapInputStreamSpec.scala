@@ -2,9 +2,9 @@ package com.foursquare.twofishes
 
 import java.io.{EOFException, File, FileOutputStream}
 import java.net.URI
-import org.specs2.mutable.Specification
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{LocalFileSystem, Path}
+import org.specs2.mutable.Specification
 
 class MMapInputStreamSpec extends Specification {
   val random = new scala.util.Random(7)

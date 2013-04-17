@@ -2,9 +2,9 @@ package com.foursquare.twofishes
 
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 
-import java.util.concurrent.{BlockingQueue, ExecutorService, LinkedBlockingQueue, ThreadPoolExecutor, TimeUnit}
-import com.twitter.ostrich.stats.{Stats, StatsProvider}
-import java.util.concurrent.{ThreadFactory, atomic}
+import com.twitter.ostrich.stats.Stats
+import java.util.concurrent.{BlockingQueue, ExecutorService, LinkedBlockingQueue, ThreadFactory, ThreadPoolExecutor,
+    TimeUnit, atomic}
 
 case class NamedThreadFactory(name: String) extends ThreadFactory {
   val threadNumber = new atomic.AtomicInteger(1)

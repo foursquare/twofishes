@@ -1,9 +1,8 @@
 package com.foursquare.twofishes
 
-import com.foursquare.base.thrift.{LongWrapper, ObjectIdListWrapper, ObjectIdWrapper, StringWrapper}
-import com.foursquare.batch.ShapefileSimplifier
+import com.foursquare.base.thrift.{ObjectIdListWrapper, ObjectIdWrapper, StringWrapper}
 import com.foursquare.geo.shapes.ShapefileS2Util
-import com.foursquare.twofishes.util.{GeometryUtils, NameUtils}
+import com.foursquare.twofishes.util.GeometryUtils
 import com.google.common.geometry.S2CellId
 import com.mongodb.casbah.Imports._
 import com.novus.salat._
@@ -18,11 +17,11 @@ import java.net.URI
 import java.nio.ByteBuffer
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{LocalFileSystem, Path}
-import org.apache.hadoop.io.{MapFile, BytesWritable}
 import org.apache.hadoop.hbase.io.hfile.{Compression, HFile}
 import org.apache.hadoop.hbase.util.Bytes._
+import org.apache.hadoop.io.{BytesWritable, MapFile}
 import org.apache.thrift.TSerializer
-import org.apache.thrift.protocol.{TCompactProtocol, TProtocolFactory}
+import org.apache.thrift.protocol.TCompactProtocol
 import scala.collection.mutable.{HashMap, HashSet, ListBuffer}
 import scalaj.collection.Implicits._
 
