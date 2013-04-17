@@ -139,7 +139,8 @@ abstract class Indexer extends DurationUtils {
 
   def buildMapFileWriter[K : Manifest, V : Manifest](
       index: Index[K, V],
-      info: Map[String, String] = Map.empty) = {
+      info: Map[String, String] = Map.empty,
+      indexInterval: Option[Int] = None) = {
 
     val keyClassName = fixThriftClassName(manifest[K].erasure.getName)
     val valueClassName = fixThriftClassName(manifest[V].erasure.getName)
@@ -150,8 +151,11 @@ abstract class Indexer extends DurationUtils {
       (ThriftEncodingKey, factory.getClass.getName)
     )
 
+    val opts = indexInterval.map(i => MapFileUtils.DefaultByteKeyValueWriteOptions.copy(indexInterval = i))
+      .getOrElse(MapFileUtils.DefaultByteKeyValueWriteOptions)
+
     new WrappedByteMapWriter(
-      MapFileUtils.writerToLocalPath((new File(basepath, index.filename)).toString, finalInfoMap),
+      MapFileUtils.writerToLocalPath((new File(basepath, index.filename)).toString, finalInfoMap, opts),
       index
     )
   }
@@ -357,7 +361,7 @@ class FeatureIndexer(override val basepath: String, override val fidMap: FidMap)
   def writeFeatures() {
     def fixParentId(fid: String) = fidMap.get(fid).map(_.toString)
 
-    val writer = buildMapFileWriter(Indexes.FeatureIndex)
+    val writer = buildMapFileWriter(Indexes.FeatureIndex, indexInterval = Some(2))
     var fidCount = 0
     val fidSize = MongoGeocodeDAO.collection.count
     val fidCursor = MongoGeocodeDAO.find(MongoDBObject())
