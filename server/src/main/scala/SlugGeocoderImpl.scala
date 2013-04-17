@@ -32,6 +32,6 @@ class SlugGeocoderImpl(
       FeatureMatch(0, 0, "", servingFeature)
     }).toList)
 
-    responseProcessor.buildFinalParses(List(parse), parseParams, maxInterpretations=0)
+    responseProcessor.buildFinalParses(List(parse), parseParams, 0)
   }
 }
