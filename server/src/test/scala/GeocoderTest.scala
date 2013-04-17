@@ -43,6 +43,7 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
 
   def getByS2CellId(id: Long): Seq[CellGeometry] = Nil
   def getPolygonByObjectId(id: ObjectId): Option[Array[Byte]] = None
+  def getPolygonByObjectIds(ids: Seq[ObjectId]): Map[ObjectId, Array[Byte]] = Map.empty
 
   def getLevelMod: Int = 0
   def getMinS2Level: Int = 0
@@ -150,7 +151,7 @@ class GeocoderSpec extends Specification {
 
     val req = new GeocodeRequest().setQuery("Rego Park")
 
-    val r = new GeocoderImpl(store, req).geocode()
+    val r = new GeocodeRequestDispatcher(store, req).geocode()
     r.interpretations.size must_== 1
     val interp = r.interpretations.asScala(0)
     interp.what must_== ""
@@ -168,7 +169,7 @@ class GeocoderSpec extends Specification {
     val req = new GeocodeRequest().setQuery("Rego Park")
     req.setResponseIncludes(List(ResponseIncludes.EVERYTHING).asJava)
 
-    val r = new GeocoderImpl(store, req).geocode()
+    val r = new GeocodeRequestDispatcher(store, req).geocode()
     r.interpretations.size must_== 1
     val interp = r.interpretations.asScala(0)
     interp.parents.size mustEqual 2
@@ -180,7 +181,7 @@ class GeocoderSpec extends Specification {
     val req = new GeocodeRequest().setQuery("Rego Park")
     req.setCc("US")
 
-    val r2 = new GeocoderImpl(store, req).geocode()
+    val r2 = new GeocodeRequestDispatcher(store, req).geocode()
     r2.interpretations.size must_== 1
     val interp2 = r2.interpretations.asScala(0)
     interp2.feature.displayName must_== "Rego Park, New York"
@@ -190,7 +191,7 @@ class GeocoderSpec extends Specification {
     val store = buildRegoPark()
 
     val req = new GeocodeRequest().setQuery("Rego Park, New York")
-    val r = new GeocoderImpl(store, req).geocode()
+    val r = new GeocodeRequestDispatcher(store, req).geocode()
     r.interpretations.size must_== 1
     val interp = r.interpretations.asScala(0)
     interp.what aka r.toString must_== ""
@@ -203,7 +204,7 @@ class GeocoderSpec extends Specification {
     val store = buildRegoPark()
 
     val req = new GeocodeRequest().setQuery("Pizza Rego Park, New York")
-    val r = new GeocoderImpl(store, req).geocode()
+    val r = new GeocodeRequestDispatcher(store, req).geocode()
 
     r.interpretations.size must_== 1
     val interp = r.interpretations.asScala(0)
@@ -217,7 +218,7 @@ class GeocoderSpec extends Specification {
     val store = buildRegoPark()
 
     val req = new GeocodeRequest().setQuery("Berlin, Germany")
-    val r = new GeocoderImpl(store, req).geocode()
+    val r = new GeocodeRequestDispatcher(store, req).geocode()
     r.interpretations.size must_== 0
   }
 
@@ -227,7 +228,7 @@ class GeocoderSpec extends Specification {
 
     val req = new GeocodeRequest().setQuery("Rego Park, California")
     req.setDebug(4)
-    val r = new GeocoderImpl(store, req).geocode()
+    val r = new GeocodeRequestDispatcher(store, req).geocode()
     r.interpretations must haveSize(1)
     r.interpretations.size must_== 1
     val interp = r.interpretations.asScala(0)
@@ -242,7 +243,7 @@ class GeocoderSpec extends Specification {
 
     val req = new GeocodeRequest().setQuery("Rego Park, New York")
     req.setResponseIncludes(List(ResponseIncludes.EVERYTHING).asJava)
-    val r = new GeocoderImpl(store, req).geocode()
+    val r = new GeocodeRequestDispatcher(store, req).geocode()
     r.interpretations.size must_== 1
     val interp = r.interpretations.asScala(0)
     interp.what must_== ""
@@ -264,7 +265,7 @@ class GeocoderSpec extends Specification {
     val req = new GeocodeRequest().setQuery("Paris")
     req.setMaxInterpretations(2)
     req.setDebug(1)
-    val r = new GeocoderImpl(store, req).geocode()
+    val r = new GeocodeRequestDispatcher(store, req).geocode()
     r.interpretations.size must_== 2 
     val interp1 = r.interpretations.asScala(0)
     interp1.what must_== ""
@@ -281,7 +282,7 @@ class GeocoderSpec extends Specification {
     val store = buildRegoPark()
 
     val req = new GeocodeRequest().setQuery("Pizza near Rego Park, New York")
-    val r = new GeocoderImpl(store, req).geocode()
+    val r = new GeocodeRequestDispatcher(store, req).geocode()
     r.interpretations.size must_== 1
     val interp = r.interpretations.asScala(0)
     interp.what must_== "pizza"
@@ -292,7 +293,7 @@ class GeocoderSpec extends Specification {
     val store = buildRegoPark()
 
     val req = new GeocodeRequest().setQuery("Pizza near lkjdsfjksl, New York")
-    val r = new GeocoderImpl(store, req).geocode()
+    val r = new GeocodeRequestDispatcher(store, req).geocode()
     r.interpretations.size must_== 0
   }
 
@@ -306,7 +307,7 @@ class GeocoderSpec extends Specification {
 
     store.getIdsByNamePrefix("rego") must haveSize(2)
 
-    val r = new GeocoderImpl(store, req).geocode()
+    val r = new GeocodeRequestDispatcher(store, req).geocode()
     r.interpretations must haveSize(2)
  
     var interp = r.interpretations.asScala(0)
@@ -330,7 +331,7 @@ class GeocoderSpec extends Specification {
     // validating our test harness
     store.getIdsByNamePrefix("rego p").size must_== 1
 
-    val r = new GeocoderImpl(store, req).geocode()
+    val r = new GeocodeRequestDispatcher(store, req).geocode()
     r.interpretations.size must_== 1
 
     val interp = r.interpretations.asScala(0)
@@ -350,7 +351,7 @@ class GeocoderSpec extends Specification {
     store.getIdsByNamePrefix("rego park").size must_== 1
     store.getIdsByNamePrefix("new").size must_== 1
 
-    val r = new GeocoderImpl(store, req).geocode()
+    val r = new GeocodeRequestDispatcher(store, req).geocode()
     r.interpretations.size aka r.debugLines.asScala.mkString("\n") must_== 1 
 
     // val interp = r.interpretations.asScala(0)
@@ -367,7 +368,7 @@ class GeocoderSpec extends Specification {
     val req = new GeocodeRequest().setQuery("paris")
     req.setWoeRestrict(List(YahooWoeType.ADMIN1).asJava)
 
-    val r = new GeocoderImpl(store, req).geocode()
+    val r = new GeocodeRequestDispatcher(store, req).geocode()
     r.interpretations.size must_== 1
     val interp = r.interpretations.asScala(0)
     interp.feature.geometry.center.lat must_== 10
@@ -375,7 +376,7 @@ class GeocoderSpec extends Specification {
 
     req.setWoeRestrict(List(YahooWoeType.ADMIN2).asJava)
 
-    val r2 = new GeocoderImpl(store, req).geocode()
+    val r2 = new GeocodeRequestDispatcher(store, req).geocode()
     r2.interpretations.size must_== 0
   }
 
@@ -388,7 +389,7 @@ class GeocoderSpec extends Specification {
     req.setMaxInterpretations(2)
     req.setWoeHint(List(YahooWoeType.ADMIN1).asJava)
 
-    val r = new GeocoderImpl(store, req).geocode()
+    val r = new GeocodeRequestDispatcher(store, req).geocode()
     r.interpretations.size must_== 2
     val interp = r.interpretations.asScala(0)
     interp.feature.geometry.center.lat must_== 10
@@ -402,7 +403,7 @@ class GeocoderSpec extends Specification {
 
     val req = new GeocodeRequest().setSlug("paris-fr")
 
-    val r = new GeocoderImpl(store, req).geocode()
+    val r = new GeocodeRequestDispatcher(store, req).geocode()
     r.interpretations.size must_== 1
     val interp = r.interpretations.asScala(0)
     interp.feature.geometry.center.lat must_== 5
@@ -416,7 +417,7 @@ class GeocoderSpec extends Specification {
 
     val req = new GeocodeRequest().setSlug("paris")
 
-    val r = new GeocoderImpl(store, req).geocode()
+    val r = new GeocodeRequestDispatcher(store, req).geocode()
     r.interpretations.size must_== 0
   }
 

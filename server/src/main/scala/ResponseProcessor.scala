@@ -404,7 +404,7 @@ class ResponseProcessor(
   def buildFinalParses(
     parses: SortedParseSeq,
     parseParams: ParseParams,
-    maxInterpretations: Int,
+    originalMaxInterpretations: Int,
     dedupByMatchedName: Boolean = false
   ) = {
     val tokens = parseParams.tokens
@@ -439,6 +439,12 @@ class ResponseProcessor(
       }}).map(_._1)
 
     val filteredParses = filterParses(actualParses, parseParams)
+
+    val maxInterpretations = if (originalMaxInterpretations == 0) { 
+      filteredParses.size
+    } else {
+      originalMaxInterpretations
+    }
 
     val dedupedParses = if (maxInterpretations > 1) {
       dedupeParses(filteredParses.take(maxInterpretations * 2)).take(maxInterpretations)
