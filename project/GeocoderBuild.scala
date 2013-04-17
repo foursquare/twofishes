@@ -134,7 +134,21 @@ object GeocoderBuild extends Build {
           "org.scala-tools.testing" %% "specs" % "1.6.9" % "test",
           "com.github.scopt" %% "scopt" % "2.0.0"        )
       ),
-      base = file("server")) dependsOn(core, interface, util)
+      base = file("server")) dependsOn(core, interface, util, indexer % "test")
+
+   lazy val client = Project(id = "client",
+      settings = defaultSettings ++ assemblySettings ++ Seq(
+        baseDirectory in run := file("."),
+        publishArtifact := false,
+        libraryDependencies ++= Seq(
+          "com.twitter" % "ostrich" % "8.2.3",
+          "com.twitter" % "finagle-http" % "5.3.23",
+          "org.specs2" %% "specs2" % "1.8.2" % "test",
+          "org.scala-tools.testing" %% "specs" % "1.6.9" % "test",
+          "com.github.scopt" %% "scopt" % "2.0.0"        )
+      ),
+      base = file("client")) dependsOn(interface)
+
 
   lazy val indexer = Project(id = "indexer",
       base = file("indexer"),

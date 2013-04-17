@@ -29,6 +29,7 @@ object GeocodeRequestUtils {
       .setAllowedSources(req.allowedSources)
       .setLlHint(req.ll)
       .setBounds(req.bounds)
+      .setMaxInterpretations(req.maxInterpretations)
   }
 
 }

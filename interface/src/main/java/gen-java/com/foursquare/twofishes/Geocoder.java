@@ -42,6 +42,8 @@ public class Geocoder {
 
     public GeocodeResponse reverseGeocode(GeocodeRequest r) throws TException;
 
+    public BulkReverseGeocodeResponse bulkReverseGeocode(BulkReverseGeocodeRequest r) throws TException;
+
   }
 
   public interface AsyncIface {
@@ -50,6 +52,8 @@ public class Geocoder {
 
     public void reverseGeocode(GeocodeRequest r, AsyncMethodCallback<AsyncClient.reverseGeocode_call> resultHandler) throws TException;
 
+    public void bulkReverseGeocode(BulkReverseGeocodeRequest r, AsyncMethodCallback<AsyncClient.bulkReverseGeocode_call> resultHandler) throws TException;
+
   }
 
   public interface ServiceIface {
@@ -57,6 +61,8 @@ public class Geocoder {
     public Future<GeocodeResponse> geocode(GeocodeRequest r);
 
     public Future<GeocodeResponse> reverseGeocode(GeocodeRequest r);
+
+    public Future<BulkReverseGeocodeResponse> bulkReverseGeocode(BulkReverseGeocodeRequest r);
 
   }
 
@@ -169,6 +175,42 @@ public class Geocoder {
       throw new TApplicationException(TApplicationException.MISSING_RESULT, "reverseGeocode failed: unknown result");
     }
 
+    public BulkReverseGeocodeResponse bulkReverseGeocode(BulkReverseGeocodeRequest r) throws TException
+    {
+      send_bulkReverseGeocode(r);
+      return recv_bulkReverseGeocode();
+    }
+
+    public void send_bulkReverseGeocode(BulkReverseGeocodeRequest r) throws TException
+    {
+      oprot_.writeMessageBegin(new TMessage("bulkReverseGeocode", TMessageType.CALL, ++seqid_));
+      bulkReverseGeocode_args args = new bulkReverseGeocode_args();
+      args.setR(r);
+      args.write(oprot_);
+      oprot_.writeMessageEnd();
+      oprot_.getTransport().flush();
+    }
+
+    public BulkReverseGeocodeResponse recv_bulkReverseGeocode() throws TException
+    {
+      TMessage msg = iprot_.readMessageBegin();
+      if (msg.type == TMessageType.EXCEPTION) {
+        TApplicationException x = TApplicationException.read(iprot_);
+        iprot_.readMessageEnd();
+        throw x;
+      }
+      if (msg.seqid != seqid_) {
+        throw new TApplicationException(TApplicationException.BAD_SEQUENCE_ID, "bulkReverseGeocode failed: out of sequence response");
+      }
+      bulkReverseGeocode_result result = new bulkReverseGeocode_result();
+      result.read(iprot_);
+      iprot_.readMessageEnd();
+      if (result.isSetSuccess()) {
+        return result.success;
+      }
+      throw new TApplicationException(TApplicationException.MISSING_RESULT, "bulkReverseGeocode failed: unknown result");
+    }
+
   }
   public static class AsyncClient extends TAsyncClient implements AsyncIface {
     public static class Factory implements TAsyncClientFactory<AsyncClient> {
@@ -249,6 +291,37 @@ public class Geocoder {
       }
     }
 
+    public void bulkReverseGeocode(BulkReverseGeocodeRequest r, AsyncMethodCallback<bulkReverseGeocode_call> resultHandler) throws TException {
+      checkReady();
+      bulkReverseGeocode_call method_call = new bulkReverseGeocode_call(r, resultHandler, this, protocolFactory, transport);
+      manager.call(method_call);
+    }
+
+    public static class bulkReverseGeocode_call extends TAsyncMethodCall {
+      private BulkReverseGeocodeRequest r;
+      public bulkReverseGeocode_call(BulkReverseGeocodeRequest r, AsyncMethodCallback<bulkReverseGeocode_call> resultHandler, TAsyncClient client, TProtocolFactory protocolFactory, TNonblockingTransport transport) throws TException {
+        super(client, protocolFactory, transport, resultHandler, false);
+        this.r = r;
+      }
+
+      public void write_args(TProtocol prot) throws TException {
+        prot.writeMessageBegin(new TMessage("bulkReverseGeocode", TMessageType.CALL, 0));
+        bulkReverseGeocode_args args = new bulkReverseGeocode_args();
+        args.setR(r);
+        args.write(prot);
+        prot.writeMessageEnd();
+      }
+
+      public BulkReverseGeocodeResponse getResult() throws TException {
+        if (getState() != State.RESPONSE_READ) {
+          throw new IllegalStateException("Method call not finished!");
+        }
+        TMemoryInputTransport memoryTransport = new TMemoryInputTransport(getFrameBuffer().array());
+        TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
+        return (new Client(prot)).recv_bulkReverseGeocode();
+      }
+    }
+
   }
 
   public static class ServiceToClient implements ServiceIface {
@@ -319,6 +392,36 @@ public class Geocoder {
         return Future.exception(e);
       }
     }
+    public Future<BulkReverseGeocodeResponse> bulkReverseGeocode(BulkReverseGeocodeRequest r) {
+      try {
+        // TODO: size
+        TMemoryBuffer __memoryTransport__ = new TMemoryBuffer(512);
+        TProtocol __prot__ = this.protocolFactory.getProtocol(__memoryTransport__);
+        __prot__.writeMessageBegin(new TMessage("bulkReverseGeocode", TMessageType.CALL, 0));
+        bulkReverseGeocode_args __args__ = new bulkReverseGeocode_args();
+        __args__.setR(r);
+        __args__.write(__prot__);
+        __prot__.writeMessageEnd();
+      
+
+        byte[] __buffer__ = Arrays.copyOfRange(__memoryTransport__.getArray(), 0, __memoryTransport__.length());
+        ThriftClientRequest __request__ = new ThriftClientRequest(__buffer__, false);
+        Future<byte[]> __done__ = this.service.apply(__request__);
+        return __done__.flatMap(new Function<byte[], Future<BulkReverseGeocodeResponse>>() {
+          public Future<BulkReverseGeocodeResponse> apply(byte[] __buffer__) {
+            TMemoryInputTransport __memoryTransport__ = new TMemoryInputTransport(__buffer__);
+            TProtocol __prot__ = ServiceToClient.this.protocolFactory.getProtocol(__memoryTransport__);
+            try {
+              return Future.value((new Client(__prot__)).recv_bulkReverseGeocode());
+            } catch (Exception e) {
+              return Future.exception(e);
+            }
+          }
+        });
+      } catch (TException e) {
+        return Future.exception(e);
+      }
+    }
   }
 
   public static class Processor implements TProcessor {
@@ -328,6 +431,7 @@ public class Geocoder {
       iface_ = iface;
       processMap_.put("geocode", new geocode());
       processMap_.put("reverseGeocode", new reverseGeocode());
+      processMap_.put("bulkReverseGeocode", new bulkReverseGeocode());
     }
 
     protected static interface ProcessFunction {
@@ -400,6 +504,32 @@ public class Geocoder {
         reverseGeocode_result result = new reverseGeocode_result();
         result.success = iface_.reverseGeocode(args.r);
         oprot.writeMessageBegin(new TMessage("reverseGeocode", TMessageType.REPLY, seqid));
+        result.write(oprot);
+        oprot.writeMessageEnd();
+        oprot.getTransport().flush();
+      }
+
+    }
+
+    private class bulkReverseGeocode implements ProcessFunction {
+      public void process(int seqid, TProtocol iprot, TProtocol oprot) throws TException
+      {
+        bulkReverseGeocode_args args = new bulkReverseGeocode_args();
+        try {
+          args.read(iprot);
+        } catch (TProtocolException e) {
+          iprot.readMessageEnd();
+          TApplicationException x = new TApplicationException(TApplicationException.PROTOCOL_ERROR, e.getMessage());
+          oprot.writeMessageBegin(new TMessage("bulkReverseGeocode", TMessageType.EXCEPTION, seqid));
+          x.write(oprot);
+          oprot.writeMessageEnd();
+          oprot.getTransport().flush();
+          return;
+        }
+        iprot.readMessageEnd();
+        bulkReverseGeocode_result result = new bulkReverseGeocode_result();
+        result.success = iface_.bulkReverseGeocode(args.r);
+        oprot.writeMessageBegin(new TMessage("bulkReverseGeocode", TMessageType.REPLY, seqid));
         result.write(oprot);
         oprot.writeMessageEnd();
         oprot.getTransport().flush();
@@ -531,6 +661,73 @@ public class Geocoder {
                   TProtocol oprot = protocolFactory.getProtocol(memoryBuffer);
                    
                   oprot.writeMessageBegin(new TMessage("reverseGeocode", TMessageType.REPLY, seqid));
+                  result.write(oprot);
+                  oprot.writeMessageEnd();
+                   
+                  return Future.value(Arrays.copyOfRange(memoryBuffer.getArray(), 0, memoryBuffer.length()));
+                } catch (Exception e) {
+                  return Future.exception(e);
+                }
+              }
+            }).rescue(new Function<Throwable, Future<byte[]>>() {
+              public Future<byte[]> apply(Throwable t) {
+                return Future.exception(t);
+              }
+            });
+          } catch (Exception e) {
+            return Future.exception(e);
+          }
+        }
+      });
+      
+      functionMap.put("bulkReverseGeocode", new Function2<TProtocol, Integer, Future<byte[]>>() {
+        public Future<byte[]> apply(final TProtocol iprot, final Integer seqid) {
+          bulkReverseGeocode_args args = new bulkReverseGeocode_args();
+          try {
+            args.read(iprot);
+          } catch (TProtocolException e) {
+            try {
+              iprot.readMessageEnd();
+              TApplicationException x = new TApplicationException(TApplicationException.PROTOCOL_ERROR, e.getMessage());
+              TMemoryBuffer memoryBuffer = new TMemoryBuffer(512);
+              TProtocol oprot = protocolFactory.getProtocol(memoryBuffer);
+          
+              oprot.writeMessageBegin(new TMessage("bulkReverseGeocode", TMessageType.EXCEPTION, seqid));
+              x.write(oprot);
+              oprot.writeMessageEnd();
+              oprot.getTransport().flush();
+              byte[] buffer = Arrays.copyOfRange(memoryBuffer.getArray(), 0, memoryBuffer.length());
+              return Future.value(buffer);
+            } catch (Exception e1) {
+              return Future.exception(e1);
+            }
+          } catch (Exception e) {
+            return Future.exception(e);
+          }
+          
+          try {
+            iprot.readMessageEnd();
+          } catch (Exception e) {
+            return Future.exception(e);
+          }
+          Future<BulkReverseGeocodeResponse> future;
+          try {
+            future = iface.bulkReverseGeocode(args.r);
+          } catch (Exception e) {
+            future = Future.exception(e);
+          }
+          try {
+            return future.flatMap(new Function<BulkReverseGeocodeResponse, Future<byte[]>>() {
+              public Future<byte[]> apply(BulkReverseGeocodeResponse value) {
+                bulkReverseGeocode_result result = new bulkReverseGeocode_result();
+                result.success = value;
+                result.setSuccessIsSet(true);
+          
+                try {
+                  TMemoryBuffer memoryBuffer = new TMemoryBuffer(512);
+                  TProtocol oprot = protocolFactory.getProtocol(memoryBuffer);
+                   
+                  oprot.writeMessageBegin(new TMessage("bulkReverseGeocode", TMessageType.REPLY, seqid));
                   result.write(oprot);
                   oprot.writeMessageEnd();
                    
@@ -1693,6 +1890,569 @@ public class Geocoder {
     @Override
     public String toString() {
       StringBuilder sb = new StringBuilder("reverseGeocode_result(");
+      boolean first = true;
+
+      sb.append("success:");
+      if (this.success == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.success);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws TException {
+      // check for required fields
+    }
+
+  }
+
+  public static class bulkReverseGeocode_args implements TBase<bulkReverseGeocode_args, bulkReverseGeocode_args._Fields>, java.io.Serializable, Cloneable   {
+    private static final TStruct STRUCT_DESC = new TStruct("bulkReverseGeocode_args");
+
+    private static final TField R_FIELD_DESC = new TField("r", TType.STRUCT, (short)1);
+
+    public BulkReverseGeocodeRequest r;
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements TFieldIdEnum {
+      R((short)1, "r");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // R
+            return R;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+
+    public static final Map<_Fields, FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.R, new FieldMetaData("r", TFieldRequirementType.DEFAULT, 
+          new StructMetaData(TType.STRUCT, BulkReverseGeocodeRequest.class)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      FieldMetaData.addStructMetaDataMap(bulkReverseGeocode_args.class, metaDataMap);
+    }
+
+    public bulkReverseGeocode_args() {
+    }
+
+    public bulkReverseGeocode_args(
+      BulkReverseGeocodeRequest r)
+    {
+      this();
+      this.r = r;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public bulkReverseGeocode_args(bulkReverseGeocode_args other) {
+      if (other.isSetR()) {
+        this.r = new BulkReverseGeocodeRequest(other.r);
+      }
+    }
+
+    public bulkReverseGeocode_args deepCopy() {
+      return new bulkReverseGeocode_args(this);
+    }
+
+    @Override
+    public void clear() {
+      this.r = null;
+    }
+
+    public BulkReverseGeocodeRequest getR() {
+      return this.r;
+    }
+
+    public bulkReverseGeocode_args setR(BulkReverseGeocodeRequest r) {
+      this.r = r;
+      return this;
+    }
+
+    public void unsetR() {
+      this.r = null;
+    }
+
+    /** Returns true if field r is set (has been asigned a value) and false otherwise */
+    public boolean isSetR() {
+      return this.r != null;
+    }
+
+    public void setRIsSet(boolean value) {
+      if (!value) {
+        this.r = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case R:
+        if (value == null) {
+          unsetR();
+        } else {
+          setR((BulkReverseGeocodeRequest)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case R:
+        return getR();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been asigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case R:
+        return isSetR();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof bulkReverseGeocode_args)
+        return this.equals((bulkReverseGeocode_args)that);
+      return false;
+    }
+
+    public boolean equals(bulkReverseGeocode_args that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_r = true && this.isSetR();
+      boolean that_present_r = true && that.isSetR();
+      if (this_present_r || that_present_r) {
+        if (!(this_present_r && that_present_r))
+          return false;
+        if (!this.r.equals(that.r))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    public int compareTo(bulkReverseGeocode_args other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+      bulkReverseGeocode_args typedOther = (bulkReverseGeocode_args)other;
+
+      lastComparison = Boolean.valueOf(isSetR()).compareTo(typedOther.isSetR());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetR()) {
+        lastComparison = TBaseHelper.compareTo(this.r, typedOther.r);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(TProtocol iprot) throws TException {
+      TField field;
+      iprot.readStructBegin();
+      while (true)
+      {
+        field = iprot.readFieldBegin();
+        if (field.type == TType.STOP) { 
+          break;
+        }
+        switch (field.id) {
+          case 1: // R
+            if (field.type == TType.STRUCT) {
+              this.r = new BulkReverseGeocodeRequest();
+              this.r.read(iprot);
+            } else { 
+              TProtocolUtil.skip(iprot, field.type);
+            }
+            break;
+          default:
+            TProtocolUtil.skip(iprot, field.type);
+        }
+        iprot.readFieldEnd();
+      }
+      iprot.readStructEnd();
+
+      // check for required fields of primitive type, which can't be checked in the validate method
+      validate();
+    }
+
+    public void write(TProtocol oprot) throws TException {
+      validate();
+
+      oprot.writeStructBegin(STRUCT_DESC);
+      if (this.r != null) {
+        oprot.writeFieldBegin(R_FIELD_DESC);
+        this.r.write(oprot);
+        oprot.writeFieldEnd();
+      }
+      oprot.writeFieldStop();
+      oprot.writeStructEnd();
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("bulkReverseGeocode_args(");
+      boolean first = true;
+
+      sb.append("r:");
+      if (this.r == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.r);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws TException {
+      // check for required fields
+    }
+
+  }
+
+  public static class bulkReverseGeocode_result implements TBase<bulkReverseGeocode_result, bulkReverseGeocode_result._Fields>, java.io.Serializable, Cloneable   {
+    private static final TStruct STRUCT_DESC = new TStruct("bulkReverseGeocode_result");
+
+    private static final TField SUCCESS_FIELD_DESC = new TField("success", TType.STRUCT, (short)0);
+
+    public BulkReverseGeocodeResponse success;
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements TFieldIdEnum {
+      SUCCESS((short)0, "success");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 0: // SUCCESS
+            return SUCCESS;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+
+    public static final Map<_Fields, FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.SUCCESS, new FieldMetaData("success", TFieldRequirementType.DEFAULT, 
+          new StructMetaData(TType.STRUCT, BulkReverseGeocodeResponse.class)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      FieldMetaData.addStructMetaDataMap(bulkReverseGeocode_result.class, metaDataMap);
+    }
+
+    public bulkReverseGeocode_result() {
+    }
+
+    public bulkReverseGeocode_result(
+      BulkReverseGeocodeResponse success)
+    {
+      this();
+      this.success = success;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public bulkReverseGeocode_result(bulkReverseGeocode_result other) {
+      if (other.isSetSuccess()) {
+        this.success = new BulkReverseGeocodeResponse(other.success);
+      }
+    }
+
+    public bulkReverseGeocode_result deepCopy() {
+      return new bulkReverseGeocode_result(this);
+    }
+
+    @Override
+    public void clear() {
+      this.success = null;
+    }
+
+    public BulkReverseGeocodeResponse getSuccess() {
+      return this.success;
+    }
+
+    public bulkReverseGeocode_result setSuccess(BulkReverseGeocodeResponse success) {
+      this.success = success;
+      return this;
+    }
+
+    public void unsetSuccess() {
+      this.success = null;
+    }
+
+    /** Returns true if field success is set (has been asigned a value) and false otherwise */
+    public boolean isSetSuccess() {
+      return this.success != null;
+    }
+
+    public void setSuccessIsSet(boolean value) {
+      if (!value) {
+        this.success = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case SUCCESS:
+        if (value == null) {
+          unsetSuccess();
+        } else {
+          setSuccess((BulkReverseGeocodeResponse)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case SUCCESS:
+        return getSuccess();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been asigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case SUCCESS:
+        return isSetSuccess();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof bulkReverseGeocode_result)
+        return this.equals((bulkReverseGeocode_result)that);
+      return false;
+    }
+
+    public boolean equals(bulkReverseGeocode_result that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_success = true && this.isSetSuccess();
+      boolean that_present_success = true && that.isSetSuccess();
+      if (this_present_success || that_present_success) {
+        if (!(this_present_success && that_present_success))
+          return false;
+        if (!this.success.equals(that.success))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    public int compareTo(bulkReverseGeocode_result other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+      bulkReverseGeocode_result typedOther = (bulkReverseGeocode_result)other;
+
+      lastComparison = Boolean.valueOf(isSetSuccess()).compareTo(typedOther.isSetSuccess());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetSuccess()) {
+        lastComparison = TBaseHelper.compareTo(this.success, typedOther.success);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(TProtocol iprot) throws TException {
+      TField field;
+      iprot.readStructBegin();
+      while (true)
+      {
+        field = iprot.readFieldBegin();
+        if (field.type == TType.STOP) { 
+          break;
+        }
+        switch (field.id) {
+          case 0: // SUCCESS
+            if (field.type == TType.STRUCT) {
+              this.success = new BulkReverseGeocodeResponse();
+              this.success.read(iprot);
+            } else { 
+              TProtocolUtil.skip(iprot, field.type);
+            }
+            break;
+          default:
+            TProtocolUtil.skip(iprot, field.type);
+        }
+        iprot.readFieldEnd();
+      }
+      iprot.readStructEnd();
+
+      // check for required fields of primitive type, which can't be checked in the validate method
+      validate();
+    }
+
+    public void write(TProtocol oprot) throws TException {
+      oprot.writeStructBegin(STRUCT_DESC);
+
+      if (this.isSetSuccess()) {
+        oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
+        this.success.write(oprot);
+        oprot.writeFieldEnd();
+      }
+      oprot.writeFieldStop();
+      oprot.writeStructEnd();
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("bulkReverseGeocode_result(");
       boolean first = true;
 
       sb.append("success:");

@@ -15,7 +15,7 @@ import java.io.InputStream
 import java.net.InetSocketAddress
 import java.util.Date
 import java.util.concurrent.{ConcurrentHashMap, Executors}
-import org.apache.thrift.TSerializer
+import org.apache.thrift.{TBase, TSerializer}
 import org.apache.thrift.protocol.{TBinaryProtocol, TSimpleJSONProtocol}
 import org.apache.thrift.server.TThreadPoolServer
 import org.apache.thrift.transport.TServerSocket
@@ -26,9 +26,9 @@ import org.jboss.netty.util.CharsetUtil
 import scala.collection.mutable.ListBuffer
 
 class QueryLogHttpHandler(
-  queryMap: ConcurrentHashMap[ObjectId, (GeocodeRequest, Long)],
-  recentQueries: Seq[(GeocodeRequest, Long, Long)],
-  slowQueries: Seq[(GeocodeRequest, Long, Long)]
+  queryMap: ConcurrentHashMap[ObjectId, (TBase[_, _], Long)],
+  recentQueries: Seq[(TBase[_, _], Long, Long)],
+  slowQueries: Seq[(TBase[_, _], Long, Long)]
 ) extends Service[HttpRequest, HttpResponse] {
   def apply(request: HttpRequest) = {
     val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
@@ -64,14 +64,14 @@ class QueryLogHttpHandler(
 }
 
 class QueryLoggingGeocodeServerImpl(service: Geocoder.ServiceIface) extends Geocoder.ServiceIface {
-  val queryMap = new ConcurrentHashMap[ObjectId, (GeocodeRequest, Long)]
+  val queryMap = new ConcurrentHashMap[ObjectId, (TBase[_, _], Long)]
 
-  val recentQueries = new RingBuffer[(GeocodeRequest, Long, Long)](1000)
-  val slowQueries = new RingBuffer[(GeocodeRequest, Long, Long)](1000)
+  val recentQueries = new RingBuffer[(TBase[_, _], Long, Long)](1000)
+  val slowQueries = new RingBuffer[(TBase[_, _], Long, Long)](1000)
 
   val slowQueryHttpHandler = new QueryLogHttpHandler(queryMap, recentQueries, slowQueries)
 
-  def queryLogProcessor(r: GeocodeRequest, f: (GeocodeRequest => Future[GeocodeResponse])): Future[GeocodeResponse] = {
+  def queryLogProcessor[Req <: TBase[_, _], Res <: TBase[_, _]](r: Req, f: (Req => Future[Res])): Future[Res] = {
     // log the start of this query
     val start = System.nanoTime
     val id = new ObjectId()
@@ -102,6 +102,10 @@ class QueryLoggingGeocodeServerImpl(service: Geocoder.ServiceIface) extends Geoc
   def reverseGeocode(r: GeocodeRequest): Future[GeocodeResponse] =
     queryLogProcessor(r, service.reverseGeocode)
 
+  def bulkReverseGeocode(r: BulkReverseGeocodeRequest): Future[BulkReverseGeocodeResponse] = {
+    queryLogProcessor(r, service.bulkReverseGeocode)
+  }
+
 }
 
 class GeocodeServerImpl(store: GeocodeStorageReadService) extends Geocoder.ServiceIface {
@@ -113,6 +117,10 @@ class GeocodeServerImpl(store: GeocodeStorageReadService) extends Geocoder.Servi
 
   def reverseGeocode(r: GeocodeRequest): Future[GeocodeResponse] = queryFuturePool {
     new ReverseGeocoderImpl(store, r).reverseGeocode()
+  }
+
+  def bulkReverseGeocode(r: BulkReverseGeocodeRequest): Future[BulkReverseGeocodeResponse] = queryFuturePool {
+    new BulkReverseGeocoderImpl(store, r).reverseGeocode()
   }
 }
 
@@ -272,6 +280,11 @@ object GeocodeThriftServer extends Application {
     override def geocode(request: GeocodeRequest): GeocodeResponse = {
       Stats.incr("geocode-requests", 1)
       new GeocodeRequestDispatcher(store, request).geocode()
+    }
+
+    override def bulkReverseGeocode(request: BulkReverseGeocodeRequest): BulkReverseGeocodeResponse = {
+      Stats.incr("bulk-geocode-requests", 1)
+      new BulkReverseGeocoderImpl(store, request).reverseGeocode()
     }
 
     override def reverseGeocode(request: GeocodeRequest): GeocodeResponse = {
