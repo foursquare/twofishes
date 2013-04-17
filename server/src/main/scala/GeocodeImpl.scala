@@ -18,15 +18,6 @@ import scalaj.collection.Implicits._
 // --better debugging
 // --add more components if we have ambiguous names
 
-// Represents a match from a run of tokens to one particular feature
-case class FeatureMatch(
-  tokenStart: Int,
-  tokenEnd: Int,
-  phrase: String,
-  fmatch: GeocodeServingFeature,
-  possibleNameHits: Seq[FeatureName] = Nil
-)
-
 class GeocoderImpl(
   store: GeocodeStorageReadService,
   req: GeocodeRequest,
@@ -253,23 +244,5 @@ class GeocoderImpl(
     } else {
       responseProcessor.generateResponse(Nil)
     }
-  }
-
-  def doSlugGeocode(slug: String): GeocodeResponse = {
-    val parseParams = ParseParams()
-
-    val featureMap: Map[String, GeocodeServingFeature]  = if (ObjectId.isValid(slug)) {
-      val features = store.getByObjectIds(List(new ObjectId(slug)))
-      features.map({case (key, value) => (key.toString, value)}).toMap
-    } else {
-      store.getBySlugOrFeatureIds(List(slug))
-    }
-
-    // a parse is still a seq of featurematch, bleh
-    val parse = Parse[Sorted](featureMap.get(slug).map(servingFeature => {
-      FeatureMatch(0, 0, "", servingFeature)
-    }).toList)
-
-    responseProcessor.buildFinalParses(List(parse), parseParams, maxInterpretations=0)
   }
 }

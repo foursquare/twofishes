@@ -8,6 +8,15 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.collection.JavaConversions._
 import scalaj.collection.Implicits._
 
+// Represents a match from a run of tokens to one particular feature
+case class FeatureMatch(
+  tokenStart: Int,
+  tokenEnd: Int,
+  phrase: String,
+  fmatch: GeocodeServingFeature,
+  possibleNameHits: Seq[FeatureName] = Nil
+)
+
 // Sort a list of feature matches, smallest to biggest
 object FeatureMatchOrdering extends Ordering[FeatureMatch] {
   def compare(a: FeatureMatch, b: FeatureMatch) = {
