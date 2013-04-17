@@ -8,7 +8,6 @@ import com.foursquare.twofishes._
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.foursquare.twofishes.util.StoredFeatureId
-import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
 import java.io.File
 import scala.collection.JavaConversions._

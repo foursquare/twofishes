@@ -2,18 +2,13 @@
 
 package com.foursquare.twofishes
 
-import com.google.caliper.{Runner, SimpleBenchmark}
-import com.foursquare.twofishes.util.{GeoTools, GeometryUtils, NameNormalizer, NameUtils, TwofishesLogger}
+import com.foursquare.twofishes.util.GeometryUtils
 import com.foursquare.twofishes.util.Lists.Implicits._
-import com.foursquare.twofishes.util.NameUtils.BestNameMatch
-import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory}
-import com.vividsolutions.jts.io.{WKBReader, WKTWriter}
+import com.google.caliper.{Runner, SimpleBenchmark}
+import com.vividsolutions.jts.geom.Coordinate
 import com.vividsolutions.jts.util.GeometricShapeFactory
-import java.util.Date
-import java.util.concurrent.ConcurrentHashMap
 //import org.bson.types.ObjectId
 import scala.collection.JavaConversions._
-import scala.collection.mutable.{HashMap, ListBuffer}
 import scala.util.Random
 
 class S2CoverBenchmark extends SimpleBenchmark {
@@ -23,11 +18,11 @@ class S2CoverBenchmark extends SimpleBenchmark {
 /*
   for use in console:
 
-  import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory}
+  import com.vividsolutions.jts.geom.Coordinate
   def geocode2(points: Seq[Coordinate], radius: Int, levelMod: Int) = points.map(p => {
     println(p)
-    import com.vividsolutions.jts.util.GeometricShapeFactory
     import com.foursquare.twofishes.util.GeometryUtils
+    import com.vividsolutions.jts.util.GeometricShapeFactory
     val sizeDegrees = radius / 111319.9
     val gsf = new GeometricShapeFactory()
     gsf.setSize(sizeDegrees)

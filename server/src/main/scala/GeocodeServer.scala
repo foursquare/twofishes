@@ -3,29 +3,27 @@ package com.foursquare.twofishes
 
 import collection.JavaConverters._
 import com.foursquare.twofishes.util.Helpers
-import com.twitter.ostrich.admin._
-import com.twitter.ostrich.admin.config._
 import com.twitter.finagle.{Service, SimpleFilter}
 import com.twitter.finagle.builder.{Server, ServerBuilder}
 import com.twitter.finagle.http.Http
-import com.twitter.ostrich.stats.{Stats, StatsProvider}
 import com.twitter.finagle.thrift.ThriftServerFramedCodec
-import com.twitter.util.{Future, FuturePool}
+import com.twitter.ostrich.admin._
+import com.twitter.ostrich.admin.config._
+import com.twitter.ostrich.stats.Stats
+import com.twitter.util.{Future, FuturePool, RingBuffer}
 import java.io.InputStream
 import java.net.InetSocketAddress
-import java.util.concurrent.Executors
+import java.util.Date
+import java.util.concurrent.{ConcurrentHashMap, Executors}
 import org.apache.thrift.TSerializer
 import org.apache.thrift.protocol.{TBinaryProtocol, TSimpleJSONProtocol}
 import org.apache.thrift.server.TThreadPoolServer
 import org.apache.thrift.transport.TServerSocket
+import org.bson.types.ObjectId
 import org.jboss.netty.buffer.ChannelBuffers
 import org.jboss.netty.handler.codec.http._
 import org.jboss.netty.util.CharsetUtil
 import scala.collection.mutable.ListBuffer
-import java.util.concurrent.ConcurrentHashMap
-import org.bson.types.ObjectId
-import java.util.Date
-import com.twitter.util.RingBuffer
 
 class QueryLogHttpHandler(
   queryMap: ConcurrentHashMap[ObjectId, (GeocodeRequest, Long)],
@@ -110,11 +108,11 @@ class GeocodeServerImpl(store: GeocodeStorageReadService) extends Geocoder.Servi
   val queryFuturePool = FuturePool(StatsWrappedExecutors.create(24, 100, "geocoder"))
 
   def geocode(r: GeocodeRequest): Future[GeocodeResponse] = queryFuturePool {
-    new GeocoderImpl(store, r).geocode()
+    new GeocodeRequestDispatcher(store, r).geocode()
   }
 
   def reverseGeocode(r: GeocodeRequest): Future[GeocodeResponse] = queryFuturePool {
-    new GeocoderImpl(store, r).reverseGeocode()
+    new ReverseGeocoderImpl(store, r).reverseGeocode()
   }
 }
 
@@ -273,12 +271,12 @@ object GeocodeThriftServer extends Application {
   class GeocodeServer(store: GeocodeStorageReadService) extends Geocoder.Iface {
     override def geocode(request: GeocodeRequest): GeocodeResponse = {
       Stats.incr("geocode-requests", 1)
-      new GeocoderImpl(store, request).geocode()
+      new GeocodeRequestDispatcher(store, request).geocode()
     }
 
     override def reverseGeocode(request: GeocodeRequest): GeocodeResponse = {
       Stats.incr("geocode-requests", 1)
-      new GeocoderImpl(store, request).reverseGeocode()
+      new ReverseGeocoderImpl(store, request).reverseGeocode()
     }
   }
 

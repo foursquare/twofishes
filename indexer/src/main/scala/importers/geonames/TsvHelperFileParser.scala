@@ -1,8 +1,8 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.importers.geonames
 
-import com.foursquare.twofishes.util.StoredFeatureId
 import com.foursquare.twofishes.LogHelper
+import com.foursquare.twofishes.util.StoredFeatureId
 import java.io.File
 
 trait TsvHelperFileParserLogger {

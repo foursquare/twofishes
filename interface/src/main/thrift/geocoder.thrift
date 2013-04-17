@@ -240,6 +240,7 @@ struct GeocodeRequest {
   3: optional string lang = "en",
 
   // lat/lng hint -- results will be biased towards this location
+  // in revgeo mode, this is the point that is searched for
   4: optional GeocodePoint ll,
 
   5: optional bool full_DEPRECATED = 0,
@@ -277,7 +278,43 @@ struct GeocodeRequest {
   18: optional list<ResponseIncludes> responseIncludes = []
 }
 
+// I'd like to replace most of the params in geocoderequest with one instance of this,
+// that can be shared by multiple request types.
+struct CommonGeocodeRequestParams {
+  1: optional i32 debug = 0
+
+  // bias the results towards these woe types
+  2: optional list<YahooWoeType> woeHint = [],
+  3: optional list<YahooWoeType> woeRestrict = []
+
+  // country code hint -- results will be biased towards this country
+  4: optional string cc
+
+  // langugage hint, used to format displayName in response
+  5: optional string lang = "en"
+
+  6: optional list<ResponseIncludes> responseIncludes = []
+
+  // if set, then restrict to features where the source in one of the ids is in the list
+  7: optional list<string> allowedSources
+
+  8: optional GeocodePoint llHint
+
+  // supercedes ll for hinting, things in the box get boosted uniformly
+  9: optional GeocodeBoundingBox bounds,
+}
+
+struct BulkReverseGeocodeRequest {
+  1: optional list<GeocodePoint> latlngs
+  2: optional CommonGeocodeRequestParams params
+}
+
+struct BulkReverseGeocodeResponse {
+  1: required map<i32, GeocodeInterpretation> interpretationMap
+}
+
 service Geocoder {
   GeocodeResponse geocode(1: GeocodeRequest r)
   GeocodeResponse reverseGeocode(1: GeocodeRequest r)
+//  GeocodeResponse bulkReverseGeocode(1: BulkReverseGeocodeRequest r)
 }

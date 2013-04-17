@@ -1,17 +1,17 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.util.{GeocodeFeatureIdUtils, GeometryUtils, StoredFeatureId}
-import com.twitter.ostrich.stats.{Stats, StatsProvider}
-import com.twitter.util.{Duration, FuturePool}
+import com.twitter.ostrich.stats.Stats
+import com.twitter.util.Duration
 import java.io._
 import java.net.URI
 import java.nio.ByteBuffer
 import java.util.Arrays
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{LocalFileSystem, Path}
-import org.apache.hadoop.io.BytesWritable
-import org.apache.hadoop.hbase.io.hfile.{BlockCache, CacheConfig, FoursquareCacheConfig, HFile, HFileScanner}
+import org.apache.hadoop.hbase.io.hfile.{FoursquareCacheConfig, HFile, HFileScanner}
 import org.apache.hadoop.hbase.util.Bytes._
+import org.apache.hadoop.io.BytesWritable
 import org.apache.thrift.{TBase, TBaseHelper, TDeserializer, TFieldIdEnum}
 import org.apache.thrift.protocol.TCompactProtocol
 import org.bson.types.ObjectId
@@ -78,6 +78,15 @@ class HFileStorageService(basepath: String, shouldPreload: Boolean) extends Geoc
 
   def getPolygonByObjectId(id: ObjectId): Option[Array[Byte]] = {
     geomMapOpt.flatMap(_.get(id))
+  }
+
+  def getPolygonByObjectIds(ids: Seq[ObjectId]): Map[ObjectId, Array[Byte]] = {
+    (for {
+      oid <- ids
+      polygon <- getPolygonByObjectId(oid)
+    } yield {
+      (oid -> polygon)
+    }).toMap
   }
 
   def getMinS2Level: Int = s2map.minS2Level

@@ -5,7 +5,7 @@ import com.foursquare.geo.shapes.FsqSimpleFeatureImplicits._
 import com.foursquare.geo.shapes.ShapefileIterator
 import com.foursquare.twofishes.Implicits._
 import com.foursquare.twofishes._
-import com.foursquare.twofishes.util.{Helpers, NameNormalizer, StoredFeatureId, GeocodeFeatureIdUtils}
+import com.foursquare.twofishes.util.{GeocodeFeatureIdUtils, Helpers, NameNormalizer, StoredFeatureId}
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.vividsolutions.jts.geom.Geometry

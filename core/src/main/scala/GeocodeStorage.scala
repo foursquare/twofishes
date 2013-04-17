@@ -1,8 +1,8 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes
 
-import com.vividsolutions.jts.io.WKBReader
 import com.foursquare.twofishes.util.StoredFeatureId
+import com.vividsolutions.jts.io.WKBReader
 import org.apache.thrift.{TDeserializer, TSerializer}
 import org.apache.thrift.protocol.TCompactProtocol
 import org.bson.types.ObjectId
@@ -231,6 +231,7 @@ trait GeocodeStorageReadService {
   def getLevelMod: Int
   def getByS2CellId(id: Long): Seq[CellGeometry]
   def getPolygonByObjectId(id: ObjectId): Option[Array[Byte]]
+  def getPolygonByObjectIds(ids: Seq[ObjectId]): Map[ObjectId, Array[Byte]]
 
   def hotfixesDeletes: Seq[ObjectId] = Nil
   def hotfixesBoosts: Map[ObjectId, Int] = Map.empty

@@ -1,6 +1,7 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes
 
+import com.foursquare.twofishes.util.StoredFeatureId
 import com.mongodb.casbah.Imports._
 import com.mongodb.casbah.MongoConnection
 import com.novus.salat._
@@ -8,7 +9,6 @@ import com.novus.salat.annotations._
 import com.novus.salat.dao._
 import com.novus.salat.global._
 import scala.collection.JavaConversions._
-import com.foursquare.twofishes.util.StoredFeatureId
 
 case class NameIndex(
   name: String,

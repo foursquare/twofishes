@@ -5,7 +5,6 @@ package com.foursquare.twofishes.util
 import com.google.common.geometry.{S2CellId, S2LatLng, S2LatLngRect, S2Polygon, S2PolygonBuilder, S2RegionCoverer}
 import com.vividsolutions.jts.geom.{Geometry, Polygon}
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, DataInputStream, DataOutputStream}
-import scala.collection.mutable.HashSet
 import scala.collection.JavaConversions._
 
 object GeometryUtils {
