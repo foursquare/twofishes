@@ -301,7 +301,10 @@ struct CommonGeocodeRequestParams {
   8: optional GeocodePoint llHint
 
   // supercedes ll for hinting, things in the box get boosted uniformly
-  9: optional GeocodeBoundingBox bounds,
+  9: optional GeocodeBoundingBox bounds
+
+  // If set to <= 0, means unlimited in revgeo, and ~3 in geocode or autocomplete
+  10: optional i32 maxInterpretations = 0
 }
 
 struct BulkReverseGeocodeRequest {
@@ -310,11 +313,27 @@ struct BulkReverseGeocodeRequest {
 }
 
 struct BulkReverseGeocodeResponse {
-  1: required map<i32, GeocodeInterpretation> interpretationMap
+  1: required map<i32, list<GeocodeInterpretation>> interpretationMap
+
+  // only present if debug > 0 in request
+  2: optional list<string> debugLines,
+}
+
+struct BulkSlugLookupRequest {
+  1: optional list<string> slugs
+  2: optional CommonGeocodeRequestParams params
+}
+
+struct BulkSlugLookupResponse {
+  1: required map<i32, list<GeocodeInterpretation>> interpretationMap
+
+  // only present if debug > 0 in request
+  2: optional list<string> debugLines,
 }
 
 service Geocoder {
   GeocodeResponse geocode(1: GeocodeRequest r)
   GeocodeResponse reverseGeocode(1: GeocodeRequest r)
-//  GeocodeResponse bulkReverseGeocode(1: BulkReverseGeocodeRequest r)
+  BulkReverseGeocodeResponse bulkReverseGeocode(1: BulkReverseGeocodeRequest r)
+  // BulkSlugLookupResponse bulkSlugLookup(1: BulkSlugLookupRequest r)
 }

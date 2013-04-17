@@ -19,6 +19,17 @@ object GeocodeServingFeatureOrdering extends Ordering[GeocodeServingFeature] {
   }
 }
 
+object ResponseProcessor {
+  def generateResponse(debugLevel: Int, logger: MemoryLogger, interpretations: Seq[GeocodeInterpretation]): GeocodeResponse = {
+    val resp = new GeocodeResponse()
+    resp.setInterpretations(interpretations)
+    if (debugLevel > 0) {
+      resp.setDebugLines(logger.getLines)
+    }
+    resp
+  }
+}
+
 // After generating parses, the code in this class is called to clean that up into
 // GeocodeResponse/GeocodeInterpretation to return to the client
 class ResponseProcessor(
@@ -215,7 +226,7 @@ class ResponseProcessor(
     polygonMap: Map[ObjectId, Array[Byte]],
     fixAmbiguousNames: Boolean,
     dedupByMatchedName: Boolean = false
-  ): GeocodeResponse = {
+  ): Seq[GeocodeInterpretation] = {
     val tokens = parseParams.tokens
     val originalTokens = parseParams.originalTokens
     val connectorStart = parseParams.connectorStart
@@ -235,7 +246,7 @@ class ResponseProcessor(
     val parentMap = store.getByObjectIds(parentOids)
     logger.ifDebug("parentMap: %s", parentMap)
 
-    var interpretations = sortedParses.map(p => {
+    val interpretations = sortedParses.map(p => {
       val parseLength = p.tokenLength
 
       val what = if (hadConnector) {
@@ -337,8 +348,7 @@ class ResponseProcessor(
         })
       }
     }
-
-    generateResponse(interpretations)
+    interpretations
   }
 
   def bestNameWithMatch(
@@ -348,15 +358,6 @@ class ResponseProcessor(
     matchedStringOpt: Option[String]
   ): Option[BestNameMatch] = {
     NameUtils.bestName(f, lang, preferAbbrev, matchedStringOpt, req.debug, logger)
-  }
-
-  def generateResponse(interpretations: Seq[GeocodeInterpretation]): GeocodeResponse = {
-    val resp = new GeocodeResponse()
-    resp.setInterpretations(interpretations)
-    if (req.debug > 0) {
-      resp.setDebugLines(logger.getLines)
-    }
-    resp
   }
 
   def filterParses(parses: SortedParseSeq, parseParams: ParseParams): SortedParseSeq = {
@@ -465,7 +466,7 @@ class ResponseProcessor(
     val polygonMap: Map[ObjectId, Array[Byte]] = if (GeocodeRequestUtils.shouldFetchPolygon(req)) {
       store.getPolygonByObjectIds(sortedDedupedParses.map(p => new ObjectId(p(0).fmatch.id)))
     } else { Map.empty }
-    hydrateParses(sortedDedupedParses, parseParams, polygonMap,
-      fixAmbiguousNames = true, dedupByMatchedName = dedupByMatchedName)
+    ResponseProcessor.generateResponse(req.debug, logger, hydrateParses(sortedDedupedParses, parseParams, polygonMap,
+      fixAmbiguousNames = true, dedupByMatchedName = dedupByMatchedName))
   }
 }

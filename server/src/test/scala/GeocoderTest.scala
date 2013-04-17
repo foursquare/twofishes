@@ -1,11 +1,16 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes
 
+import com.foursquare.geo.shapes.ShapefileS2Util
+import com.foursquare.twofishes.util.GeometryUtils
 import com.foursquare.twofishes.util.Lists.Implicits._
+import com.google.common.geometry.S2CellId
+import com.vividsolutions.jts.geom.Geometry
+import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTReader}
 import org.bson.types.ObjectId
 import org.specs2.mutable._
 import scala.collection.JavaConverters._
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.{HashMap, ListBuffer}
 
 class MockGeocodeStorageReadService extends GeocodeStorageReadService {
   val nameMap = new HashMap[String, List[ObjectId]]
@@ -41,13 +46,42 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
     }).toMap
   }
 
-  def getByS2CellId(id: Long): Seq[CellGeometry] = Nil
+  val s2map = new HashMap[Long, ListBuffer[CellGeometry]]
+
+  def addGeometry(geom: Geometry, woeType: YahooWoeType, id: ObjectId) {
+    val wkbWriter = new WKBWriter()
+    val cells =
+      GeometryUtils.s2PolygonCovering(
+        geom,
+        getMinS2Level,
+        getMaxS2Level,
+        levelMod = Some(getLevelMod),
+        maxCellsHintWhichMightBeIgnored = Some(1000)
+      )
+
+    cells.asScala.foreach(cellid => {
+      val s2shape = ShapefileS2Util.fullGeometryForCell(cellid)
+      val bucket = s2map.getOrElseUpdate(cellid.id, new ListBuffer[CellGeometry]())
+      val cellGeometry = new CellGeometry()
+      val recordShape = geom.buffer(0)
+      if (recordShape.contains(s2shape)) {
+        cellGeometry.setFull(true)
+      } else {
+        cellGeometry.setWkbGeometry(wkbWriter.write(s2shape.intersection(recordShape)))
+      }
+      cellGeometry.setWoeType(woeType)
+      cellGeometry.setOid(id.toByteArray())
+      bucket += cellGeometry
+    })
+  }
+
+  def getByS2CellId(id: Long): Seq[CellGeometry] = s2map.getOrElse(id, Seq())
   def getPolygonByObjectId(id: ObjectId): Option[Array[Byte]] = None
   def getPolygonByObjectIds(ids: Seq[ObjectId]): Map[ObjectId, Array[Byte]] = Map.empty
 
-  def getLevelMod: Int = 0
-  def getMinS2Level: Int = 0
-  def getMaxS2Level: Int = 0
+  def getLevelMod: Int = 2
+  def getMinS2Level: Int = 8
+  def getMaxS2Level: Int = 12
 
   def addGeocode(
     name: String,
@@ -418,6 +452,29 @@ class GeocoderSpec extends Specification {
     val req = new GeocodeRequest().setSlug("paris")
 
     val r = new GeocodeRequestDispatcher(store, req).geocode()
+    r.interpretations.size must_== 0
+  }
+
+  def getId(f: GeocodeServingFeature): ObjectId = {
+    new ObjectId(f.feature.ids.asScala(0).id)
+  }
+
+  "reverse geocode" in {
+    val store = getStore
+    val parisTownRecord = store.addGeocode("Paris", Nil, 5, 6, YahooWoeType.TOWN, cc="FR")
+    val parisId = getId(parisTownRecord)
+    store.addGeometry(
+      new WKTReader().read("POLYGON ((1.878662109375 48.8719414772291,2.164306640625 49.14578361775004,2.779541015625 49.14578361775004,3.153076171875 48.72720881940671,2.581787109375 48.50932644976633,1.878662109375 48.8719414772291))"),
+      YahooWoeType.TOWN,
+      parisId
+    )
+
+    val req = new GeocodeRequest().setLl(new GeocodePoint().setLat(48.7996273507997).setLng(2.43896484375))
+    var r = new ReverseGeocoderImpl(store, req).reverseGeocode()
+    r.interpretations.size must_== 1
+
+    req.setLl(new GeocodePoint().setLat(40.74).setLng(-74))
+    r = new ReverseGeocoderImpl(store, req).reverseGeocode()
     r.interpretations.size must_== 0
   }
 

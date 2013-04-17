@@ -40,6 +40,7 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
   private static final TField ALLOWED_SOURCES_FIELD_DESC = new TField("allowedSources", TType.LIST, (short)7);
   private static final TField LL_HINT_FIELD_DESC = new TField("llHint", TType.STRUCT, (short)8);
   private static final TField BOUNDS_FIELD_DESC = new TField("bounds", TType.STRUCT, (short)9);
+  private static final TField MAX_INTERPRETATIONS_FIELD_DESC = new TField("maxInterpretations", TType.I32, (short)10);
 
   public int debug;
   public List<YahooWoeType> woeHint;
@@ -50,6 +51,7 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
   public List<String> allowedSources;
   public GeocodePoint llHint;
   public GeocodeBoundingBox bounds;
+  public int maxInterpretations;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
@@ -61,7 +63,8 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
     RESPONSE_INCLUDES((short)6, "responseIncludes"),
     ALLOWED_SOURCES((short)7, "allowedSources"),
     LL_HINT((short)8, "llHint"),
-    BOUNDS((short)9, "bounds");
+    BOUNDS((short)9, "bounds"),
+    MAX_INTERPRETATIONS((short)10, "maxInterpretations");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -94,6 +97,8 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
           return LL_HINT;
         case 9: // BOUNDS
           return BOUNDS;
+        case 10: // MAX_INTERPRETATIONS
+          return MAX_INTERPRETATIONS;
         default:
           return null;
       }
@@ -135,7 +140,8 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
 
   // isset id assignments
   private static final int __DEBUG_ISSET_ID = 0;
-  private BitSet __isset_bit_vector = new BitSet(1);
+  private static final int __MAXINTERPRETATIONS_ISSET_ID = 1;
+  private BitSet __isset_bit_vector = new BitSet(2);
 
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
@@ -162,6 +168,8 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
         new StructMetaData(TType.STRUCT, GeocodePoint.class)));
     tmpMap.put(_Fields.BOUNDS, new FieldMetaData("bounds", TFieldRequirementType.OPTIONAL, 
         new StructMetaData(TType.STRUCT, GeocodeBoundingBox.class)));
+    tmpMap.put(_Fields.MAX_INTERPRETATIONS, new FieldMetaData("maxInterpretations", TFieldRequirementType.OPTIONAL, 
+        new FieldValueMetaData(TType.I32)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(CommonGeocodeRequestParams.class, metaDataMap);
   }
@@ -176,6 +184,8 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
     this.lang = "en";
 
     this.responseIncludes = new ArrayList<ResponseIncludes>();
+
+    this.maxInterpretations = 0;
 
   }
 
@@ -226,6 +236,7 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
     if (other.isSetBounds()) {
       this.bounds = new GeocodeBoundingBox(other.bounds);
     }
+    this.maxInterpretations = other.maxInterpretations;
   }
 
   public CommonGeocodeRequestParams deepCopy() {
@@ -248,6 +259,8 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
     this.allowedSources = null;
     this.llHint = null;
     this.bounds = null;
+    this.maxInterpretations = 0;
+
   }
 
   public int getDebug() {
@@ -525,6 +538,29 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
     }
   }
 
+  public int getMaxInterpretations() {
+    return this.maxInterpretations;
+  }
+
+  public CommonGeocodeRequestParams setMaxInterpretations(int maxInterpretations) {
+    this.maxInterpretations = maxInterpretations;
+    setMaxInterpretationsIsSet(true);
+    return this;
+  }
+
+  public void unsetMaxInterpretations() {
+    __isset_bit_vector.clear(__MAXINTERPRETATIONS_ISSET_ID);
+  }
+
+  /** Returns true if field maxInterpretations is set (has been asigned a value) and false otherwise */
+  public boolean isSetMaxInterpretations() {
+    return __isset_bit_vector.get(__MAXINTERPRETATIONS_ISSET_ID);
+  }
+
+  public void setMaxInterpretationsIsSet(boolean value) {
+    __isset_bit_vector.set(__MAXINTERPRETATIONS_ISSET_ID, value);
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case DEBUG:
@@ -599,6 +635,14 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
       }
       break;
 
+    case MAX_INTERPRETATIONS:
+      if (value == null) {
+        unsetMaxInterpretations();
+      } else {
+        setMaxInterpretations((Integer)value);
+      }
+      break;
+
     }
   }
 
@@ -631,6 +675,9 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
     case BOUNDS:
       return getBounds();
 
+    case MAX_INTERPRETATIONS:
+      return new Integer(getMaxInterpretations());
+
     }
     throw new IllegalStateException();
   }
@@ -660,6 +707,8 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
       return isSetLlHint();
     case BOUNDS:
       return isSetBounds();
+    case MAX_INTERPRETATIONS:
+      return isSetMaxInterpretations();
     }
     throw new IllegalStateException();
   }
@@ -755,6 +804,15 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
       if (!(this_present_bounds && that_present_bounds))
         return false;
       if (!this.bounds.equals(that.bounds))
+        return false;
+    }
+
+    boolean this_present_maxInterpretations = true && this.isSetMaxInterpretations();
+    boolean that_present_maxInterpretations = true && that.isSetMaxInterpretations();
+    if (this_present_maxInterpretations || that_present_maxInterpretations) {
+      if (!(this_present_maxInterpretations && that_present_maxInterpretations))
+        return false;
+      if (this.maxInterpretations != that.maxInterpretations)
         return false;
     }
 
@@ -860,6 +918,16 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
     }
     if (isSetBounds()) {
       lastComparison = TBaseHelper.compareTo(this.bounds, typedOther.bounds);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetMaxInterpretations()).compareTo(typedOther.isSetMaxInterpretations());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetMaxInterpretations()) {
+      lastComparison = TBaseHelper.compareTo(this.maxInterpretations, typedOther.maxInterpretations);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -987,6 +1055,14 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
+        case 10: // MAX_INTERPRETATIONS
+          if (field.type == TType.I32) {
+            this.maxInterpretations = iprot.readI32();
+            setMaxInterpretationsIsSet(true);
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -1091,6 +1167,11 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
         oprot.writeFieldEnd();
       }
     }
+    if (isSetMaxInterpretations()) {
+      oprot.writeFieldBegin(MAX_INTERPRETATIONS_FIELD_DESC);
+      oprot.writeI32(this.maxInterpretations);
+      oprot.writeFieldEnd();
+    }
     oprot.writeFieldStop();
     oprot.writeStructEnd();
   }
@@ -1183,6 +1264,12 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
       } else {
         sb.append(this.bounds);
       }
+      first = false;
+    }
+    if (isSetMaxInterpretations()) {
+      if (!first) sb.append(", ");
+      sb.append("maxInterpretations:");
+      sb.append(this.maxInterpretations);
       first = false;
     }
     sb.append(")");

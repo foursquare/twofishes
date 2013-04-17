@@ -212,7 +212,7 @@ class GeocoderImpl(
     if (validParseCaches.size > 0) {
       val longest = validParseCaches.map(_._1).max
       if (hadConnector && longest != tokens.size) {
-        responseProcessor.generateResponse(Nil)
+      ResponseProcessor.generateResponse(req.debug, logger, Nil)
       } else {
         val parsesToConsider = new ListBuffer[Parse[Sorted]]
 
@@ -242,7 +242,7 @@ class GeocoderImpl(
         }
       }
     } else {
-      responseProcessor.generateResponse(Nil)
+      ResponseProcessor.generateResponse(req.debug, logger, Nil)
     }
   }
 }
