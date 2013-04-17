@@ -34,7 +34,7 @@ class GeocodeRequestDispatcher(
 
     if (Option(req.slug).exists(_.nonEmpty)) {
       Stats.time("slug-geocode") {
-        new GeocoderImpl(store, req, logger).doSlugGeocode(req.slug)
+        new SlugGeocoderImpl(store, req, logger).doSlugGeocode(req.slug)
       }
     } else if (req.autocomplete) {
       Stats.time("autocomplete-geocode") {
