@@ -110,7 +110,6 @@ class ReverseGeocoderHelperImpl(
       cellGeometry <- cellGeometries
       if (req.woeRestrict.isEmpty || req.woeRestrict.asScala.has(cellGeometry.woeType))
     } yield {
-      println("looking at %s".format(cellGeometry))
       val oid = new ObjectId(cellGeometry.getOid())
       if (!matches.has(oid)) {
         if (cellGeometry.isFull) {
@@ -138,30 +137,22 @@ class ReverseGeocoderHelperImpl(
       (g, index) <- otherGeoms.zipWithIndex
     } yield { index -> s2CoverGeometry(g) }).toMap
 
-    println(geomIndexToCellIdMap.keys)
-    println(geomIndexToCellIdMap)
-
     val cellGeometryMap: Map[Long, Seq[CellGeometry]] = 
       (for {
         cellid: Long <- geomIndexToCellIdMap.values.flatten.toSet
-      } yield { cellid -> store.getByS2CellId(cellid) }).toMap
-
+      } yield {
+        cellid -> store.getByS2CellId(cellid)
+      }).toMap
+    
     (for {
       (otherGeom, index) <- otherGeoms.zipWithIndex
     } yield {
-      println(index)
-      println("looking at %s".format(otherGeom))
       val cellGeometries = geomIndexToCellIdMap(index).flatMap(cellid => cellGeometryMap(cellid))
-      println("had %s geometries".format(cellGeometries.size))
 
-      val featureOids = findMatches(otherGeom, cellGeometryMap(index))
-
-      println("had %s matches".format(featureOids.size))
+      val featureOids = findMatches(otherGeom, cellGeometries)
 
       val servingFeaturesMap: Map[ObjectId, GeocodeServingFeature] =
         store.getByObjectIds(featureOids.toSet.toList)
-
-      println("starting to hydrate".format(featureOids.size))
 
       // need to get polygons if we need to calculate coverage
       val polygonMap: Map[ObjectId, Array[Byte]] =
@@ -221,7 +212,6 @@ class ReverseGeocoderImpl(
     new ReverseGeocoderHelperImpl(store, commonParams, logger)
 
   def doSingleReverseGeocode(geom: Geometry): GeocodeResponse = {
-    println(reverseGeocoder.doBulkReverseGeocode(List(geom)))
     val interpretations = reverseGeocoder.doBulkReverseGeocode(List(geom))(0)
     val response = ResponseProcessor.generateResponse(req.debug, logger, interpretations)
     if (req.debug > 0) {
