@@ -35,9 +35,17 @@ trait DurationUtils {
   }
 }
 
-class WrappedByteMapWriter(writer: MapFile.Writer) {
-  def append(k: Array[Byte], v: Array[Byte]) {
-    writer.append(new BytesWritable(k), new BytesWritable(v))
+class WrappedByteMapWriter[K, V](writer: MapFile.Writer, index: Index[K, V]) {
+  def append(k: K, v: V) {
+    writer.append(new BytesWritable(index.keySerde.toBytes(k)), new BytesWritable(index.valueSerde.toBytes(v)))
+  }
+
+  def close() { writer.close() }
+}
+
+class WrappedHFileWriter[K, V](writer: HFile.Writer, index: Index[K, V]) {
+  def append(k: K, v: V) {
+    writer.append(index.keySerde.toBytes(k), index.valueSerde.toBytes(v))
   }
 
   def close() { writer.close() }
@@ -90,7 +98,6 @@ abstract class Indexer extends DurationUtils {
   val ThriftEncodingKey: String = "thrift.protocol.factory.class"
 
   val factory = new TCompactProtocol.Factory()
-  val serializer = new TSerializer(factory)
 
   // this is all weirdly 4sq specific logic :-(
   def fixThriftClassName(n: String) = {
@@ -103,8 +110,8 @@ abstract class Indexer extends DurationUtils {
     }
   }
 
-  def buildHFileV1Writer(filename: String,
-                         info: Map[String, String] = Map.empty): HFile.Writer = {
+  def buildHFileV1Writer[K, V](index: Index[K, V],
+                         info: Map[String, String] = Map.empty): WrappedHFileWriter[K, V] = {
     val conf = new Configuration()
     val blockSizeKey = "hbase.mapreduce.hfileoutputformat.blocksize"
     val compressionKey = "hfile.compression"
@@ -113,7 +120,7 @@ abstract class Indexer extends DurationUtils {
     val compressionAlgo = Compression.Algorithm.NONE.getName
 
     val fs = new LocalFileSystem()
-    val path = new Path(new File(basepath, filename).toString)
+    val path = new Path(new File(basepath, index.filename).toString)
     fs.initialize(URI.create("file:///"), conf)
     val hadoopConfiguration: Configuration = new Configuration()
 
@@ -127,11 +134,11 @@ abstract class Indexer extends DurationUtils {
 
     info.foreach({case (k, v) => writer.appendFileInfo(k.getBytes("UTF-8"), v.getBytes("UTF-8")) })
 
-    writer
+    new WrappedHFileWriter(writer, index)
   }
 
-  def buildMapFileWriter[K: Manifest, V: Manifest](
-      filename: String,
+  def buildMapFileWriter[K : Manifest, V : Manifest](
+      index: Index[K, V],
       info: Map[String, String] = Map.empty) = {
 
     val keyClassName = fixThriftClassName(manifest[K].erasure.getName)
@@ -144,7 +151,8 @@ abstract class Indexer extends DurationUtils {
     )
 
     new WrappedByteMapWriter(
-      MapFileUtils.writerToLocalPath((new File(basepath, filename)).toString, finalInfoMap)
+      MapFileUtils.writerToLocalPath((new File(basepath, index.filename)).toString, finalInfoMap),
+      index
     )
   }
 
@@ -166,17 +174,8 @@ abstract class Indexer extends DurationUtils {
     comp.compare(a.toByteArray(), b.toByteArray()) < 0
   }
 
-  def fidStringsToByteArray(fids: List[String]): Array[Byte] = {
-    val oids: Set[ObjectId] = fids.flatMap(fid => fidMap.get(fid)).toSet
-    oidsToByteArray(oids)
-  }
-
-  def oidsToByteArray(oids: Iterable[ObjectId]): Array[Byte] = {
-    val os = new ByteArrayOutputStream(12 * oids.size)
-    oids.foreach(oid =>
-      os.write(oid.toByteArray)
-    )
-    os.toByteArray()
+  def fidStringsToOids(fids: List[String]): Seq[ObjectId] = {
+    fids.flatMap(fid => fidMap.get(fid)).toSet.toSeq
   }
 }
 
@@ -236,7 +235,7 @@ class PrefixIndexer(override val basepath: String, override val fidMap: FidMap) 
       YahooWoeType.COUNTRY
     ).map(_.getValue)
 
-    val prefixWriter = buildMapFileWriter("prefix_index",
+    val prefixWriter = buildMapFileWriter(Indexes.PrefixIndex,
       Map(
         ("MAX_PREFIX_LENGTH", PrefixIndexer.MaxPrefixLength.toString)
       )
@@ -272,7 +271,7 @@ class PrefixIndexer(override val basepath: String, override val fidMap: FidMap) 
         })
       }
 
-      prefixWriter.append(prefix.getBytes(), fidStringsToByteArray(fids.toList))
+      prefixWriter.append(prefix, fidStringsToOids(fids.toList))
     }
 
     prefixWriter.close()
@@ -294,10 +293,10 @@ class NameIndexer(override val basepath: String, override val fidMap: FidMap, ou
     var lastName = ""
     var nameFids = new HashSet[String]
 
-    val writer = buildHFileV1Writer("name_index.hfile")
+    val writer = buildHFileV1Writer(Indexes.NameIndex)
 
     def writeFidsForLastName() {
-      writer.append(lastName.getBytes(), fidStringsToByteArray(nameFids.toList))
+      writer.append(lastName, fidStringsToOids(nameFids.toList))
       if (outputPrefixIndex) {
         1.to(List(PrefixIndexer.MaxPrefixLength, lastName.size).min).foreach(length =>
           prefixSet.add(lastName.substring(0, length))
@@ -333,17 +332,17 @@ class NameIndexer(override val basepath: String, override val fidMap: FidMap, ou
 class FeatureIndexer(override val basepath: String, override val fidMap: FidMap) extends Indexer {
   type IdFixer = (String) => Option[String]
 
-  def serializeGeocodeRecordWithoutGeometry(g: GeocodeRecord, fixParentId: IdFixer) = {
+  def makeGeocodeRecordWithoutGeometry(g: GeocodeRecord, fixParentId: IdFixer): GeocodeServingFeature = {
     val f = g.toGeocodeServingFeature()
     f.feature.geometry.unsetWkbGeometry()
-    serializeGeocodeServingFeature(f, fixParentId)
+    makeGeocodeServingFeature(f, fixParentId)
   }
 
-  def serializeGeocodeRecord(g: GeocodeRecord, fixParentId: IdFixer) = {
-    serializeGeocodeServingFeature(g.toGeocodeServingFeature(), fixParentId)
+  def makeGeocodeRecord(g: GeocodeRecord, fixParentId: IdFixer) = {
+    makeGeocodeServingFeature(g.toGeocodeServingFeature(), fixParentId)
   }
 
-  def serializeGeocodeServingFeature(f: GeocodeServingFeature, fixParentId: IdFixer) = {
+  def makeGeocodeServingFeature(f: GeocodeServingFeature, fixParentId: IdFixer) = {
     val parents = for {
       parent <- f.scoringFeatures.parents.asScala
       parentId <- fixParentId(parent)
@@ -352,21 +351,20 @@ class FeatureIndexer(override val basepath: String, override val fidMap: FidMap)
     }
 
     f.scoringFeatures.setParents(parents.asJava)
-    serializer.serialize(f)
+    f
   }
 
   def writeFeatures() {
     def fixParentId(fid: String) = fidMap.get(fid).map(_.toString)
 
-    // these types are a lie
-    val writer = buildMapFileWriter[ObjectIdWrapper, GeocodeServingFeature]("features")
+    val writer = buildMapFileWriter(Indexes.FeatureIndex)
     var fidCount = 0
     val fidSize = MongoGeocodeDAO.collection.count
     val fidCursor = MongoGeocodeDAO.find(MongoDBObject())
       .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
     fidCursor.foreach(f => {
       writer.append(
-        f._id.toByteArray(), serializeGeocodeRecordWithoutGeometry(f, fixParentId))
+        f._id, makeGeocodeRecordWithoutGeometry(f, fixParentId))
       fidCount += 1
       if (fidCount % 100000 == 0) {
         println("processed %d of %d features".format(fidCount, fidSize))
@@ -383,8 +381,7 @@ class PolygonIndexer(override val basepath: String, override val fidMap: FidMap)
         .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
 
     var index: Int = 0
-    // these types are a lie
-    var writer = buildMapFileWriter[StringWrapper, GeocodeServingFeature]("geometry")
+    var writer = buildMapFileWriter(Indexes.GeometryIndex)
 
     for {
       (featureRecord, index) <- polygons.zipWithIndex
@@ -394,7 +391,7 @@ class PolygonIndexer(override val basepath: String, override val fidMap: FidMap)
         println("outputted %d polys so far".format(index))
       }
       writer.append(
-        featureRecord._id.toByteArray(),
+        featureRecord._id,
         polygon)
     }
     writer.close()
@@ -453,7 +450,7 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
 
   def buildRevGeoIndex() {
     val writer = buildMapFileWriter(
-      "s2_index",
+      Indexes.S2Index,
       Map(
         "minS2Level" -> minS2Level.toString,
         "maxS2Level" -> maxS2Level.toString,
@@ -502,7 +499,7 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
       val longKey = GeometryUtils.getLongFromBytes(k)
       val cells: List[CellGeometry] = subMaps.flatMap(_._1.get(longKey)).flatMap(_.toList)
       val cellGeometries = new CellGeometries().setCells(cells.asJava)
-      writer.append(k, serializer.serialize(cellGeometries))
+      writer.append(longKey, cellGeometries)
     })
 
     scala.util.Random.shuffle(ids).take(100).foreach(id => println("new ObjectId(\"%s\")".format(id)))
@@ -513,11 +510,11 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
 
 class IdIndexer(override val basepath: String, override val fidMap: FidMap, slugEntryMap: SlugEntryMap) extends Indexer {
   def writeSlugsAndIds() {
-    val slugEntries: List[(Array[Byte], Array[Byte])]  = for {
+    val slugEntries: List[(String, ObjectId)] = for {
       (slug, entry) <- slugEntryMap.toList
       oid <- fidMap.get(entry.id)
     } yield {
-      (slug.getBytes("UTF-8"), oid.toByteArray)
+      slug -> oid
     }
 
     // val oidEntries: List[(Array[Byte], Array[Byte])] = (for {
@@ -528,9 +525,9 @@ class IdIndexer(override val basepath: String, override val fidMap: FidMap, slug
     // }).toList
 
     // these types are a lie
-    val writer = buildMapFileWriter[StringWrapper, ObjectIdListWrapper]("id-mapping")
+    val writer = buildMapFileWriter(Indexes.IdMappingIndex)
 
-    val sortedEntries = slugEntries.sortWith(bytePairSort).foreach({case (k, v) => {
+    val sortedEntries = slugEntries.sortWith((a, b) => lexicalSort(a._1, b._1)).foreach({case (k, v) => {
       writer.append(k, v)
     }})
 
