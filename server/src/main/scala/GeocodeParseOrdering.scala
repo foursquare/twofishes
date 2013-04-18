@@ -2,7 +2,6 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.Identity._
-import com.foursquare.twofishes.Implicits._
 import com.foursquare.twofishes.util.{GeoTools, TwofishesLogger}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import org.bson.types.ObjectId

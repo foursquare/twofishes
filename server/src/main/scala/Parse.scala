@@ -1,7 +1,6 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
-import com.foursquare.twofishes.Implicits._
 import com.foursquare.twofishes.util.GeoTools
 import com.foursquare.twofishes.util.Lists.Implicits._
 import java.util.concurrent.ConcurrentHashMap
