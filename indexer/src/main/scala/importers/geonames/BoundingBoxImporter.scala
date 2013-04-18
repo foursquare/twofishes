@@ -24,15 +24,13 @@ object BoundingBoxTsvImporter extends LogHelper {
           logger.error("wrong # of parts: %d vs %d in %s".format(parts.size, 5, line))
         } else {
           try {
-            val idparts = parts(0).split(":")
-            val namespace = idparts(0)
-            val id = idparts(1)
+            val id = parts(0)
             val w = parts(1).toDouble
             val s = parts(2).toDouble
             val e = parts(3).toDouble
             val n = parts(4).toDouble
 
-            StoredFeatureId.fromNamespaceAndId(namespace, id) match {
+            StoredFeatureId.fromHumanReadableString(id) match {
               case Some(fid) => map(fid) = BoundingBox(Point(n, e), Point(s, w))
               case None => logger.error("%s: couldn't parse into StoredFeatureId".format(line))
             }

@@ -62,23 +62,30 @@ object GeonamesFeature extends LogHelper {
     }
 
     def cb(in: Map[GeonamesFeatureColumns.Value, String]) = {
-      in ++ List(
-        (GeonamesFeatureColumns.FEATURE_CLASS -> "Z"),
-        (GeonamesFeatureColumns.GEONAMEID -> (new GeonamesZip(in(COUNTRY_CODE), in(NAME))).humanReadableString)
-      )
+      try {
+        Some(in ++ List(
+          (GeonamesFeatureColumns.FEATURE_CLASS -> "Z"),
+          (GeonamesFeatureColumns.GEONAMEID ->
+            (new GeonamesZip(in(COUNTRY_CODE), in(NAME))).humanReadableString)
+        ))
+      } catch {
+        case e: Exception =>
+          logger.error("Exception when handling '%s': %s".format(in, e))
+          None
+      }
     }
 
     parseLine(index, newLine, postalCodeColumns, cb)
   }
 
   def parseFromAdminLine(index: Int, line: String): Option[GeonamesFeature] = {
-    def cb(in: Map[GeonamesFeatureColumns.Value, String]) = in
+    def cb(in: Map[GeonamesFeatureColumns.Value, String]) = Some(in)
     parseLine(index, line, adminColumns, cb)
   }
 
   def parseLine(index: Int, line: String,
       columns: List[GeonamesFeatureColumns.Value],
-      modifyCallback: Map[GeonamesFeatureColumns.Value, String] => Map[GeonamesFeatureColumns.Value, String]
+      modifyCallback: Map[GeonamesFeatureColumns.Value, String] => Option[Map[GeonamesFeatureColumns.Value, String]]
       ): Option[GeonamesFeature] = {
     val parts = line.split("\t")
     if (parts.size < columns.size) {
@@ -86,18 +93,25 @@ object GeonamesFeature extends LogHelper {
         index, parts.size, columns.size, parts.mkString(",")))
       None
     } else {
-      var colMap = modifyCallback(columns.zip(parts).toMap)
+      modifyCallback(columns.zip(parts).toMap) match {
+        case None =>
+          logger.error("CALLBACK ELIDED LINE: %s".format(line))
+          None
 
-      if (parts.size > columns.size) {
-        colMap += (EXTRA -> parts.drop(columns.size).mkString("\t"))
-      }
+        case Some(colMapVal) =>
+          var colMap = colMapVal
 
-      val feature = new GeonamesFeature(colMap)
-      if (feature.isValid) {
-        Some(feature)
-      } else {
-        logger.error("INVALID: %s".format(line))
-        None
+          if (parts.size > columns.size) {
+            colMap += (EXTRA -> parts.drop(columns.size).mkString("\t"))
+          }
+
+          val feature = new GeonamesFeature(colMap)
+          if (feature.isValid) {
+            Some(feature)
+          } else {
+            logger.error("INVALID: %s".format(line))
+            None
+          }
       }
     }
   }

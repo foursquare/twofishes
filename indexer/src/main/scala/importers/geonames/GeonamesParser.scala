@@ -9,10 +9,11 @@ import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
-import java.io.{File, FileWriter}
+import java.io.{File, FileWriter, PrintStream}
 import org.bson.types.ObjectId
 import org.opengis.feature.simple.SimpleFeature
 import scala.collection.mutable.{HashMap, HashSet}
+import scala.io.Source
 import scalaj.collection.Implicits._
 
 // TODO
@@ -110,9 +111,7 @@ object GeonamesParser {
           "data/downloaded/%s.txt".format(f))
 
         if (config.importPostalCodes) {
-          parser.parsePostalCodeFile(
-          "data/downloaded/zip/%s.txt".format(f),
-          true)
+          parser.parsePostalCodeFile("data/downloaded/zip/%s.txt".format(f))
         }
       })
     } else {
@@ -120,8 +119,7 @@ object GeonamesParser {
       parser.parseAdminFile(
         "data/downloaded/allCountries.txt")
       if (config.importPostalCodes) {
-        parser.parsePostalCodeFile(
-          "data/downloaded/zip/allCountries.txt", false)
+        parser.parsePostalCodeFile("data/downloaded/zip/allCountries.txt")
       }
     }
 
@@ -269,17 +267,12 @@ class GeonamesParser(
   def parseFeature(feature: GeonamesFeature): GeocodeRecord = {
     // Build ids
     val geonameId = feature.geonameid.flatMap(id => {
-      if (id.contains(":")) {
-        StoredFeatureId.fromHumanReadableString(id)
-      } else {
-        Some(GeonamesId(id.toLong))
-      }
+      StoredFeatureId.fromHumanReadableString(id, defaultNamespace = Some(GeonamesNamespace))
     }).get
 
     val ids: List[StoredFeatureId] = List(geonameId) ++
       concordanceMap.get(geonameId).flatMap(id =>
         if (id.contains(":")) {
-          val parts = id.split(":")
           StoredFeatureId.fromHumanReadableString(id)
         } else { None }
       )
@@ -485,7 +478,7 @@ class GeonamesParser(
       GeonamesFeature.parseFromAdminLine(index, line), "features", allowBuildings)
   }
 
-  def parsePostalCodeFile(filename: String, countryFile: Boolean) {
+  def parsePostalCodeFile(filename: String) {
     parseFromFile(filename, (index: Int, line: String) =>
       GeonamesFeature.parseFromPostalCodeLine(index, line), "postal codes")
   }
@@ -585,7 +578,7 @@ class GeonamesParser(
         lang <- parts.lift(1).flatMap(_.split("\\|").lift(0))
         name <- parts.lift(1).flatMap(_.split("\\|").lift(1))
       } {
-        val records = store.getById(StoredFeatureId(GeonamesNamespace, gid)).toList
+        val records = store.getById(GeonamesId(gid.toLong)).toList
         records match {
           case Nil => logger.error("no match for id %s".format(gid))
           case record :: Nil => {
@@ -609,7 +602,7 @@ class GeonamesParser(
               }
             )
 
-            store.setRecordNames(StoredFeatureId(GeonamesNamespace, gid), newNames)
+            store.setRecordNames(GeonamesId(gid.toLong), newNames)
           }
         }
       }
