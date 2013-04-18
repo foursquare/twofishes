@@ -28,7 +28,7 @@ object BuildPolygonShapefile {
 
   def writeCollection(collection: SimpleFeatureCollection, filename: String) {
       val newFile = new File(filename);
-      
+
       val storeFactory = new ShapefileDataStoreFactory()
       val create = Map( "url" -> newFile.toURI.toURL)
       val newDataStore = storeFactory.createNewDataStore(create.asJava).asInstanceOf[ShapefileDataStore]
@@ -72,7 +72,7 @@ object BuildPolygonShapefile {
 
     val total = MongoGeocodeDAO.count(MongoDBObject("hasPoly" -> true))
 
-    val records = 
+    val records =
       MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
 
     val geomFactory = new GeometryFactory()

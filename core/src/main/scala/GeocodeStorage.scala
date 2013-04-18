@@ -130,7 +130,7 @@ case class GeocodeRecord(
     feature.setIds(featureIds.map(_.thriftFeatureId).asJava)
 
     featureIds.headOption.foreach(id => feature.setId(id.humanReadableString))
-    featureIds.headOption.foreach(id => feature.setLongId(id.id))
+    featureIds.headOption.foreach(id => feature.setLongId(id.longId))
 
     val filteredNames: List[DisplayName] = displayNames.filterNot(n => List("post", "link").contains(n.lang))
     var hackedNames: List[DisplayName] = Nil

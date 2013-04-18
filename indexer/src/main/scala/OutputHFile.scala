@@ -444,7 +444,7 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
             }
             cellGeometry.setWoeType(record.woeType)
             cellGeometry.setOid(record._id.toByteArray())
-            cellGeometry.setLongId(StoredFeatureId.fromLegacyObjectId(record._id).get.id)
+            cellGeometry.setLongId(StoredFeatureId.fromLegacyObjectId(record._id).get.longId)
             bucket += cellGeometry
           }
         )

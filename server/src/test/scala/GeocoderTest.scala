@@ -71,7 +71,7 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
       }
       cellGeometry.setWoeType(woeType)
       cellGeometry.setOid(id.legacyObjectId.toByteArray())
-      cellGeometry.setLongId(id.id)
+      cellGeometry.setLongId(id.longId)
       bucket += cellGeometry
     })
   }
@@ -79,7 +79,7 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
   def getByS2CellId(id: Long): Seq[CellGeometry] = {
     s2map.getOrElse(id, Seq())
   }
-  
+
   def getPolygonByFeatureId(id: StoredFeatureId): Option[Array[Byte]] = None
   def getPolygonByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, Array[Byte]] = Map.empty
 
@@ -478,7 +478,7 @@ class GeocoderSpec extends Specification {
     store.addGeometry(
       new WKTReader().read("POLYGON ((-74.0427017211914 40.7641613153526,-73.93146514892578 40.7641613153526,-73.93146514892578 40.681679458715635,-74.0427017211914 40.681679458715635,-74.0427017211914 40.7641613153526))"),
       YahooWoeType.TOWN,
-      nyId 
+      nyId
     )
 
     val req = new GeocodeRequest().setLl(new GeocodePoint().setLat(48.7996273507997).setLng(2.43896484375))

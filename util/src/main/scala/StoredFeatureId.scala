@@ -27,7 +27,7 @@ object FeatureNamespace {
 
 sealed abstract class StoredFeatureId(val namespace: FeatureNamespace) {
   def namespaceSpecificId: Long
-  def id: Long = {
+  def longId: Long = {
     val lower56 = ((namespaceSpecificId << 8) >> 8)
     assert(lower56 == namespaceSpecificId)
     (namespace.id.toLong << 56) | lower56

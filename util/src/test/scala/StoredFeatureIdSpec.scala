@@ -8,14 +8,14 @@ class StoredFeatureIdSpec extends Specification {
     val fidOpt = StoredFeatureId.fromHumanReadableString(humStr)
     val fid = fidOpt.get
 
-    fid.id must_== longId
+    fid.longId must_== longId
     fid.legacyObjectId must_== oid
     fid.humanReadableString must_== humStr
     fid.namespace must_== ns
     fid.namespaceSpecificId must_== nsId
 
     StoredFeatureId(fid.namespace, fid.namespaceSpecificId) must_== fid
-    StoredFeatureId.fromLong(fid.id) must_== fidOpt
+    StoredFeatureId.fromLong(fid.longId) must_== fidOpt
     StoredFeatureId.fromLegacyObjectId(fid.legacyObjectId) must_== fidOpt
   }
 
@@ -53,7 +53,7 @@ class StoredFeatureIdSpec extends Specification {
     }
 
     "geonameszip long construction" in {
-      (new GeonamesZip("US-10003")).id must_==
+      (new GeonamesZip("US-10003")).longId must_==
         ((GeonamesZipNamespace.id.toLong << 56) +
          (GeonamesZip.supportedCountries.indexOf("US").toLong << 48) +
          (1 * math.pow(38, 4).toLong) +
