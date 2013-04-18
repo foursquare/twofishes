@@ -102,7 +102,7 @@ struct FeatureGeometry {
   1: GeocodePoint center,
   2: optional GeocodeBoundingBox bounds,
 
-  // "well known binary" 
+  // "well known binary"
   // only present if we have a polygon for this feature
   3: optional binary wkbGeometry,
   4: optional string wktGeometry
@@ -151,7 +151,7 @@ struct GeocodeFeature {
   1: string cc,
   2: FeatureGeometry geometry,
 
-  // 
+  //
   3: optional string name,
   4: optional string displayName,
   5: optional YahooWoeType woeType,
@@ -167,6 +167,8 @@ struct GeocodeFeature {
   14: optional string id,
 
   15: optional GeocodeFeatureAttributes attributes
+
+  16: optional i64 longId
 }
 
 struct GeocodeServingFeature {

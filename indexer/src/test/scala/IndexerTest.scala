@@ -3,7 +3,7 @@ package com.foursquare.twofishes
 
 import collection.JavaConverters._
 import com.foursquare.twofishes.importers.geonames._
-import com.foursquare.twofishes.util.StoredFeatureId
+import com.foursquare.twofishes.util.{GeonamesId, StoredFeatureId}
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTReader, WKTWriter}
 import org.bson.types.ObjectId
@@ -40,8 +40,9 @@ class IndexerSpec extends Specification {
   }
 
   "name deduping works" in {
-    val record = GeocodeRecord(new ObjectId(),
-      List("geonameid:1"),
+    val fid = GeonamesId(1)
+    val record = GeocodeRecord(fid.legacyObjectId,
+      List(fid.humanReadableString),
       Nil, "", 0, 0.0, 0.0,
       List(
         DisplayName("en", "San Francisco County", 1),
@@ -125,8 +126,10 @@ class IndexerSpec extends Specification {
       "-73.99592399999995 40.725200000000086, -73.99665499999992 40.72536900000006, " +
       "-73.99679999999995 40.72540600000008))"
     val geomBytes = (new WKBWriter).write((new WKTReader).read(geomText))
+    val fid = GeonamesId(2)
     val record = GeocodeRecord(
-      ids = List("nohoId"),
+      _id = fid.legacyObjectId,
+      ids = List(fid.humanReadableString),
       names = List("noho"),
       cc = "US",
       _woeType = YahooWoeType.SUBURB.getValue,

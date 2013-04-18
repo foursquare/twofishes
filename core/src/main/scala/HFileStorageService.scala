@@ -1,6 +1,6 @@
 package com.foursquare.twofishes
 
-import com.foursquare.twofishes.util.{GeometryUtils, StoredFeatureId}
+import com.foursquare.twofishes.util.{ByteUtils, GeometryUtils, StoredFeatureId}
 import com.twitter.ostrich.stats.Stats
 import com.twitter.util.Duration
 import java.io._
@@ -12,7 +12,7 @@ import org.apache.hadoop.fs.{LocalFileSystem, Path}
 import org.apache.hadoop.hbase.io.hfile.{FoursquareCacheConfig, HFile, HFileScanner}
 import org.apache.hadoop.hbase.util.Bytes._
 import org.apache.hadoop.io.BytesWritable
-import org.apache.thrift.{TBase, TBaseHelper, TDeserializer, TFieldIdEnum}
+import org.apache.thrift.{TBase, TBaseHelper, TDeserializer, TFieldIdEnum, TSerializer}
 import org.apache.thrift.protocol.TCompactProtocol
 import org.bson.types.ObjectId
 import scalaj.collection.Implicits._
@@ -44,30 +44,30 @@ class HFileStorageService(basepath: String, shouldPreload: Boolean) extends Geoc
   lazy val s2map = s2mapOpt.getOrElse(
     throw new Exception("s2/revgeo index not built, please build s2_index"))
 
-  def getIdsByNamePrefix(name: String): Seq[ObjectId] = {
+  def getIdsByNamePrefix(name: String): Seq[StoredFeatureId] = {
     nameMap.getPrefix(name)
   }
 
-  def getIdsByName(name: String): Seq[ObjectId] = {
+  def getIdsByName(name: String): Seq[StoredFeatureId] = {
     nameMap.get(name)
   }
 
   def getByName(name: String): Seq[GeocodeServingFeature] = {
-    getByObjectIds(nameMap.get(name)).map(_._2).toSeq
+    getByFeatureIds(nameMap.get(name)).map(_._2).toSeq
   }
 
-  def getByObjectIds(oids: Seq[ObjectId]): Map[ObjectId, GeocodeServingFeature] = {
-    oidMap.getByObjectIds(oids)
+  def getByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, GeocodeServingFeature] = {
+    oidMap.getByFeatureIds(ids)
   }
 
   def getBySlugOrFeatureIds(ids: Seq[String]) = {
-    val oidMap = (for {
+    val idMap = (for {
       id <- ids
-      oid <- slugFidMap.flatMap(_.get(id))
-    } yield { (oid, id) }).toMap
+      fid <- slugFidMap.flatMap(_.get(id))
+    } yield { (fid, id) }).toMap
 
-    getByObjectIds(oidMap.keys.toList).map({
-      case (k, v) => (oidMap(k), v)
+    getByFeatureIds(idMap.keys.toList).map({
+      case (k, v) => (idMap(k), v)
     })
   }
 
@@ -75,16 +75,16 @@ class HFileStorageService(basepath: String, shouldPreload: Boolean) extends Geoc
     s2map.get(id)
   }
 
-  def getPolygonByObjectId(id: ObjectId): Option[Array[Byte]] = {
+  def getPolygonByFeatureId(id: StoredFeatureId): Option[Array[Byte]] = {
     geomMapOpt.flatMap(_.get(id))
   }
 
-  def getPolygonByObjectIds(ids: Seq[ObjectId]): Map[ObjectId, Array[Byte]] = {
+  def getPolygonByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, Array[Byte]] = {
     (for {
-      oid <- ids
-      polygon <- getPolygonByObjectId(oid)
+      id <- ids
+      polygon <- getPolygonByFeatureId(id)
     } yield {
-      (oid -> polygon)
+      (id -> polygon)
     }).toMap
   }
 
@@ -92,22 +92,22 @@ class HFileStorageService(basepath: String, shouldPreload: Boolean) extends Geoc
   def getMaxS2Level: Int = s2map.maxS2Level
   override def getLevelMod: Int = s2map.levelMod
 
-  override val hotfixesDeletes: Seq[ObjectId] = {
+  override val hotfixesDeletes: Seq[StoredFeatureId] = {
     val file = new File(basepath, "hotfixes_deletes.txt")
     if (file.exists()) {
-      scala.io.Source.fromFile(file).getLines.toList.map(i => new ObjectId(i))
+      scala.io.Source.fromFile(file).getLines.toList.flatMap(i => StoredFeatureId.fromLegacyObjectId(new ObjectId(i)))
     } else {
       Nil
     }
   }
 
-  override val hotfixesBoosts: Map[ObjectId, Int] = {
+  override val hotfixesBoosts: Map[StoredFeatureId, Int] = {
     val file = new File(basepath, "hotfixes_boosts.txt")
     if (file.exists()) {
       scala.io.Source.fromFile(file).getLines.toList.map(l => {
         val parts = l.split("[\\|\t, ]")
         try {
-          (new ObjectId(parts(0)), parts(1).toInt)
+          (StoredFeatureId.fromLegacyObjectId(new ObjectId(parts(0))).get, parts(1).toInt)
         } catch {
           case _ => throw new Exception("malformed boost line: %s --> %s".format(l, parts.toList))
         }
@@ -118,12 +118,12 @@ class HFileStorageService(basepath: String, shouldPreload: Boolean) extends Geoc
   }
 }
 
-class HFileInput(basepath: String, filename: String, shouldPreload: Boolean) {
+class HFileInput[K, V](basepath: String, index: Index[K, V], shouldPreload: Boolean) {
   val conf = new Configuration()
   val fs = new LocalFileSystem()
   fs.initialize(URI.create("file:///"), conf)
 
-  val path = new Path(new File(basepath, filename).getAbsolutePath())
+  val path = new Path(new File(basepath, index.filename).getAbsolutePath())
   val cache = new FoursquareCacheConfig()
 
   val reader = HFile.createReader(path.getFileSystem(conf), path, cache)
@@ -138,7 +138,7 @@ class HFileInput(basepath: String, filename: String, shouldPreload: Boolean) {
       while(scanner.next()) {}
     })
 
-    println("took %s seconds to read %s".format(duration.inSeconds, filename))
+    println("took %s seconds to read %s".format(duration.inSeconds, index.filename))
   }
 
   def lookup(key: ByteBuffer): Option[ByteBuffer] = {
@@ -176,12 +176,93 @@ class HFileInput(basepath: String, filename: String, shouldPreload: Boolean) {
   }
 }
 
-class MapFileInput(basepath: String, dirname: String, shouldPreload: Boolean) {
+sealed abstract class Serde[T] {
+  def toBytes(t: T): ByteBuffer
+  def fromBytes(bytes: ByteBuffer): T
+}
+object Serde {
+  case object LongSerde extends Serde[Long] {
+    override def toBytes(t: Long): ByteBuffer = ByteBuffer.wrap(ByteUtils.longToBytes(t))
+    override def fromBytes(bytes: ByteBuffer): Long =
+      ByteUtils.getLongFromBytes(TBaseHelper.byteBufferToByteArray(bytes))
+  }
+
+  case object StringSerde extends Serde[String] {
+    override def toBytes(t: String): ByteBuffer = ByteBuffer.wrap(t.getBytes("UTF-8"))
+    override def fromBytes(bytes: ByteBuffer): String = new String(TBaseHelper.byteBufferToByteArray(bytes))
+  }
+
+  case object ObjectIdSerde extends Serde[ObjectId] {
+    override def toBytes(t: ObjectId): ByteBuffer = ByteBuffer.wrap(t.toByteArray)
+    override def fromBytes(bytes: ByteBuffer): ObjectId = new ObjectId(TBaseHelper.byteBufferToByteArray(bytes))
+  }
+
+  case object ObjectIdListSerde extends Serde[Seq[ObjectId]] {
+    override def toBytes(t: Seq[ObjectId]): ByteBuffer = {
+      val buf = ByteBuffer.allocate(t.size * 12)
+      t.foreach(oid => buf.put(oid.toByteArray))
+      buf
+    }
+    override def fromBytes(bytes: ByteBuffer): Seq[ObjectId] = {
+      val arr = new Array[Byte](12)
+      0.until(bytes.remaining / 12).map(_ => {
+        bytes.get(arr)
+        new ObjectId(arr)
+      })
+    }
+  }
+
+  case object TrivialByteBufferSerde extends Serde[ByteBuffer] {
+    override def toBytes(t: ByteBuffer): ByteBuffer = t
+    override def fromBytes(bytes: ByteBuffer): ByteBuffer = bytes
+  }
+
+  case class ThriftSerde[T <: TBase[_ <: TBase[_ <: AnyRef, _ <: TFieldIdEnum], _ <: TFieldIdEnum]](
+      factory: Unit => T) extends Serde[T] {
+    val deserializer = new TDeserializer(new TCompactProtocol.Factory())
+    val serializer = new TSerializer(new TCompactProtocol.Factory())
+
+    def toBytes(t: T): ByteBuffer = {
+      ByteBuffer.wrap(serializer.serialize(t))
+    }
+    def fromBytes(byteBuf: ByteBuffer): T = {
+      val s = factory()
+      val bytes = TBaseHelper.byteBufferToByteArray(byteBuf)
+      deserializer.deserialize(s, bytes)
+      s
+    }
+  }
+}
+
+sealed abstract class Index[K, V](val filename: String, val keySerde: Serde[K], val valueSerde: Serde[V])
+object Indexes {
+  type WKBGeometry = ByteBuffer
+
+  case object GeometryIndex extends Index[ObjectId, WKBGeometry](
+    "geometry", Serde.ObjectIdSerde, Serde.TrivialByteBufferSerde)
+
+  case object FeatureIndex extends Index[ObjectId, GeocodeServingFeature](
+    "features", Serde.ObjectIdSerde, Serde.ThriftSerde(Unit => new GeocodeServingFeature))
+
+  case object IdMappingIndex extends Index[String, ObjectId](
+    "id-mapping", Serde.StringSerde, Serde.ObjectIdSerde)
+
+  case object S2Index extends Index[Long, CellGeometries](
+    "s2_index", Serde.LongSerde, Serde.ThriftSerde(Unit => new CellGeometries))
+
+  case object PrefixIndex extends Index[String, Seq[ObjectId]](
+    "prefix_index", Serde.StringSerde, Serde.ObjectIdListSerde)
+
+  case object NameIndex extends Index[String, Seq[ObjectId]](
+    "name_index.hfile", Serde.StringSerde, Serde.ObjectIdListSerde)
+}
+
+class MapFileInput[K, V](basepath: String, index: Index[K, V], shouldPreload: Boolean) {
   val (reader, fileInfo) = {
     val (rv, duration) = Duration.inMilliseconds({
-      MapFileUtils.readerAndInfoFromLocalPath(new File(basepath, dirname).toString, shouldPreload)
+      MapFileUtils.readerAndInfoFromLocalPath(new File(basepath, index.filename).toString, shouldPreload)
     })
-    println("took %s seconds to read %s".format(duration.inSeconds, dirname))
+    println("took %s seconds to read %s".format(duration.inSeconds, index.filename))
     rv
   }
 
@@ -196,9 +277,9 @@ class MapFileInput(basepath: String, dirname: String, shouldPreload: Boolean) {
 }
 
 trait ByteReaderUtils {
-  def decodeObjectIds(bytes: Array[Byte]): Seq[ObjectId] = {
-    0.until(bytes.length / 12).map(i => {
-      new ObjectId(Arrays.copyOfRange(bytes, i * 12, (i + 1) * 12))
+  def decodeFeatureIds(bytes: Array[Byte]): Seq[StoredFeatureId] = {
+    0.until(bytes.length / 12).flatMap(i => {
+      StoredFeatureId.fromLegacyObjectId(new ObjectId(Arrays.copyOfRange(bytes, i * 12, (i + 1) * 12)))
     })
   }
 
@@ -211,25 +292,25 @@ trait ByteReaderUtils {
 }
 
 class NameIndexHFileInput(basepath: String, shouldPreload: Boolean) extends ByteReaderUtils {
-  val nameIndex = new HFileInput(basepath, "name_index.hfile", shouldPreload)
+  val nameIndex = new HFileInput(basepath, Indexes.NameIndex, shouldPreload)
   val prefixMapOpt = PrefixIndexMapFileInput.readInput(basepath, shouldPreload)
 
-  def get(name: String): List[ObjectId] = {
+  def get(name: String): List[StoredFeatureId] = {
     val buf = ByteBuffer.wrap(name.getBytes())
     nameIndex.lookup(buf).toList.flatMap(b => {
       val bytes = TBaseHelper.byteBufferToByteArray(b)
-      decodeObjectIds(bytes)
+      decodeFeatureIds(bytes)
     })
   }
 
-  def getPrefix(name: String): Seq[ObjectId] = {
+  def getPrefix(name: String): Seq[StoredFeatureId] = {
     prefixMapOpt match {
       case Some(prefixMap) if (name.length <= prefixMap.maxPrefixLength) => {
         prefixMap.get(name)
       }
       case _  => {
         nameIndex.lookupPrefix(name).flatMap(bytes => {
-          decodeObjectIds(bytes)
+          decodeFeatureIds(bytes)
         })
       }
     }
@@ -248,14 +329,14 @@ object PrefixIndexMapFileInput {
 }
 
 class PrefixIndexMapFileInput(basepath: String, shouldPreload: Boolean) extends ByteReaderUtils {
-  val prefixIndex = new MapFileInput(basepath, "prefix_index", shouldPreload)
+  val prefixIndex = new MapFileInput(basepath, Indexes.PrefixIndex, shouldPreload)
   val maxPrefixLength = prefixIndex.fileInfo.getOrElse(
     "MAX_PREFIX_LENGTH",
     throw new Exception("missing MAX_PREFIX_LENGTH")).toInt
 
-  def get(name: String): List[ObjectId] = {
+  def get(name: String): List[StoredFeatureId] = {
     prefixIndex.lookup(name.getBytes).toList.flatMap(bytes => {
-      decodeObjectIds(bytes)
+      decodeFeatureIds(bytes)
     })
   }
 }
@@ -270,8 +351,9 @@ object ReverseGeocodeMapFileInput {
   }
 }
 
+
 class ReverseGeocodeMapFileInput(basepath: String, shouldPreload: Boolean) extends ByteReaderUtils {
-  val s2Index = new MapFileInput(basepath, "s2_index", shouldPreload)
+  val s2Index = new MapFileInput(basepath, Indexes.S2Index, shouldPreload)
 
   lazy val minS2Level = s2Index.fileInfo.getOrElse(
     "minS2Level",
@@ -305,10 +387,10 @@ object GeometryMapFileInput {
 }
 
 class GeometryMapFileInput(basepath: String, shouldPreload: Boolean) extends ByteReaderUtils {
-  val geometryIndex = new MapFileInput(basepath, "geometry", shouldPreload)
+  val geometryIndex = new MapFileInput(basepath, Indexes.GeometryIndex, shouldPreload)
 
-  def get(oid: ObjectId): Option[Array[Byte]] = {
-    val buf = oid.toByteArray()
+  def get(id: StoredFeatureId): Option[Array[Byte]] = {
+    val buf = id.legacyObjectId.toByteArray()
     geometryIndex.lookup(buf)
   }
 }
@@ -324,28 +406,28 @@ object SlugFidMapFileInput {
 }
 
 class SlugFidMapFileInput(basepath: String, shouldPreload: Boolean) extends ByteReaderUtils {
-  val idMappingIndex = new MapFileInput(basepath, "id-mapping", shouldPreload)
+  val idMappingIndex = new MapFileInput(basepath, Indexes.IdMappingIndex, shouldPreload)
 
-  def get(s: String): Option[ObjectId] = {
+  def get(s: String): Option[StoredFeatureId] = {
     if (s.contains(":")) {
-      StoredFeatureId.fromHumanReadableString(s).map(_.legacyObjectId)
+      StoredFeatureId.fromHumanReadableString(s)
     } else {
       val buf = s.getBytes("UTF-8")
       idMappingIndex.lookup(buf).flatMap(b => {
-        decodeObjectIds(b).headOption
+        decodeFeatureIds(b).headOption
       })
     }
   }
 }
 
 class GeocodeRecordMapFileInput(basepath: String, shouldPreload: Boolean) extends ByteReaderUtils {
-  val featureIndex = new MapFileInput(basepath, "features", shouldPreload)
+  val featureIndex = new MapFileInput(basepath, Indexes.FeatureIndex, shouldPreload)
 
   def decodeFeature(bytes: Array[Byte]) = {
     deserializeBytes(new GeocodeServingFeature(), bytes)
   }
 
-  def getByObjectIds(oids: Seq[ObjectId]): Map[ObjectId, GeocodeServingFeature] = {
+  def getByFeatureIds(oids: Seq[StoredFeatureId]): Map[StoredFeatureId, GeocodeServingFeature] = {
     (for {
       oid <- oids
       f <- get(oid)
@@ -354,8 +436,8 @@ class GeocodeRecordMapFileInput(basepath: String, shouldPreload: Boolean) extend
     }).toMap
   }
 
-  def get(oid: ObjectId): Option[GeocodeServingFeature] = {
-    val buf = oid.toByteArray()
+  def get(id: StoredFeatureId): Option[GeocodeServingFeature] = {
+    val buf = id.legacyObjectId.toByteArray()
     featureIndex.lookup(buf).map(decodeFeature)
   }
 }

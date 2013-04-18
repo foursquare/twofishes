@@ -2,7 +2,7 @@ package com.foursquare.twofishes
 
 import com.foursquare.base.thrift.{ObjectIdListWrapper, ObjectIdWrapper, StringWrapper}
 import com.foursquare.geo.shapes.ShapefileS2Util
-import com.foursquare.twofishes.util.GeometryUtils
+import com.foursquare.twofishes.util.{GeometryUtils, StoredFeatureId}
 import com.google.common.geometry.S2CellId
 import com.mongodb.casbah.Imports._
 import com.novus.salat._
@@ -443,6 +443,7 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
             }
             cellGeometry.setWoeType(record.woeType)
             cellGeometry.setOid(record._id.toByteArray())
+            cellGeometry.setLongId(StoredFeatureId.fromLegacyObjectId(record._id).get.id)
             bucket += cellGeometry
           }
         )

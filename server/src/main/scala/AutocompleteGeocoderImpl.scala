@@ -2,7 +2,7 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.Identity._
-import com.foursquare.twofishes.util.{NameNormalizer, NameUtils}
+import com.foursquare.twofishes.util.{NameNormalizer, NameUtils, StoredFeatureId}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.foursquare.twofishes.util.NameUtils.BestNameMatch
 import org.bson.types.ObjectId
@@ -42,8 +42,8 @@ class AutocompleteGeocoderImpl(
   }
 
   // Yet another huge hack because I don't know what name I hit
-  def filterNonPrefExactAutocompleteMatch(ids: Seq[ObjectId], phrase: String): Seq[ObjectId] = {
-    store.getByObjectIds(ids).filter(f => {
+  def filterNonPrefExactAutocompleteMatch(ids: Seq[StoredFeatureId], phrase: String): Seq[StoredFeatureId] = {
+    store.getByFeatureIds(ids).filter(f => {
       f._2.feature.woeType == YahooWoeType.POSTAL_CODE ||
       {
         val nameMatch = bestNameWithMatch(f._2.feature, Some(req.lang), false, Some(phrase))
@@ -144,13 +144,13 @@ class AutocompleteGeocoderImpl(
         val query = tokens.take(i).mkString(" ")
         val isEnd = (i == tokens.size)
 
-        val possibleParents = for {
+        val possibleParents = (for {
           parse <- parses
           parseFeature <- parse
-          featureParentIds <- parseFeature.fmatch.scoringFeatures.parents.asScala
+          featureParentId <- parseFeature.fmatch.scoringFeatures.parents.asScala
         } yield {
-          new ObjectId(featureParentIds)
-        }
+          StoredFeatureId.fromLegacyObjectId(new ObjectId(featureParentId))
+        }).flatten
 
         val featuresMatches: Seq[FeatureMatch] =
           if (parses.size == 0) {
@@ -168,12 +168,12 @@ class AutocompleteGeocoderImpl(
               store.getIdsByName(query)
             }
 
-            store.getByObjectIds(featureIds).map({case (oid, servingFeature) => {
+            store.getByFeatureIds(featureIds).map({case (oid, servingFeature) => {
               FeatureMatch(offset, offset + i, query, servingFeature,
                 servingFeature.feature.names.asScala.filter(n => matchName(n, query, isEnd)))
             }}).toSeq
           } else {
-            val parents = store.getByObjectIds(possibleParents).toSeq
+            val parents = store.getByFeatureIds(possibleParents).toSeq
             logger.ifDebug("looking for %s in parents: %s", query, parents)
             for {
               (oid, servingFeature) <- parents

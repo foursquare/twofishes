@@ -2,7 +2,7 @@
 package com.foursquare.twofishes
 
 import com.foursquare.geo.shapes.ShapefileS2Util
-import com.foursquare.twofishes.util.GeometryUtils
+import com.foursquare.twofishes.util.{GeometryUtils, GeonamesId, StoredFeatureId}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.google.common.geometry.S2CellId
 import com.vividsolutions.jts.geom.Geometry
@@ -13,22 +13,22 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable.{HashMap, ListBuffer}
 
 class MockGeocodeStorageReadService extends GeocodeStorageReadService {
-  val nameMap = new HashMap[String, List[ObjectId]]
-  val idMap = new HashMap[ObjectId, GeocodeServingFeature]
+  val nameMap = new HashMap[String, List[StoredFeatureId]]
+  val idMap = new HashMap[StoredFeatureId, GeocodeServingFeature]
 
   def getByName(name: String): Seq[GeocodeServingFeature] = {
-    getByObjectIds(getIdsByName(name)).map(_._2).toSeq
+    getByFeatureIds(getIdsByName(name)).map(_._2).toSeq
   }
 
-  def getIdsByNamePrefix(name: String): Seq[ObjectId] = {
+  def getIdsByNamePrefix(name: String): Seq[StoredFeatureId] = {
     nameMap.toList.filter(_._1.startsWith(name)).flatMap(_._2)
   }
 
-  def getIdsByName(name: String): Seq[ObjectId] = {
+  def getIdsByName(name: String): Seq[StoredFeatureId] = {
     nameMap.getOrElse(name, Nil)
   }
 
-  def getByObjectIds(ids: Seq[ObjectId]): Map[ObjectId, GeocodeServingFeature] = {
+  def getByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, GeocodeServingFeature] = {
     ids.map(id => {
       (id -> idMap(id))
     }).toMap
@@ -37,7 +37,7 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
   def getBySlugOrFeatureIds(ids: Seq[String]): Map[String, GeocodeServingFeature] = {
     (for {
       id <- ids
-      feature <- idMap.values.filter(servingFeature => 
+      feature <- idMap.values.filter(servingFeature =>
         id == servingFeature.feature.slug ||
         servingFeature.feature.ids.asScala.exists(fid => "%s:%s".format(fid.source, fid.id) == id)
       )
@@ -48,7 +48,7 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
 
   val s2map = new HashMap[Long, ListBuffer[CellGeometry]]
 
-  def addGeometry(geom: Geometry, woeType: YahooWoeType, id: ObjectId) {
+  def addGeometry(geom: Geometry, woeType: YahooWoeType, id: StoredFeatureId) {
     val wkbWriter = new WKBWriter()
     val cells =
       GeometryUtils.s2PolygonCovering(
@@ -70,7 +70,8 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
         cellGeometry.setWkbGeometry(wkbWriter.write(s2shape.intersection(recordShape)))
       }
       cellGeometry.setWoeType(woeType)
-      cellGeometry.setOid(id.toByteArray())
+      cellGeometry.setOid(id.legacyObjectId.toByteArray())
+      cellGeometry.setLongId(id.id)
       bucket += cellGeometry
     })
   }
@@ -78,13 +79,15 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
   def getByS2CellId(id: Long): Seq[CellGeometry] = {
     s2map.getOrElse(id, Seq())
   }
-  def getPolygonByObjectId(id: ObjectId): Option[Array[Byte]] = None
-  def getPolygonByObjectIds(ids: Seq[ObjectId]): Map[ObjectId, Array[Byte]] = Map.empty
+  
+  def getPolygonByFeatureId(id: StoredFeatureId): Option[Array[Byte]] = None
+  def getPolygonByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, Array[Byte]] = Map.empty
 
   def getLevelMod: Int = 2
   def getMinS2Level: Int = 8
   def getMaxS2Level: Int = 12
 
+  var idCounter = 0
   def addGeocode(
     name: String,
     parents: List[GeocodeServingFeature],
@@ -94,7 +97,9 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
     population: Option[Int] = None,
     cc: String = "US"
   ): GeocodeServingFeature = {
-    var id = new ObjectId()
+    val id = idCounter
+    idCounter += 1
+    val fid = GeonamesId(id)
 
     val center = new GeocodePoint()
     center.setLat(lat)
@@ -114,10 +119,7 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
     featureName.setFlags(List(FeatureNameFlags.PREFERRED).asJava)
     feature.setNames(List(featureName).asJava)
 
-    val fid = new FeatureId()
-    fid.setSource("test")
-    fid.setId(id.toString)
-    feature.setIds(List(fid).asJava)
+    feature.setIds(List(fid.thriftFeatureId).asJava)
 
     val scoringFeatures = new ScoringFeatures()
     scoringFeatures.setParents(parents.map(_.id).asJava)
@@ -125,11 +127,11 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
 
     val servingFeature = new GeocodeServingFeature()
     servingFeature.setScoringFeatures(scoringFeatures)
-    servingFeature.setId(id.toString)
+    servingFeature.setId(fid.legacyObjectId.toString)
     servingFeature.setFeature(feature)
 
-    nameMap(name.toLowerCase) = id :: nameMap.getOrElse(name.toLowerCase, Nil)
-    idMap(id) = servingFeature
+    nameMap(name.toLowerCase) = fid :: nameMap.getOrElse(name.toLowerCase, Nil)
+    idMap(fid) = servingFeature
 
     servingFeature
   }
@@ -302,7 +304,7 @@ class GeocoderSpec extends Specification {
     req.setMaxInterpretations(2)
     req.setDebug(1)
     val r = new GeocodeRequestDispatcher(store, req).geocode()
-    r.interpretations.size must_== 2 
+    r.interpretations.size must_== 2
     val interp1 = r.interpretations.asScala(0)
     interp1.what must_== ""
     interp1.where must_== "paris"
@@ -345,17 +347,17 @@ class GeocoderSpec extends Specification {
 
     val r = new GeocodeRequestDispatcher(store, req).geocode()
     r.interpretations must haveSize(2)
- 
+
     var interp = r.interpretations.asScala(0)
     interp.what must_== ""
     interp.where must_== "rego"
     interp.feature.highlightedName must_== "<b>Rego</b> Park, New York, US"
-    
+
     interp = r.interpretations.asScala(1)
     interp.what must_== ""
     interp.where must_== "rego"
     interp.feature.highlightedName must_== "<b>Rego</b>, US"
-  } 
+  }
 
   "autocomplete 2" in {
     val store = buildRegoPark()
@@ -374,7 +376,7 @@ class GeocoderSpec extends Specification {
     interp.what must_== ""
     interp.where must_== "rego p"
     interp.feature.highlightedName must_== "<b>Rego P</b>ark, New York, US"
-  } 
+  }
 
   "autocomplete 3" in {
     val store = buildRegoPark()
@@ -388,13 +390,13 @@ class GeocoderSpec extends Specification {
     store.getIdsByNamePrefix("new").size must_== 1
 
     val r = new GeocodeRequestDispatcher(store, req).geocode()
-    r.interpretations.size aka r.debugLines.asScala.mkString("\n") must_== 1 
+    r.interpretations.size aka r.debugLines.asScala.mkString("\n") must_== 1
 
     // val interp = r.interpretations.asScala(0)
     // interp.what must_== ""
     // interp.where must_== "rego park new"
     // interp.feature.highlightedName must_== "<b>Rego Park, New</b> York, US"
-  } 
+  }
 
   "woe restrict works" in {
     val store = getStore
@@ -457,8 +459,8 @@ class GeocoderSpec extends Specification {
     r.interpretations.size must_== 0
   }
 
-  def getId(f: GeocodeServingFeature): ObjectId = {
-    new ObjectId(f.feature.ids.asScala(0).id)
+  def getId(f: GeocodeServingFeature): StoredFeatureId = {
+    StoredFeatureId.fromThriftFeatureId(f.feature.ids.asScala(0)).get
   }
 
   "reverse geocode" in {

@@ -3,7 +3,7 @@ package com.foursquare.twofishes
 
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.Lists.Implicits._
-import com.foursquare.twofishes.util.NameUtils
+import com.foursquare.twofishes.util.{NameUtils, StoredFeatureId}
 import com.foursquare.twofishes.util.NameUtils.BestNameMatch
 import com.vividsolutions.jts.io.{WKBReader, WKTWriter}
 import org.bson.types.ObjectId
@@ -221,7 +221,7 @@ class ResponseProcessor(
   def hydrateParses(
     sortedParses: SortedParseSeq,
     parseParams: ParseParams,
-    polygonMap: Map[ObjectId, Array[Byte]],
+    polygonMap: Map[StoredFeatureId, Array[Byte]],
     fixAmbiguousNames: Boolean,
     dedupByMatchedName: Boolean = false
   ): Seq[GeocodeInterpretation] = {
@@ -235,13 +235,13 @@ class ResponseProcessor(
     //   logger.ifDebug(printDebugParse(p))
     // })
 
-    val parentIds = sortedParses.flatMap(
+    val parentIds: Seq[String] = sortedParses.flatMap(
       _.headOption.toList.flatMap(_.fmatch.scoringFeatures.parents.asScala))
-    val parentOids = parentIds.map(parent => new ObjectId(parent))
-    logger.ifDebug("parent ids: %s", parentOids)
+    val parentFids: Seq[StoredFeatureId] = parentIds.flatMap(parent => StoredFeatureId.fromLegacyObjectId(new ObjectId(parent)))
+    logger.ifDebug("parent ids: %s", parentFids)
 
     // possible optimization here: add in features we already have in our parses and don't refetch them
-    val parentMap = store.getByObjectIds(parentOids)
+    val parentMap = store.getByFeatureIds(parentFids)
     logger.ifDebug("parentMap: %s", parentMap)
 
     val interpretations = sortedParses.map(p => {
@@ -266,8 +266,9 @@ class ResponseProcessor(
       val sortedParents = if (shouldFetchParents) {
         // we've seen dupe parents, not sure why, the toSet.toSeq fixes
         // TODO(blackmad): why dupe US parents on new york state?
-        p(0).fmatch.scoringFeatures.parents.asScala.toSet.toSeq.flatMap((parent: String) =>
-          parentMap.get(new ObjectId(parent))).sorted(GeocodeServingFeatureOrdering)
+        p(0).fmatch.scoringFeatures.parents.asScala.toSet.toSeq
+          .flatMap((parent: String) => StoredFeatureId.fromLegacyObjectId(new ObjectId(parent)))
+          .flatMap(fid => parentMap.get(fid)).sorted(GeocodeServingFeatureOrdering)
       } else {
         Nil
       }
@@ -287,7 +288,10 @@ class ResponseProcessor(
 
       if (responseIncludes(ResponseIncludes.WKT_GEOMETRY) ||
           responseIncludes(ResponseIncludes.WKB_GEOMETRY)) {
-        polygonMap.get(new ObjectId(fmatch.id)).foreach(wkb => {
+        for {
+          fid <- StoredFeatureId.fromLegacyObjectId(new ObjectId(fmatch.id))
+          wkb <- polygonMap.get(fid)
+        } {
           feature.geometry.setWkbGeometry(wkb)
           if (responseIncludes(ResponseIncludes.WKT_GEOMETRY)) {
             val wkbReader = new WKBReader()
@@ -295,13 +299,14 @@ class ResponseProcessor(
             val geom = wkbReader.read(wkb)
             feature.geometry.setWktGeometry(wktWriter.write(geom))
           }
-        })
+        }
       }
 
       if (responseIncludes(ResponseIncludes.PARENTS)) {
         interp.setParents(sortedParents.map(parentFeature => {
-          val sortedParentParents = parentFeature.scoringFeatures.parents.asScala.flatMap(parent =>
-            parentMap.get(new ObjectId(parent))).sorted
+          val sortedParentParents = parentFeature.scoringFeatures.parents.asScala
+            .flatMap(parent => StoredFeatureId.fromLegacyObjectId(new ObjectId(parent)))
+            .flatMap(parentFid => parentMap.get(parentFid)).sorted
           val feature = parentFeature.feature
           fixFeature(feature, sortedParentParents, None, fillHighlightedName=parseParams.tokens.size > 0)
           feature
@@ -339,8 +344,9 @@ class ResponseProcessor(
           val feature = p(0).fmatch.feature
           ambiguousIdMap.getOrElse(feature.ids.toString, Nil).foreach(interp => {
             val sortedParents = p(0).fmatch.scoringFeatures.parents.asScala
-              .flatMap(parent =>
-                parentMap.get(new ObjectId(parent))).sorted(GeocodeServingFeatureOrdering)
+              .flatMap(parent => StoredFeatureId.fromLegacyObjectId(new ObjectId(parent)))
+              .flatMap(parentFid => parentMap.get(parentFid))
+              .sorted(GeocodeServingFeatureOrdering)
             fixFeature(interp.feature, sortedParents, Some(p), 1)
           })
         })
@@ -374,7 +380,9 @@ class ResponseProcessor(
     logger.ifDebug("have %d parses after filtering types/woes/restricts", goodParses.size)
 
     goodParses = goodParses.filterNot(p => {
-      p.headOption.exists(f => store.hotfixesDeletes.has(new ObjectId(f.fmatch.id)))
+      p.headOption.exists(f =>
+        StoredFeatureId.fromLegacyObjectId(new ObjectId(f.fmatch.id)).exists(fid =>
+          store.hotfixesDeletes.has(fid)))
     })
 
     logger.ifDebug("have %d parses after filtering from delete hotfixes", goodParses.size)
@@ -461,9 +469,12 @@ class ResponseProcessor(
     // TODO: make this configurable
     // val sortedDedupedParses: SortedParseSeq = dedupedParses.sorted(new ParseOrdering).take(3)
     val sortedDedupedParses: SortedParseSeq = dedupedParses.take(3)
-    val polygonMap: Map[ObjectId, Array[Byte]] = if (GeocodeRequestUtils.shouldFetchPolygon(req)) {
-      store.getPolygonByObjectIds(sortedDedupedParses.map(p => new ObjectId(p(0).fmatch.id)))
-    } else { Map.empty }
+    val polygonMap: Map[StoredFeatureId, Array[Byte]] = if (GeocodeRequestUtils.shouldFetchPolygon(req)) {
+      store.getPolygonByFeatureIds(sortedDedupedParses.flatMap(p =>
+        StoredFeatureId.fromLegacyObjectId(new ObjectId(p(0).fmatch.id))))
+    } else {
+      Map.empty
+    }
     ResponseProcessor.generateResponse(req.debug, logger, hydrateParses(sortedDedupedParses, parseParams, polygonMap,
       fixAmbiguousNames = true, dedupByMatchedName = dedupByMatchedName))
   }

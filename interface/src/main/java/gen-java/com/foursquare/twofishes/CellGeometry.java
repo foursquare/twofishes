@@ -35,6 +35,7 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
   private static final TField WKB_GEOMETRY_FIELD_DESC = new TField("wkbGeometry", TType.STRING, (short)2);
   private static final TField WOE_TYPE_FIELD_DESC = new TField("woeType", TType.I32, (short)3);
   private static final TField FULL_FIELD_DESC = new TField("full", TType.BOOL, (short)4);
+  private static final TField LONG_ID_FIELD_DESC = new TField("longId", TType.I64, (short)5);
 
   public ByteBuffer oid;
   public ByteBuffer wkbGeometry;
@@ -44,6 +45,7 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
    */
   public com.foursquare.twofishes.YahooWoeType woeType;
   public boolean full;
+  public long longId;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
@@ -54,7 +56,8 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
      * @see com.foursquare.twofishes.YahooWoeType
      */
     WOE_TYPE((short)3, "woeType"),
-    FULL((short)4, "full");
+    FULL((short)4, "full"),
+    LONG_ID((short)5, "longId");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -77,6 +80,8 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
           return WOE_TYPE;
         case 4: // FULL
           return FULL;
+        case 5: // LONG_ID
+          return LONG_ID;
         default:
           return null;
       }
@@ -118,7 +123,8 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
 
   // isset id assignments
   private static final int __FULL_ISSET_ID = 0;
-  private BitSet __isset_bit_vector = new BitSet(1);
+  private static final int __LONGID_ISSET_ID = 1;
+  private BitSet __isset_bit_vector = new BitSet(2);
 
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
@@ -131,6 +137,8 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
         new EnumMetaData(TType.ENUM, com.foursquare.twofishes.YahooWoeType.class)));
     tmpMap.put(_Fields.FULL, new FieldMetaData("full", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.BOOL)));
+    tmpMap.put(_Fields.LONG_ID, new FieldMetaData("longId", TFieldRequirementType.OPTIONAL, 
+        new FieldValueMetaData(TType.I64)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(CellGeometry.class, metaDataMap);
   }
@@ -156,6 +164,7 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
       this.woeType = other.woeType;
     }
     this.full = other.full;
+    this.longId = other.longId;
   }
 
   public CellGeometry deepCopy() {
@@ -169,6 +178,8 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
     this.woeType = null;
     setFullIsSet(false);
     this.full = false;
+    setLongIdIsSet(false);
+    this.longId = 0;
   }
 
   public byte[] getOid() {
@@ -294,6 +305,29 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
     __isset_bit_vector.set(__FULL_ISSET_ID, value);
   }
 
+  public long getLongId() {
+    return this.longId;
+  }
+
+  public CellGeometry setLongId(long longId) {
+    this.longId = longId;
+    setLongIdIsSet(true);
+    return this;
+  }
+
+  public void unsetLongId() {
+    __isset_bit_vector.clear(__LONGID_ISSET_ID);
+  }
+
+  /** Returns true if field longId is set (has been asigned a value) and false otherwise */
+  public boolean isSetLongId() {
+    return __isset_bit_vector.get(__LONGID_ISSET_ID);
+  }
+
+  public void setLongIdIsSet(boolean value) {
+    __isset_bit_vector.set(__LONGID_ISSET_ID, value);
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case OID:
@@ -328,6 +362,14 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
       }
       break;
 
+    case LONG_ID:
+      if (value == null) {
+        unsetLongId();
+      } else {
+        setLongId((Long)value);
+      }
+      break;
+
     }
   }
 
@@ -344,6 +386,9 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
 
     case FULL:
       return new Boolean(isFull());
+
+    case LONG_ID:
+      return new Long(getLongId());
 
     }
     throw new IllegalStateException();
@@ -364,6 +409,8 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
       return isSetWoeType();
     case FULL:
       return isSetFull();
+    case LONG_ID:
+      return isSetLongId();
     }
     throw new IllegalStateException();
   }
@@ -414,6 +461,15 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
       if (!(this_present_full && that_present_full))
         return false;
       if (this.full != that.full)
+        return false;
+    }
+
+    boolean this_present_longId = true && this.isSetLongId();
+    boolean that_present_longId = true && that.isSetLongId();
+    if (this_present_longId || that_present_longId) {
+      if (!(this_present_longId && that_present_longId))
+        return false;
+      if (this.longId != that.longId)
         return false;
     }
 
@@ -473,6 +529,16 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetLongId()).compareTo(typedOther.isSetLongId());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetLongId()) {
+      lastComparison = TBaseHelper.compareTo(this.longId, typedOther.longId);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -519,6 +585,14 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
+        case 5: // LONG_ID
+          if (field.type == TType.I64) {
+            this.longId = iprot.readI64();
+            setLongIdIsSet(true);
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -558,6 +632,11 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
     if (isSetFull()) {
       oprot.writeFieldBegin(FULL_FIELD_DESC);
       oprot.writeBool(this.full);
+      oprot.writeFieldEnd();
+    }
+    if (isSetLongId()) {
+      oprot.writeFieldBegin(LONG_ID_FIELD_DESC);
+      oprot.writeI64(this.longId);
       oprot.writeFieldEnd();
     }
     oprot.writeFieldStop();
@@ -602,6 +681,12 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
       if (!first) sb.append(", ");
       sb.append("full:");
       sb.append(this.full);
+      first = false;
+    }
+    if (isSetLongId()) {
+      if (!first) sb.append(", ");
+      sb.append("longId:");
+      sb.append(this.longId);
       first = false;
     }
     sb.append(")");

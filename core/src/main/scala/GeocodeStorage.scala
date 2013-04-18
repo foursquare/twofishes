@@ -37,7 +37,7 @@ case class BoundingBox(
 )
 
 case class GeocodeRecord(
-  _id: ObjectId = new ObjectId,
+  _id: ObjectId,
   ids: List[String],
   names: List[String],
   cc: String,
@@ -129,7 +129,8 @@ case class GeocodeRecord(
 
     feature.setIds(featureIds.map(_.thriftFeatureId).asJava)
 
-    feature.ids.asScala.headOption.foreach(id => feature.setId("%s:%s".format(id.source, id.id)))
+    featureIds.headOption.foreach(id => feature.setId(id.humanReadableString))
+    featureIds.headOption.foreach(id => feature.setLongId(id.id))
 
     val filteredNames: List[DisplayName] = displayNames.filterNot(n => List("post", "link").contains(n.lang))
     var hackedNames: List[DisplayName] = Nil
@@ -209,10 +210,10 @@ case class GeocodeRecord(
 }
 
 trait GeocodeStorageReadService {
-  def getIdsByName(name: String): Seq[ObjectId]
-  def getIdsByNamePrefix(name: String): Seq[ObjectId]
+  def getIdsByName(name: String): Seq[StoredFeatureId]
+  def getIdsByNamePrefix(name: String): Seq[StoredFeatureId]
   def getByName(name: String): Seq[GeocodeServingFeature]
-  def getByObjectIds(ids: Seq[ObjectId]): Map[ObjectId, GeocodeServingFeature]
+  def getByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, GeocodeServingFeature]
 
   def getBySlugOrFeatureIds(ids: Seq[String]): Map[String, GeocodeServingFeature]
 
@@ -220,9 +221,9 @@ trait GeocodeStorageReadService {
   def getMaxS2Level: Int
   def getLevelMod: Int
   def getByS2CellId(id: Long): Seq[CellGeometry]
-  def getPolygonByObjectId(id: ObjectId): Option[Array[Byte]]
-  def getPolygonByObjectIds(ids: Seq[ObjectId]): Map[ObjectId, Array[Byte]]
+  def getPolygonByFeatureId(id: StoredFeatureId): Option[Array[Byte]]
+  def getPolygonByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, Array[Byte]]
 
-  def hotfixesDeletes: Seq[ObjectId] = Nil
-  def hotfixesBoosts: Map[ObjectId, Int] = Map.empty
+  def hotfixesDeletes: Seq[StoredFeatureId] = Nil
+  def hotfixesBoosts: Map[StoredFeatureId, Int] = Map.empty
 }

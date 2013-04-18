@@ -2,7 +2,7 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.Identity._
-import com.foursquare.twofishes.util.{GeoTools, GeometryUtils, TwofishesLogger}
+import com.foursquare.twofishes.util.{GeoTools, GeometryUtils, StoredFeatureId, TwofishesLogger}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.twitter.ostrich.stats.Stats
 import com.twitter.util.Duration
@@ -95,34 +95,35 @@ class ReverseGeocoderHelperImpl(
   def findMatches(
     otherGeom: Geometry,
     cellGeometries: Seq[CellGeometry]
-  ): Seq[ObjectId] = {
+  ): Seq[StoredFeatureId] = {
     if (req.debug > 0) {
       logger.ifDebug("had %d candidates", cellGeometries.size)
       // logger.ifDebug("s2 cells: %s", cellids)
     }
 
-    val matches = new ListBuffer[ObjectId]()
+    val matches = new ListBuffer[StoredFeatureId]()
     print(req.woeRestrict)
 
     for {
       cellGeometry <- cellGeometries
       if (req.woeRestrict.isEmpty || req.woeRestrict.asScala.has(cellGeometry.woeType))
-    } yield {
       val oid = new ObjectId(cellGeometry.getOid())
-      if (!matches.has(oid)) {
+      fid <- StoredFeatureId.fromLegacyObjectId(oid)
+    } yield {
+      if (!matches.has(fid)) {
         if (cellGeometry.isFull) {
-          logger.ifDebug("was full: %s", oid)
-          matches.append(oid)
+          logger.ifDebug("was full: %s", fid)
+          matches.append(fid)
         } else if (cellGeometry.wkbGeometry != null) {
-          val (geom, intersects) = logger.logDuration("intersectionCheck", "intersecting %s".format(oid)) {
+          val (geom, intersects) = logger.logDuration("intersectionCheck", "intersecting %s".format(fid)) {
             featureGeometryIntersections(cellGeometry.getWkbGeometry(), otherGeom)
           }
           if (intersects) {
-            matches.append(oid)
+            matches.append(fid)
           } else {
           }
         } else {
-          logger.ifDebug("not full and no geometry for: %s", oid)
+          logger.ifDebug("not full and no geometry for: %s", fid)
         }
       }
     }
@@ -149,13 +150,13 @@ class ReverseGeocoderHelperImpl(
 
       val featureOids = findMatches(otherGeom, cellGeometries)
 
-      val servingFeaturesMap: Map[ObjectId, GeocodeServingFeature] =
-        store.getByObjectIds(featureOids.toSet.toList)
+      val servingFeaturesMap: Map[StoredFeatureId, GeocodeServingFeature] =
+        store.getByFeatureIds(featureOids.toSet.toList)
 
       // need to get polygons if we need to calculate coverage
-      val polygonMap: Map[ObjectId, Array[Byte]] =
+      val polygonMap: Map[StoredFeatureId, Array[Byte]] =
         if (GeocodeRequestUtils.shouldFetchPolygon(req)) {
-          store.getPolygonByObjectIds(featureOids)
+          store.getPolygonByFeatureIds(featureOids)
         } else { Map.empty }
 
       val wkbReader = new WKBReader()

@@ -3,6 +3,7 @@ package com.foursquare.twofishes
 
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.Lists.Implicits._
+import com.foursquare.twofishes.util.StoredFeatureId
 import org.bson.types.ObjectId
 
 class SlugGeocoderImpl(
@@ -20,8 +21,8 @@ class SlugGeocoderImpl(
     val parseParams = ParseParams()
 
     val featureMap: Map[String, GeocodeServingFeature]  = if (ObjectId.isValid(slug)) {
-      val features = store.getByObjectIds(List(new ObjectId(slug)))
-      features.map({case (key, value) => (key.toString, value)}).toMap
+      val features = store.getByFeatureIds(StoredFeatureId.fromLegacyObjectId(new ObjectId(slug)).toList)
+      features.map({case (key, value) => (key.legacyObjectId.toString, value)}).toMap
     } else {
       store.getBySlugOrFeatureIds(List(slug))
     }

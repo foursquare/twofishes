@@ -100,4 +100,6 @@ object StoredFeatureId {
     val idFromNamespace = (fullId << 8) >> 8
     FeatureNamespace.fromIdOpt(idOfNamespace.toByte).map(ns => StoredFeatureId(ns, idFromNamespace.toString))
   }
+
+  def fromThriftFeatureId(t: FeatureId) = fromNamespaceAndId(t.source, t.id)
 }

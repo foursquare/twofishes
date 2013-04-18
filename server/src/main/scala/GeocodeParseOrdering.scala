@@ -2,7 +2,7 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.Identity._
-import com.foursquare.twofishes.util.{GeoTools, TwofishesLogger}
+import com.foursquare.twofishes.util.{GeoTools, StoredFeatureId, TwofishesLogger}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import org.bson.types.ObjectId
 import scala.collection.mutable.HashMap
@@ -108,8 +108,9 @@ class GeocodeParseOrdering(store: GeocodeStorageReadService, req: CommonGeocodeR
         modifySignal(primaryFeature.scoringFeatures.boost, "manual boost")
       }
 
-      store.hotfixesBoosts.get(new ObjectId(primaryFeature.id)).foreach(boost =>
-        modifySignal(boost, "hotfix boost")
+      StoredFeatureId.fromLegacyObjectId(new ObjectId(primaryFeature.id)).foreach(fid =>
+        store.hotfixesBoosts.get(fid).foreach(boost =>
+          modifySignal(boost, "hotfix boost"))
       )
 
       // as a terrible tie break, things in the US > elsewhere
