@@ -313,10 +313,11 @@ struct BulkReverseGeocodeRequest {
 }
 
 struct BulkReverseGeocodeResponse {
-  1: required map<i32, list<GeocodeInterpretation>> interpretationMap
+  1: required list<GeocodeInterpretation> interpretations
+  2: required map<i32, list<i32>> latlngToInterpretationMap
 
   // only present if debug > 0 in request
-  2: optional list<string> debugLines,
+  3: optional list<string> debugLines,
 }
 
 struct BulkSlugLookupRequest {

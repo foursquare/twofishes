@@ -92,9 +92,12 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
     lng: Double,
     woeType: YahooWoeType,
     population: Option[Int] = None,
-    cc: String = "US"
+    cc: String = "US",
+    geom: Option[Geometry] = None
   ): GeocodeServingFeature = {
     var id = new ObjectId()
+
+    geom.foreach(g => addGeometry(g, woeType, id))
 
     val center = new GeocodePoint()
     center.setLat(lat)
@@ -463,21 +466,9 @@ class GeocoderSpec extends Specification {
 
   "reverse geocode" in {
     val store = getStore
-    val parisTownRecord = store.addGeocode("Paris", Nil, 5, 6, YahooWoeType.TOWN, cc="FR")
-    val parisId = getId(parisTownRecord)
-    store.addGeometry(
-      new WKTReader().read("POLYGON ((1.878662109375 48.8719414772291,2.164306640625 49.14578361775004,2.779541015625 49.14578361775004,3.153076171875 48.72720881940671,2.581787109375 48.50932644976633,1.878662109375 48.8719414772291))"),
-      YahooWoeType.TOWN,
-      parisId
-    )
+    val parisTownRecord = store.addGeocode("Paris", Nil, 5, 6, YahooWoeType.TOWN, cc="FR", geom=Some(new WKTReader().read("POLYGON ((1.878662109375 48.8719414772291,2.164306640625 49.14578361775004,2.779541015625 49.14578361775004,3.153076171875 48.72720881940671,2.581787109375 48.50932644976633,1.878662109375 48.8719414772291))")))
 
-    val nyTownRecord = store.addGeocode("New York", Nil, 5, 6, YahooWoeType.TOWN, cc="US")
-    val nyId = getId(nyTownRecord)
-    store.addGeometry(
-      new WKTReader().read("POLYGON ((-74.0427017211914 40.7641613153526,-73.93146514892578 40.7641613153526,-73.93146514892578 40.681679458715635,-74.0427017211914 40.681679458715635,-74.0427017211914 40.7641613153526))"),
-      YahooWoeType.TOWN,
-      nyId 
-    )
+    val nyTownRecord = store.addGeocode("New York", Nil, 5, 6, YahooWoeType.TOWN, cc="US", geom=Some(new WKTReader().read("POLYGON ((-74.0427017211914 40.7641613153526,-73.93146514892578 40.7641613153526,-73.93146514892578 40.681679458715635,-74.0427017211914 40.681679458715635,-74.0427017211914 40.7641613153526))")))
 
     val req = new GeocodeRequest().setLl(new GeocodePoint().setLat(48.7996273507997).setLng(2.43896484375))
     var r = new ReverseGeocoderImpl(store, req).reverseGeocode()
@@ -494,6 +485,43 @@ class GeocoderSpec extends Specification {
     r.interpretations.size must_== 1
     r.interpretations.asScala(0).feature.name must_== "New York"
   }
+
+  "bulk reverse geocode" in {
+    val store = getStore
+    val parisTownRecord = store.addGeocode("Paris", Nil, 5, 6, YahooWoeType.TOWN, cc="FR", geom=Some(new WKTReader().read("POLYGON ((1.878662109375 48.8719414772291,2.164306640625 49.14578361775004,2.779541015625 49.14578361775004,3.153076171875 48.72720881940671,2.581787109375 48.50932644976633,1.878662109375 48.8719414772291))")))
+
+    val nyTownRecord = store.addGeocode("New York", Nil, 5, 6, YahooWoeType.TOWN, cc="US", geom=Some(new WKTReader().read("POLYGON ((-74.0427017211914 40.7641613153526,-73.93146514892578 40.7641613153526,-73.93146514892578 40.681679458715635,-74.0427017211914 40.681679458715635,-74.0427017211914 40.7641613153526))")))
+
+   val downtownTownRecord = store.addGeocode("Downtown", Nil, 5, 6, YahooWoeType.TOWN, cc="US", geom=Some(new WKTReader().read("POLYGON ((-74.0427017211914 40.7641613153526,-73.93146514892578 40.7641613153526,-73.93146514892578 40.681679458715635,-74.0427017211914 40.681679458715635,-74.0427017211914 40.7641613153526))")))
+
+
+    val parisPoint1 = new GeocodePoint().setLat(48.7996273507997).setLng(2.43896484375)
+    val kansasPoint1 = new GeocodePoint().setLng(-97.822265625).setLat(38.06539235133249)
+    val nyPoint1 = new GeocodePoint().setLat(40.74).setLng(-74)
+    val nyPoint2 = new GeocodePoint().setLat(40.740001).setLng(-74.00001)
+
+    val req = new BulkReverseGeocodeRequest()
+      .setLatlngs(List(parisPoint1, kansasPoint1, nyPoint1, nyPoint2).asJava)
+ 
+    def findInterpIndex(res: BulkReverseGeocodeResponse, featureName: String) = {
+      val index = res.interpretations.asScala.findIndexOf((i: GeocodeInterpretation) => {
+        i.feature.name == featureName
+      })
+      index must be_>=(0)
+      index
+    }
+    var r = new BulkReverseGeocoderImpl(store, req).reverseGeocode()
+    r.interpretations.size must_== 3
+
+    val nyInterpIndex = findInterpIndex(r, "New York")
+    val downtownInterpIndex = findInterpIndex(r, "Downtown")
+    val parisInterpIndex = findInterpIndex(r, "Paris")
+    r.latlngToInterpretationMap.asScala(0).asScala must haveTheSameElementsAs(List(parisInterpIndex))
+    r.latlngToInterpretationMap.asScala(1).asScala must haveTheSameElementsAs(List())
+    r.latlngToInterpretationMap.asScala(2).asScala must haveTheSameElementsAs(List(nyInterpIndex, downtownInterpIndex))
+    r.latlngToInterpretationMap.asScala(3).asScala must haveTheSameElementsAs(List(nyInterpIndex, downtownInterpIndex))
+  }
+
 
   // add a preferred name test
   // add a name filtering test

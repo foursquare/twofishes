@@ -19,17 +19,18 @@ object GeocodeRequestUtils {
     responseIncludes(req, ResponseIncludes.REVGEO_COVERAGE)
 
   def geocodeRequestToCommonRequestParams(req: GeocodeRequest): CommonGeocodeRequestParams = {
-    new CommonGeocodeRequestParams()
-      .setDebug(req.debug)
-      .setWoeHint(req.woeHint)
-      .setWoeRestrict(req.woeRestrict)
-      .setCc(req.cc)
-      .setLang(req.lang)
-      .setResponseIncludes(req.responseIncludes)
-      .setAllowedSources(req.allowedSources)
-      .setLlHint(req.ll)
-      .setBounds(req.bounds)
-      .setMaxInterpretations(req.maxInterpretations)
+    val params = new CommonGeocodeRequestParams()
+    params.setDebug(req.debug)
+    params.setWoeHint(req.woeHint)
+    params.setWoeRestrict(req.woeRestrict)
+    params.setCc(req.cc)
+    params.setLang(req.lang)
+    params.setResponseIncludes(req.responseIncludes)
+    params.setAllowedSources(req.allowedSources)
+    params.setLlHint(req.ll)
+    params.setBounds(req.bounds)
+    params.setMaxInterpretations(req.maxInterpretations)
+    params
   }
 
 }
