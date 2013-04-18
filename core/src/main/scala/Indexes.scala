@@ -42,6 +42,31 @@ object Serde {
     }
   }
 
+  case object StoredFeatureIdSerde extends Serde[StoredFeatureId] {
+    val impl = ObjectIdSerde
+
+    override def toBytes(t: StoredFeatureId): Array[Byte] = impl.toBytes(t.legacyObjectId)
+    override def fromBytes(bytes: Array[Byte]): StoredFeatureId = {
+      val oid = impl.fromBytes(bytes)
+      StoredFeatureId.fromLegacyObjectId(oid).getOrElse(
+        throw new RuntimeException("couldn't deserialize StoredFeatureId from %s".format(oid)))
+    }
+  }
+
+  case object StoredFeatureIdListSerde extends Serde[Seq[StoredFeatureId]] {
+    val impl = ObjectIdListSerde
+
+    override def toBytes(t: Seq[StoredFeatureId]): Array[Byte] = {
+      impl.toBytes(t.map(_.legacyObjectId))
+    }
+    override def fromBytes(bytes: Array[Byte]): Seq[StoredFeatureId] = {
+      val oids = impl.fromBytes(bytes)
+      oids.map(oid =>
+        StoredFeatureId.fromLegacyObjectId(oid).getOrElse(
+          throw new RuntimeException("couldn't deserialize StoredFeatureId from %s".format(oid))))
+    }
+  }
+
   case object TrivialSerde extends Serde[Array[Byte]] {
     override def toBytes(t: Array[Byte]): Array[Byte] = t
     override def fromBytes(bytes: Array[Byte]): Array[Byte] = bytes
@@ -68,23 +93,23 @@ sealed abstract class Index[K, V](val filename: String, val keySerde: Serde[K], 
 object Indexes {
   type WKBGeometry = Array[Byte]
 
-  case object GeometryIndex extends Index[ObjectId, WKBGeometry](
-    "geometry", Serde.ObjectIdSerde, Serde.TrivialSerde)
+  case object GeometryIndex extends Index[StoredFeatureId, WKBGeometry](
+    "geometry", Serde.StoredFeatureIdSerde, Serde.TrivialSerde)
 
-  case object FeatureIndex extends Index[ObjectId, GeocodeServingFeature](
-    "features", Serde.ObjectIdSerde, Serde.ThriftSerde(Unit => new GeocodeServingFeature))
+  case object FeatureIndex extends Index[StoredFeatureId, GeocodeServingFeature](
+    "features", Serde.StoredFeatureIdSerde, Serde.ThriftSerde(Unit => new GeocodeServingFeature))
 
-  case object IdMappingIndex extends Index[String, ObjectId](
-    "id-mapping", Serde.StringSerde, Serde.ObjectIdSerde)
+  case object IdMappingIndex extends Index[String, StoredFeatureId](
+    "id-mapping", Serde.StringSerde, Serde.StoredFeatureIdSerde)
 
   case object S2Index extends Index[Long, CellGeometries](
     "s2_index", Serde.LongSerde, Serde.ThriftSerde(Unit => new CellGeometries))
 
-  case object PrefixIndex extends Index[String, Seq[ObjectId]](
-    "prefix_index", Serde.StringSerde, Serde.ObjectIdListSerde)
+  case object PrefixIndex extends Index[String, Seq[StoredFeatureId]](
+    "prefix_index", Serde.StringSerde, Serde.StoredFeatureIdListSerde)
 
-  case object NameIndex extends Index[String, Seq[ObjectId]](
-    "name_index.hfile", Serde.StringSerde, Serde.ObjectIdListSerde)
+  case object NameIndex extends Index[String, Seq[StoredFeatureId]](
+    "name_index.hfile", Serde.StringSerde, Serde.StoredFeatureIdListSerde)
 }
 
 

@@ -202,7 +202,7 @@ class NameIndexHFileInput(basepath: String, shouldPreload: Boolean) {
 
   def get(name: String): List[StoredFeatureId] = {
     val buf = ByteBuffer.wrap(name.getBytes())
-    nameIndex.lookup(name).toList.flatMap(oids => oids.flatMap(StoredFeatureId.fromLegacyObjectId _))
+    nameIndex.lookup(name).toList.flatten
   }
 
   def getPrefix(name: String): Seq[StoredFeatureId] = {
@@ -210,7 +210,7 @@ class NameIndexHFileInput(basepath: String, shouldPreload: Boolean) {
       case Some(prefixMap) if (name.length <= prefixMap.maxPrefixLength) =>
         prefixMap.get(name)
       case _  =>
-        nameIndex.lookupPrefix(name).flatMap(oids => oids.flatMap(StoredFeatureId.fromLegacyObjectId _))
+        nameIndex.lookupPrefix(name).flatten
     }
   }
 }
@@ -233,7 +233,7 @@ class PrefixIndexMapFileInput(basepath: String, shouldPreload: Boolean) {
     throw new Exception("missing MAX_PREFIX_LENGTH")).toInt
 
   def get(name: String): List[StoredFeatureId] = {
-    prefixIndex.lookup(name).toList.flatMap(oids => oids.flatMap(StoredFeatureId.fromLegacyObjectId _))
+    prefixIndex.lookup(name).toList.flatten
   }
 }
 
@@ -282,7 +282,7 @@ class GeometryMapFileInput(basepath: String, shouldPreload: Boolean) {
   val geometryIndex = new MapFileInput(basepath, Indexes.GeometryIndex, shouldPreload)
 
   def get(id: StoredFeatureId): Option[Array[Byte]] = {
-    geometryIndex.lookup(id.legacyObjectId)
+    geometryIndex.lookup(id)
   }
 }
 
@@ -303,7 +303,7 @@ class SlugFidMapFileInput(basepath: String, shouldPreload: Boolean) {
     if (s.contains(":")) {
       StoredFeatureId.fromHumanReadableString(s)
     } else {
-      idMappingIndex.lookup(s).flatMap(StoredFeatureId.fromLegacyObjectId _)
+      idMappingIndex.lookup(s)
     }
   }
 }
@@ -321,6 +321,6 @@ class GeocodeRecordMapFileInput(basepath: String, shouldPreload: Boolean) {
   }
 
   def get(id: StoredFeatureId): Option[GeocodeServingFeature] = {
-    featureIndex.lookup(id.legacyObjectId)
+    featureIndex.lookup(id)
   }
 }

@@ -1,6 +1,5 @@
 package com.foursquare.twofishes
 
-import com.foursquare.base.thrift.{ObjectIdListWrapper, ObjectIdWrapper, StringWrapper}
 import com.foursquare.geo.shapes.ShapefileS2Util
 import com.foursquare.twofishes.util.{GeometryUtils, StoredFeatureId}
 import com.google.common.geometry.S2CellId
@@ -71,8 +70,8 @@ class FidMap(preload: Boolean) extends DurationUtils {
     }
   }
 
-  def get(fid: String): Option[ObjectId] = {
-    if (preload) {
+  def get(fid: String): Option[StoredFeatureId] = {
+    val oidOpt = (if (preload) {
       fidMap.getOrElse(fid, None)
     } else {
       if (!fidMap.contains(fid)) {
@@ -85,7 +84,8 @@ class FidMap(preload: Boolean) extends DurationUtils {
       }
 
       fidMap.getOrElseUpdate(fid, None)
-    }
+    })
+    oidOpt.flatMap(StoredFeatureId.fromLegacyObjectId _)
   }
 }
 
@@ -178,7 +178,7 @@ abstract class Indexer extends DurationUtils {
     comp.compare(a.toByteArray(), b.toByteArray()) < 0
   }
 
-  def fidStringsToOids(fids: List[String]): Seq[ObjectId] = {
+  def fidStringsToCanonicalFids(fids: List[String]): Seq[StoredFeatureId] = {
     fids.flatMap(fid => fidMap.get(fid)).toSet.toSeq
   }
 }
@@ -275,7 +275,7 @@ class PrefixIndexer(override val basepath: String, override val fidMap: FidMap) 
         })
       }
 
-      prefixWriter.append(prefix, fidStringsToOids(fids.toList))
+      prefixWriter.append(prefix, fidStringsToCanonicalFids(fids.toList))
     }
 
     prefixWriter.close()
@@ -300,7 +300,7 @@ class NameIndexer(override val basepath: String, override val fidMap: FidMap, ou
     val writer = buildHFileV1Writer(Indexes.NameIndex)
 
     def writeFidsForLastName() {
-      writer.append(lastName, fidStringsToOids(nameFids.toList))
+      writer.append(lastName, fidStringsToCanonicalFids(nameFids.toList))
       if (outputPrefixIndex) {
         1.to(List(PrefixIndexer.MaxPrefixLength, lastName.size).min).foreach(length =>
           prefixSet.add(lastName.substring(0, length))
@@ -368,7 +368,7 @@ class FeatureIndexer(override val basepath: String, override val fidMap: FidMap)
       .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
     fidCursor.foreach(f => {
       writer.append(
-        f._id, makeGeocodeRecordWithoutGeometry(f, fixParentId))
+        f.featureId, makeGeocodeRecordWithoutGeometry(f, fixParentId))
       fidCount += 1
       if (fidCount % 100000 == 0) {
         println("processed %d of %d features".format(fidCount, fidSize))
@@ -394,9 +394,7 @@ class PolygonIndexer(override val basepath: String, override val fidMap: FidMap)
       if (index % 1000 == 0) {
         println("outputted %d polys so far".format(index))
       }
-      writer.append(
-        featureRecord._id,
-        polygon)
+      writer.append(featureRecord.featureId, polygon)
     }
     writer.close()
 
@@ -514,11 +512,11 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
 
 class IdIndexer(override val basepath: String, override val fidMap: FidMap, slugEntryMap: SlugEntryMap) extends Indexer {
   def writeSlugsAndIds() {
-    val slugEntries: List[(String, ObjectId)] = for {
+    val slugEntries: List[(String, StoredFeatureId)] = for {
       (slug, entry) <- slugEntryMap.toList
-      oid <- fidMap.get(entry.id)
+      fid <- fidMap.get(entry.id)
     } yield {
-      slug -> oid
+      slug -> fid
     }
 
     // val oidEntries: List[(Array[Byte], Array[Byte])] = (for {

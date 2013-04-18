@@ -71,6 +71,9 @@ case class GeocodeRecord(
     })
   }
 
+  def featureId: StoredFeatureId = StoredFeatureId.fromLegacyObjectId(_id).getOrElse(
+    throw new RuntimeException("can't convert %s to a StoredFeatureId".format(_id)))
+
   def featureIds: List[StoredFeatureId] = ids.flatMap(id => StoredFeatureId.fromHumanReadableString(id))
 
   lazy val woeType = YahooWoeType.findByValue(_woeType)
