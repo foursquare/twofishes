@@ -4,7 +4,6 @@ package com.foursquare.twofishes
 import com.foursquare.twofishes.util.GeoTools
 import com.foursquare.twofishes.util.Lists.Implicits._
 import java.util.concurrent.ConcurrentHashMap
-import scala.collection.JavaConversions._
 import scalaj.collection.Implicits._
 
 // Represents a match from a run of tokens to one particular feature
@@ -38,10 +37,10 @@ case class Parse[T <: MaybeSorted](
   def length = fmatches.length
 
   override def toString: String = {
-    val name = this.flatMap(_.fmatch.feature.names.headOption).map(_.name).mkString(", ")
+    val name = this.flatMap(_.fmatch.feature.names.asScala.headOption).map(_.name).mkString(", ")
     // god forgive this line of code
-    val id = this.headOption.toList.flatMap(f => Option(f.fmatch.feature.ids)).flatten.headOption.map(fid =>
-      "%s:%s".format(fid.source, fid.id)).getOrElse("no:id")
+    val id = this.headOption.toList.flatMap(f => Option(f.fmatch.feature.ids).map(_.asScala)).flatten.headOption
+      .map(fid => "%s:%s".format(fid.source, fid.id)).getOrElse("no:id")
     "%s %s".format(id, name)
   }
 

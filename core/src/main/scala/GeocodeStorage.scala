@@ -6,8 +6,8 @@ import com.vividsolutions.jts.io.WKBReader
 import org.apache.thrift.{TDeserializer, TSerializer}
 import org.apache.thrift.protocol.TCompactProtocol
 import org.bson.types.ObjectId
-import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
+import scalaj.collection.Implicits._
 
 class SlugEntryMap extends HashMap[String, SlugEntry]
 
@@ -127,9 +127,9 @@ case class GeocodeRecord(
 
     feature.setWoeType(this.woeType)
 
-    feature.setIds(featureIds.map(_.thriftFeatureId))
+    feature.setIds(featureIds.map(_.thriftFeatureId).asJava)
 
-    feature.ids.headOption.foreach(id => feature.setId("%s:%s".format(id.source, id.id)))
+    feature.ids.asScala.headOption.foreach(id => feature.setId("%s:%s".format(id.source, id.id)))
 
     val filteredNames: List[DisplayName] = displayNames.filterNot(n => List("post", "link").contains(n.lang))
     var hackedNames: List[DisplayName] = Nil
@@ -163,7 +163,7 @@ case class GeocodeRecord(
 
       val fname = new FeatureName(name.name, name.lang)
       if (flags.nonEmpty) {
-        fname.setFlags(flags)
+        fname.setFlags(flags.asJava)
       }
       fname
     })
@@ -171,7 +171,7 @@ case class GeocodeRecord(
     feature.setNames(nameCandidates
       .groupBy(n => "%s%s%s".format(n.lang, n.name, n.flags))
       .flatMap({case (k,v) => v.headOption})
-      .toList
+      .toList.asJava
     )
 
     slug.foreach(s => feature.setSlug(s))
@@ -188,7 +188,7 @@ case class GeocodeRecord(
     val scoring = new ScoringFeatures()
     boost.foreach(b => scoring.setBoost(b))
     population.foreach(p => scoring.setPopulation(p))
-    scoring.setParents(parents)
+    scoring.setParents(parents.asJava)
 
     getAttributes().foreach(a => feature.setAttributes(a))
 

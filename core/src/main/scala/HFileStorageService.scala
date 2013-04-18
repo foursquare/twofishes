@@ -15,7 +15,6 @@ import org.apache.hadoop.io.BytesWritable
 import org.apache.thrift.{TBase, TBaseHelper, TDeserializer, TFieldIdEnum}
 import org.apache.thrift.protocol.TCompactProtocol
 import org.bson.types.ObjectId
-import scala.collection.JavaConversions._
 import scalaj.collection.Implicits._
 
 class HFileStorageService(basepath: String, shouldPreload: Boolean) extends GeocodeStorageReadService {
@@ -290,7 +289,7 @@ class ReverseGeocodeMapFileInput(basepath: String, shouldPreload: Boolean) exten
     s2Index.lookup(GeometryUtils.getBytes(cellid)).toList.flatMap(bytes => {
       val geometries = new CellGeometries()
       deserializeBytes(geometries, bytes)
-      geometries.cells
+      geometries.cells.asScala
     })
   }
 }

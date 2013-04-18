@@ -8,7 +8,6 @@ import com.google.caliper.{Runner, SimpleBenchmark}
 import com.vividsolutions.jts.geom.Coordinate
 import com.vividsolutions.jts.util.GeometricShapeFactory
 //import org.bson.types.ObjectId
-import scala.collection.JavaConversions._
 import scala.util.Random
 
 class S2CoverBenchmark extends SimpleBenchmark {

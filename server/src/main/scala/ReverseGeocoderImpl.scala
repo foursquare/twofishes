@@ -11,7 +11,6 @@ import com.vividsolutions.jts.io.{WKBReader, WKTWriter}
 import com.vividsolutions.jts.util.GeometricShapeFactory
 import org.bson.types.ObjectId
 import scala.collection.mutable.ListBuffer
-import scala.collection.JavaConversions._
 import scalaj.collection.Implicits._
 
 class ReverseGeocodeParseOrdering extends Ordering[Parse[Sorted]] {
@@ -27,7 +26,7 @@ class ReverseGeocodeParseOrdering extends Ordering[Parse[Sorted]] {
       if (aWoeTypeOrder != bWoeTypeOrder) {
          aWoeTypeOrder - bWoeTypeOrder
       } else {
-        bServingFeature.scoringFeatures.boost - 
+        bServingFeature.scoringFeatures.boost -
           aServingFeature.scoringFeatures.boost
       }
     }
@@ -73,7 +72,7 @@ class ReverseGeocoderHelperImpl(
 
   def s2CoverGeometry(geom: Geometry): Seq[Long] = {
     geom match {
-      case p: JTSPoint => 
+      case p: JTSPoint =>
         val levels = getAllLevels()
         logger.ifDebug("doing point revgeo on %s at levels %s", p, levels)
         levels.map(level =>
@@ -136,7 +135,7 @@ class ReverseGeocoderHelperImpl(
       (g, index) <- otherGeoms.zipWithIndex
     } yield { index -> s2CoverGeometry(g) }).toMap
 
-    val cellGeometryMap: Map[Long, Seq[CellGeometry]] = 
+    val cellGeometryMap: Map[Long, Seq[CellGeometry]] =
       (for {
         cellid: Long <- geomIndexToCellIdMap.values.flatten.toSet
       } yield {
@@ -179,7 +178,7 @@ class ReverseGeocoderHelperImpl(
       val parseParams = ParseParams()
 
       val maxInterpretations = if (req.maxInterpretations <= 0) {
-        parses.size  
+        parses.size
       } else {
         req.maxInterpretations
       }
@@ -294,7 +293,7 @@ class BulkReverseGeocoderImpl(
       )
 
     if (req.params.debug > 0) {
-      response.setDebugLines(Nil)
+      response.setDebugLines(List[String]().asJava)
     }
     response
   }

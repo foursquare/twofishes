@@ -3,7 +3,6 @@ package com.foursquare.twofishes
 
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.Lists.Implicits._
-import scala.collection.JavaConversions._
 import scalaj.collection.Implicits._
 
 object GeocodeRequestUtils {

@@ -5,12 +5,11 @@ import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.{GeoTools, TwofishesLogger}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import org.bson.types.ObjectId
-import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
 import scalaj.collection.Implicits._
 
 // Comparator for parses, we score by a number of different features
-// 
+//
 class GeocodeParseOrdering(store: GeocodeStorageReadService, req: CommonGeocodeRequestParams, logger: TwofishesLogger) extends Ordering[Parse[Sorted]] {
   var scoreMap = new scala.collection.mutable.HashMap[String, Int]
 
@@ -30,7 +29,7 @@ class GeocodeParseOrdering(store: GeocodeStorageReadService, req: CommonGeocodeR
         }
         signal += value
       }
-    
+
       if (req.debug > 0) {
         logger.ifDebug("Scoring %s", parse)
       }
@@ -71,7 +70,7 @@ class GeocodeParseOrdering(store: GeocodeStorageReadService, req: CommonGeocodeR
         if (distance < 5000) {
           modifySignal(200000, "5km distance BONUS for being %s meters away".format(distance))
         } else {
-          modifySignal(-distancePenalty, "distance penalty for being %s meters away".format(distance)) 
+          modifySignal(-distancePenalty, "distance penalty for being %s meters away".format(distance))
         }
       }
 
@@ -85,9 +84,9 @@ class GeocodeParseOrdering(store: GeocodeStorageReadService, req: CommonGeocodeR
           // distance in meters of the hypotenuse
           // if it's smaller than looking at 1/4 of new york state, then
           // boost everything in it by a lot
-          val bboxContainsCenter = 
+          val bboxContainsCenter =
             GeoTools.boundsContains(bounds, primaryFeature.feature.geometry.center)
-          val bboxesIntersect = 
+          val bboxesIntersect =
             Option(primaryFeature.feature.geometry.bounds).map(fBounds =>
               GeoTools.boundsIntersect(bounds, fBounds)).getOrElse(false)
 
@@ -109,7 +108,7 @@ class GeocodeParseOrdering(store: GeocodeStorageReadService, req: CommonGeocodeR
         modifySignal(primaryFeature.scoringFeatures.boost, "manual boost")
       }
 
-      store.hotfixesBoosts.get(new ObjectId(primaryFeature.id)).foreach(boost => 
+      store.hotfixesBoosts.get(new ObjectId(primaryFeature.id)).foreach(boost =>
         modifySignal(boost, "hotfix boost")
       )
 
@@ -125,7 +124,7 @@ class GeocodeParseOrdering(store: GeocodeStorageReadService, req: CommonGeocodeR
       }
 
       // In autocomplete mode, prefer "tighter" interpretations
-      // That is, prefer "<b>Rego Park</b>, <b>N</b>Y" to 
+      // That is, prefer "<b>Rego Park</b>, <b>N</b>Y" to
       // <b>Rego Park</b>, NY, <b>N</b>aalagaaffeqatigiit
       //
       // getOrdering returns a smaller # for a smaller thing
@@ -163,16 +162,16 @@ class GeocodeParseOrdering(store: GeocodeStorageReadService, req: CommonGeocodeR
       aFeature <- a.headOption
       bFeature <- b.headOption
     } {
-      if (aFeature.tokenStart == bFeature.tokenStart && 
+      if (aFeature.tokenStart == bFeature.tokenStart &&
           aFeature.tokenEnd == bFeature.tokenEnd &&
           aFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY &&
           bFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY &&
-          // if we have a hint that we want one of the types, then let the 
+          // if we have a hint that we want one of the types, then let the
           // scoring happen naturally
           !req.woeHint.asScala.has(aFeature.fmatch.feature.woeType) &&
           !req.woeHint.asScala.has(bFeature.fmatch.feature.woeType)
         ) {
-        // if a is a parent of b, prefer b 
+        // if a is a parent of b, prefer b
         if (aFeature.fmatch.scoringFeatures.parents.asScala.has(bFeature.fmatch.id) &&
           (aFeature.fmatch.scoringFeatures.population * 1.0 / bFeature.fmatch.scoringFeatures.population) > 0.05
         ) {
@@ -192,8 +191,8 @@ class GeocodeParseOrdering(store: GeocodeStorageReadService, req: CommonGeocodeR
     val scoreA = getScore(a)
     val scoreB = getScore(b)
     if (scoreA == scoreB) {
-      (a.headOption.map(_.fmatch.feature.ids.map(_.toString).hashCode).getOrElse(0).toLong -
-        b.headOption.map(_.fmatch.feature.ids.map(_.toString).hashCode).getOrElse(0).toLong).signum
+      (a.headOption.map(_.fmatch.feature.ids.asScala.map(_.toString).hashCode).getOrElse(0).toLong -
+        b.headOption.map(_.fmatch.feature.ids.asScala.map(_.toString).hashCode).getOrElse(0).toLong).signum
     } else {
       scoreB - scoreA
     }

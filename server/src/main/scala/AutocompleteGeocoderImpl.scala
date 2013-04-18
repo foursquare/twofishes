@@ -6,7 +6,6 @@ import com.foursquare.twofishes.util.{NameNormalizer, NameUtils}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.foursquare.twofishes.util.NameUtils.BestNameMatch
 import org.bson.types.ObjectId
-import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
 import scalaj.collection.Implicits._
 
@@ -48,7 +47,7 @@ class AutocompleteGeocoderImpl(
       f._2.feature.woeType == YahooWoeType.POSTAL_CODE ||
       {
         val nameMatch = bestNameWithMatch(f._2.feature, Some(req.lang), false, Some(phrase))
-        nameMatch.exists(nm => 
+        nameMatch.exists(nm =>
           nm._1.flags.contains(FeatureNameFlags.PREFERRED) ||
           nm._1.flags.contains(FeatureNameFlags.ALT_NAME)
         )
@@ -58,13 +57,13 @@ class AutocompleteGeocoderImpl(
 
   /**** AUTOCOMPLETION LOGIC ****/
   /*
-   In an effort to make autocomplete much faster, we throw out a number of the 
+   In an effort to make autocomplete much faster, we throw out a number of the
    features and hacks of the primary matching logic. We assume that the query
    is being entered right-to-left, smallest-to-biggest. We also skip out on most
    of the zip-code hacks. Since zip-codes aren't really in the political hierarchy,
    they don't have all the parents one might expect them to. In the full scorer, we
    need to hydrate the full features for our name hits so that we can check the
-   feature type and compare the distances as a hack for zip-code containment. 
+   feature type and compare the distances as a hack for zip-code containment.
 
    In this scorer, we assume the left-most strings that we match are matched to the
    smallest feature, and then we don't need to hydrate any future matches to determine
@@ -82,7 +81,7 @@ class AutocompleteGeocoderImpl(
       matchString: String): ParseSeq = {
     if (parses.size == 0) {
       logger.ifDebug("parses == 0, so accepting everything")
-      matches.map(m => 
+      matches.map(m =>
         Parse[Unsorted](List(m))
       ).toList
     } else {
@@ -94,7 +93,7 @@ class AutocompleteGeocoderImpl(
 
         val allowedLanguages =
           Set("en", "abbr") ++
-          parse.headOption.toList.flatMap(_.possibleNameHits.map(_.lang)).toSet 
+          parse.headOption.toList.flatMap(_.possibleNameHits.map(_.lang)).toSet
 
         matches.flatMap(featureMatch => {
           val fid = featureMatch.fmatch.id
@@ -125,7 +124,7 @@ class AutocompleteGeocoderImpl(
     if (name.flags.contains(FeatureNameFlags.PREFERRED) ||
         name.flags.contains(FeatureNameFlags.ABBREVIATION) ||
         name.flags.contains(FeatureNameFlags.LOCAL_LANG) ||
-        name.flags.contains(FeatureNameFlags.ALT_NAME)) { 
+        name.flags.contains(FeatureNameFlags.ALT_NAME)) {
       val normalizedName = NameNormalizer.normalize(name.name)
       if (isEnd) {
         normalizedName.startsWith(query)
@@ -148,12 +147,12 @@ class AutocompleteGeocoderImpl(
         val possibleParents = for {
           parse <- parses
           parseFeature <- parse
-          featureParentIds <- parseFeature.fmatch.scoringFeatures.parents
+          featureParentIds <- parseFeature.fmatch.scoringFeatures.parents.asScala
         } yield {
           new ObjectId(featureParentIds)
         }
 
-        val featuresMatches: Seq[FeatureMatch] = 
+        val featuresMatches: Seq[FeatureMatch] =
           if (parses.size == 0) {
             val featureIds = if (isEnd) {
               logger.ifDebug("looking at prefix: %s", query)
@@ -171,14 +170,14 @@ class AutocompleteGeocoderImpl(
 
             store.getByObjectIds(featureIds).map({case (oid, servingFeature) => {
               FeatureMatch(offset, offset + i, query, servingFeature,
-                servingFeature.feature.names.filter(n => matchName(n, query, isEnd)))
+                servingFeature.feature.names.asScala.filter(n => matchName(n, query, isEnd)))
             }}).toSeq
           } else {
             val parents = store.getByObjectIds(possibleParents).toSeq
             logger.ifDebug("looking for %s in parents: %s", query, parents)
             for {
               (oid, servingFeature) <- parents
-              names = servingFeature.feature.names.filter(n => matchName(n, query, isEnd))
+              names = servingFeature.feature.names.asScala.filter(n => matchName(n, query, isEnd))
               if names.nonEmpty
             } yield {
               FeatureMatch(offset, offset + i, query, servingFeature, names)

@@ -5,7 +5,6 @@ import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.GeoTools
 import com.foursquare.twofishes.util.Lists.Implicits._
 import org.bson.types.ObjectId
-import scala.collection.JavaConversions._
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._
 
@@ -33,7 +32,7 @@ class GeocoderImpl(
       (at the first level, for "rego park ny", we'd try rego, rego park, rego park ny)
     - for every feature found matching one of our token sets, recursively try to geocode the remaining tokens
     - return early from a branch of our parse tree if the parse becomes invalid/inconsistent, that is,
-      if the feature found does not occur in the parents of the smaller feature found 
+      if the feature found does not occur in the parents of the smaller feature found
       (we would about the parse of "los angeles, new york, united states" when we'd consumed "los angeles"
        its parents were CA & US, and then consumed "new york" because NY is not in the parents of LA)
 
@@ -45,10 +44,10 @@ class GeocoderImpl(
     - save our work in a map[int -> parses], where the int is the total number of tokens those parses consume.
        we do this because:
        if two separate parses made it to the same point in the input, we don't need to redo the work
-         (contrived example: Laurel Mt United States, can both be parsed as "Laurel" in "Mt" (Montana), 
+         (contrived example: Laurel Mt United States, can both be parsed as "Laurel" in "Mt" (Montana),
           and "Laurel Mt" (Mountain), both consistent & valid parses. One of those parses would have already
          completely explored "united states" before the second one gets to it)
-    - we return the entire cache, which is a little silly. The caller knows to look for the cache for the 
+    - we return the entire cache, which is a little silly. The caller knows to look for the cache for the
       largest key (the longest parse), and to take all the tokens before that and make the "what" (the
       non-geocoded tokens) in the final interpretation.
    */
@@ -60,8 +59,8 @@ class GeocoderImpl(
 
    def generateParses(tokens: List[String]): ParseCache = {
     val cache = new ParseCache
-    cache(0) = List(NullParse)
- 
+    cache.put(0, List(NullParse))
+
     (tokens.size - 1).to(0, -1).foreach(offset => {
       val subTokens = tokens.drop(offset)
       val validParses = generateParsesHelper(subTokens, offset, cache)
@@ -69,7 +68,7 @@ class GeocoderImpl(
       if (req.debug > 1) {
         logger.ifDebug("setting %d to %s", cacheKey, validParses)
       }
-      cache(cacheKey) = validParses
+      cache.put(cacheKey, validParses)
     })
     cache
   }
@@ -88,7 +87,7 @@ class GeocoderImpl(
     1.to(tokens.size).flatMap(i => {
       val searchStr = tokens.take(i).mkString(" ")
       val featureMatches = logger.logDuration("get-by-name", "get-by-name for %s".format(searchStr)) {
-        store.getByName(searchStr).map((f: GeocodeServingFeature) => 
+        store.getByName(searchStr).map((f: GeocodeServingFeature) =>
           FeatureMatch(offset, offset + i, searchStr, f)
         )
       }
@@ -97,7 +96,7 @@ class GeocoderImpl(
       if ((tokens.size - i) == 0) {
         featureMatches.flatMap(f => buildParse(f, NullParse))
       } else {
-        val subParses = cache(tokens.size - i)
+        val subParses = cache.asScala.apply(tokens.size - i)
 
         val subParsesByCountry: Map[String, SortedParseSeq] = subParses.groupBy(_.countryCode)
         val featuresByCountry: Map[String, Seq[FeatureMatch]] = featureMatches.groupBy(_.fmatch.feature.cc)
@@ -107,7 +106,7 @@ class GeocoderImpl(
           f <- featuresByCountry.getOrElse(cc, Nil)
           p <- subParsesByCountry.getOrElse(cc, Nil)
         } yield {
-          buildParse(f, p)   
+          buildParse(f, p)
         }).flatten
       }
     })
@@ -206,7 +205,7 @@ class GeocoderImpl(
     val cache = generateParses(tokens)
 
     val validParseCaches: Iterable[(Int, SortedParseSeq)] =
-      cache.filter(_._2.nonEmpty)
+      cache.asScala.filter(_._2.nonEmpty)
 
     if (validParseCaches.size > 0) {
       val longest = validParseCaches.map(_._1).max

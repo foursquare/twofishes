@@ -7,7 +7,6 @@ import com.foursquare.twofishes.util.NameUtils
 import com.foursquare.twofishes.util.NameUtils.BestNameMatch
 import com.vividsolutions.jts.io.{WKBReader, WKTWriter}
 import org.bson.types.ObjectId
-import scala.collection.JavaConversions._
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._
 
@@ -21,9 +20,9 @@ object GeocodeServingFeatureOrdering extends Ordering[GeocodeServingFeature] {
 object ResponseProcessor {
   def generateResponse(debugLevel: Int, logger: MemoryLogger, interpretations: Seq[GeocodeInterpretation]): GeocodeResponse = {
     val resp = new GeocodeResponse()
-    resp.setInterpretations(interpretations)
+    resp.setInterpretations(interpretations.asJava)
     if (debugLevel > 0) {
-      resp.setDebugLines(logger.getLines)
+      resp.setDebugLines(logger.getLines.asJava)
     }
     resp
   }
@@ -76,7 +75,7 @@ class ResponseProcessor(
           // if we don't have the clause in this line, we end up losing both nearby interps
           ((otherIndex < index && !(isAliasName(otherIndex) && !isAliasName(index)))
             || (!isAliasName(otherIndex) && isAliasName(index))) &&
-            ParseUtils.parsesNear(parse, otherParse) 
+            ParseUtils.parsesNear(parse, otherParse)
         }})
       }})
     })
@@ -85,7 +84,7 @@ class ResponseProcessor(
     // join them, and re-sort by the int, which was their original ordering
     dedupedMap.toList.flatMap(_._2).sortBy(_._2).map(_._1)
   }
-  
+
    // Modifies a GeocodeFeature that is about to be returned
   // --set 'name' to the feature's best name in the request context
   // --set 'displayName' to a string that includes names of parents in the request context
@@ -155,7 +154,7 @@ class ResponseProcessor(
           // awful hack because most states outside the US don't actually
           // use their abbrev names
           val inUsOrCA = servingFeature.feature.cc == "US" ||  servingFeature.feature.cc == "CA"
-          val name = bestNameWithMatch(servingFeature.feature, Some(req.lang), 
+          val name = bestNameWithMatch(servingFeature.feature, Some(req.lang),
             preferAbbrev = (i != 0 && inUsOrCA),
             fmatchOpt.map(_.phrase))
           i += 1
@@ -168,8 +167,8 @@ class ResponseProcessor(
         namesToUse = namesToUse.zipWithIndex.filterNot({case (nameMatch, index) => {
           index != 0 && nameMatch._2.isEmpty && nameMatch._1.name == namesToUse(0)._1.name
         }}).map(_._1)
-      
-        var (matchedNameParts, highlightedNameParts) = 
+
+        var (matchedNameParts, highlightedNameParts) =
           (namesToUse.map(_._1.name),
            namesToUse.map({case(fname, highlightedName) => {
             highlightedName.getOrElse(fname.name)
@@ -186,12 +185,12 @@ class ResponseProcessor(
 
     // possibly clear names
     val names = f.names
-    f.setNames(names.filter(n => 
+    f.setNames(names.asScala.filter(n =>
       Option(n.flags).exists(_.contains(FeatureNameFlags.ABBREVIATION)) ||
       n.lang == req.lang ||
       n.lang == "en" ||
       namesToUse.contains(n)
-    ))
+    ).asJava)
 
     // now pull in extra parents
     parentsToUse.appendAll(
@@ -237,7 +236,7 @@ class ResponseProcessor(
     // })
 
     val parentIds = sortedParses.flatMap(
-      _.headOption.toList.flatMap(_.fmatch.scoringFeatures.parents))
+      _.headOption.toList.flatMap(_.fmatch.scoringFeatures.parents.asScala))
     val parentOids = parentIds.map(parent => new ObjectId(parent))
     logger.ifDebug("parent ids: %s", parentOids)
 
@@ -267,7 +266,7 @@ class ResponseProcessor(
       val sortedParents = if (shouldFetchParents) {
         // we've seen dupe parents, not sure why, the toSet.toSeq fixes
         // TODO(blackmad): why dupe US parents on new york state?
-        p(0).fmatch.scoringFeatures.parents.toSet.toSeq.flatMap((parent: String) =>
+        p(0).fmatch.scoringFeatures.parents.asScala.toSet.toSeq.flatMap((parent: String) =>
           parentMap.get(new ObjectId(parent))).sorted(GeocodeServingFeatureOrdering)
       } else {
         Nil
@@ -301,12 +300,12 @@ class ResponseProcessor(
 
       if (responseIncludes(ResponseIncludes.PARENTS)) {
         interp.setParents(sortedParents.map(parentFeature => {
-          val sortedParentParents = parentFeature.scoringFeatures.parents.flatMap(parent =>
+          val sortedParentParents = parentFeature.scoringFeatures.parents.asScala.flatMap(parent =>
             parentMap.get(new ObjectId(parent))).sorted
           val feature = parentFeature.feature
           fixFeature(feature, sortedParentParents, None, fillHighlightedName=parseParams.tokens.size > 0)
           feature
-        }))
+        }).asJava)
       }
       interp
     })
@@ -317,7 +316,7 @@ class ResponseProcessor(
       // happens outside this function). ie, there are 3 "Cobble Hill, NY"s. Which
       // are the names we get if we only take one parent component from each.
       // Find ambiguous geocodes, tell them to take more name component
-      val ambiguousInterpretationsMap: Map[String, Seq[GeocodeInterpretation]] = 
+      val ambiguousInterpretationsMap: Map[String, Seq[GeocodeInterpretation]] =
         interpretations.groupBy(interp => {
           if (dedupByMatchedName) {
             interp.feature.matchedName
@@ -325,7 +324,7 @@ class ResponseProcessor(
             interp.feature.displayName
           }
         }).filter(_._2.size > 1)
-      val ambiguousInterpretations: Iterable[GeocodeInterpretation] = 
+      val ambiguousInterpretations: Iterable[GeocodeInterpretation] =
         ambiguousInterpretationsMap.flatMap(_._2).toList
       val ambiguousIdMap: Map[String, Iterable[GeocodeInterpretation]] =
         ambiguousInterpretations.groupBy(_.feature.ids.toString)
@@ -339,7 +338,7 @@ class ResponseProcessor(
           val fmatch = p(0).fmatch
           val feature = p(0).fmatch.feature
           ambiguousIdMap.getOrElse(feature.ids.toString, Nil).foreach(interp => {
-            val sortedParents = p(0).fmatch.scoringFeatures.parents
+            val sortedParents = p(0).fmatch.scoringFeatures.parents.asScala
               .flatMap(parent =>
                 parentMap.get(new ObjectId(parent))).sorted(GeocodeServingFeatureOrdering)
             fixFeature(interp.feature, sortedParents, Some(p), 1)
@@ -394,7 +393,7 @@ class ResponseProcessor(
     if (req.isSetAllowedSources()) {
       val allowedSources = req.allowedSources.asScala
       goodParses = goodParses.filter(p =>
-        p.headOption.exists(_.fmatch.feature.ids.exists(i => allowedSources.has(i.source)))
+        p.headOption.exists(_.fmatch.feature.ids.asScala.exists(i => allowedSources.has(i.source)))
       )
     }
 
@@ -416,7 +415,7 @@ class ResponseProcessor(
     // this code is gross gross gross
 
     // build a map from
-    // primary feature id -> list of parses containing that id, sorted by 
+    // primary feature id -> list of parses containing that id, sorted by
     val parsesByMainId: Map[String, Seq[SortedParseWithPosition]] = parses.zipWithIndex.map({
       case (parse, index) => SortedParseWithPosition(parse, index)
     }).groupBy(_.parse.headOption.map(_.fmatch.id).getOrElse("")).mapValues(parses => {
@@ -427,7 +426,7 @@ class ResponseProcessor(
       })
     })
 
-    val actualParses = 
+    val actualParses =
       parses.zipWithIndex.filter({case (p, index) => {
         (for {
           primaryFeature <- p.headOption
@@ -440,7 +439,7 @@ class ResponseProcessor(
 
     val filteredParses = filterParses(actualParses, parseParams)
 
-    val maxInterpretations = if (originalMaxInterpretations == 0) { 
+    val maxInterpretations = if (originalMaxInterpretations == 0) {
       filteredParses.size
     } else {
       originalMaxInterpretations

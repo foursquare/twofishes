@@ -193,6 +193,7 @@ import com.novus.salat.global._
           "org.geotools" % "gt-shapefile" % "8.0-M1",
           "org.geotools" % "gt-epsg-hsql" % "8.0-M1",
           "org.mongodb" % "bson" % "2.10.1",
+          "org.scalaj" %% "scalaj-collection" % "1.2",
           "org.specs2" %% "specs2" % "1.8.2" % "test"
         )
       )

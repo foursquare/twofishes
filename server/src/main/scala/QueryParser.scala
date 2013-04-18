@@ -4,7 +4,6 @@ package com.foursquare.twofishes
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.{NameNormalizer, TwofishesLogger}
 import com.foursquare.twofishes.util.Lists.Implicits._
-import scala.collection.JavaConversions._
 import scalaj.collection.Implicits._
 
 case class ParseParams(
@@ -46,7 +45,7 @@ class QueryParser(logger: TwofishesLogger) {
       throw new Exception("too many tokens")
     }
 
-    ParseParams(   
+    ParseParams(
       tokens = tokens,
       originalTokens = originalTokens,
       connectorStart = connectorStart,

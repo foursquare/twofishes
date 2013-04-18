@@ -7,7 +7,6 @@ import com.foursquare.twofishes.util.TwofishesLogger
 import com.twitter.ostrich.stats.Stats
 import com.twitter.util.Duration
 import java.util.Date
-import scala.collection.JavaConversions._
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._
 

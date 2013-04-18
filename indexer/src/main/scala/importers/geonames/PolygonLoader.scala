@@ -9,7 +9,6 @@ import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
 import java.io.File
-import scala.collection.JavaConversions._
 import scalaj.collection.Implicits._
 
 object PolygonLoader {

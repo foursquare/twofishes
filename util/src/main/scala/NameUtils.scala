@@ -3,7 +3,7 @@ package com.foursquare.twofishes.util
 
 import com.foursquare.twofishes.{FeatureName, FeatureNameFlags, GeocodeFeature, YahooWoeType, util}
 import com.foursquare.twofishes.util.Lists.Implicits._
-import scala.collection.JavaConversions._
+import scalaj.collection.Implicits._
 
 object SlugBuilder {
   import NameFormatter.FormatPattern
@@ -12,7 +12,7 @@ object SlugBuilder {
 
   // do something special with CN-14 (tibet) in the parents, ditto taiwan
 
-  val patterns = List( 
+  val patterns = List(
     // FormatPattern("{COUNTRY+ABBR}"),
     // FormatPattern("{COUNTRY+ABBR}/{ADMIN1+ABBR}", countries = List("US", "CA")),
     // FormatPattern("{COUNTRY+ABBR}/{ADMIN1}"),
@@ -184,7 +184,7 @@ trait NameUtils {
 
       if (name.flags != null) {
         score += (for {
-          flag <- name.flags
+          flag <- name.flags.asScala
         } yield {
           flag match {
             case FeatureNameFlags.COLLOQUIAL => 10
@@ -210,12 +210,12 @@ trait NameUtils {
     preferAbbrev: Boolean
   ): Option[FeatureName] = {
     if (preferAbbrev && f.woeType == YahooWoeType.COUNTRY) {
-      f.names.find(n => n.name.size == 2 && Option(n.flags).exists(_.contains(FeatureNameFlags.ABBREVIATION)))
+      f.names.asScala.find(n => n.name.size == 2 && Option(n.flags).exists(_.contains(FeatureNameFlags.ABBREVIATION)))
     } else {
       val modifiedPreferAbbrev = preferAbbrev &&
         f.woeType == YahooWoeType.ADMIN1 &&
         (f.cc == "US" || f.cc == "CA")
-      f.names.sorted(new FeatureNameComparator(lang, modifiedPreferAbbrev)).headOption
+      f.names.asScala.sorted(new FeatureNameComparator(lang, modifiedPreferAbbrev)).headOption
     }
   }
 
@@ -230,7 +230,7 @@ trait NameUtils {
     logger: TwofishesLogger
   ): Option[BestNameMatch] = {
     val ret = matchedStringOpt.flatMap(matchedString => {
-      val namesNormalized = f.names.map(n => {
+      val namesNormalized = f.names.asScala.map(n => {
         (n, NameNormalizer.normalize(n.name))
       })
 
@@ -242,7 +242,7 @@ trait NameUtils {
       } else {
         exactMatchNameCandidates
       }
-      
+
       val modifiedPreferAbbrev = preferAbbrev &&
         f.woeType == YahooWoeType.ADMIN1 &&
         (f.cc == "US" || f.cc == "CA")
@@ -252,7 +252,7 @@ trait NameUtils {
         logger.ifDebug("name candidates: %s", nameCandidates)
         logger.ifDebug("best name match: %s", bestNameMatch)
       }
-      bestNameMatch.map(name => 
+      bestNameMatch.map(name =>
           (name,
             Some("<b>" + name.name.take(matchedString.size) + "</b>" + name.name.drop(matchedString.size))
       )) orElse {bestName(f, lang, preferAbbrev).map(name => {

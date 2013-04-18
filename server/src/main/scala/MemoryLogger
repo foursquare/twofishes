@@ -13,7 +13,6 @@ import com.vividsolutions.jts.util.GeometricShapeFactory
 import java.util.Date
 import java.util.concurrent.ConcurrentHashMap
 import org.bson.types.ObjectId
-import scala.collection.JavaConversions._
 import scala.collection.mutable.{HashMap, ListBuffer}
 import scalaj.collection.Implicits._
 

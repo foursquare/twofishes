@@ -8,7 +8,6 @@ import com.novus.salat._
 import com.novus.salat.annotations._
 import com.novus.salat.dao._
 import com.novus.salat.global._
-import scala.collection.JavaConversions._
 
 case class NameIndex(
   name: String,

@@ -4,7 +4,6 @@ package com.foursquare.twofishes
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.twitter.ostrich.stats.Stats
-import scala.collection.JavaConversions._
 import scalaj.collection.Implicits._
 
 /*
@@ -24,7 +23,7 @@ class GeocodeRequestDispatcher(
       req.setResponseIncludes(List(ResponseIncludes.DISPLAY_NAME).asJava)
     } else {
       req.setResponseIncludes(
-        (ResponseIncludes.DISPLAY_NAME :: req.responseIncludes.toList).asJava
+        (ResponseIncludes.DISPLAY_NAME :: req.responseIncludes.asScala.toList).asJava
       )
     }
 
