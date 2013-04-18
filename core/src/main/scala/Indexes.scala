@@ -19,6 +19,20 @@ object Serde {
       ByteUtils.getLongFromBytes(bytes)
   }
 
+  case object LongListSerde extends Serde[Seq[Long]] {
+    override def toBytes(t: Seq[Long]): Array[Byte] = {
+      val buf = ByteBuffer.allocate(t.size * 12)
+      t.foreach(l => ByteUtils.longToBytes(l))
+      TBaseHelper.byteBufferToByteArray(buf)
+    }
+
+    override def fromBytes(bytes: Array[Byte]): Seq[Long] = {
+      0.until(bytes.length / 8).map(i => {
+        ByteUtils.getLongFromBytes(Arrays.copyOfRange(bytes, i * 8, (i + 1) * 8))
+      })
+    }
+  }
+
   case object StringSerde extends Serde[String] {
     override def toBytes(t: String): Array[Byte] = t.getBytes("UTF-8")
     override def fromBytes(bytes: Array[Byte]): String = new String(bytes)
@@ -43,27 +57,27 @@ object Serde {
   }
 
   case object StoredFeatureIdSerde extends Serde[StoredFeatureId] {
-    val impl = ObjectIdSerde
+    val impl = LongSerde
 
-    override def toBytes(t: StoredFeatureId): Array[Byte] = impl.toBytes(t.legacyObjectId)
+    override def toBytes(t: StoredFeatureId): Array[Byte] = impl.toBytes(t.longId)
     override def fromBytes(bytes: Array[Byte]): StoredFeatureId = {
-      val oid = impl.fromBytes(bytes)
-      StoredFeatureId.fromLegacyObjectId(oid).getOrElse(
-        throw new RuntimeException("couldn't deserialize StoredFeatureId from %s".format(oid)))
+      val id = impl.fromBytes(bytes)
+      StoredFeatureId.fromLong(id).getOrElse(
+        throw new RuntimeException("couldn't deserialize StoredFeatureId from %s".format(id)))
     }
   }
 
   case object StoredFeatureIdListSerde extends Serde[Seq[StoredFeatureId]] {
-    val impl = ObjectIdListSerde
+    val impl = LongListSerde
 
     override def toBytes(t: Seq[StoredFeatureId]): Array[Byte] = {
-      impl.toBytes(t.map(_.legacyObjectId))
+      impl.toBytes(t.map(_.longId))
     }
     override def fromBytes(bytes: Array[Byte]): Seq[StoredFeatureId] = {
-      val oids = impl.fromBytes(bytes)
-      oids.map(oid =>
-        StoredFeatureId.fromLegacyObjectId(oid).getOrElse(
-          throw new RuntimeException("couldn't deserialize StoredFeatureId from %s".format(oid))))
+      val ids = impl.fromBytes(bytes)
+      ids.map(id =>
+        StoredFeatureId.fromLong(id).getOrElse(
+          throw new RuntimeException("couldn't deserialize StoredFeatureId from %s".format(id))))
     }
   }
 
