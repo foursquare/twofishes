@@ -75,7 +75,9 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
     })
   }
 
-  def getByS2CellId(id: Long): Seq[CellGeometry] = s2map.getOrElse(id, Seq())
+  def getByS2CellId(id: Long): Seq[CellGeometry] = {
+    s2map.getOrElse(id, Seq())
+  }
   def getPolygonByObjectId(id: ObjectId): Option[Array[Byte]] = None
   def getPolygonByObjectIds(ids: Seq[ObjectId]): Map[ObjectId, Array[Byte]] = Map.empty
 
@@ -469,13 +471,28 @@ class GeocoderSpec extends Specification {
       parisId
     )
 
+    val nyTownRecord = store.addGeocode("New York", Nil, 5, 6, YahooWoeType.TOWN, cc="US")
+    val nyId = getId(nyTownRecord)
+    store.addGeometry(
+      new WKTReader().read("POLYGON ((-74.0427017211914 40.7641613153526,-73.93146514892578 40.7641613153526,-73.93146514892578 40.681679458715635,-74.0427017211914 40.681679458715635,-74.0427017211914 40.7641613153526))"),
+      YahooWoeType.TOWN,
+      nyId 
+    )
+
     val req = new GeocodeRequest().setLl(new GeocodePoint().setLat(48.7996273507997).setLng(2.43896484375))
     var r = new ReverseGeocoderImpl(store, req).reverseGeocode()
     r.interpretations.size must_== 1
+    r.interpretations.asScala(0).feature.name must_== "Paris"
+
+    // look up in kansas
+    req.setLl(new GeocodePoint().setLng(-97.822265625).setLat(38.06539235133249))
+    r = new ReverseGeocoderImpl(store, req).reverseGeocode()
+    r.interpretations.size must_== 0
 
     req.setLl(new GeocodePoint().setLat(40.74).setLng(-74))
     r = new ReverseGeocoderImpl(store, req).reverseGeocode()
-    r.interpretations.size must_== 0
+    r.interpretations.size must_== 1
+    r.interpretations.asScala(0).feature.name must_== "New York"
   }
 
   // add a preferred name test
