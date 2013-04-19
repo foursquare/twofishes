@@ -41,8 +41,8 @@ class IndexerSpec extends Specification {
 
   "name deduping works" in {
     val fid = GeonamesId(1)
-    val record = GeocodeRecord(fid.legacyObjectId,
-      List(fid.humanReadableString),
+    val record = GeocodeRecord(fid.longId,
+      List(fid.longId),
       Nil, "", 0, 0.0, 0.0,
       List(
         DisplayName("en", "San Francisco County", 1),
@@ -128,8 +128,8 @@ class IndexerSpec extends Specification {
     val geomBytes = (new WKBWriter).write((new WKTReader).read(geomText))
     val fid = GeonamesId(2)
     val record = GeocodeRecord(
-      _id = fid.legacyObjectId,
-      ids = List(fid.humanReadableString),
+      _id = fid.longId,
+      ids = List(fid.longId),
       names = List("noho"),
       cc = "US",
       _woeType = YahooWoeType.SUBURB.getValue,

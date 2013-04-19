@@ -247,8 +247,7 @@ class GeonamesParser(
       record.flatMap(_.population).getOrElse(0) + record.flatMap(_.boost).getOrElse(0)
     val woeType: Int =
       record.map(_._woeType).getOrElse(0)
-    val nameIndex = NameIndex(name, fid.toString,
-      pop, woeType, dn.flags, dn.lang, dn._id)
+    val nameIndex = NameIndex(name, fid.longId, pop, woeType, dn.flags, dn.lang, dn._id)
     store.addNameIndex(nameIndex)
   }
 
@@ -439,11 +438,9 @@ class GeonamesParser(
       attributes.setNeighborhoodType(NeighborhoodType.valueOf(v))
     )
 
-    val objectId = geonameId.legacyObjectId
-
     val record = GeocodeRecord(
-      _id = objectId,
-      ids = ids.map(_.toString),
+      _id = geonameId.longId,
+      ids = ids.map(_.longId),
       names = Nil,
       cc = feature.countryCode,
       _woeType = feature.featureClass.woeType.getValue,

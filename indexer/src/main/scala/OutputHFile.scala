@@ -51,7 +51,7 @@ class WrappedHFileWriter[K, V](writer: HFile.Writer, index: Index[K, V]) {
 }
 
 class FidMap(preload: Boolean) extends DurationUtils {
-  val fidMap = new HashMap[String, Option[ObjectId]]
+  val fidMap = new HashMap[StoredFeatureId, Option[StoredFeatureId]]
 
   if (preload) {
     logDuration("preloading fids") {
@@ -59,8 +59,8 @@ class FidMap(preload: Boolean) extends DurationUtils {
       val total = MongoGeocodeDAO.collection.count
       val geocodeCursor = MongoGeocodeDAO.find(MongoDBObject())
       geocodeCursor.foreach(geocodeRecord => {
-        geocodeRecord.ids.foreach(id => {
-          fidMap(id) = Some(geocodeRecord._id)
+        geocodeRecord.featureIds.foreach(id => {
+          fidMap(id) = Some(geocodeRecord.featureId)
         })
         i += 1
         if (i % (100*1000) == 0) {
@@ -70,22 +70,21 @@ class FidMap(preload: Boolean) extends DurationUtils {
     }
   }
 
-  def get(fid: String): Option[StoredFeatureId] = {
-    val oidOpt = (if (preload) {
+  def get(fid: StoredFeatureId): Option[StoredFeatureId] = {
+    if (preload) {
       fidMap.getOrElse(fid, None)
     } else {
       if (!fidMap.contains(fid)) {
-        val oidOpt = MongoGeocodeDAO.primitiveProjection[ObjectId](
-          MongoDBObject("ids" -> fid), "_id")
-        fidMap(fid) = oidOpt
-        if (oidOpt.isEmpty) {
+        val longidOpt = MongoGeocodeDAO.primitiveProjection[Long](
+          MongoDBObject("ids" -> fid.longId), "_id")
+        fidMap(fid) = longidOpt.flatMap(StoredFeatureId.fromLong _)
+        if (longidOpt.isEmpty) {
           //println("missing fid: %s".format(fid))
         }
       }
 
       fidMap.getOrElseUpdate(fid, None)
-    })
-    oidOpt.flatMap(StoredFeatureId.fromLegacyObjectId _)
+    }
   }
 }
 
@@ -178,7 +177,7 @@ abstract class Indexer extends DurationUtils {
     comp.compare(a.toByteArray(), b.toByteArray()) < 0
   }
 
-  def fidStringsToCanonicalFids(fids: List[String]): Seq[StoredFeatureId] = {
+  def fidsToCanonicalFids(fids: List[StoredFeatureId]): Seq[StoredFeatureId] = {
     fids.flatMap(fid => fidMap.get(fid)).toSet.toSeq
   }
 }
@@ -260,22 +259,22 @@ class PrefixIndexer(override val basepath: String, override val fidMap: FidMap) 
       val (prefSortedRecords, unprefSortedRecords) =
         sortRecordsByNames(woeMatches.toList)
 
-      var fids = new HashSet[String]
+      var fids = new HashSet[StoredFeatureId]
       prefSortedRecords.foreach(f => {
         if (fids.size < 50) {
-          fids.add(f.fid)
+          fids.add(f.fidAsFeatureId)
         }
       })
 
       if (fids.size < 3) {
         unprefSortedRecords.foreach(f => {
           if (fids.size < 50) {
-            fids.add(f.fid)
+            fids.add(f.fidAsFeatureId)
           }
         })
       }
 
-      prefixWriter.append(prefix, fidStringsToCanonicalFids(fids.toList))
+      prefixWriter.append(prefix, fidsToCanonicalFids(fids.toList))
     }
 
     prefixWriter.close()
@@ -295,12 +294,12 @@ class NameIndexer(override val basepath: String, override val fidMap: FidMap, ou
     var prefixSet = new HashSet[String]
 
     var lastName = ""
-    var nameFids = new HashSet[String]
+    var nameFids = new HashSet[StoredFeatureId]
 
     val writer = buildHFileV1Writer(Indexes.NameIndex)
 
     def writeFidsForLastName() {
-      writer.append(lastName, fidStringsToCanonicalFids(nameFids.toList))
+      writer.append(lastName, fidsToCanonicalFids(nameFids.toList))
       if (outputPrefixIndex) {
         1.to(List(PrefixIndexer.MaxPrefixLength, lastName.size).min).foreach(length =>
           prefixSet.add(lastName.substring(0, length))
@@ -317,7 +316,7 @@ class NameIndexer(override val basepath: String, override val fidMap: FidMap, ou
         lastName = n.name
       }
 
-      nameFids.add(n.fid)
+      nameFids.add(n.fidAsFeatureId)
 
       nameCount += 1
       if (nameCount % 100000 == 0) {
@@ -334,7 +333,7 @@ class NameIndexer(override val basepath: String, override val fidMap: FidMap, ou
 }
 
 class FeatureIndexer(override val basepath: String, override val fidMap: FidMap) extends Indexer {
-  type IdFixer = (String) => Option[String]
+  type IdFixer = (StoredFeatureId) => Option[StoredFeatureId]
 
   def makeGeocodeRecordWithoutGeometry(g: GeocodeRecord, fixParentId: IdFixer): GeocodeServingFeature = {
     val f = g.toGeocodeServingFeature()
@@ -348,18 +347,19 @@ class FeatureIndexer(override val basepath: String, override val fidMap: FidMap)
 
   def makeGeocodeServingFeature(f: GeocodeServingFeature, fixParentId: IdFixer) = {
     val parents = for {
-      parent <- f.scoringFeatures.parents.asScala
-      parentId <- fixParentId(parent)
+      parentStr <- f.scoringFeatures.parents.asScala
+      parentFid <- StoredFeatureId.fromHumanReadableString(parentStr)
+      parentId <- fixParentId(parentFid)
     } yield {
       parentId
     }
 
-    f.scoringFeatures.setParents(parents.asJava)
+    f.scoringFeatures.setParents(parents.map(_.humanReadableString).asJava)
     f
   }
 
   def writeFeatures() {
-    def fixParentId(fid: String) = fidMap.get(fid).map(_.toString)
+    def fixParentId(fid: StoredFeatureId) = fidMap.get(fid)
 
     val writer = buildMapFileWriter(Indexes.FeatureIndex, indexInterval = Some(2))
     var fidCount = 0
@@ -441,8 +441,8 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
               cellGeometry.setWkbGeometry(wkbWriter.write(s2shape.intersection(recordShape)))
             }
             cellGeometry.setWoeType(record.woeType)
-            cellGeometry.setOid(record._id.toByteArray())
-            cellGeometry.setLongId(StoredFeatureId.fromLegacyObjectId(record._id).get.longId)
+            cellGeometry.setOid(record.featureId.legacyObjectId.toByteArray())
+            cellGeometry.setLongId(record._id)
             bucket += cellGeometry
           }
         )
@@ -514,9 +514,10 @@ class IdIndexer(override val basepath: String, override val fidMap: FidMap, slug
   def writeSlugsAndIds() {
     val slugEntries: List[(String, StoredFeatureId)] = for {
       (slug, entry) <- slugEntryMap.toList
-      fid <- fidMap.get(entry.id)
+      fid <- StoredFeatureId.fromHumanReadableString(entry.id)
+      canonicalFid <- fidMap.get(fid)
     } yield {
-      slug -> fid
+      slug -> canonicalFid
     }
 
     // val oidEntries: List[(Array[Byte], Array[Byte])] = (for {

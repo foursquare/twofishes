@@ -37,8 +37,8 @@ case class BoundingBox(
 )
 
 case class GeocodeRecord(
-  _id: ObjectId,
-  ids: List[String],
+  _id: Long,
+  ids: List[Long],
   names: List[String],
   cc: String,
   _woeType: Int,
@@ -71,10 +71,10 @@ case class GeocodeRecord(
     })
   }
 
-  def featureId: StoredFeatureId = StoredFeatureId.fromLegacyObjectId(_id).getOrElse(
+  def featureId: StoredFeatureId = StoredFeatureId.fromLong(_id).getOrElse(
     throw new RuntimeException("can't convert %s to a StoredFeatureId".format(_id)))
 
-  def featureIds: List[StoredFeatureId] = ids.flatMap(id => StoredFeatureId.fromHumanReadableString(id))
+  def featureIds: List[StoredFeatureId] = ids.flatMap(StoredFeatureId.fromLong _)
 
   lazy val woeType = YahooWoeType.findByValue(_woeType)
 
@@ -201,7 +201,7 @@ case class GeocodeRecord(
     }
 
     val servingFeature = new GeocodeServingFeature()
-    servingFeature.setId(_id.toString)
+    servingFeature.setId(featureId.legacyObjectId.toString)
     servingFeature.setScoringFeatures(scoring)
     servingFeature.setFeature(feature)
 

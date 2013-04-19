@@ -11,18 +11,17 @@ import com.novus.salat.global._
 
 case class NameIndex(
   name: String,
-  fid: String,
+  fid: Long,
   pop: Int,
   woeType: Int,
   flags: Int,
   lang: String,
   @Key("_id") _id: ObjectId
-)
+) {
 
-case class IdPop(
-  fid: String,
-  pop: Int
-)
+  def fidAsFeatureId = StoredFeatureId.fromLong(fid).getOrElse(
+    throw new RuntimeException("can't convert %d to a feature id".format(fid)))
+}
 
 trait GeocodeStorageWriteService {
   def insert(record: GeocodeRecord): Unit
