@@ -180,15 +180,6 @@ case class GeocodeRecord(
 
     slug.foreach(s => feature.setSlug(s))
 
-    def makeParents(ids: List[String], relationType: GeocodeRelationType) = {
-      ids.map(id => {
-        val relation = new GeocodeRelation()
-        relation.setRelationType(GeocodeRelationType.PARENT)
-        relation.setRelatedId(id)
-        relation
-      })
-    }
-
     val scoring = new ScoringFeatures()
     boost.foreach(b => scoring.setBoost(b))
     population.foreach(p => scoring.setPopulation(p))
