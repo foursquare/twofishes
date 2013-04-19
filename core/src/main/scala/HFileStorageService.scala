@@ -201,7 +201,6 @@ class NameIndexHFileInput(basepath: String, shouldPreload: Boolean) {
   val prefixMapOpt = PrefixIndexMapFileInput.readInput(basepath, shouldPreload)
 
   def get(name: String): List[StoredFeatureId] = {
-    val buf = ByteBuffer.wrap(name.getBytes())
     nameIndex.lookup(name).toList.flatten
   }
 

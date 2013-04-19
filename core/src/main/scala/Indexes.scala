@@ -21,15 +21,14 @@ object Serde {
 
   case object LongListSerde extends Serde[Seq[Long]] {
     override def toBytes(t: Seq[Long]): Array[Byte] = {
-      val buf = ByteBuffer.allocate(t.size * 12)
-      t.foreach(l => ByteUtils.longToBytes(l))
-      TBaseHelper.byteBufferToByteArray(buf)
+      val buf = ByteBuffer.wrap(new Array[Byte](t.size * 8))
+      t.foreach(l => buf.putLong(l))
+      buf.array()
     }
 
     override def fromBytes(bytes: Array[Byte]): Seq[Long] = {
-      0.until(bytes.length / 8).map(i => {
-        ByteUtils.getLongFromBytes(Arrays.copyOfRange(bytes, i * 8, (i + 1) * 8))
-      })
+      val buf = ByteBuffer.wrap(bytes)
+      0.until(bytes.length / 8).map(i => buf.getLong)
     }
   }
 
@@ -45,9 +44,9 @@ object Serde {
 
   case object ObjectIdListSerde extends Serde[Seq[ObjectId]] {
     override def toBytes(t: Seq[ObjectId]): Array[Byte] = {
-      val buf = ByteBuffer.allocate(t.size * 12)
+      val buf = ByteBuffer.wrap(new Array[Byte](t.size * 12))
       t.foreach(oid => buf.put(oid.toByteArray))
-      TBaseHelper.byteBufferToByteArray(buf)
+      buf.array()
     }
     override def fromBytes(bytes: Array[Byte]): Seq[ObjectId] = {
       0.until(bytes.length / 12).map(i => {

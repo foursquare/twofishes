@@ -504,7 +504,7 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
       writer.append(longKey, cellGeometries)
     })
 
-    scala.util.Random.shuffle(ids).take(100).foreach(id => println("new ObjectId(\"%s\")".format(id)))
+    scala.util.Random.shuffle(ids).take(100).foreach(id => println("%sL".format(id)))
 
     writer.close()
   }
@@ -527,7 +527,6 @@ class IdIndexer(override val basepath: String, override val fidMap: FidMap, slug
     //   (id.getBytes("UTF-8"), geocodeRecord._id.toByteArray)
     // }).toList
 
-    // these types are a lie
     val writer = buildMapFileWriter(Indexes.IdMappingIndex)
 
     val sortedEntries = slugEntries.sortWith((a, b) => lexicalSort(a._1, b._1)).foreach({case (k, v) => {
