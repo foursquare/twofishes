@@ -333,25 +333,25 @@ class NameIndexer(override val basepath: String, override val fidMap: FidMap, ou
 }
 
 class FeatureIndexer(override val basepath: String, override val fidMap: FidMap) extends Indexer {
-  type IdFixer = (StoredFeatureId) => Option[StoredFeatureId]
+  def canonicalizeParentId(fid: StoredFeatureId) = fidMap.get(fid)
 
-  def makeGeocodeRecordWithoutGeometry(g: GeocodeRecord, fixParentId: IdFixer): GeocodeServingFeature = {
+  def makeGeocodeRecordWithoutGeometry(g: GeocodeRecord): GeocodeServingFeature = {
     val f = g.toGeocodeServingFeature()
     f.feature.geometry.unsetWkbGeometry()
-    makeGeocodeServingFeature(f, fixParentId)
+    makeGeocodeServingFeature(f)
   }
 
-  def makeGeocodeRecord(g: GeocodeRecord, fixParentId: IdFixer) = {
-    makeGeocodeServingFeature(g.toGeocodeServingFeature(), fixParentId)
+  def makeGeocodeRecord(g: GeocodeRecord) = {
+    makeGeocodeServingFeature(g.toGeocodeServingFeature())
   }
 
-  def makeGeocodeServingFeature(f: GeocodeServingFeature, fixParentId: IdFixer) = {
+  def makeGeocodeServingFeature(f: GeocodeServingFeature) = {
     val parents = for {
       parentLongId <- f.scoringFeatures.parentIds.asScala
       parentFid <- StoredFeatureId.fromLong(parentLongId)
-      parentId <- fixParentId(parentFid)
+      parentId <- canonicalizeParentId(parentFid)
     } yield {
-      parentId
+      parentFid
     }
 
     f.scoringFeatures.setParentIds(parents.map(_.longId).asJava)
@@ -359,8 +359,6 @@ class FeatureIndexer(override val basepath: String, override val fidMap: FidMap)
   }
 
   def writeFeatures() {
-    def fixParentId(fid: StoredFeatureId) = fidMap.get(fid)
-
     val writer = buildMapFileWriter(Indexes.FeatureIndex, indexInterval = Some(2))
     var fidCount = 0
     val fidSize = MongoGeocodeDAO.collection.count
@@ -368,7 +366,7 @@ class FeatureIndexer(override val basepath: String, override val fidMap: FidMap)
       .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
     fidCursor.foreach(f => {
       writer.append(
-        f.featureId, makeGeocodeRecordWithoutGeometry(f, fixParentId))
+        f.featureId, makeGeocodeRecordWithoutGeometry(f))
       fidCount += 1
       if (fidCount % 100000 == 0) {
         println("processed %d of %d features".format(fidCount, fidSize))
