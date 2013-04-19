@@ -347,14 +347,14 @@ class FeatureIndexer(override val basepath: String, override val fidMap: FidMap)
 
   def makeGeocodeServingFeature(f: GeocodeServingFeature, fixParentId: IdFixer) = {
     val parents = for {
-      parentStr <- f.scoringFeatures.parents.asScala
-      parentFid <- StoredFeatureId.fromHumanReadableString(parentStr)
+      parentLongId <- f.scoringFeatures.parentIds.asScala
+      parentFid <- StoredFeatureId.fromLong(parentLongId)
       parentId <- fixParentId(parentFid)
     } yield {
       parentId
     }
 
-    f.scoringFeatures.setParents(parents.map(_.humanReadableString).asJava)
+    f.scoringFeatures.setParentIds(parents.map(_.longId).asJava)
     f
   }
 

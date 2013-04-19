@@ -87,8 +87,8 @@ class AutocompleteGeocoderImpl(
     } else {
       parses.flatMap(parse => {
         if (req.debug > 0) {
-          logger.ifDebug("checking %d fids against %s", matches.size, parse.map(_.fmatch.id))
-          logger.ifDebug("these are the fids of my parse: %s", matches.map(_.fmatch.id))
+          logger.ifDebug("checking %d fids against %s", matches.size, parse.map(_.fmatch.longId))
+          logger.ifDebug("these are the fids of my parse: %s", matches.map(_.fmatch.longId))
         }
 
         val allowedLanguages =
@@ -96,14 +96,14 @@ class AutocompleteGeocoderImpl(
           parse.headOption.toList.flatMap(_.possibleNameHits.map(_.lang)).toSet
 
         matches.flatMap(featureMatch => {
-          val fid = featureMatch.fmatch.id
+          val fid = featureMatch.fmatch.longId
           if (req.debug > 0) {
             logger.ifDebug("checking if %s is an unused parent of %s",
-              fid, parse.map(_.fmatch.id))
+              fid, parse.map(_.fmatch.longId))
           }
 
-          val isValid = parse.exists(_.fmatch.scoringFeatures.parents.asScala.has(fid.toString)) &&
-            !parse.exists(_.fmatch.id.toString == fid.toString) &&
+          val isValid = parse.exists(_.fmatch.scoringFeatures.parentIds.asScala.has(fid)) &&
+            !parse.exists(_.fmatch.longId.toString == fid) &&
             featureMatch.possibleNameHits.exists(n => allowedLanguages.has(n.lang))
 
           if (isValid) {
@@ -147,9 +147,9 @@ class AutocompleteGeocoderImpl(
         val possibleParents = (for {
           parse <- parses
           parseFeature <- parse
-          featureParentId <- parseFeature.fmatch.scoringFeatures.parents.asScala
+          featureParentId <- parseFeature.fmatch.scoringFeatures.parentIds.asScala
         } yield {
-          StoredFeatureId.fromLegacyObjectId(new ObjectId(featureParentId))
+          StoredFeatureId.fromLong(featureParentId)
         }).flatten
 
         val featuresMatches: Seq[FeatureMatch] =
@@ -223,7 +223,7 @@ class AutocompleteGeocoderImpl(
     val parses = generateAutoParses(parseParams.tokens, parseParams.spaceAtEnd)
     if (req.debug > 0) {
       parses.foreach(p => {
-        logger.ifDebug("parse ids: %s", p.map(_.fmatch.id))
+        logger.ifDebug("parse ids: %s", p.map(_.fmatch.longId))
       })
     }
 

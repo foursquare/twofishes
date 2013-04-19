@@ -33,20 +33,23 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
 
   private static final TField POPULATION_FIELD_DESC = new TField("population", TType.I32, (short)1);
   private static final TField BOOST_FIELD_DESC = new TField("boost", TType.I32, (short)2);
-  private static final TField PARENTS_FIELD_DESC = new TField("parents", TType.LIST, (short)3);
+  private static final TField PARENT_IDS_FIELD_DESC = new TField("parentIds", TType.LIST, (short)6);
   private static final TField CAN_GEOCODE_FIELD_DESC = new TField("canGeocode", TType.BOOL, (short)5);
+  private static final TField DEPRECATED_PARENTS_FIELD_DESC = new TField("DEPRECATED_parents", TType.LIST, (short)3);
 
   public int population;
   public int boost;
-  public List<String> parents;
+  public List<Long> parentIds;
   public boolean canGeocode;
+  public List<String> DEPRECATED_parents;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
     POPULATION((short)1, "population"),
     BOOST((short)2, "boost"),
-    PARENTS((short)3, "parents"),
-    CAN_GEOCODE((short)5, "canGeocode");
+    PARENT_IDS((short)6, "parentIds"),
+    CAN_GEOCODE((short)5, "canGeocode"),
+    DEPRECATED_PARENTS((short)3, "DEPRECATED_parents");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -65,10 +68,12 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
           return POPULATION;
         case 2: // BOOST
           return BOOST;
-        case 3: // PARENTS
-          return PARENTS;
+        case 6: // PARENT_IDS
+          return PARENT_IDS;
         case 5: // CAN_GEOCODE
           return CAN_GEOCODE;
+        case 3: // DEPRECATED_PARENTS
+          return DEPRECATED_PARENTS;
         default:
           return null;
       }
@@ -121,11 +126,14 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
         new FieldValueMetaData(TType.I32)));
     tmpMap.put(_Fields.BOOST, new FieldMetaData("boost", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.I32)));
-    tmpMap.put(_Fields.PARENTS, new FieldMetaData("parents", TFieldRequirementType.OPTIONAL, 
+    tmpMap.put(_Fields.PARENT_IDS, new FieldMetaData("parentIds", TFieldRequirementType.OPTIONAL, 
         new ListMetaData(TType.LIST, 
-            new FieldValueMetaData(TType.STRING))));
+            new FieldValueMetaData(TType.I64))));
     tmpMap.put(_Fields.CAN_GEOCODE, new FieldMetaData("canGeocode", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.BOOL)));
+    tmpMap.put(_Fields.DEPRECATED_PARENTS, new FieldMetaData("DEPRECATED_parents", TFieldRequirementType.OPTIONAL, 
+        new ListMetaData(TType.LIST, 
+            new FieldValueMetaData(TType.STRING))));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(ScoringFeatures.class, metaDataMap);
   }
@@ -135,9 +143,11 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
 
     this.boost = 0;
 
-    this.parents = new ArrayList<String>();
+    this.parentIds = new ArrayList<Long>();
 
     this.canGeocode = true;
+
+    this.DEPRECATED_parents = new ArrayList<String>();
 
   }
 
@@ -149,14 +159,21 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
     __isset_bit_vector.or(other.__isset_bit_vector);
     this.population = other.population;
     this.boost = other.boost;
-    if (other.isSetParents()) {
-      List<String> __this__parents = new ArrayList<String>();
-      for (String other_element : other.parents) {
-        __this__parents.add(other_element);
+    if (other.isSetParentIds()) {
+      List<Long> __this__parentIds = new ArrayList<Long>();
+      for (Long other_element : other.parentIds) {
+        __this__parentIds.add(other_element);
       }
-      this.parents = __this__parents;
+      this.parentIds = __this__parentIds;
     }
     this.canGeocode = other.canGeocode;
+    if (other.isSetDEPRECATED_parents()) {
+      List<String> __this__DEPRECATED_parents = new ArrayList<String>();
+      for (String other_element : other.DEPRECATED_parents) {
+        __this__DEPRECATED_parents.add(other_element);
+      }
+      this.DEPRECATED_parents = __this__DEPRECATED_parents;
+    }
   }
 
   public ScoringFeatures deepCopy() {
@@ -169,9 +186,11 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
 
     this.boost = 0;
 
-    this.parents = new ArrayList<String>();
+    this.parentIds = new ArrayList<Long>();
 
     this.canGeocode = true;
+
+    this.DEPRECATED_parents = new ArrayList<String>();
 
   }
 
@@ -221,42 +240,42 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
     __isset_bit_vector.set(__BOOST_ISSET_ID, value);
   }
 
-  public int getParentsSize() {
-    return (this.parents == null) ? 0 : this.parents.size();
+  public int getParentIdsSize() {
+    return (this.parentIds == null) ? 0 : this.parentIds.size();
   }
 
-  public java.util.Iterator<String> getParentsIterator() {
-    return (this.parents == null) ? null : this.parents.iterator();
+  public java.util.Iterator<Long> getParentIdsIterator() {
+    return (this.parentIds == null) ? null : this.parentIds.iterator();
   }
 
-  public void addToParents(String elem) {
-    if (this.parents == null) {
-      this.parents = new ArrayList<String>();
+  public void addToParentIds(long elem) {
+    if (this.parentIds == null) {
+      this.parentIds = new ArrayList<Long>();
     }
-    this.parents.add(elem);
+    this.parentIds.add(elem);
   }
 
-  public List<String> getParents() {
-    return this.parents;
+  public List<Long> getParentIds() {
+    return this.parentIds;
   }
 
-  public ScoringFeatures setParents(List<String> parents) {
-    this.parents = parents;
+  public ScoringFeatures setParentIds(List<Long> parentIds) {
+    this.parentIds = parentIds;
     return this;
   }
 
-  public void unsetParents() {
-    this.parents = null;
+  public void unsetParentIds() {
+    this.parentIds = null;
   }
 
-  /** Returns true if field parents is set (has been asigned a value) and false otherwise */
-  public boolean isSetParents() {
-    return this.parents != null;
+  /** Returns true if field parentIds is set (has been asigned a value) and false otherwise */
+  public boolean isSetParentIds() {
+    return this.parentIds != null;
   }
 
-  public void setParentsIsSet(boolean value) {
+  public void setParentIdsIsSet(boolean value) {
     if (!value) {
-      this.parents = null;
+      this.parentIds = null;
     }
   }
 
@@ -283,6 +302,45 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
     __isset_bit_vector.set(__CANGEOCODE_ISSET_ID, value);
   }
 
+  public int getDEPRECATED_parentsSize() {
+    return (this.DEPRECATED_parents == null) ? 0 : this.DEPRECATED_parents.size();
+  }
+
+  public java.util.Iterator<String> getDEPRECATED_parentsIterator() {
+    return (this.DEPRECATED_parents == null) ? null : this.DEPRECATED_parents.iterator();
+  }
+
+  public void addToDEPRECATED_parents(String elem) {
+    if (this.DEPRECATED_parents == null) {
+      this.DEPRECATED_parents = new ArrayList<String>();
+    }
+    this.DEPRECATED_parents.add(elem);
+  }
+
+  public List<String> getDEPRECATED_parents() {
+    return this.DEPRECATED_parents;
+  }
+
+  public ScoringFeatures setDEPRECATED_parents(List<String> DEPRECATED_parents) {
+    this.DEPRECATED_parents = DEPRECATED_parents;
+    return this;
+  }
+
+  public void unsetDEPRECATED_parents() {
+    this.DEPRECATED_parents = null;
+  }
+
+  /** Returns true if field DEPRECATED_parents is set (has been asigned a value) and false otherwise */
+  public boolean isSetDEPRECATED_parents() {
+    return this.DEPRECATED_parents != null;
+  }
+
+  public void setDEPRECATED_parentsIsSet(boolean value) {
+    if (!value) {
+      this.DEPRECATED_parents = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case POPULATION:
@@ -301,11 +359,11 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
       }
       break;
 
-    case PARENTS:
+    case PARENT_IDS:
       if (value == null) {
-        unsetParents();
+        unsetParentIds();
       } else {
-        setParents((List<String>)value);
+        setParentIds((List<Long>)value);
       }
       break;
 
@@ -314,6 +372,14 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
         unsetCanGeocode();
       } else {
         setCanGeocode((Boolean)value);
+      }
+      break;
+
+    case DEPRECATED_PARENTS:
+      if (value == null) {
+        unsetDEPRECATED_parents();
+      } else {
+        setDEPRECATED_parents((List<String>)value);
       }
       break;
 
@@ -328,11 +394,14 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
     case BOOST:
       return new Integer(getBoost());
 
-    case PARENTS:
-      return getParents();
+    case PARENT_IDS:
+      return getParentIds();
 
     case CAN_GEOCODE:
       return new Boolean(isCanGeocode());
+
+    case DEPRECATED_PARENTS:
+      return getDEPRECATED_parents();
 
     }
     throw new IllegalStateException();
@@ -349,10 +418,12 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
       return isSetPopulation();
     case BOOST:
       return isSetBoost();
-    case PARENTS:
-      return isSetParents();
+    case PARENT_IDS:
+      return isSetParentIds();
     case CAN_GEOCODE:
       return isSetCanGeocode();
+    case DEPRECATED_PARENTS:
+      return isSetDEPRECATED_parents();
     }
     throw new IllegalStateException();
   }
@@ -388,12 +459,12 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
         return false;
     }
 
-    boolean this_present_parents = true && this.isSetParents();
-    boolean that_present_parents = true && that.isSetParents();
-    if (this_present_parents || that_present_parents) {
-      if (!(this_present_parents && that_present_parents))
+    boolean this_present_parentIds = true && this.isSetParentIds();
+    boolean that_present_parentIds = true && that.isSetParentIds();
+    if (this_present_parentIds || that_present_parentIds) {
+      if (!(this_present_parentIds && that_present_parentIds))
         return false;
-      if (!this.parents.equals(that.parents))
+      if (!this.parentIds.equals(that.parentIds))
         return false;
     }
 
@@ -403,6 +474,15 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
       if (!(this_present_canGeocode && that_present_canGeocode))
         return false;
       if (this.canGeocode != that.canGeocode)
+        return false;
+    }
+
+    boolean this_present_DEPRECATED_parents = true && this.isSetDEPRECATED_parents();
+    boolean that_present_DEPRECATED_parents = true && that.isSetDEPRECATED_parents();
+    if (this_present_DEPRECATED_parents || that_present_DEPRECATED_parents) {
+      if (!(this_present_DEPRECATED_parents && that_present_DEPRECATED_parents))
+        return false;
+      if (!this.DEPRECATED_parents.equals(that.DEPRECATED_parents))
         return false;
     }
 
@@ -442,12 +522,12 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetParents()).compareTo(typedOther.isSetParents());
+    lastComparison = Boolean.valueOf(isSetParentIds()).compareTo(typedOther.isSetParentIds());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetParents()) {
-      lastComparison = TBaseHelper.compareTo(this.parents, typedOther.parents);
+    if (isSetParentIds()) {
+      lastComparison = TBaseHelper.compareTo(this.parentIds, typedOther.parentIds);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -458,6 +538,16 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
     }
     if (isSetCanGeocode()) {
       lastComparison = TBaseHelper.compareTo(this.canGeocode, typedOther.canGeocode);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetDEPRECATED_parents()).compareTo(typedOther.isSetDEPRECATED_parents());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetDEPRECATED_parents()) {
+      lastComparison = TBaseHelper.compareTo(this.DEPRECATED_parents, typedOther.DEPRECATED_parents);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -495,16 +585,16 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
-        case 3: // PARENTS
+        case 6: // PARENT_IDS
           if (field.type == TType.LIST) {
             {
               TList _list4 = iprot.readListBegin();
-              this.parents = new ArrayList<String>(_list4.size);
+              this.parentIds = new ArrayList<Long>(_list4.size);
               for (int _i5 = 0; _i5 < _list4.size; ++_i5)
               {
-                String _elem6;
-                _elem6 = iprot.readString();
-                this.parents.add(_elem6);
+                long _elem6;
+                _elem6 = iprot.readI64();
+                this.parentIds.add(_elem6);
               }
               iprot.readListEnd();
             }
@@ -516,6 +606,23 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
           if (field.type == TType.BOOL) {
             this.canGeocode = iprot.readBool();
             setCanGeocodeIsSet(true);
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 3: // DEPRECATED_PARENTS
+          if (field.type == TType.LIST) {
+            {
+              TList _list7 = iprot.readListBegin();
+              this.DEPRECATED_parents = new ArrayList<String>(_list7.size);
+              for (int _i8 = 0; _i8 < _list7.size; ++_i8)
+              {
+                String _elem9;
+                _elem9 = iprot.readString();
+                this.DEPRECATED_parents.add(_elem9);
+              }
+              iprot.readListEnd();
+            }
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -545,14 +652,14 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
       oprot.writeI32(this.boost);
       oprot.writeFieldEnd();
     }
-    if (this.parents != null) {
-      if (isSetParents()) {
-        oprot.writeFieldBegin(PARENTS_FIELD_DESC);
+    if (this.DEPRECATED_parents != null) {
+      if (isSetDEPRECATED_parents()) {
+        oprot.writeFieldBegin(DEPRECATED_PARENTS_FIELD_DESC);
         {
-          oprot.writeListBegin(new TList(TType.STRING, this.parents.size()));
-          for (String _iter7 : this.parents)
+          oprot.writeListBegin(new TList(TType.STRING, this.DEPRECATED_parents.size()));
+          for (String _iter10 : this.DEPRECATED_parents)
           {
-            oprot.writeString(_iter7);
+            oprot.writeString(_iter10);
           }
           oprot.writeListEnd();
         }
@@ -563,6 +670,20 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
       oprot.writeFieldBegin(CAN_GEOCODE_FIELD_DESC);
       oprot.writeBool(this.canGeocode);
       oprot.writeFieldEnd();
+    }
+    if (this.parentIds != null) {
+      if (isSetParentIds()) {
+        oprot.writeFieldBegin(PARENT_IDS_FIELD_DESC);
+        {
+          oprot.writeListBegin(new TList(TType.I64, this.parentIds.size()));
+          for (long _iter11 : this.parentIds)
+          {
+            oprot.writeI64(_iter11);
+          }
+          oprot.writeListEnd();
+        }
+        oprot.writeFieldEnd();
+      }
     }
     oprot.writeFieldStop();
     oprot.writeStructEnd();
@@ -584,13 +705,13 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
       sb.append(this.boost);
       first = false;
     }
-    if (isSetParents()) {
+    if (isSetParentIds()) {
       if (!first) sb.append(", ");
-      sb.append("parents:");
-      if (this.parents == null) {
+      sb.append("parentIds:");
+      if (this.parentIds == null) {
         sb.append("null");
       } else {
-        sb.append(this.parents);
+        sb.append(this.parentIds);
       }
       first = false;
     }
@@ -598,6 +719,16 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
       if (!first) sb.append(", ");
       sb.append("canGeocode:");
       sb.append(this.canGeocode);
+      first = false;
+    }
+    if (isSetDEPRECATED_parents()) {
+      if (!first) sb.append(", ");
+      sb.append("DEPRECATED_parents:");
+      if (this.DEPRECATED_parents == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.DEPRECATED_parents);
+      }
       first = false;
     }
     sb.append(")");

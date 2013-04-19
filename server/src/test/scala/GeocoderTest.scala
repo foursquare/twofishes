@@ -122,12 +122,12 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
     feature.setIds(List(fid.thriftFeatureId).asJava)
 
     val scoringFeatures = new ScoringFeatures()
-    scoringFeatures.setParents(parents.map(_.id).asJava)
+    scoringFeatures.setParentIds(parents.map(_.longId: java.lang.Long).asJava)
     population.foreach(p => scoringFeatures.setPopulation(p))
 
     val servingFeature = new GeocodeServingFeature()
     servingFeature.setScoringFeatures(scoringFeatures)
-    servingFeature.setId(fid.legacyObjectId.toString)
+    servingFeature.setLongId(fid.longId)
     servingFeature.setFeature(feature)
 
     nameMap(name.toLowerCase) = fid :: nameMap.getOrElse(name.toLowerCase, Nil)

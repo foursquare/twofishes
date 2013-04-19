@@ -142,8 +142,10 @@ struct GeocodeFeatureAttributes {
 struct ScoringFeatures {
   1: optional i32 population = 0,
   2: optional i32 boost = 0,
-  3: optional list<string> parents = [],
+  6: optional list<i64> parentIds = [],
   5: optional bool canGeocode = 1
+
+  3: optional list<string> DEPRECATED_parents = [],
 }
 
 struct GeocodeFeature {
@@ -172,10 +174,12 @@ struct GeocodeFeature {
 }
 
 struct GeocodeServingFeature {
-  1: string id
+  5: i64 longId
   2: ScoringFeatures scoringFeatures,
   3: GeocodeFeature feature,
   4: optional list<GeocodeFeature> parents,
+
+  1: string DEPRECATED_id
 }
 
 struct InterpretationScoringFeatures {

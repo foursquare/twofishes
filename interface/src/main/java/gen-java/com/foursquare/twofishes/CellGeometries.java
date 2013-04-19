@@ -98,8 +98,8 @@ public class CellGeometries implements TBase<CellGeometries, CellGeometries._Fie
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
     Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.CELLS, new FieldMetaData("cells", TFieldRequirementType.OPTIONAL,
-        new ListMetaData(TType.LIST,
+    tmpMap.put(_Fields.CELLS, new FieldMetaData("cells", TFieldRequirementType.OPTIONAL, 
+        new ListMetaData(TType.LIST, 
             new StructMetaData(TType.STRUCT, CellGeometry.class))));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(CellGeometries.class, metaDataMap);
@@ -265,7 +265,7 @@ public class CellGeometries implements TBase<CellGeometries, CellGeometries._Fie
     while (true)
     {
       field = iprot.readFieldBegin();
-      if (field.type == TType.STOP) {
+      if (field.type == TType.STOP) { 
         break;
       }
       switch (field.id) {
@@ -283,7 +283,7 @@ public class CellGeometries implements TBase<CellGeometries, CellGeometries._Fie
               }
               iprot.readListEnd();
             }
-          } else {
+          } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
           break;

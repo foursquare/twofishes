@@ -31,22 +31,25 @@ import org.apache.thrift.protocol.*;
 public class GeocodeServingFeature implements TBase<GeocodeServingFeature, GeocodeServingFeature._Fields>, java.io.Serializable, Cloneable {
   private static final TStruct STRUCT_DESC = new TStruct("GeocodeServingFeature");
 
-  private static final TField ID_FIELD_DESC = new TField("id", TType.STRING, (short)1);
+  private static final TField LONG_ID_FIELD_DESC = new TField("longId", TType.I64, (short)5);
   private static final TField SCORING_FEATURES_FIELD_DESC = new TField("scoringFeatures", TType.STRUCT, (short)2);
   private static final TField FEATURE_FIELD_DESC = new TField("feature", TType.STRUCT, (short)3);
   private static final TField PARENTS_FIELD_DESC = new TField("parents", TType.LIST, (short)4);
+  private static final TField DEPRECATED_ID_FIELD_DESC = new TField("DEPRECATED_id", TType.STRING, (short)1);
 
-  public String id;
+  public long longId;
   public ScoringFeatures scoringFeatures;
   public GeocodeFeature feature;
   public List<GeocodeFeature> parents;
+  public String DEPRECATED_id;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
-    ID((short)1, "id"),
+    LONG_ID((short)5, "longId"),
     SCORING_FEATURES((short)2, "scoringFeatures"),
     FEATURE((short)3, "feature"),
-    PARENTS((short)4, "parents");
+    PARENTS((short)4, "parents"),
+    DEPRECATED_ID((short)1, "DEPRECATED_id");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -61,14 +64,16 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
      */
     public static _Fields findByThriftId(int fieldId) {
       switch(fieldId) {
-        case 1: // ID
-          return ID;
+        case 5: // LONG_ID
+          return LONG_ID;
         case 2: // SCORING_FEATURES
           return SCORING_FEATURES;
         case 3: // FEATURE
           return FEATURE;
         case 4: // PARENTS
           return PARENTS;
+        case 1: // DEPRECATED_ID
+          return DEPRECATED_ID;
         default:
           return null;
       }
@@ -109,12 +114,14 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
   }
 
   // isset id assignments
+  private static final int __LONGID_ISSET_ID = 0;
+  private BitSet __isset_bit_vector = new BitSet(1);
 
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
     Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.ID, new FieldMetaData("id", TFieldRequirementType.DEFAULT, 
-        new FieldValueMetaData(TType.STRING)));
+    tmpMap.put(_Fields.LONG_ID, new FieldMetaData("longId", TFieldRequirementType.DEFAULT, 
+        new FieldValueMetaData(TType.I64)));
     tmpMap.put(_Fields.SCORING_FEATURES, new FieldMetaData("scoringFeatures", TFieldRequirementType.DEFAULT, 
         new StructMetaData(TType.STRUCT, ScoringFeatures.class)));
     tmpMap.put(_Fields.FEATURE, new FieldMetaData("feature", TFieldRequirementType.DEFAULT, 
@@ -122,6 +129,8 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
     tmpMap.put(_Fields.PARENTS, new FieldMetaData("parents", TFieldRequirementType.OPTIONAL, 
         new ListMetaData(TType.LIST, 
             new StructMetaData(TType.STRUCT, GeocodeFeature.class))));
+    tmpMap.put(_Fields.DEPRECATED_ID, new FieldMetaData("DEPRECATED_id", TFieldRequirementType.DEFAULT, 
+        new FieldValueMetaData(TType.STRING)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeServingFeature.class, metaDataMap);
   }
@@ -130,23 +139,26 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
   }
 
   public GeocodeServingFeature(
-    String id,
+    long longId,
     ScoringFeatures scoringFeatures,
-    GeocodeFeature feature)
+    GeocodeFeature feature,
+    String DEPRECATED_id)
   {
     this();
-    this.id = id;
+    this.longId = longId;
+    setLongIdIsSet(true);
     this.scoringFeatures = scoringFeatures;
     this.feature = feature;
+    this.DEPRECATED_id = DEPRECATED_id;
   }
 
   /**
    * Performs a deep copy on <i>other</i>.
    */
   public GeocodeServingFeature(GeocodeServingFeature other) {
-    if (other.isSetId()) {
-      this.id = other.id;
-    }
+    __isset_bit_vector.clear();
+    __isset_bit_vector.or(other.__isset_bit_vector);
+    this.longId = other.longId;
     if (other.isSetScoringFeatures()) {
       this.scoringFeatures = new ScoringFeatures(other.scoringFeatures);
     }
@@ -160,6 +172,9 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
       }
       this.parents = __this__parents;
     }
+    if (other.isSetDEPRECATED_id()) {
+      this.DEPRECATED_id = other.DEPRECATED_id;
+    }
   }
 
   public GeocodeServingFeature deepCopy() {
@@ -168,34 +183,35 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
 
   @Override
   public void clear() {
-    this.id = null;
+    setLongIdIsSet(false);
+    this.longId = 0;
     this.scoringFeatures = null;
     this.feature = null;
     this.parents = null;
+    this.DEPRECATED_id = null;
   }
 
-  public String getId() {
-    return this.id;
+  public long getLongId() {
+    return this.longId;
   }
 
-  public GeocodeServingFeature setId(String id) {
-    this.id = id;
+  public GeocodeServingFeature setLongId(long longId) {
+    this.longId = longId;
+    setLongIdIsSet(true);
     return this;
   }
 
-  public void unsetId() {
-    this.id = null;
+  public void unsetLongId() {
+    __isset_bit_vector.clear(__LONGID_ISSET_ID);
   }
 
-  /** Returns true if field id is set (has been asigned a value) and false otherwise */
-  public boolean isSetId() {
-    return this.id != null;
+  /** Returns true if field longId is set (has been asigned a value) and false otherwise */
+  public boolean isSetLongId() {
+    return __isset_bit_vector.get(__LONGID_ISSET_ID);
   }
 
-  public void setIdIsSet(boolean value) {
-    if (!value) {
-      this.id = null;
-    }
+  public void setLongIdIsSet(boolean value) {
+    __isset_bit_vector.set(__LONGID_ISSET_ID, value);
   }
 
   public ScoringFeatures getScoringFeatures() {
@@ -285,13 +301,37 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
     }
   }
 
+  public String getDEPRECATED_id() {
+    return this.DEPRECATED_id;
+  }
+
+  public GeocodeServingFeature setDEPRECATED_id(String DEPRECATED_id) {
+    this.DEPRECATED_id = DEPRECATED_id;
+    return this;
+  }
+
+  public void unsetDEPRECATED_id() {
+    this.DEPRECATED_id = null;
+  }
+
+  /** Returns true if field DEPRECATED_id is set (has been asigned a value) and false otherwise */
+  public boolean isSetDEPRECATED_id() {
+    return this.DEPRECATED_id != null;
+  }
+
+  public void setDEPRECATED_idIsSet(boolean value) {
+    if (!value) {
+      this.DEPRECATED_id = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
-    case ID:
+    case LONG_ID:
       if (value == null) {
-        unsetId();
+        unsetLongId();
       } else {
-        setId((String)value);
+        setLongId((Long)value);
       }
       break;
 
@@ -319,13 +359,21 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
       }
       break;
 
+    case DEPRECATED_ID:
+      if (value == null) {
+        unsetDEPRECATED_id();
+      } else {
+        setDEPRECATED_id((String)value);
+      }
+      break;
+
     }
   }
 
   public Object getFieldValue(_Fields field) {
     switch (field) {
-    case ID:
-      return getId();
+    case LONG_ID:
+      return new Long(getLongId());
 
     case SCORING_FEATURES:
       return getScoringFeatures();
@@ -335,6 +383,9 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
 
     case PARENTS:
       return getParents();
+
+    case DEPRECATED_ID:
+      return getDEPRECATED_id();
 
     }
     throw new IllegalStateException();
@@ -347,14 +398,16 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
     }
 
     switch (field) {
-    case ID:
-      return isSetId();
+    case LONG_ID:
+      return isSetLongId();
     case SCORING_FEATURES:
       return isSetScoringFeatures();
     case FEATURE:
       return isSetFeature();
     case PARENTS:
       return isSetParents();
+    case DEPRECATED_ID:
+      return isSetDEPRECATED_id();
     }
     throw new IllegalStateException();
   }
@@ -372,12 +425,12 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
     if (that == null)
       return false;
 
-    boolean this_present_id = true && this.isSetId();
-    boolean that_present_id = true && that.isSetId();
-    if (this_present_id || that_present_id) {
-      if (!(this_present_id && that_present_id))
+    boolean this_present_longId = true;
+    boolean that_present_longId = true;
+    if (this_present_longId || that_present_longId) {
+      if (!(this_present_longId && that_present_longId))
         return false;
-      if (!this.id.equals(that.id))
+      if (this.longId != that.longId)
         return false;
     }
 
@@ -408,6 +461,15 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
         return false;
     }
 
+    boolean this_present_DEPRECATED_id = true && this.isSetDEPRECATED_id();
+    boolean that_present_DEPRECATED_id = true && that.isSetDEPRECATED_id();
+    if (this_present_DEPRECATED_id || that_present_DEPRECATED_id) {
+      if (!(this_present_DEPRECATED_id && that_present_DEPRECATED_id))
+        return false;
+      if (!this.DEPRECATED_id.equals(that.DEPRECATED_id))
+        return false;
+    }
+
     return true;
   }
 
@@ -424,12 +486,12 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
     int lastComparison = 0;
     GeocodeServingFeature typedOther = (GeocodeServingFeature)other;
 
-    lastComparison = Boolean.valueOf(isSetId()).compareTo(typedOther.isSetId());
+    lastComparison = Boolean.valueOf(isSetLongId()).compareTo(typedOther.isSetLongId());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetId()) {
-      lastComparison = TBaseHelper.compareTo(this.id, typedOther.id);
+    if (isSetLongId()) {
+      lastComparison = TBaseHelper.compareTo(this.longId, typedOther.longId);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -464,6 +526,16 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetDEPRECATED_id()).compareTo(typedOther.isSetDEPRECATED_id());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetDEPRECATED_id()) {
+      lastComparison = TBaseHelper.compareTo(this.DEPRECATED_id, typedOther.DEPRECATED_id);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -481,9 +553,10 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
         break;
       }
       switch (field.id) {
-        case 1: // ID
-          if (field.type == TType.STRING) {
-            this.id = iprot.readString();
+        case 5: // LONG_ID
+          if (field.type == TType.I64) {
+            this.longId = iprot.readI64();
+            setLongIdIsSet(true);
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -507,17 +580,24 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
         case 4: // PARENTS
           if (field.type == TType.LIST) {
             {
-              TList _list24 = iprot.readListBegin();
-              this.parents = new ArrayList<GeocodeFeature>(_list24.size);
-              for (int _i25 = 0; _i25 < _list24.size; ++_i25)
+              TList _list28 = iprot.readListBegin();
+              this.parents = new ArrayList<GeocodeFeature>(_list28.size);
+              for (int _i29 = 0; _i29 < _list28.size; ++_i29)
               {
-                GeocodeFeature _elem26;
-                _elem26 = new GeocodeFeature();
-                _elem26.read(iprot);
-                this.parents.add(_elem26);
+                GeocodeFeature _elem30;
+                _elem30 = new GeocodeFeature();
+                _elem30.read(iprot);
+                this.parents.add(_elem30);
               }
               iprot.readListEnd();
             }
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 1: // DEPRECATED_ID
+          if (field.type == TType.STRING) {
+            this.DEPRECATED_id = iprot.readString();
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -537,9 +617,9 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
     validate();
 
     oprot.writeStructBegin(STRUCT_DESC);
-    if (this.id != null) {
-      oprot.writeFieldBegin(ID_FIELD_DESC);
-      oprot.writeString(this.id);
+    if (this.DEPRECATED_id != null) {
+      oprot.writeFieldBegin(DEPRECATED_ID_FIELD_DESC);
+      oprot.writeString(this.DEPRECATED_id);
       oprot.writeFieldEnd();
     }
     if (this.scoringFeatures != null) {
@@ -557,15 +637,18 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
         oprot.writeFieldBegin(PARENTS_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.STRUCT, this.parents.size()));
-          for (GeocodeFeature _iter27 : this.parents)
+          for (GeocodeFeature _iter31 : this.parents)
           {
-            _iter27.write(oprot);
+            _iter31.write(oprot);
           }
           oprot.writeListEnd();
         }
         oprot.writeFieldEnd();
       }
     }
+    oprot.writeFieldBegin(LONG_ID_FIELD_DESC);
+    oprot.writeI64(this.longId);
+    oprot.writeFieldEnd();
     oprot.writeFieldStop();
     oprot.writeStructEnd();
   }
@@ -575,12 +658,8 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
     StringBuilder sb = new StringBuilder("GeocodeServingFeature(");
     boolean first = true;
 
-    sb.append("id:");
-    if (this.id == null) {
-      sb.append("null");
-    } else {
-      sb.append(this.id);
-    }
+    sb.append("longId:");
+    sb.append(this.longId);
     first = false;
     if (!first) sb.append(", ");
     sb.append("scoringFeatures:");
@@ -608,6 +687,14 @@ public class GeocodeServingFeature implements TBase<GeocodeServingFeature, Geoco
       }
       first = false;
     }
+    if (!first) sb.append(", ");
+    sb.append("DEPRECATED_id:");
+    if (this.DEPRECATED_id == null) {
+      sb.append("null");
+    } else {
+      sb.append(this.DEPRECATED_id);
+    }
+    first = false;
     sb.append(")");
     return sb.toString();
   }

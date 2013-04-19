@@ -58,11 +58,9 @@ class SlugIndexer {
   import com.novus.salat.annotations._
   import com.novus.salat.dao._
   import com.novus.salat.global._
-  val parentMap = new HashMap[String, Option[GeocodeFeature]]
+  val parentMap = new HashMap[StoredFeatureId, Option[GeocodeFeature]]
 
-  def findFeature(fidStr: String): Option[GeocodeServingFeature] = {
-    val fid = StoredFeatureId.fromHumanReadableString(fidStr).getOrElse(
-        throw new RuntimeException("couldn't parse %s into StoredFeatureId".format(fidStr)))
+  def findFeature(fid: StoredFeatureId): Option[GeocodeServingFeature] = {
     val ret = MongoGeocodeDAO.findOne(MongoDBObject("ids" -> fid.longId)).map(_.toGeocodeServingFeature)
     if (ret.isEmpty) {
       println("couldn't find %s".format(fid))
@@ -70,7 +68,7 @@ class SlugIndexer {
     ret
   }
 
-  def findParent(fid: String): Option[GeocodeFeature] = {
+  def findParent(fid: StoredFeatureId): Option[GeocodeFeature] = {
     parentMap.getOrElseUpdate(fid, findFeature(fid).map(_.feature))
   }
 
@@ -112,7 +110,8 @@ class SlugIndexer {
     var newSlug: Option[String] = None
 
     for {
-      servingFeature <- findFeature(id)
+      fid <- StoredFeatureId.fromHumanReadableString(id)
+      servingFeature <- findFeature(fid)
       if (servingFeature.scoringFeatures.population > 0 ||
           servingFeature.scoringFeatures.boost > 0 ||
           servingFeature.feature.geometry.wkbGeometry != null ||
@@ -123,8 +122,9 @@ class SlugIndexer {
           )
       )
     } {
-      val parents = servingFeature.scoringFeatures.parents.asScala.flatMap(
-        p => findParent(p)).toList
+      val parents = servingFeature.scoringFeatures.parentIds.asScala
+        .flatMap(StoredFeatureId.fromLong _)
+        .flatMap(findParent _).toList
       var possibleSlugs = SlugBuilder.makePossibleSlugs(servingFeature.feature, parents)
 
       // if a city is bigger than 2 million people, we'll attempt to use the bare city name as the slug

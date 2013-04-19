@@ -45,7 +45,7 @@ case class GeocodeRecord(
   lat: Double,
   lng: Double,
   displayNames: List[DisplayName],
-  parents: List[String],
+  parents: List[Long],
   population: Option[Int],
   boost: Option[Int] = None,
   boundingbox: Option[BoundingBox] = None,
@@ -75,6 +75,8 @@ case class GeocodeRecord(
     throw new RuntimeException("can't convert %s to a StoredFeatureId".format(_id)))
 
   def featureIds: List[StoredFeatureId] = ids.flatMap(StoredFeatureId.fromLong _)
+
+  def parentFeatureIds: List[StoredFeatureId] = parents.flatMap(StoredFeatureId.fromLong _)
 
   lazy val woeType = YahooWoeType.findByValue(_woeType)
 
@@ -183,7 +185,7 @@ case class GeocodeRecord(
     val scoring = new ScoringFeatures()
     boost.foreach(b => scoring.setBoost(b))
     population.foreach(p => scoring.setPopulation(p))
-    scoring.setParents(parents.asJava)
+    scoring.setParentIds(parents.asJava)
 
     getAttributes().foreach(a => feature.setAttributes(a))
 
@@ -192,7 +194,7 @@ case class GeocodeRecord(
     }
 
     val servingFeature = new GeocodeServingFeature()
-    servingFeature.setId(featureId.legacyObjectId.toString)
+    servingFeature.setLongId(featureId.longId)
     servingFeature.setScoringFeatures(scoring)
     servingFeature.setFeature(feature)
 

@@ -150,8 +150,8 @@ class GeocoderImpl(
       val rest = parse.drop(1)
       rest.forall(f => {
         //logger.ifDebug("checking if %s in parents".format(f.fmatch.id))
-        f.fmatch.id == most_specific.fmatch.id ||
-        most_specific.fmatch.scoringFeatures.parents.asScala.has(f.fmatch.id)
+        f.fmatch.longId == most_specific.fmatch.longId ||
+        most_specific.fmatch.scoringFeatures.parentIds.asScala.has(f.fmatch.longId)
       })
     }
   }

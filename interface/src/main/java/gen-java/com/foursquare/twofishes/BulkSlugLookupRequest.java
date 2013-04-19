@@ -28,18 +28,18 @@ import org.apache.thrift.protocol.*;
 
 // No additional import required for struct/union.
 
-public class BulkReverseGeocodeRequest implements TBase<BulkReverseGeocodeRequest, BulkReverseGeocodeRequest._Fields>, java.io.Serializable, Cloneable {
-  private static final TStruct STRUCT_DESC = new TStruct("BulkReverseGeocodeRequest");
+public class BulkSlugLookupRequest implements TBase<BulkSlugLookupRequest, BulkSlugLookupRequest._Fields>, java.io.Serializable, Cloneable {
+  private static final TStruct STRUCT_DESC = new TStruct("BulkSlugLookupRequest");
 
-  private static final TField LATLNGS_FIELD_DESC = new TField("latlngs", TType.LIST, (short)1);
+  private static final TField SLUGS_FIELD_DESC = new TField("slugs", TType.LIST, (short)1);
   private static final TField PARAMS_FIELD_DESC = new TField("params", TType.STRUCT, (short)2);
 
-  public List<GeocodePoint> latlngs;
+  public List<String> slugs;
   public CommonGeocodeRequestParams params;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
-    LATLNGS((short)1, "latlngs"),
+    SLUGS((short)1, "slugs"),
     PARAMS((short)2, "params");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
@@ -55,8 +55,8 @@ public class BulkReverseGeocodeRequest implements TBase<BulkReverseGeocodeReques
      */
     public static _Fields findByThriftId(int fieldId) {
       switch(fieldId) {
-        case 1: // LATLNGS
-          return LATLNGS;
+        case 1: // SLUGS
+          return SLUGS;
         case 2: // PARAMS
           return PARAMS;
         default:
@@ -103,80 +103,80 @@ public class BulkReverseGeocodeRequest implements TBase<BulkReverseGeocodeReques
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
     Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.LATLNGS, new FieldMetaData("latlngs", TFieldRequirementType.OPTIONAL, 
+    tmpMap.put(_Fields.SLUGS, new FieldMetaData("slugs", TFieldRequirementType.OPTIONAL, 
         new ListMetaData(TType.LIST, 
-            new StructMetaData(TType.STRUCT, GeocodePoint.class))));
+            new FieldValueMetaData(TType.STRING))));
     tmpMap.put(_Fields.PARAMS, new FieldMetaData("params", TFieldRequirementType.OPTIONAL, 
         new StructMetaData(TType.STRUCT, CommonGeocodeRequestParams.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
-    FieldMetaData.addStructMetaDataMap(BulkReverseGeocodeRequest.class, metaDataMap);
+    FieldMetaData.addStructMetaDataMap(BulkSlugLookupRequest.class, metaDataMap);
   }
 
-  public BulkReverseGeocodeRequest() {
+  public BulkSlugLookupRequest() {
   }
 
   /**
    * Performs a deep copy on <i>other</i>.
    */
-  public BulkReverseGeocodeRequest(BulkReverseGeocodeRequest other) {
-    if (other.isSetLatlngs()) {
-      List<GeocodePoint> __this__latlngs = new ArrayList<GeocodePoint>();
-      for (GeocodePoint other_element : other.latlngs) {
-        __this__latlngs.add(new GeocodePoint(other_element));
+  public BulkSlugLookupRequest(BulkSlugLookupRequest other) {
+    if (other.isSetSlugs()) {
+      List<String> __this__slugs = new ArrayList<String>();
+      for (String other_element : other.slugs) {
+        __this__slugs.add(other_element);
       }
-      this.latlngs = __this__latlngs;
+      this.slugs = __this__slugs;
     }
     if (other.isSetParams()) {
       this.params = new CommonGeocodeRequestParams(other.params);
     }
   }
 
-  public BulkReverseGeocodeRequest deepCopy() {
-    return new BulkReverseGeocodeRequest(this);
+  public BulkSlugLookupRequest deepCopy() {
+    return new BulkSlugLookupRequest(this);
   }
 
   @Override
   public void clear() {
-    this.latlngs = null;
+    this.slugs = null;
     this.params = null;
   }
 
-  public int getLatlngsSize() {
-    return (this.latlngs == null) ? 0 : this.latlngs.size();
+  public int getSlugsSize() {
+    return (this.slugs == null) ? 0 : this.slugs.size();
   }
 
-  public java.util.Iterator<GeocodePoint> getLatlngsIterator() {
-    return (this.latlngs == null) ? null : this.latlngs.iterator();
+  public java.util.Iterator<String> getSlugsIterator() {
+    return (this.slugs == null) ? null : this.slugs.iterator();
   }
 
-  public void addToLatlngs(GeocodePoint elem) {
-    if (this.latlngs == null) {
-      this.latlngs = new ArrayList<GeocodePoint>();
+  public void addToSlugs(String elem) {
+    if (this.slugs == null) {
+      this.slugs = new ArrayList<String>();
     }
-    this.latlngs.add(elem);
+    this.slugs.add(elem);
   }
 
-  public List<GeocodePoint> getLatlngs() {
-    return this.latlngs;
+  public List<String> getSlugs() {
+    return this.slugs;
   }
 
-  public BulkReverseGeocodeRequest setLatlngs(List<GeocodePoint> latlngs) {
-    this.latlngs = latlngs;
+  public BulkSlugLookupRequest setSlugs(List<String> slugs) {
+    this.slugs = slugs;
     return this;
   }
 
-  public void unsetLatlngs() {
-    this.latlngs = null;
+  public void unsetSlugs() {
+    this.slugs = null;
   }
 
-  /** Returns true if field latlngs is set (has been asigned a value) and false otherwise */
-  public boolean isSetLatlngs() {
-    return this.latlngs != null;
+  /** Returns true if field slugs is set (has been asigned a value) and false otherwise */
+  public boolean isSetSlugs() {
+    return this.slugs != null;
   }
 
-  public void setLatlngsIsSet(boolean value) {
+  public void setSlugsIsSet(boolean value) {
     if (!value) {
-      this.latlngs = null;
+      this.slugs = null;
     }
   }
 
@@ -184,7 +184,7 @@ public class BulkReverseGeocodeRequest implements TBase<BulkReverseGeocodeReques
     return this.params;
   }
 
-  public BulkReverseGeocodeRequest setParams(CommonGeocodeRequestParams params) {
+  public BulkSlugLookupRequest setParams(CommonGeocodeRequestParams params) {
     this.params = params;
     return this;
   }
@@ -206,11 +206,11 @@ public class BulkReverseGeocodeRequest implements TBase<BulkReverseGeocodeReques
 
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
-    case LATLNGS:
+    case SLUGS:
       if (value == null) {
-        unsetLatlngs();
+        unsetSlugs();
       } else {
-        setLatlngs((List<GeocodePoint>)value);
+        setSlugs((List<String>)value);
       }
       break;
 
@@ -227,8 +227,8 @@ public class BulkReverseGeocodeRequest implements TBase<BulkReverseGeocodeReques
 
   public Object getFieldValue(_Fields field) {
     switch (field) {
-    case LATLNGS:
-      return getLatlngs();
+    case SLUGS:
+      return getSlugs();
 
     case PARAMS:
       return getParams();
@@ -244,8 +244,8 @@ public class BulkReverseGeocodeRequest implements TBase<BulkReverseGeocodeReques
     }
 
     switch (field) {
-    case LATLNGS:
-      return isSetLatlngs();
+    case SLUGS:
+      return isSetSlugs();
     case PARAMS:
       return isSetParams();
     }
@@ -256,21 +256,21 @@ public class BulkReverseGeocodeRequest implements TBase<BulkReverseGeocodeReques
   public boolean equals(Object that) {
     if (that == null)
       return false;
-    if (that instanceof BulkReverseGeocodeRequest)
-      return this.equals((BulkReverseGeocodeRequest)that);
+    if (that instanceof BulkSlugLookupRequest)
+      return this.equals((BulkSlugLookupRequest)that);
     return false;
   }
 
-  public boolean equals(BulkReverseGeocodeRequest that) {
+  public boolean equals(BulkSlugLookupRequest that) {
     if (that == null)
       return false;
 
-    boolean this_present_latlngs = true && this.isSetLatlngs();
-    boolean that_present_latlngs = true && that.isSetLatlngs();
-    if (this_present_latlngs || that_present_latlngs) {
-      if (!(this_present_latlngs && that_present_latlngs))
+    boolean this_present_slugs = true && this.isSetSlugs();
+    boolean that_present_slugs = true && that.isSetSlugs();
+    if (this_present_slugs || that_present_slugs) {
+      if (!(this_present_slugs && that_present_slugs))
         return false;
-      if (!this.latlngs.equals(that.latlngs))
+      if (!this.slugs.equals(that.slugs))
         return false;
     }
 
@@ -291,20 +291,20 @@ public class BulkReverseGeocodeRequest implements TBase<BulkReverseGeocodeReques
     return 0;
   }
 
-  public int compareTo(BulkReverseGeocodeRequest other) {
+  public int compareTo(BulkSlugLookupRequest other) {
     if (!getClass().equals(other.getClass())) {
       return getClass().getName().compareTo(other.getClass().getName());
     }
 
     int lastComparison = 0;
-    BulkReverseGeocodeRequest typedOther = (BulkReverseGeocodeRequest)other;
+    BulkSlugLookupRequest typedOther = (BulkSlugLookupRequest)other;
 
-    lastComparison = Boolean.valueOf(isSetLatlngs()).compareTo(typedOther.isSetLatlngs());
+    lastComparison = Boolean.valueOf(isSetSlugs()).compareTo(typedOther.isSetSlugs());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetLatlngs()) {
-      lastComparison = TBaseHelper.compareTo(this.latlngs, typedOther.latlngs);
+    if (isSetSlugs()) {
+      lastComparison = TBaseHelper.compareTo(this.slugs, typedOther.slugs);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -336,17 +336,16 @@ public class BulkReverseGeocodeRequest implements TBase<BulkReverseGeocodeReques
         break;
       }
       switch (field.id) {
-        case 1: // LATLNGS
+        case 1: // SLUGS
           if (field.type == TType.LIST) {
             {
-              TList _list80 = iprot.readListBegin();
-              this.latlngs = new ArrayList<GeocodePoint>(_list80.size);
-              for (int _i81 = 0; _i81 < _list80.size; ++_i81)
+              TList _list97 = iprot.readListBegin();
+              this.slugs = new ArrayList<String>(_list97.size);
+              for (int _i98 = 0; _i98 < _list97.size; ++_i98)
               {
-                GeocodePoint _elem82;
-                _elem82 = new GeocodePoint();
-                _elem82.read(iprot);
-                this.latlngs.add(_elem82);
+                String _elem99;
+                _elem99 = iprot.readString();
+                this.slugs.add(_elem99);
               }
               iprot.readListEnd();
             }
@@ -377,14 +376,14 @@ public class BulkReverseGeocodeRequest implements TBase<BulkReverseGeocodeReques
     validate();
 
     oprot.writeStructBegin(STRUCT_DESC);
-    if (this.latlngs != null) {
-      if (isSetLatlngs()) {
-        oprot.writeFieldBegin(LATLNGS_FIELD_DESC);
+    if (this.slugs != null) {
+      if (isSetSlugs()) {
+        oprot.writeFieldBegin(SLUGS_FIELD_DESC);
         {
-          oprot.writeListBegin(new TList(TType.STRUCT, this.latlngs.size()));
-          for (GeocodePoint _iter83 : this.latlngs)
+          oprot.writeListBegin(new TList(TType.STRING, this.slugs.size()));
+          for (String _iter100 : this.slugs)
           {
-            _iter83.write(oprot);
+            oprot.writeString(_iter100);
           }
           oprot.writeListEnd();
         }
@@ -404,15 +403,15 @@ public class BulkReverseGeocodeRequest implements TBase<BulkReverseGeocodeReques
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("BulkReverseGeocodeRequest(");
+    StringBuilder sb = new StringBuilder("BulkSlugLookupRequest(");
     boolean first = true;
 
-    if (isSetLatlngs()) {
-      sb.append("latlngs:");
-      if (this.latlngs == null) {
+    if (isSetSlugs()) {
+      sb.append("slugs:");
+      if (this.slugs == null) {
         sb.append("null");
       } else {
-        sb.append(this.latlngs);
+        sb.append(this.slugs);
       }
       first = false;
     }

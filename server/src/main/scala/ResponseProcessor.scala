@@ -135,14 +135,14 @@ class ResponseProcessor(
 
         val partsFromParents: Seq[(Option[FeatureMatch], GeocodeServingFeature)] =
           parentsToUse.filterNot((f: GeocodeServingFeature) => {
-            partsFromParse.exists(_._2.id =? f.id)
+            partsFromParse.exists(_._2.longId =? f.longId)
           })
             .map(f => (None, f))
 
         val extraParents: Seq[(Option[FeatureMatch], GeocodeServingFeature)] =
           parents
-            .filterNot(f => partsFromParse.exists(_._2.id =? f.id))
-            .filterNot(f => partsFromParents.exists(_._2.id =? f.id))
+            .filterNot(f => partsFromParse.exists(_._2.longId =? f.longId))
+            .filterNot(f => partsFromParents.exists(_._2.longId =? f.longId))
             .filterNot(p => p.feature.woeType == YahooWoeType.COUNTRY)
             .takeRight(numExtraParentsRequired)
             .map(f => (None, f))
@@ -235,9 +235,9 @@ class ResponseProcessor(
     //   logger.ifDebug(printDebugParse(p))
     // })
 
-    val parentIds: Seq[String] = sortedParses.flatMap(
-      _.headOption.toList.flatMap(_.fmatch.scoringFeatures.parents.asScala))
-    val parentFids: Seq[StoredFeatureId] = parentIds.flatMap(parent => StoredFeatureId.fromLegacyObjectId(new ObjectId(parent)))
+    val parentIds: Seq[Long] = sortedParses.flatMap(
+      _.headOption.toList.flatMap(_.fmatch.scoringFeatures.parentIds.asScala))
+    val parentFids: Seq[StoredFeatureId] = parentIds.flatMap(StoredFeatureId.fromLong _)
     logger.ifDebug("parent ids: %s", parentFids)
 
     // possible optimization here: add in features we already have in our parses and don't refetch them
@@ -266,8 +266,8 @@ class ResponseProcessor(
       val sortedParents = if (shouldFetchParents) {
         // we've seen dupe parents, not sure why, the toSet.toSeq fixes
         // TODO(blackmad): why dupe US parents on new york state?
-        p(0).fmatch.scoringFeatures.parents.asScala.toSet.toSeq
-          .flatMap((parent: String) => StoredFeatureId.fromLegacyObjectId(new ObjectId(parent)))
+        p(0).fmatch.scoringFeatures.parentIds.asScala.toSet.toSeq
+          .flatMap(StoredFeatureId.fromLong _)
           .flatMap(fid => parentMap.get(fid)).sorted(GeocodeServingFeatureOrdering)
       } else {
         Nil
@@ -289,7 +289,7 @@ class ResponseProcessor(
       if (responseIncludes(ResponseIncludes.WKT_GEOMETRY) ||
           responseIncludes(ResponseIncludes.WKB_GEOMETRY)) {
         for {
-          fid <- StoredFeatureId.fromLegacyObjectId(new ObjectId(fmatch.id))
+          fid <- StoredFeatureId.fromLong(fmatch.longId)
           wkb <- polygonMap.get(fid)
         } {
           feature.geometry.setWkbGeometry(wkb)
@@ -304,8 +304,8 @@ class ResponseProcessor(
 
       if (responseIncludes(ResponseIncludes.PARENTS)) {
         interp.setParents(sortedParents.map(parentFeature => {
-          val sortedParentParents = parentFeature.scoringFeatures.parents.asScala
-            .flatMap(parent => StoredFeatureId.fromLegacyObjectId(new ObjectId(parent)))
+          val sortedParentParents = parentFeature.scoringFeatures.parentIds.asScala
+            .flatMap(StoredFeatureId.fromLong _)
             .flatMap(parentFid => parentMap.get(parentFid)).sorted
           val feature = parentFeature.feature
           fixFeature(feature, sortedParentParents, None, fillHighlightedName=parseParams.tokens.size > 0)
@@ -343,8 +343,8 @@ class ResponseProcessor(
           val fmatch = p(0).fmatch
           val feature = p(0).fmatch.feature
           ambiguousIdMap.getOrElse(feature.ids.toString, Nil).foreach(interp => {
-            val sortedParents = p(0).fmatch.scoringFeatures.parents.asScala
-              .flatMap(parent => StoredFeatureId.fromLegacyObjectId(new ObjectId(parent)))
+            val sortedParents = p(0).fmatch.scoringFeatures.parentIds.asScala
+              .flatMap(StoredFeatureId.fromLong _)
               .flatMap(parentFid => parentMap.get(parentFid))
               .sorted(GeocodeServingFeatureOrdering)
             fixFeature(interp.feature, sortedParents, Some(p), 1)
@@ -381,8 +381,7 @@ class ResponseProcessor(
 
     goodParses = goodParses.filterNot(p => {
       p.headOption.exists(f =>
-        StoredFeatureId.fromLegacyObjectId(new ObjectId(f.fmatch.id)).exists(fid =>
-          store.hotfixesDeletes.has(fid)))
+        StoredFeatureId.fromLong(f.fmatch.longId).exists(fid => store.hotfixesDeletes.has(fid)))
     })
 
     logger.ifDebug("have %d parses after filtering from delete hotfixes", goodParses.size)
@@ -424,9 +423,9 @@ class ResponseProcessor(
 
     // build a map from
     // primary feature id -> list of parses containing that id, sorted by
-    val parsesByMainId: Map[String, Seq[SortedParseWithPosition]] = parses.zipWithIndex.map({
+    val parsesByMainId: Map[Long, Seq[SortedParseWithPosition]] = parses.zipWithIndex.map({
       case (parse, index) => SortedParseWithPosition(parse, index)
-    }).groupBy(_.parse.headOption.map(_.fmatch.id).getOrElse("")).mapValues(parses => {
+    }).groupBy(_.parse.headOption.map(_.fmatch.longId).getOrElse(-1L)).mapValues(parses => {
       parses.sortBy(p => {
         // prefer interpretations that are shorter and don't have reused features
         val dupeWeight = if (p.parse.hasDupeFeature) { 10 } else { 0 }
@@ -438,7 +437,7 @@ class ResponseProcessor(
       parses.zipWithIndex.filter({case (p, index) => {
         (for {
           primaryFeature <- p.headOption
-          parses: Seq[SortedParseWithPosition] <- parsesByMainId.get(primaryFeature.fmatch.id)
+          parses: Seq[SortedParseWithPosition] <- parsesByMainId.get(primaryFeature.fmatch.longId)
           bestParse <- parses.headOption
         } yield {
           bestParse.position == index
@@ -462,7 +461,7 @@ class ResponseProcessor(
     if (req.debug > 0) {
       logger.ifDebug("%d parses after deduping", dedupedParses.size)
       dedupedParses.zipWithIndex.foreach({case (parse, index) =>
-        logger.ifDebug("deduped parse ids: %s", parse.map(_.fmatch.id))
+        logger.ifDebug("deduped parse ids: %s", parse.map(_.fmatch.longId))
       })
     }
 
@@ -471,7 +470,7 @@ class ResponseProcessor(
     val sortedDedupedParses: SortedParseSeq = dedupedParses.take(3)
     val polygonMap: Map[StoredFeatureId, Array[Byte]] = if (GeocodeRequestUtils.shouldFetchPolygon(req)) {
       store.getPolygonByFeatureIds(sortedDedupedParses.flatMap(p =>
-        StoredFeatureId.fromLegacyObjectId(new ObjectId(p(0).fmatch.id))))
+        StoredFeatureId.fromLong(p(0).fmatch.longId)))
     } else {
       Map.empty
     }

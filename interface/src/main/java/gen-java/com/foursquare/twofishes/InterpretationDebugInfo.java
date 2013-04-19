@@ -341,14 +341,14 @@ public class InterpretationDebugInfo implements TBase<InterpretationDebugInfo, I
         case 1: // SCORE_COMPONENTS
           if (field.type == TType.LIST) {
             {
-              TList _list28 = iprot.readListBegin();
-              this.scoreComponents = new ArrayList<DebugScoreComponent>(_list28.size);
-              for (int _i29 = 0; _i29 < _list28.size; ++_i29)
+              TList _list32 = iprot.readListBegin();
+              this.scoreComponents = new ArrayList<DebugScoreComponent>(_list32.size);
+              for (int _i33 = 0; _i33 < _list32.size; ++_i33)
               {
-                DebugScoreComponent _elem30;
-                _elem30 = new DebugScoreComponent();
-                _elem30.read(iprot);
-                this.scoreComponents.add(_elem30);
+                DebugScoreComponent _elem34;
+                _elem34 = new DebugScoreComponent();
+                _elem34.read(iprot);
+                this.scoreComponents.add(_elem34);
               }
               iprot.readListEnd();
             }
@@ -384,9 +384,9 @@ public class InterpretationDebugInfo implements TBase<InterpretationDebugInfo, I
         oprot.writeFieldBegin(SCORE_COMPONENTS_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.STRUCT, this.scoreComponents.size()));
-          for (DebugScoreComponent _iter31 : this.scoreComponents)
+          for (DebugScoreComponent _iter35 : this.scoreComponents)
           {
-            _iter31.write(oprot);
+            _iter35.write(oprot);
           }
           oprot.writeListEnd();
         }

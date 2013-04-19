@@ -108,7 +108,7 @@ class GeocodeParseOrdering(store: GeocodeStorageReadService, req: CommonGeocodeR
         modifySignal(primaryFeature.scoringFeatures.boost, "manual boost")
       }
 
-      StoredFeatureId.fromLegacyObjectId(new ObjectId(primaryFeature.id)).foreach(fid =>
+      StoredFeatureId.fromLong(primaryFeature.longId).foreach(fid =>
         store.hotfixesBoosts.get(fid).foreach(boost =>
           modifySignal(boost, "hotfix boost"))
       )
@@ -148,7 +148,7 @@ class GeocodeParseOrdering(store: GeocodeStorageReadService, req: CommonGeocodeR
   }
 
   def getScore(p: Parse[Sorted]): Int = {
-    val scoreKey = p.map(_.fmatch.id).mkString(":")
+    val scoreKey = p.map(_.fmatch.longId).mkString(":")
     if (!scoreMap.contains(scoreKey)) {
       scoreMap(scoreKey) = scoreParse(p)
     }
@@ -173,14 +173,14 @@ class GeocodeParseOrdering(store: GeocodeStorageReadService, req: CommonGeocodeR
           !req.woeHint.asScala.has(bFeature.fmatch.feature.woeType)
         ) {
         // if a is a parent of b, prefer b
-        if (aFeature.fmatch.scoringFeatures.parents.asScala.has(bFeature.fmatch.id) &&
+        if (aFeature.fmatch.scoringFeatures.parentIds.asScala.has(bFeature.fmatch.longId) &&
           (aFeature.fmatch.scoringFeatures.population * 1.0 / bFeature.fmatch.scoringFeatures.population) > 0.05
         ) {
           logger.ifDebug("Preferring %s because it's a child of %s", a, b)
           return -1
         }
         // if b is a parent of a, prefer a
-        if (bFeature.fmatch.scoringFeatures.parents.asScala.has(aFeature.fmatch.id) &&
+        if (bFeature.fmatch.scoringFeatures.parentIds.asScala.has(aFeature.fmatch.longId) &&
            (bFeature.fmatch.scoringFeatures.population * 1.0 / aFeature.fmatch.scoringFeatures.population) > 0.05
           ) {
           logger.ifDebug("Preferring %s because it's a child of %s", a, b)

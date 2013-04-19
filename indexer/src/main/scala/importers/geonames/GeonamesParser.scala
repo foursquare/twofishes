@@ -351,13 +351,15 @@ class GeonamesParser(
     }
 
     // Build parents
-    val extraParents: List[String] = feature.extraColumns.get("parents").toList.flatMap(_.split(",").toList)
-    val parents: List[String] =
-      feature.parents.flatMap(fixParent).map(p => GeonamesId(p.toLong).humanReadableString)
-    var allParents: List[String] = extraParents ++ parents
-    val hierarchyParents = hierarchyTable.getOrElse(feature.geonameid.getOrElse(""), Nil).filterNot(p =>
-      parents.has(p)).map(pid => GeonamesId(pid.toLong).humanReadableString)
-    allParents = allParents ++ hierarchyParents
+    val extraParents: List[StoredFeatureId] =
+      feature.extraColumns.get("parents").toList.flatMap(_.split(",").toList).flatMap(pStr =>
+        StoredFeatureId.fromHumanReadableString(pStr))
+    val parents: List[StoredFeatureId] =
+      feature.parents.flatMap(fixParent).map(p => GeonamesId(p.toLong))
+    val hierarchyParents: List[StoredFeatureId] =
+      hierarchyTable.getOrElse(geonameId, Nil).filterNot(p => parents.has(p))
+
+    val allParents: List[StoredFeatureId] = extraParents ++ parents ++ hierarchyParents
 
     val boost: Option[Int] =
       feature.extraColumns.get("boost").map(_.toInt) orElse
@@ -446,7 +448,7 @@ class GeonamesParser(
       _woeType = feature.featureClass.woeType.getValue,
       lat = lat,
       lng = lng,
-      parents = allParents,
+      parents = allParents.map(_.longId),
       population = feature.population,
       displayNames = displayNames,
       boost = boost,

@@ -1,12 +1,13 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.importers.geonames
 
+import com.foursquare.twofishes.util.{GeonamesId, StoredFeatureId}
 import java.io.File
 import scala.collection.mutable.HashMap
 
 object HierarchyParser {
-  def parseHierarchy(filenames: List[String]): HashMap[String, List[String]] = {
-    val map = new HashMap[String, List[String]]
+  def parseHierarchy(filenames: List[String]): HashMap[StoredFeatureId, List[StoredFeatureId]] = {
+    val map = new HashMap[StoredFeatureId, List[StoredFeatureId]]
     for {
       filename <- filenames
       if new File(filename).exists
@@ -14,8 +15,8 @@ object HierarchyParser {
       val lines = scala.io.Source.fromFile(filename).getLines
       lines.foreach(l => {
         val parts = l.split("\\t")
-        val parentId = parts(0)
-        val childId = parts(1)
+        val parentId = GeonamesId(parts(0).toLong)
+        val childId = GeonamesId(parts(1).toLong)
         val hierarchyType = parts.lift(2).getOrElse("")
 
         if (hierarchyType == "ADM") {
