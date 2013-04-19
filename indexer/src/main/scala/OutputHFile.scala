@@ -460,7 +460,7 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
       )
     )
 
-    val ids = MongoGeocodeDAO.primitiveProjections[ObjectId](MongoDBObject("hasPoly" -> true), "_id").toList
+    val ids = MongoGeocodeDAO.primitiveProjections[Long](MongoDBObject("hasPoly" -> true), "_id").toList
     val numThreads = 5
     val subMaps = 0.until(numThreads).toList.map(offset => {
       val s2map = new HashMap[Long, ListBuffer[CellGeometry]]
