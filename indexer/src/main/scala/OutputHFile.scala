@@ -160,21 +160,9 @@ abstract class Indexer extends DurationUtils {
   }
 
   val comp = new ByteArrayComparator()
-  def byteBufferSort(a: ByteBuffer, b: ByteBuffer) = {
-    comp.compare(a.array(), b.array()) < 0
-  }
-  def byteSort(a: Array[Byte], b: Array[Byte]) = {
-    comp.compare(a, b) < 0
-  }
-  def bytePairSort(a: (Array[Byte], Array[Byte]),
-      b: (Array[Byte], Array[Byte])) = {
-    comp.compare(a._1, b._1) < 0
-  }
+
   def lexicalSort(a: String, b: String) = {
     comp.compare(a.getBytes(), b.getBytes()) < 0
-  }
-  def objectIdSort(a: ObjectId, b: ObjectId) = {
-    comp.compare(a.toByteArray(), b.toByteArray()) < 0
   }
 
   def fidsToCanonicalFids(fids: List[StoredFeatureId]): Seq[StoredFeatureId] = {
