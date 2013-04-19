@@ -17,11 +17,11 @@ class SlugIndexer {
   var missingSlugList = new HashSet[String]
 
   def getBestSlug(id: StoredFeatureId): Option[String] = {
-    idToSlugMap.get(id.toString)
+    idToSlugMap.get(id.humanReadableString)
   }
 
   def addMissingId(id: StoredFeatureId) {
-    missingSlugList.add(id.toString)
+    missingSlugList.add(id.humanReadableString)
   }
 
   Helpers.duration("readSlugs") { readSlugs() }
@@ -60,9 +60,10 @@ class SlugIndexer {
   import com.novus.salat.global._
   val parentMap = new HashMap[String, Option[GeocodeFeature]]
 
-  def findFeature(fid: String): Option[GeocodeServingFeature] = {
-    val ret = MongoGeocodeDAO.findOne(MongoDBObject("ids" -> fid))
-      .map(_.toGeocodeServingFeature)
+  def findFeature(fidStr: String): Option[GeocodeServingFeature] = {
+    val fid = StoredFeatureId.fromHumanReadableString(fidStr).getOrElse(
+        throw new RuntimeException("couldn't parse %s into StoredFeatureId".format(fidStr)))
+    val ret = MongoGeocodeDAO.findOne(MongoDBObject("ids" -> fid.longId)).map(_.toGeocodeServingFeature)
     if (ret.isEmpty) {
       println("couldn't find %s".format(fid))
     }

@@ -41,7 +41,7 @@ object NameIndexDAO extends SalatDAO[NameIndex, String](
 
 class MongoGeocodeStorageService extends GeocodeStorageWriteService {
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = {
-    MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))))
+    MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.longId))))
   }
 
   def insert(record: GeocodeRecord) {
@@ -49,7 +49,7 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
   }
 
   def addNameToRecord(name: DisplayName, id: StoredFeatureId) {
-    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))),
+    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.longId))),
       MongoDBObject("$addToSet" -> MongoDBObject("displayNames" -> grater[DisplayName].asDBObject(name))),
       false, false)
   }
@@ -59,7 +59,7 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
   }
 
   def addPolygonToRecord(id: StoredFeatureId, wkbGeometry: Array[Byte]) {
-    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))),
+    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.longId))),
       MongoDBObject("$set" ->
         MongoDBObject(
           "polygon" -> Some(wkbGeometry),
@@ -71,13 +71,13 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
 
 
   def addSlugToRecord(id: StoredFeatureId, slug: String) {
-    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))),
+    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.longId))),
       MongoDBObject("$set" -> MongoDBObject("slug" -> slug)),
       false, false)
   }
 
   def setRecordNames(id: StoredFeatureId, names: List[DisplayName]) {
-    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.toString))),
+    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.longId))),
       MongoDBObject("$set" -> MongoDBObject(
         "displayNames" -> names.map(n => grater[DisplayName].asDBObject(n)))),
       false, false)
