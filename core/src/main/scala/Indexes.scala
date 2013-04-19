@@ -87,14 +87,16 @@ object Serde {
 
   case class ThriftSerde[T <: TBase[_ <: TBase[_ <: AnyRef, _ <: TFieldIdEnum], _ <: TFieldIdEnum]](
       factory: Unit => T) extends Serde[T] {
-    val deserializer = new TDeserializer(new TCompactProtocol.Factory())
-    val serializer = new TSerializer(new TCompactProtocol.Factory())
+    val protFactory = new TCompactProtocol.Factory
 
     def toBytes(t: T): Array[Byte] = {
+      val serializer = new TSerializer(protFactory)
       serializer.serialize(t)
     }
+
     def fromBytes(bytes: Array[Byte]): T = {
       val s = factory()
+      val deserializer = new TDeserializer(protFactory)
       deserializer.deserialize(s, bytes)
       s
     }
