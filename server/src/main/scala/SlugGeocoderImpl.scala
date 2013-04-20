@@ -20,11 +20,15 @@ class SlugGeocoderImpl(
   def doSlugGeocode(slug: String): GeocodeResponse = {
     val parseParams = ParseParams()
 
-    val featureMap: Map[String, GeocodeServingFeature]  = if (ObjectId.isValid(slug)) {
-      val features = store.getByFeatureIds(StoredFeatureId.fromLegacyObjectId(new ObjectId(slug)).toList)
-      features.map({case (key, value) => (key.legacyObjectId.toString, value)}).toMap
-    } else {
-      store.getBySlugOrFeatureIds(List(slug))
+    val featureMap: Map[String, GeocodeServingFeature] = {
+      val fidOpt = StoredFeatureId.fromUserInputString(slug)
+      fidOpt match {
+        case Some(fid) =>
+          val featureOpt = store.getByFeatureIds(List(fid)).get(fid)
+          featureOpt.map(feature => Map(slug -> feature)).getOrElse(Map.empty)
+        case None =>
+          store.getBySlugOrFeatureIds(List(slug))
+      }
     }
 
     // a parse is still a seq of featurematch, bleh

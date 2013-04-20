@@ -178,7 +178,7 @@ object StoredFeatureId {
     FeatureNamespace.fromNameOpt(n).map(ns => StoredFeatureId(ns, id))
   }
 
-  def fromArbitraryString(s: String): Option[StoredFeatureId] = {
+  def fromUserInputString(s: String): Option[StoredFeatureId] = {
     if (ObjectId.isValid(s)) {
       fromLegacyObjectId(new ObjectId(s))
     } else {
@@ -188,7 +188,7 @@ object StoredFeatureId {
   }
 
   def fromHumanReadableString(s: String, defaultNamespace: Option[FeatureNamespace] = None): Option[StoredFeatureId] = {
-    (s.split(":").toList, defaultNamespace) match {
+    (s.split(":", 2).toList, defaultNamespace) match {
       case (key :: value :: Nil, _) => StoredFeatureId.fromNamespaceAndId(key, value)
       case (value :: Nil, Some(ns)) => Some(StoredFeatureId(ns, value))
       case _ => None
