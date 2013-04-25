@@ -56,6 +56,12 @@ passBoolOpt('output_prefix_index', options.output_prefix_index)
 passBoolOpt('reload_data', options.reload_data)
 
 if options.reload_data:
+  if raw_input('Are you suuuuuure you want to drop your mongo data? Type "yes" to continue: ') != 'yes':
+    print "Bailing."
+    print
+    print "re-run with --noreload if you want to keep your mongo data around instead of rebuilding it"
+    sys.exit(1)
+
   os.system("./init-database.sh")
 
 cmd = './sbt "indexer/run-main com.foursquare.twofishes.importers.geonames.GeonamesParser %s --hfile_basepath %s %s"' % (cmd_opts, basepath, ' '.join(args))
