@@ -144,7 +144,7 @@ object GeonamesParser {
       slugIndexer.writeMissingSlugs(store)
     }
 
-    PolygonLoader.load(store, GeonamesNamespace, writeToRecord = true)
+    PolygonLoader.load(store, GeonamesNamespace)
   }
 }
 
