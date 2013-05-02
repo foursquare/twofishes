@@ -112,6 +112,7 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
     feature.setGeometry(geometry)
     feature.setCc(cc)
     feature.setWoeType(woeType)
+    feature.setLongId(fid.longId)
 
     val featureName = new FeatureName()
     featureName.setName(name)

@@ -50,6 +50,17 @@
     <input name="lookup" id="lookup"/><input type="button" id="lookupButton" name="Lookup slug or id" value="Lookup slug/id" placeholder="Lookup slug or id" width="100"/></br>
   </form>
 
+  <form id="bulkLookupForm">
+    <input name="bulkLookup" id="bulkLookup"/><input type="button" id="bulkLookupButton" name="Lookup slugs or ids in bulk" value="Lookup slugs/ids in bulk" placeholder="Lookup slugs or ids in bulk" width="1000"/></br>
+  </form>
+
+  <form id="bulkRevGeoForm">
+    Separate your lat longs by pipes, i.e. 40.74,-74.0|37.8,-122.4:<br />
+    <input name="bulkRevGeo" id="bulkRevGeo"/><input type="button" id="bulkRevGeoButton" name="RevGeo points in bulk" value="RevGeo slugs/ids in bulk" placeholder="RevGeo points in bulk" width="1000"/></br>
+  </form>
+
+  <div id="geocodes"></div>
+
   <div id="geocodes"></div>
   <div id="debugInfo"></div>
 
@@ -58,6 +69,12 @@
 
     var lookupButton = $('#lookupButton');
     var lookupInput = $('#lookup');
+
+    var bulkLookupButton = $('#bulkLookupButton');
+    var bulkLookupInput = $('#bulkLookup');
+
+    var bulkRevGeoButton = $('#bulkRevGeoButton');
+    var bulkRevGeoInput = $('#bulkRevGeo');
 
     var queryInput = $('#query');
     var searchButton = $('#search');
@@ -80,6 +97,22 @@
       return false;
     })
 
+    bulkLookupButton.click(function() {
+      var slugs = bulkLookupInput.val().split(',');
+      var slugParams = slugs.map(function(s) { return ("slug="+s) }).join('&');
+      window.location.hash = slugParams + "&method=bulksluglookup";
+      geocode();
+      return false;
+    })
+
+    bulkRevGeoButton.click(function() {
+      var lls = bulkRevGeoInput.val().split('|');
+      var llParams = lls.map(function(s) { return ("ll="+s) }).join('&');
+      window.location.hash = llParams + "&method=bulkrevgeo";
+      geocode();
+      return false;
+    })
+
     searchButton.click(function() {
       window.location.hash = queryInput.val();
       geocode();
@@ -91,26 +124,36 @@
       geocode();
       return false;
     })
-    
+
     function geocode() {
-      var query = getQuery()
+      var query = getQuery();
+
+      var params = query.split('&')
+      var inputs = [];
+      for (var i = 0; i < params.length; ++i) {
+        var keyval = params[i].split('=');
+        if ((keyval[0] == 'slug') || (keyval[0] == 'll')) {
+          inputs.push(keyval[1])
+        }
+      }
 
       var maxInterpretations = 3;
 
       if (query.match(/.*=.*/)) {
         $.getJSON('http://' + window.location.host + '/?debug=1&maxInterpretations=3&responseIncludes=EVERYTHING&' + query,
-          success, failure);
+          function(data) { return success(data, inputs) }, failure);
       } else if (query.match(/^([-+]?\d{1,2}([.]\d+)?),\s*([-+]?\d{1,3}([.]\d+)?)$/)) {
         $.getJSON('http://' + window.location.host + '/?debug=1&&responseIncludes=EVERYTHING&ll=' + query,
-          success, failure);
+          function(data) { return success(data, inputs) }, failure);
       } else {
         $.getJSON('http://' + window.location.host + '/?debug=1&maxInterpretations=3&responseIncludes=EVERYTHING&query=' + query,
-          success, failure);
+          function(data) { return success(data, inputs) }, failure);
       }
     }
 
-    function success(data) {
+    function success(data, inputs) {
       window.console.log(data);
+      window.console.log(inputs);
 
       statusArea.empty();
       debugInfo.empty();
@@ -119,6 +162,13 @@
         debugInfo.append(l);
         debugInfo.append($('<br>'));
       })
+
+      // For bulk replies, we have this side list where the Nth element of the
+      // list has all the interpretation indexes that match up to the Nth input.
+      var allInterpretationIndexes = [];
+      if (data.interpretationIndexes) {
+        allInterpretationIndexes = data.interpretationIndexes;
+      }
 
       _(data.interpretations).each(function(interp, count) {
         if (interp.feature) {
@@ -129,8 +179,21 @@
           var mapDiv = $('<div class="map" id="result-' + count + '" />');
           statusArea.append(sectionDiv);
 
+          var inputsForThisInterp = [];
+          _(allInterpretationIndexes).each(function(interpretationIndexes, inputIndex) {
+            window.console.log(interpretationIndexes);
+            window.console.log(inputIndex);
+            if (interpretationIndexes.indexOf(count) != -1) {
+              inputsForThisInterp.push("(Index " + inputIndex + ", Input '" + inputs[inputIndex] + "')")
+            }
+          });
+
           var name = feature.highlightedName || feature.displayName || feature.name;
           sectionDiv.append('<div class="highlightedName">Interp ' + (count+1) + ': ' + name + '</div>');
+          if (allInterpretationIndexes.length > 0) {
+            sectionDiv.append(
+              '<div class="highlightedName">For input indexes: ' + inputsForThisInterp.join(',') + '</div>');
+          }
           sectionDiv.append(jsonDiv);
           sectionDiv.append(mapDiv);
 
@@ -181,7 +244,7 @@
           if (data.requestWktGeometry) {
 
             var myIcon = L.icon({
-              iconAnchor: [8, 8], 
+              iconAnchor: [8, 8],
               iconUrl: '/static/leaflet/images/red_dot.png',
             });
 

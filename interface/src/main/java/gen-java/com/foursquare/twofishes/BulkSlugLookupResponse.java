@@ -31,16 +31,19 @@ import org.apache.thrift.protocol.*;
 public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, BulkSlugLookupResponse._Fields>, java.io.Serializable, Cloneable {
   private static final TStruct STRUCT_DESC = new TStruct("BulkSlugLookupResponse");
 
-  private static final TField INTERPRETATION_MAP_FIELD_DESC = new TField("interpretationMap", TType.MAP, (short)1);
-  private static final TField DEBUG_LINES_FIELD_DESC = new TField("debugLines", TType.LIST, (short)2);
+  private static final TField INTERPRETATIONS_FIELD_DESC = new TField("interpretations", TType.LIST, (short)1);
+  private static final TField INTERPRETATION_INDEXES_FIELD_DESC = new TField("interpretationIndexes", TType.LIST, (short)2);
+  private static final TField DEBUG_LINES_FIELD_DESC = new TField("debugLines", TType.LIST, (short)3);
 
-  public Map<Integer,List<GeocodeInterpretation>> interpretationMap;
+  public List<GeocodeInterpretation> interpretations;
+  public List<List<Integer>> interpretationIndexes;
   public List<String> debugLines;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
-    INTERPRETATION_MAP((short)1, "interpretationMap"),
-    DEBUG_LINES((short)2, "debugLines");
+    INTERPRETATIONS((short)1, "interpretations"),
+    INTERPRETATION_INDEXES((short)2, "interpretationIndexes"),
+    DEBUG_LINES((short)3, "debugLines");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -55,9 +58,11 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
      */
     public static _Fields findByThriftId(int fieldId) {
       switch(fieldId) {
-        case 1: // INTERPRETATION_MAP
-          return INTERPRETATION_MAP;
-        case 2: // DEBUG_LINES
+        case 1: // INTERPRETATIONS
+          return INTERPRETATIONS;
+        case 2: // INTERPRETATION_INDEXES
+          return INTERPRETATION_INDEXES;
+        case 3: // DEBUG_LINES
           return DEBUG_LINES;
         default:
           return null;
@@ -103,11 +108,13 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
     Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.INTERPRETATION_MAP, new FieldMetaData("interpretationMap", TFieldRequirementType.REQUIRED, 
-        new MapMetaData(TType.MAP, 
-            new FieldValueMetaData(TType.I32), 
+    tmpMap.put(_Fields.INTERPRETATIONS, new FieldMetaData("interpretations", TFieldRequirementType.REQUIRED, 
+        new ListMetaData(TType.LIST, 
+            new StructMetaData(TType.STRUCT, GeocodeInterpretation.class))));
+    tmpMap.put(_Fields.INTERPRETATION_INDEXES, new FieldMetaData("interpretationIndexes", TFieldRequirementType.DEFAULT, 
+        new ListMetaData(TType.LIST, 
             new ListMetaData(TType.LIST, 
-                new StructMetaData(TType.STRUCT, GeocodeInterpretation.class)))));
+                new FieldValueMetaData(TType.I32)))));
     tmpMap.put(_Fields.DEBUG_LINES, new FieldMetaData("debugLines", TFieldRequirementType.OPTIONAL, 
         new ListMetaData(TType.LIST, 
             new FieldValueMetaData(TType.STRING))));
@@ -119,33 +126,35 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
   }
 
   public BulkSlugLookupResponse(
-    Map<Integer,List<GeocodeInterpretation>> interpretationMap)
+    List<GeocodeInterpretation> interpretations,
+    List<List<Integer>> interpretationIndexes)
   {
     this();
-    this.interpretationMap = interpretationMap;
+    this.interpretations = interpretations;
+    this.interpretationIndexes = interpretationIndexes;
   }
 
   /**
    * Performs a deep copy on <i>other</i>.
    */
   public BulkSlugLookupResponse(BulkSlugLookupResponse other) {
-    if (other.isSetInterpretationMap()) {
-      Map<Integer,List<GeocodeInterpretation>> __this__interpretationMap = new HashMap<Integer,List<GeocodeInterpretation>>();
-      for (Map.Entry<Integer, List<GeocodeInterpretation>> other_element : other.interpretationMap.entrySet()) {
-
-        Integer other_element_key = other_element.getKey();
-        List<GeocodeInterpretation> other_element_value = other_element.getValue();
-
-        Integer __this__interpretationMap_copy_key = other_element_key;
-
-        List<GeocodeInterpretation> __this__interpretationMap_copy_value = new ArrayList<GeocodeInterpretation>();
-        for (GeocodeInterpretation other_element_value_element : other_element_value) {
-          __this__interpretationMap_copy_value.add(new GeocodeInterpretation(other_element_value_element));
-        }
-
-        __this__interpretationMap.put(__this__interpretationMap_copy_key, __this__interpretationMap_copy_value);
+    if (other.isSetInterpretations()) {
+      List<GeocodeInterpretation> __this__interpretations = new ArrayList<GeocodeInterpretation>();
+      for (GeocodeInterpretation other_element : other.interpretations) {
+        __this__interpretations.add(new GeocodeInterpretation(other_element));
       }
-      this.interpretationMap = __this__interpretationMap;
+      this.interpretations = __this__interpretations;
+    }
+    if (other.isSetInterpretationIndexes()) {
+      List<List<Integer>> __this__interpretationIndexes = new ArrayList<List<Integer>>();
+      for (List<Integer> other_element : other.interpretationIndexes) {
+        List<Integer> __this__interpretationIndexes_copy = new ArrayList<Integer>();
+        for (Integer other_element_element : other_element) {
+          __this__interpretationIndexes_copy.add(other_element_element);
+        }
+        __this__interpretationIndexes.add(__this__interpretationIndexes_copy);
+      }
+      this.interpretationIndexes = __this__interpretationIndexes;
     }
     if (other.isSetDebugLines()) {
       List<String> __this__debugLines = new ArrayList<String>();
@@ -162,42 +171,86 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
 
   @Override
   public void clear() {
-    this.interpretationMap = null;
+    this.interpretations = null;
+    this.interpretationIndexes = null;
     this.debugLines = null;
   }
 
-  public int getInterpretationMapSize() {
-    return (this.interpretationMap == null) ? 0 : this.interpretationMap.size();
+  public int getInterpretationsSize() {
+    return (this.interpretations == null) ? 0 : this.interpretations.size();
   }
 
-  public void putToInterpretationMap(int key, List<GeocodeInterpretation> val) {
-    if (this.interpretationMap == null) {
-      this.interpretationMap = new HashMap<Integer,List<GeocodeInterpretation>>();
+  public java.util.Iterator<GeocodeInterpretation> getInterpretationsIterator() {
+    return (this.interpretations == null) ? null : this.interpretations.iterator();
+  }
+
+  public void addToInterpretations(GeocodeInterpretation elem) {
+    if (this.interpretations == null) {
+      this.interpretations = new ArrayList<GeocodeInterpretation>();
     }
-    this.interpretationMap.put(key, val);
+    this.interpretations.add(elem);
   }
 
-  public Map<Integer,List<GeocodeInterpretation>> getInterpretationMap() {
-    return this.interpretationMap;
+  public List<GeocodeInterpretation> getInterpretations() {
+    return this.interpretations;
   }
 
-  public BulkSlugLookupResponse setInterpretationMap(Map<Integer,List<GeocodeInterpretation>> interpretationMap) {
-    this.interpretationMap = interpretationMap;
+  public BulkSlugLookupResponse setInterpretations(List<GeocodeInterpretation> interpretations) {
+    this.interpretations = interpretations;
     return this;
   }
 
-  public void unsetInterpretationMap() {
-    this.interpretationMap = null;
+  public void unsetInterpretations() {
+    this.interpretations = null;
   }
 
-  /** Returns true if field interpretationMap is set (has been asigned a value) and false otherwise */
-  public boolean isSetInterpretationMap() {
-    return this.interpretationMap != null;
+  /** Returns true if field interpretations is set (has been asigned a value) and false otherwise */
+  public boolean isSetInterpretations() {
+    return this.interpretations != null;
   }
 
-  public void setInterpretationMapIsSet(boolean value) {
+  public void setInterpretationsIsSet(boolean value) {
     if (!value) {
-      this.interpretationMap = null;
+      this.interpretations = null;
+    }
+  }
+
+  public int getInterpretationIndexesSize() {
+    return (this.interpretationIndexes == null) ? 0 : this.interpretationIndexes.size();
+  }
+
+  public java.util.Iterator<List<Integer>> getInterpretationIndexesIterator() {
+    return (this.interpretationIndexes == null) ? null : this.interpretationIndexes.iterator();
+  }
+
+  public void addToInterpretationIndexes(List<Integer> elem) {
+    if (this.interpretationIndexes == null) {
+      this.interpretationIndexes = new ArrayList<List<Integer>>();
+    }
+    this.interpretationIndexes.add(elem);
+  }
+
+  public List<List<Integer>> getInterpretationIndexes() {
+    return this.interpretationIndexes;
+  }
+
+  public BulkSlugLookupResponse setInterpretationIndexes(List<List<Integer>> interpretationIndexes) {
+    this.interpretationIndexes = interpretationIndexes;
+    return this;
+  }
+
+  public void unsetInterpretationIndexes() {
+    this.interpretationIndexes = null;
+  }
+
+  /** Returns true if field interpretationIndexes is set (has been asigned a value) and false otherwise */
+  public boolean isSetInterpretationIndexes() {
+    return this.interpretationIndexes != null;
+  }
+
+  public void setInterpretationIndexesIsSet(boolean value) {
+    if (!value) {
+      this.interpretationIndexes = null;
     }
   }
 
@@ -242,11 +295,19 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
 
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
-    case INTERPRETATION_MAP:
+    case INTERPRETATIONS:
       if (value == null) {
-        unsetInterpretationMap();
+        unsetInterpretations();
       } else {
-        setInterpretationMap((Map<Integer,List<GeocodeInterpretation>>)value);
+        setInterpretations((List<GeocodeInterpretation>)value);
+      }
+      break;
+
+    case INTERPRETATION_INDEXES:
+      if (value == null) {
+        unsetInterpretationIndexes();
+      } else {
+        setInterpretationIndexes((List<List<Integer>>)value);
       }
       break;
 
@@ -263,8 +324,11 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
 
   public Object getFieldValue(_Fields field) {
     switch (field) {
-    case INTERPRETATION_MAP:
-      return getInterpretationMap();
+    case INTERPRETATIONS:
+      return getInterpretations();
+
+    case INTERPRETATION_INDEXES:
+      return getInterpretationIndexes();
 
     case DEBUG_LINES:
       return getDebugLines();
@@ -280,8 +344,10 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
     }
 
     switch (field) {
-    case INTERPRETATION_MAP:
-      return isSetInterpretationMap();
+    case INTERPRETATIONS:
+      return isSetInterpretations();
+    case INTERPRETATION_INDEXES:
+      return isSetInterpretationIndexes();
     case DEBUG_LINES:
       return isSetDebugLines();
     }
@@ -301,12 +367,21 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
     if (that == null)
       return false;
 
-    boolean this_present_interpretationMap = true && this.isSetInterpretationMap();
-    boolean that_present_interpretationMap = true && that.isSetInterpretationMap();
-    if (this_present_interpretationMap || that_present_interpretationMap) {
-      if (!(this_present_interpretationMap && that_present_interpretationMap))
+    boolean this_present_interpretations = true && this.isSetInterpretations();
+    boolean that_present_interpretations = true && that.isSetInterpretations();
+    if (this_present_interpretations || that_present_interpretations) {
+      if (!(this_present_interpretations && that_present_interpretations))
         return false;
-      if (!this.interpretationMap.equals(that.interpretationMap))
+      if (!this.interpretations.equals(that.interpretations))
+        return false;
+    }
+
+    boolean this_present_interpretationIndexes = true && this.isSetInterpretationIndexes();
+    boolean that_present_interpretationIndexes = true && that.isSetInterpretationIndexes();
+    if (this_present_interpretationIndexes || that_present_interpretationIndexes) {
+      if (!(this_present_interpretationIndexes && that_present_interpretationIndexes))
+        return false;
+      if (!this.interpretationIndexes.equals(that.interpretationIndexes))
         return false;
     }
 
@@ -335,12 +410,22 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
     int lastComparison = 0;
     BulkSlugLookupResponse typedOther = (BulkSlugLookupResponse)other;
 
-    lastComparison = Boolean.valueOf(isSetInterpretationMap()).compareTo(typedOther.isSetInterpretationMap());
+    lastComparison = Boolean.valueOf(isSetInterpretations()).compareTo(typedOther.isSetInterpretations());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetInterpretationMap()) {
-      lastComparison = TBaseHelper.compareTo(this.interpretationMap, typedOther.interpretationMap);
+    if (isSetInterpretations()) {
+      lastComparison = TBaseHelper.compareTo(this.interpretations, typedOther.interpretations);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetInterpretationIndexes()).compareTo(typedOther.isSetInterpretationIndexes());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetInterpretationIndexes()) {
+      lastComparison = TBaseHelper.compareTo(this.interpretationIndexes, typedOther.interpretationIndexes);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -372,46 +457,61 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
         break;
       }
       switch (field.id) {
-        case 1: // INTERPRETATION_MAP
-          if (field.type == TType.MAP) {
+        case 1: // INTERPRETATIONS
+          if (field.type == TType.LIST) {
             {
-              TMap _map101 = iprot.readMapBegin();
-              this.interpretationMap = new HashMap<Integer,List<GeocodeInterpretation>>(2*_map101.size);
-              for (int _i102 = 0; _i102 < _map101.size; ++_i102)
+              TList _list113 = iprot.readListBegin();
+              this.interpretations = new ArrayList<GeocodeInterpretation>(_list113.size);
+              for (int _i114 = 0; _i114 < _list113.size; ++_i114)
               {
-                int _key103;
-                List<GeocodeInterpretation> _val104;
-                _key103 = iprot.readI32();
-                {
-                  TList _list105 = iprot.readListBegin();
-                  _val104 = new ArrayList<GeocodeInterpretation>(_list105.size);
-                  for (int _i106 = 0; _i106 < _list105.size; ++_i106)
-                  {
-                    GeocodeInterpretation _elem107;
-                    _elem107 = new GeocodeInterpretation();
-                    _elem107.read(iprot);
-                    _val104.add(_elem107);
-                  }
-                  iprot.readListEnd();
-                }
-                this.interpretationMap.put(_key103, _val104);
+                GeocodeInterpretation _elem115;
+                _elem115 = new GeocodeInterpretation();
+                _elem115.read(iprot);
+                this.interpretations.add(_elem115);
               }
-              iprot.readMapEnd();
+              iprot.readListEnd();
             }
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
-        case 2: // DEBUG_LINES
+        case 2: // INTERPRETATION_INDEXES
           if (field.type == TType.LIST) {
             {
-              TList _list108 = iprot.readListBegin();
-              this.debugLines = new ArrayList<String>(_list108.size);
-              for (int _i109 = 0; _i109 < _list108.size; ++_i109)
+              TList _list116 = iprot.readListBegin();
+              this.interpretationIndexes = new ArrayList<List<Integer>>(_list116.size);
+              for (int _i117 = 0; _i117 < _list116.size; ++_i117)
               {
-                String _elem110;
-                _elem110 = iprot.readString();
-                this.debugLines.add(_elem110);
+                List<Integer> _elem118;
+                {
+                  TList _list119 = iprot.readListBegin();
+                  _elem118 = new ArrayList<Integer>(_list119.size);
+                  for (int _i120 = 0; _i120 < _list119.size; ++_i120)
+                  {
+                    int _elem121;
+                    _elem121 = iprot.readI32();
+                    _elem118.add(_elem121);
+                  }
+                  iprot.readListEnd();
+                }
+                this.interpretationIndexes.add(_elem118);
+              }
+              iprot.readListEnd();
+            }
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 3: // DEBUG_LINES
+          if (field.type == TType.LIST) {
+            {
+              TList _list122 = iprot.readListBegin();
+              this.debugLines = new ArrayList<String>(_list122.size);
+              for (int _i123 = 0; _i123 < _list122.size; ++_i123)
+              {
+                String _elem124;
+                _elem124 = iprot.readString();
+                this.debugLines.add(_elem124);
               }
               iprot.readListEnd();
             }
@@ -434,23 +534,34 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
     validate();
 
     oprot.writeStructBegin(STRUCT_DESC);
-    if (this.interpretationMap != null) {
-      oprot.writeFieldBegin(INTERPRETATION_MAP_FIELD_DESC);
+    if (this.interpretations != null) {
+      oprot.writeFieldBegin(INTERPRETATIONS_FIELD_DESC);
       {
-        oprot.writeMapBegin(new TMap(TType.I32, TType.LIST, this.interpretationMap.size()));
-        for (Map.Entry<Integer, List<GeocodeInterpretation>> _iter111 : this.interpretationMap.entrySet())
+        oprot.writeListBegin(new TList(TType.STRUCT, this.interpretations.size()));
+        for (GeocodeInterpretation _iter125 : this.interpretations)
         {
-          oprot.writeI32(_iter111.getKey());
+          _iter125.write(oprot);
+        }
+        oprot.writeListEnd();
+      }
+      oprot.writeFieldEnd();
+    }
+    if (this.interpretationIndexes != null) {
+      oprot.writeFieldBegin(INTERPRETATION_INDEXES_FIELD_DESC);
+      {
+        oprot.writeListBegin(new TList(TType.LIST, this.interpretationIndexes.size()));
+        for (List<Integer> _iter126 : this.interpretationIndexes)
+        {
           {
-            oprot.writeListBegin(new TList(TType.STRUCT, _iter111.getValue().size()));
-            for (GeocodeInterpretation _iter112 : _iter111.getValue())
+            oprot.writeListBegin(new TList(TType.I32, _iter126.size()));
+            for (int _iter127 : _iter126)
             {
-              _iter112.write(oprot);
+              oprot.writeI32(_iter127);
             }
             oprot.writeListEnd();
           }
         }
-        oprot.writeMapEnd();
+        oprot.writeListEnd();
       }
       oprot.writeFieldEnd();
     }
@@ -459,9 +570,9 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
         oprot.writeFieldBegin(DEBUG_LINES_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.STRING, this.debugLines.size()));
-          for (String _iter113 : this.debugLines)
+          for (String _iter128 : this.debugLines)
           {
-            oprot.writeString(_iter113);
+            oprot.writeString(_iter128);
           }
           oprot.writeListEnd();
         }
@@ -477,11 +588,19 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
     StringBuilder sb = new StringBuilder("BulkSlugLookupResponse(");
     boolean first = true;
 
-    sb.append("interpretationMap:");
-    if (this.interpretationMap == null) {
+    sb.append("interpretations:");
+    if (this.interpretations == null) {
       sb.append("null");
     } else {
-      sb.append(this.interpretationMap);
+      sb.append(this.interpretations);
+    }
+    first = false;
+    if (!first) sb.append(", ");
+    sb.append("interpretationIndexes:");
+    if (this.interpretationIndexes == null) {
+      sb.append("null");
+    } else {
+      sb.append(this.interpretationIndexes);
     }
     first = false;
     if (isSetDebugLines()) {
@@ -500,8 +619,8 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
 
   public void validate() throws TException {
     // check for required fields
-    if (interpretationMap == null) {
-      throw new TProtocolException("Required field 'interpretationMap' was not present! Struct: " + toString());
+    if (interpretations == null) {
+      throw new TProtocolException("Required field 'interpretations' was not present! Struct: " + toString());
     }
   }
 

@@ -319,7 +319,10 @@ struct BulkReverseGeocodeRequest {
 }
 
 struct BulkReverseGeocodeResponse {
-  1: required map<i32, list<GeocodeInterpretation>> interpretationMap
+  1: required map<i32, list<GeocodeInterpretation>> DEPRECATED_interpretationMap
+
+  3: required list<GeocodeInterpretation> interpretations
+  4: list<list<i32>> interpretationIndexes
 
   // only present if debug > 0 in request
   2: optional list<string> debugLines,
@@ -331,15 +334,16 @@ struct BulkSlugLookupRequest {
 }
 
 struct BulkSlugLookupResponse {
-  1: required map<i32, list<GeocodeInterpretation>> interpretationMap
+  1: required list<GeocodeInterpretation> interpretations
+  2: list<list<i32>> interpretationIndexes
 
   // only present if debug > 0 in request
-  2: optional list<string> debugLines,
+  3: optional list<string> debugLines,
 }
 
 service Geocoder {
   GeocodeResponse geocode(1: GeocodeRequest r)
   GeocodeResponse reverseGeocode(1: GeocodeRequest r)
   BulkReverseGeocodeResponse bulkReverseGeocode(1: BulkReverseGeocodeRequest r)
-  // BulkSlugLookupResponse bulkSlugLookup(1: BulkSlugLookupRequest r)
+  BulkSlugLookupResponse bulkSlugLookup(1: BulkSlugLookupRequest r)
 }
