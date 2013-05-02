@@ -5,7 +5,8 @@ import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.foursquare.twofishes.util.{NameUtils, StoredFeatureId}
 import com.foursquare.twofishes.util.NameUtils.BestNameMatch
-import com.vividsolutions.jts.io.{WKBReader, WKTWriter}
+import com.vividsolutions.jts.geom.Geometry
+import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTWriter}
 import org.bson.types.ObjectId
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._
@@ -221,7 +222,7 @@ class ResponseProcessor(
   def hydrateParses(
     sortedParses: SortedParseSeq,
     parseParams: ParseParams,
-    polygonMap: Map[StoredFeatureId, Array[Byte]],
+    polygonMap: Map[StoredFeatureId, Geometry],
     fixAmbiguousNames: Boolean,
     dedupByMatchedName: Boolean = false
   ): Seq[GeocodeInterpretation] = {
@@ -290,13 +291,12 @@ class ResponseProcessor(
           responseIncludes(ResponseIncludes.WKB_GEOMETRY)) {
         for {
           fid <- StoredFeatureId.fromLong(fmatch.longId)
-          wkb <- polygonMap.get(fid)
+          geom <- polygonMap.get(fid)
         } {
-          feature.geometry.setWkbGeometry(wkb)
+          val wkbWriter = new WKBWriter()
+          feature.geometry.setWkbGeometry(wkbWriter.write(geom))
           if (responseIncludes(ResponseIncludes.WKT_GEOMETRY)) {
-            val wkbReader = new WKBReader()
             val wktWriter = new WKTWriter()
-            val geom = wkbReader.read(wkb)
             feature.geometry.setWktGeometry(wktWriter.write(geom))
           }
         }
@@ -468,13 +468,13 @@ class ResponseProcessor(
     // TODO: make this configurable
     // val sortedDedupedParses: SortedParseSeq = dedupedParses.sorted(new ParseOrdering).take(3)
     val sortedDedupedParses: SortedParseSeq = dedupedParses.take(3)
-    val polygonMap: Map[StoredFeatureId, Array[Byte]] = if (GeocodeRequestUtils.shouldFetchPolygon(req)) {
+    val polygonMap: Map[StoredFeatureId, Geometry] = if (GeocodeRequestUtils.shouldFetchPolygon(req)) {
       store.getPolygonByFeatureIds(sortedDedupedParses.flatMap(p =>
         StoredFeatureId.fromLong(p(0).fmatch.longId)))
     } else {
       Map.empty
     }
-    ResponseProcessor.generateResponse(req.debug, logger, hydrateParses(sortedDedupedParses, parseParams, polygonMap,
-      fixAmbiguousNames = true, dedupByMatchedName = dedupByMatchedName))
+    ResponseProcessor.generateResponse(req.debug, logger, hydrateParses(
+      sortedDedupedParses, parseParams, polygonMap, fixAmbiguousNames = true, dedupByMatchedName = dedupByMatchedName))
   }
 }

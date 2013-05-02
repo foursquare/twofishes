@@ -1,6 +1,8 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.util.{ByteUtils, StoredFeatureId}
+import com.vividsolutions.jts.geom.Geometry
+import com.vividsolutions.jts.io.{WKBReader, WKBWriter}
 import java.nio.ByteBuffer
 import java.util.Arrays
 import org.apache.thrift.{TBase, TBaseHelper, TDeserializer, TFieldIdEnum, TSerializer}
@@ -80,6 +82,17 @@ object Serde {
     }
   }
 
+  case object GeometrySerde extends Serde[Geometry] {
+    override def toBytes(t: Geometry): Array[Byte] = {
+      val wkbWriter = new WKBWriter
+      wkbWriter.write(t)
+    }
+    override def fromBytes(bytes: Array[Byte]): Geometry = {
+      val wkbReader = new WKBReader
+      wkbReader.read(bytes)
+    }
+  }
+
   case object TrivialSerde extends Serde[Array[Byte]] {
     override def toBytes(t: Array[Byte]): Array[Byte] = t
     override def fromBytes(bytes: Array[Byte]): Array[Byte] = bytes
@@ -106,10 +119,8 @@ object Serde {
 sealed abstract class Index[K, V](val filename: String, val keySerde: Serde[K], val valueSerde: Serde[V])
 
 object Indexes {
-  type WKBGeometry = Array[Byte]
-
-  case object GeometryIndex extends Index[StoredFeatureId, WKBGeometry](
-    "geometry", Serde.StoredFeatureIdSerde, Serde.TrivialSerde)
+  case object GeometryIndex extends Index[StoredFeatureId, Geometry](
+    "geometry", Serde.StoredFeatureIdSerde, Serde.GeometrySerde)
 
   case object FeatureIndex extends Index[StoredFeatureId, GeocodeServingFeature](
     "features", Serde.StoredFeatureIdSerde, Serde.ThriftSerde(Unit => new GeocodeServingFeature))

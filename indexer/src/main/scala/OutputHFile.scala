@@ -370,8 +370,9 @@ class PolygonIndexer(override val basepath: String, override val fidMap: FidMap)
       MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
         .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
 
-    var index: Int = 0
-    var writer = buildMapFileWriter(Indexes.GeometryIndex)
+    val writer = buildMapFileWriter(Indexes.GeometryIndex)
+
+    val wkbReader = new WKBReader()
 
     for {
       (featureRecord, index) <- polygons.zipWithIndex
@@ -380,7 +381,7 @@ class PolygonIndexer(override val basepath: String, override val fidMap: FidMap)
       if (index % 1000 == 0) {
         println("outputted %d polys so far".format(index))
       }
-      writer.append(featureRecord.featureId, polygon)
+      writer.append(featureRecord.featureId, wkbReader.read(polygon))
     }
     writer.close()
 

@@ -2,6 +2,7 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.util.StoredFeatureId
+import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.WKBReader
 import org.apache.thrift.{TDeserializer, TSerializer}
 import org.apache.thrift.protocol.TCompactProtocol
@@ -217,8 +218,8 @@ trait GeocodeStorageReadService {
   def getMaxS2Level: Int
   def getLevelMod: Int
   def getByS2CellId(id: Long): Seq[CellGeometry]
-  def getPolygonByFeatureId(id: StoredFeatureId): Option[Array[Byte]]
-  def getPolygonByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, Array[Byte]]
+  def getPolygonByFeatureId(id: StoredFeatureId): Option[Geometry]
+  def getPolygonByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, Geometry]
 
   def hotfixesDeletes: Seq[StoredFeatureId] = Nil
   def hotfixesBoosts: Map[StoredFeatureId, Int] = Map.empty

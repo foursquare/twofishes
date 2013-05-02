@@ -80,8 +80,8 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
     s2map.getOrElse(id, Seq())
   }
 
-  def getPolygonByFeatureId(id: StoredFeatureId): Option[Array[Byte]] = None
-  def getPolygonByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, Array[Byte]] = Map.empty
+  def getPolygonByFeatureId(id: StoredFeatureId): Option[Geometry] = None
+  def getPolygonByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, Geometry] = Map.empty
 
   def getLevelMod: Int = 2
   def getMinS2Level: Int = 8

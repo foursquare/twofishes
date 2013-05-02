@@ -15,6 +15,8 @@ import org.apache.hadoop.io.BytesWritable
 import org.apache.thrift.{TBase, TBaseHelper, TDeserializer, TFieldIdEnum, TSerializer}
 import org.apache.thrift.protocol.TCompactProtocol
 import org.bson.types.ObjectId
+import com.vividsolutions.jts.geom.Geometry
+import com.vividsolutions.jts.io.WKBReader
 import scalaj.collection.Implicits._
 
 class HFileStorageService(basepath: String, shouldPreload: Boolean) extends GeocodeStorageReadService {
@@ -63,7 +65,7 @@ class HFileStorageService(basepath: String, shouldPreload: Boolean) extends Geoc
   def getBySlugOrFeatureIds(ids: Seq[String]) = {
     val idMap = (for {
       id <- ids
-      fid <- slugFidMap.flatMap(_.get(id))
+      fid <- StoredFeatureId.fromUserInputString(id).orElse(slugFidMap.flatMap(_.get(id)))
     } yield { (fid, id) }).toMap
 
     getByFeatureIds(idMap.keys.toList).map({
@@ -75,11 +77,11 @@ class HFileStorageService(basepath: String, shouldPreload: Boolean) extends Geoc
     s2map.get(id)
   }
 
-  def getPolygonByFeatureId(id: StoredFeatureId): Option[Array[Byte]] = {
+  def getPolygonByFeatureId(id: StoredFeatureId): Option[Geometry] = {
     geomMapOpt.flatMap(_.get(id))
   }
 
-  def getPolygonByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, Array[Byte]] = {
+  def getPolygonByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, Geometry] = {
     (for {
       id <- ids
       polygon <- getPolygonByFeatureId(id)
@@ -280,7 +282,7 @@ object GeometryMapFileInput {
 class GeometryMapFileInput(basepath: String, shouldPreload: Boolean) {
   val geometryIndex = new MapFileInput(basepath, Indexes.GeometryIndex, shouldPreload)
 
-  def get(id: StoredFeatureId): Option[Array[Byte]] = {
+  def get(id: StoredFeatureId): Option[Geometry] = {
     geometryIndex.lookup(id)
   }
 }

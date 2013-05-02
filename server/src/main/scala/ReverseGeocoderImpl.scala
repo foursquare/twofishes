@@ -142,8 +142,23 @@ class ReverseGeocoderHelperImpl(
       } yield {
         cellid -> store.getByS2CellId(cellid)
       }).toMap
-    
-    (for {
+
+    // need to get polygons if we need to calculate coverage
+    val polygonMap: Map[StoredFeatureId, Geometry] = (
+      if (GeocodeRequestUtils.shouldFetchPolygon(req)) {
+        val fids = (for {
+          cellGeometry <- cellGeometryMap.values.flatten.toSeq
+          oid = new ObjectId(cellGeometry.getOid())
+          fid <- StoredFeatureId.fromLegacyObjectId(oid)
+        } yield fid).distinct
+
+        store.getPolygonByFeatureIds(fids)
+      } else {
+        Map.empty
+      }
+    )
+
+    val parsesAndOtherGeomToFids: Seq[(SortedParseSeq, (Geometry, Seq[StoredFeatureId]))] = (for {
       (otherGeom, index) <- otherGeoms.zipWithIndex
     } yield {
       val cellGeometries = geomIndexToCellIdMap(index).flatMap(cellid => cellGeometryMap(cellid))
@@ -153,20 +168,12 @@ class ReverseGeocoderHelperImpl(
       val servingFeaturesMap: Map[StoredFeatureId, GeocodeServingFeature] =
         store.getByFeatureIds(featureOids.toSet.toList)
 
-      // need to get polygons if we need to calculate coverage
-      val polygonMap: Map[StoredFeatureId, Array[Byte]] =
-        if (GeocodeRequestUtils.shouldFetchPolygon(req)) {
-          store.getPolygonByFeatureIds(featureOids)
-        } else { Map.empty }
-
-      val wkbReader = new WKBReader()
       // for each, check if we're really in it
-      val parses: SortedParseSeq = servingFeaturesMap.map({ case (oid, f) => {
+      val parses: SortedParseSeq = servingFeaturesMap.map({ case (fid, f) => {
         val parse = Parse[Sorted](List(FeatureMatch(0, 0, "", f)))
         if (responseIncludes(ResponseIncludes.REVGEO_COVERAGE) &&
             otherGeom.getNumPoints > 2) {
-          polygonMap.get(oid).foreach(wkb => {
-            val geom = wkbReader.read(wkb)
+          polygonMap.get(fid).foreach(geom => {
             if (geom.getNumPoints > 2) {
               parse.scoringFeatures.setPercentOfRequestCovered(computeCoverage(geom, otherGeom))
               parse.scoringFeatures.setPercentOfFeatureCovered(computeCoverage(otherGeom, geom))
