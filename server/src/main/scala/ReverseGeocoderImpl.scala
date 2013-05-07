@@ -292,9 +292,11 @@ class BulkReverseGeocoderImpl(
   store: GeocodeStorageReadService,
   req: BulkReverseGeocodeRequest
 ) extends GeocoderImplTypes with TimeResponseHelper {
-  val logger = new MemoryLogger(req.params)
+  val params = Option(req.params).getOrElse(new CommonGeocodeRequestParams())
+
+  val logger = new MemoryLogger(params)
   val reverseGeocoder =
-    new ReverseGeocoderHelperImpl(store, Option(req.params).getOrElse(new CommonGeocodeRequestParams()), logger)
+    new ReverseGeocoderHelperImpl(store, Option(params).getOrElse(new CommonGeocodeRequestParams()), logger)
 
   def reverseGeocode(): BulkReverseGeocodeResponse = {
     Stats.incr("bulk-revgeo-requests", 1)
@@ -310,7 +312,7 @@ class BulkReverseGeocoderImpl(
       .setInterpretationIndexes(interpIdxs.map(_.asJava).asJava)
       .setInterpretations(interps.asJava)
 
-    if (req.params.debug > 0) {
+    if (params.debug > 0) {
       response.setDebugLines(logger.getLines.asJava)
     }
     response

@@ -37,9 +37,10 @@ class BulkSlugLookupImpl(
   store: GeocodeStorageReadService,
   req: BulkSlugLookupRequest
 ) extends GeocoderImplTypes with BulkImplHelpers {
-  val logger = new MemoryLogger(req.params)
+  val params = Option(req.params).getOrElse(new CommonGeocodeRequestParams())
+  val logger = new MemoryLogger(params)
 
-  val responseProcessor = new ResponseProcessor(req.params, store, logger)
+  val responseProcessor = new ResponseProcessor(params, store, logger)
 
   def slugLookup(): BulkSlugLookupResponse = {
     val parseParams = ParseParams()
@@ -47,7 +48,7 @@ class BulkSlugLookupImpl(
     val featureMap: Map[String, GeocodeServingFeature] = store.getBySlugOrFeatureIds(req.slugs.asScala)
     //val inputToIdxes: Map[String, Seq[Int]] = req.slugs.asScala.zipWithIndex.groupBy(_._1).mapValues(_.map(_._2))
 
-    val polygonMap: Map[StoredFeatureId, Geometry] = if (GeocodeRequestUtils.shouldFetchPolygon(req.params)) {
+    val polygonMap: Map[StoredFeatureId, Geometry] = if (GeocodeRequestUtils.shouldFetchPolygon(params)) {
       store.getPolygonByFeatureIds(featureMap.values.flatMap(f => StoredFeatureId.fromLong(f.longId)).toSeq)
     } else {
       Map.empty
@@ -68,7 +69,7 @@ class BulkSlugLookupImpl(
     resp.setInterpretations(interps.asJava)
     // map from input idx to interpretation indexes
     resp.setInterpretationIndexes(interpIdxs.map(_.asJava).asJava)
-    if (req.params.debug > 0) {
+    if (params.debug > 0) {
       resp.setDebugLines(logger.getLines.asJava)
     }
     resp
