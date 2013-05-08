@@ -50,6 +50,10 @@
     <input name="lookup" id="lookup"/><input type="button" id="lookupButton" name="Lookup slug or id" value="Lookup slug/id" placeholder="Lookup slug or id" width="100"/></br>
   </form>
 
+  <form id="revgeoForm">
+    <input name="revgeo" id="revgeo"/><input type="button" id="revgeoButton" name="Reverse Geocode" value="Reverse Geocode" placeholder="Reverse Geocode" width="100"/></br>
+  </form>
+
   <form id="bulkLookupForm">
     <input name="bulkLookup" id="bulkLookup"/><input type="button" id="bulkLookupButton" name="Lookup slugs or ids in bulk" value="Lookup slugs/ids in bulk" placeholder="Lookup slugs or ids in bulk" width="1000"/></br>
   </form>
@@ -69,6 +73,9 @@
 
     var lookupButton = $('#lookupButton');
     var lookupInput = $('#lookup');
+
+    var revgeoButton = $('#revgeoButton');
+    var revgeoInput = $('#revgeo');
 
     var bulkLookupButton = $('#bulkLookupButton');
     var bulkLookupInput = $('#bulkLookup');
@@ -92,23 +99,37 @@
     }
 
     lookupButton.click(function() {
-      window.location.hash = "slug=" + lookupInput.val();
+      window.location.hash = "lookup=" + lookupInput.val();
       geocode();
       return false;
     })
 
-    bulkLookupButton.click(function() {
-      var slugs = bulkLookupInput.val().split(',');
+    revgeoButton.click(function() {
+      window.location.hash = "revgeo=" + revgeoInput.val();
+      geocode();
+      return false;
+    })
+
+    function rewriteInputIntoBulkLookupQuery(input) {
+      var slugs = input.split(',');
       var slugParams = slugs.map(function(s) { return ("slug="+s) }).join('&');
-      window.location.hash = slugParams + "&method=bulksluglookup";
+      return slugParams + "&method=bulksluglookup";
+    }
+
+    function rewriteInputIntoBulkRevGeoQuery(input) {
+      var lls = input.split('|');
+      var llParams = lls.map(function(s) { return ("ll="+s) }).join('&');
+      return llParams + "&method=bulkrevgeo";
+    }
+
+    bulkLookupButton.click(function() {
+      window.location.hash = "bulkLookup=" + bulkLookupInput.val();
       geocode();
       return false;
     })
 
     bulkRevGeoButton.click(function() {
-      var lls = bulkRevGeoInput.val().split('|');
-      var llParams = lls.map(function(s) { return ("ll="+s) }).join('&');
-      window.location.hash = llParams + "&method=bulkrevgeo";
+      window.location.hash = "bulkRevGeo=" + bulkRevGeoInput.val();
       geocode();
       return false;
     })
@@ -127,33 +148,80 @@
 
     function geocode() {
       var query = getQuery();
+      var bulkInputs = [];
 
-      var params = query.split('&')
-      var inputs = [];
-      for (var i = 0; i < params.length; ++i) {
-        var keyval = params[i].split('=');
-        if ((keyval[0] == 'slug') || (keyval[0] == 'll')) {
-          inputs.push(keyval[1])
+      if (query.match(/bulkLookup=/)) {
+        // bulk slug lookup
+        var params = query.split('&')
+        var rewrittenQuery = "";
+        for (var i = 0; i < params.length; ++i) {
+          var keyval = params[i].split('=');
+          if (keyval[0] == 'bulkLookup') {
+            rewrittenQuery += rewriteInputIntoBulkLookupQuery(keyval[1]);
+            bulkInputs = keyval[1].split(',')
+          } else {
+            rewrittenQuery += params[i];
+          }
         }
+        query = rewrittenQuery;
+      } else if (query.match(/bulkRevGeo=/)) {
+        // bulk revgeo
+        var params = query.split('&')
+        var rewrittenQuery = "";
+        for (var i = 0; i < params.length; ++i) {
+          var keyval = params[i].split('=');
+          if (keyval[0] == 'bulkRevGeo') {
+            rewrittenQuery += rewriteInputIntoBulkRevGeoQuery(keyval[1]);
+            bulkInputs = keyval[1].split('|')
+          } else {
+            rewrittenQuery += params[i];
+          }
+        }
+        query = rewrittenQuery;
+      } else if (query.match(/lookup=/)) {
+        // one slug lookup
+        var params = query.split('&')
+        var rewrittenQuery = "";
+        for (var i = 0; i < params.length; ++i) {
+          var keyval = params[i].split('=');
+          if (keyval[0] == 'lookup') {
+            rewrittenQuery += 'slug=' + keyval[1];
+          } else {
+            rewrittenQuery += params[i];
+          }
+        }
+        query = rewrittenQuery;
+      } else if (query.match(/revgeo=/)) {
+        // one revgeo
+        var params = query.split('&')
+        var rewrittenQuery = "";
+        for (var i = 0; i < params.length; ++i) {
+          var keyval = params[i].split('=');
+          if (keyval[0] == 'revgeo') {
+            rewrittenQuery += 'll=' + keyval[1];
+          } else {
+            rewrittenQuery += params[i];
+          }
+        }
+        query = rewrittenQuery;
       }
 
       var maxInterpretations = 3;
 
       if (query.match(/.*=.*/)) {
         $.getJSON('http://' + window.location.host + '/?debug=1&maxInterpretations=3&responseIncludes=EVERYTHING&' + query,
-          function(data) { return success(data, inputs) }, failure);
+          function(data) { return success(data, bulkInputs) }, failure);
       } else if (query.match(/^([-+]?\d{1,2}([.]\d+)?),\s*([-+]?\d{1,3}([.]\d+)?)$/)) {
         $.getJSON('http://' + window.location.host + '/?debug=1&&responseIncludes=EVERYTHING&ll=' + query,
-          function(data) { return success(data, inputs) }, failure);
+          function(data) { return success(data, bulkInputs) }, failure);
       } else {
         $.getJSON('http://' + window.location.host + '/?debug=1&maxInterpretations=3&responseIncludes=EVERYTHING&query=' + query,
-          function(data) { return success(data, inputs) }, failure);
+          function(data) { return success(data, bulkInputs) }, failure);
       }
     }
 
-    function success(data, inputs) {
+    function success(data, bulkInputs) {
       window.console.log(data);
-      window.console.log(inputs);
 
       statusArea.empty();
       debugInfo.empty();
@@ -184,7 +252,7 @@
             window.console.log(interpretationIndexes);
             window.console.log(inputIndex);
             if (interpretationIndexes.indexOf(count) != -1) {
-              inputsForThisInterp.push("(Index " + inputIndex + ", Input '" + inputs[inputIndex] + "')")
+              inputsForThisInterp.push("(Index " + inputIndex + ", Input '" + bulkInputs[inputIndex] + "')")
             }
           });
 
