@@ -10,7 +10,17 @@ import scalaj.collection.Implicits._
 
 // Comparator for parses, we score by a number of different features
 //
-class GeocodeParseOrdering(store: GeocodeStorageReadService, req: CommonGeocodeRequestParams, logger: TwofishesLogger) extends Ordering[Parse[Sorted]] {
+
+object GeocodeParseOrdering {
+  type ScoringFunc = (CommonGeocodeRequestParams, Parse[Sorted], GeocodeServingFeature, Seq[FeatureMatch]) => Option[(Int, String)]
+}
+
+class GeocodeParseOrdering(
+    store: GeocodeStorageReadService,
+    req: CommonGeocodeRequestParams,
+    logger: TwofishesLogger,
+    extraScorers: List[GeocodeParseOrdering.ScoringFunc] = Nil
+  ) extends Ordering[Parse[Sorted]] {
   var scoreMap = new scala.collection.mutable.HashMap[String, Int]
 
   // Higher is better
@@ -57,6 +67,12 @@ class GeocodeParseOrdering(store: GeocodeStorageReadService, req: CommonGeocodeR
       if (Option(req.cc).exists(_ == primaryFeature.feature.cc)) {
         modifySignal(10000, "country code match")
       }
+
+      val attributes = Option(primaryFeature.feature.attributes)
+      val scalerank = attributes.flatMap(a => Option(a.scalerank))
+      scalerank.foreach(rank => {
+        modifySignal((20 - rank) * 1000000, "exponential scale rank increase")
+      })
 
       def distancePenalty(ll: GeocodePoint) {
         val distance = if (primaryFeature.feature.geometry.bounds != null) {
@@ -138,6 +154,13 @@ class GeocodeParseOrdering(store: GeocodeStorageReadService, req: CommonGeocodeR
       }
 
       modifySignal( -1 * YahooWoeTypes.getOrdering(primaryFeature.feature.woeType), "prefer smaller interpretation")
+
+      for {
+        scorer <- extraScorers
+        (value, debugStr) <- scorer(req, parse, primaryFeature, rest)
+      } {
+        modifySignal(value, debugStr)
+      }
 
       if (req.debug > 0) {
         logger.ifDebug("final score %s", signal)

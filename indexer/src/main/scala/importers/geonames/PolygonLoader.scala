@@ -40,7 +40,7 @@ object PolygonLoader {
       if (extension == "shp") {
         for {
           shp <- new ShapefileIterator(f)
-          geoids <- shp.propMap.get("geonameid")
+          geoids <- shp.propMap.get("geonameid") orElse shp.propMap.get("qs_gn_id")
           geom <- shp.geometry
           geoid <- geoids.split(',')
           if !geoid.isEmpty

@@ -236,9 +236,19 @@ trait NameUtils {
 
       val exactMatchNameCandidates = namesNormalized.filter(_._2 == matchedString).map(_._1)
       val prefixMatchNameCandidates = namesNormalized.filter(_._2.startsWith(matchedString)).map(_._1)
+      val exactMatchesWithoutAirports =
+        if (f.woeType != YahooWoeType.AIRPORT) { 
+          exactMatchNameCandidates.filterNot(n => (n.lang == "iata" || n.lang == "icao"))
+        } else {
+          Nil
+        }
 
-      val nameCandidates = if (exactMatchNameCandidates.isEmpty) {
-        prefixMatchNameCandidates
+      val nameCandidates = if (exactMatchesWithoutAirports.isEmpty) {
+        if (prefixMatchNameCandidates.isEmpty) {
+          exactMatchNameCandidates 
+        } else {
+          prefixMatchNameCandidates
+        }
       } else {
         exactMatchNameCandidates
       }

@@ -2,6 +2,8 @@
 
 set -x
 
+unzip -v >/dev/null 2>&1 || { echo >&2 "I require 'unzip' but it's not installed.  Aborting."; exit 1; }
+
 mkdir -p data/downloaded/
 mkdir -p data/downloaded/zip/
 

@@ -216,6 +216,14 @@ class AutocompleteGeocoderImpl(
       req.maxInterpretations
     }
   }
+  
+  def downrankAirports(req: CommonGeocodeRequestParams, parse: Parse[Sorted], primaryFeature: GeocodeServingFeature, rest: Seq[FeatureMatch]): Option[(Int, String)] = {
+    if (primaryFeature.feature.woeType == YahooWoeType.AIRPORT) {
+      Some((-50000000, "downweight airports in autocomplete"))
+    } else {
+      None
+    }
+  }
 
   def doAutocompleteGeocode(
     parseParams: ParseParams
@@ -235,7 +243,7 @@ class AutocompleteGeocoderImpl(
           f.fmatch.feature.woeType == YahooWoeType.COUNTRY
         )
       )
-      .sorted(new GeocodeParseOrdering(store, commonParams, logger))
+      .sorted(new GeocodeParseOrdering(store, commonParams, logger, List(downrankAirports)))
 
     responseProcessor.buildFinalParses(
       validParses,
