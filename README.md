@@ -41,7 +41,7 @@ ogr2ogr -t_srs EPSG:4326  mx-4326.shp MUNICIPIOS.shp
 
 Requirements
 ============
-*   Scala
+*   Java
 *   [Mongo](http://www.mongodb.org/display/DOCS/Quickstart)
 *   curl
 
