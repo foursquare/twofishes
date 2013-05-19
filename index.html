@@ -47,7 +47,7 @@ Please note that this is the unpolished developer debug interface for twofishes
 <img src="http://f.cl.ly/items/1y1H0a153q2f1v0P133v/Screen%20Shot%202013-05-19%20at%203.00.58%20PM.png"></img>
 <ul>
 <li><a href="http://demo.twofishes.net/static/geocoder.html#new york, ny">Coarse (city/poi) forward geocoding</a>
-<li><a href="http://demo.twofishes.net/static/geocoder.html#40.74,-74.0">Coarse point reverse geocoding</a>
+<li><a href="http://demo.twofishes.net/static/geocoder.html#33.749,-84.38798">Coarse point reverse geocoding</a>
 <li><a href="http://demo.twofishes.net/static/geocoder.html#ll=40.74,-74.0&radius=5000">Coarse region reverse geocoding</a>
 <li><a href="http://demo.twofishes.net/static/geocoder.html#pizza new york">Query splitting</a>
 <li><a href="http://demo.twofishes.net/static/autocomplete.html#cobb">Geocode autocomplete with highlighting</a>
@@ -72,8 +72,19 @@ Download and unzip one of the indexes
 The server's debug/json inteface will be accessible at http://localhost:8081/static/geocoder.html
 <p/>
 
+All indexes contain data from:
+<ul>
+<li><a href="http://geonames.wordpress.com/about/">geonames.org (light cc-by)</a> You should link to geonames if you use this or nearly any twofishes index.
+<li><a href="http://code.flickr.net/2009/05/21/flickr-shapefiles-public-dataset-10/">flickr (nearly public domain)</a>
+<li><a href="http://www.naturalearthdata.com/about/terms-of-use/">natural earth (public domain)</a>. <br/>
+</ul>
+<b>Please link to geonames.org if you use any of these indexes</b>
+
+
 <a href="/indexes/norevgeo/latest.zip"><h5>Prebuilt: without polygons (no reverse geocoding)</h5></a>
-License: This index contains data from <a href="http://geonames.wordpress.com/about/">geonames.org (light cc-by)</a>, <a href="http://code.flickr.net/2009/05/21/flickr-shapefiles-public-dataset-10/">flickr (nearly public domain)</a> and <a href="http://www.naturalearthdata.com/about/terms-of-use/">natural earth (public domain)</a>. You should link to geonames if you use this or nearly any twofishes index.
+<!--<a href="/indexes/revgeo/latest.zip"><h5>coming soon: Prebuilt: with polygon</h5></a>
+<b><a href="revgeo_license.html">License for this data. You are required to link to this if you use the twofishes index</a></b>-->
+
 
 <h5>From Scratch</h5>
 See the <a href="https://github.com/foursquare/twofishes">documentation on github</a>
@@ -87,7 +98,14 @@ cd twofishes
 ./serve.py latest
 </code></pre>
 
-<h3>About the name</h3>
+
+<h3>FAQ</h3>
+<h5>Why not street level geocoding?</h5>
+Street level geocoding is <b>hard</b>. It's a lot of data (and as a result, the iteration speed is very slow -- a full osm geocoder build takes 1-2 weeks) and it requires a lot of per-country localization. Also, OSM data for address geocoding isn't quite there yet. Building a new OSM street geocoder is something I would like to do, but don't have the time or need for it right now.
+<p/>
+Additionally, street level geocoding is a relatively solved problem by various commercial services, but coarse geocoding strangely isn't. Many of the coarse geocoders I found had poor ranking, no splitting, no autocomplete and no stable identifiers. And no polygons either.
+
+<h5>Where did the name come from?</h5>
 <p>
 Twofishes started life as a 100 line python script serving out of mongo that I began writing one night in December 2011. December was cold. Our stove was being repaired. Still, there were fish to cook. <a href="http://twofishes.net/images/raw_twofishes.jpg">Two fishes</a>. <a href="http://twofishes.net/images/cooked_twofishes.jpg">Two fishes</a> wrapped in bacon <a href="http://www.huffingtonpost.com/nicole-villeneuve/ernest-hemingway-recipe_b_1643351.html">a la Papa Hemingway</a>.
 <p/>
