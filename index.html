@@ -19,7 +19,8 @@
           <a id="forkme_banner" href="https://github.com/foursquare/twofishes">View on GitHub</a>
 
           <h1 id="project_title">Twofishes</h1>
-          <h2 id="project_tagline">A coarse splitting geocoder in scala, based primarily on geonames data</h2>
+          <h2 id="project_tagline">A coarse forward & reverse geocoder in scala</h2>
+          <img src="/images/twofishes2.png" alt="logo">
 
             <section id="downloads">
               <a class="zip_download_link" href="https://github.com/foursquare/twofishes/zipball/master">Download this project as a .zip file</a>
@@ -30,42 +31,75 @@
 
     <!-- MAIN CONTENT -->
     <div id="main_content_wrap" class="outer">
-      <section id="main_content" class="inner">
-        <p><img src="/images/twofishes2.png" alt="logo"></p>
+      <section id="main_content" class="inner"> 
+<h3>Overview</h3>
 
-<h3>Welcome to GitHub Pages.</h3>
+<p>Twofishes is a
+<ul>
+  <li> coarse (ie, not a street geocoder, it goes down to the city/neighborhood/poi level)
+  <li> splitting (it can break up "pizza new york" into query: pizza, where: new york)
+  <li> geocoder (it translates from string queries to lat/lngs on the earth)
+  <li> based primarily on <a href="http://geonames.org">geonames data</a>
+</ul>
 
-<p>This automatic page generator is the easiest way to create beautiful pages for all of your projects. Author your page content here using GitHub Flavored Markdown, select a template crafted by a designer, and publish. After your page is generated, you can check out the new branch:</p>
+<h3>Features</h3>
+Please note that this is the unpolished developer debug interface for twofishes
+<img src="http://f.cl.ly/items/1y1H0a153q2f1v0P133v/Screen%20Shot%202013-05-19%20at%203.00.58%20PM.png"></img>
+<ul>
+<li><a href="http://demo.twofishes.net/static/geocoder.html#new york, ny">Coarse (city/poi) forward geocoding</a>
+<li><a href="http://demo.twofishes.net/static/geocoder.html#40.74,-74.0">Coarse point reverse geocoding</a>
+<li><a href="http://demo.twofishes.net/static/geocoder.html#ll=40.74,-74.0&radius=5000">Coarse region reverse geocoding</a>
+<li><a href="http://demo.twofishes.net/static/geocoder.html#pizza new york">Query splitting</a>
+<li><a href="http://demo.twofishes.net/static/autocomplete.html#cobb">Geocode autocomplete with highlighting</a>
+</ul>
 
-<pre><code>$ cd your_repo_root/repo_name
-$ git fetch origin
-$ git checkout gh-pages
+<h3>Tech Specs</h3>
+<ul>
+<li>Written in <a href="http://twitter.github.io/finagle/">finagle</a> + scala
+<li>Speaks <a href="http://thrift.apache.org/">thrift</a> + json
+<li>Used extensively in production at <a href="http://foursquare.com">foursquare</a>
+<li>Serves 1000s of qps, <10ms response time for most queries, faster for point reverse geocoding
+</ul>
+
+<h3>Getting started</h3>
+Twofishes requires a relatively beefy box to build an index from scratch. For that reason, prebuilt indexes! <br/>
+
+<h5>Prebuilt indexes</h5>
+Download and unzip one of the indexes
+<pre><code>git clone https://github.com/foursquare/twofishes.git
+./init.sh
+./serve.py [INDEX_DIRECTORY]</pre></code>
+The server's debug/json inteface will be accessible at http://localhost:8081/static/geocoder.html
+<p/>
+
+<a href="/indexes/norevgeo/latest.zip"><h5>Prebuilt: without polygons (no reverse geocoding)</h5></a>
+License: This index contains data from <a href="http://geonames.wordpress.com/about/">geonames.org (light cc-by)</a>, <a href="http://code.flickr.net/2009/05/21/flickr-shapefiles-public-dataset-10/">flickr (nearly public domain)</a> and <a href="http://www.naturalearthdata.com/about/terms-of-use/">natural earth (public domain)</a>. You should link to geonames if you use this or nearly any twofishes index.
+
+<h5>From Scratch</h5>
+See the <a href="https://github.com/foursquare/twofishes">documentation on github</a>
+but, very very quickly:
+<pre><code> git clone https://github.com/foursquare/twofishes.git
+cd twofishes
+./init.sh
+./download-country.sh [COUNTRY_CODE] or ./download-world.sh
+./parse.py -c [COUNTRY_CODE] or ./parse.py -w 
+# maybe you also want --output_prefix_index and/or --output_revgeo_index
+./serve.py latest
 </code></pre>
 
-<p>If you're using the GitHub for Mac, simply sync your repository and you'll see the new branch.</p>
-
-<h3>Designer Templates</h3>
-
-<p>We've crafted some handsome templates for you to use. Go ahead and continue to layouts to browse through them. You can easily go back to edit your page before publishing. After publishing your page, you can revisit the page generator and switch to another theme. Your Page content will be preserved if it remained markdown format.</p>
-
-<h3>Rather Drive Stick?</h3>
-
-<p>If you prefer to not use the automatic generator, push a branch named <code>gh-pages</code> to your repository to create a page manually. In addition to supporting regular HTML content, GitHub Pages support Jekyll, a simple, blog aware static site generator written by our own Tom Preston-Werner. Jekyll makes it easy to create site-wide headers and footers without having to copy them across every page. It also offers intelligent blog support and other advanced templating features.</p>
-
-<h3>Authors and Contributors</h3>
-
-<p>You can <a href="https://github.com/blog/821" class="user-mention">@mention</a> a GitHub username to generate a link to their profile. The resulting <code>&lt;a&gt;</code> element will link to the contributor's GitHub Profile. For example: In 2007, Chris Wanstrath (<a href="https://github.com/defunkt" class="user-mention">@defunkt</a>), PJ Hyett (<a href="https://github.com/pjhyett" class="user-mention">@pjhyett</a>), and Tom Preston-Werner (<a href="https://github.com/mojombo" class="user-mention">@mojombo</a>) founded GitHub.</p>
-
-<h3>Support or Contact</h3>
-
-<p>Having trouble with Pages? Check out the documentation at <a href="http://help.github.com/pages">http://help.github.com/pages</a> or contact <a href="mailto:support@github.com">support@github.com</a> and we’ll help you sort it out.</p>
-      </section>
+<h3>About the name</h3>
+<p>
+Twofishes started life as a 100 line python script serving out of mongo that I began writing one night in December 2011. December was cold. Our stove was being repaired. Still, there were fish to cook. <a href="http://twofishes.net/images/raw_twofishes.jpg">Two fishes</a>. <a href="http://twofishes.net/images/cooked_twofishes.jpg">Two fishes</a> wrapped in bacon <a href="http://www.huffingtonpost.com/nicole-villeneuve/ernest-hemingway-recipe_b_1643351.html">a la Papa Hemingway</a>.
+<p/>
+The fish up top are from a very dated 1950s cookbook called "Recipes from the East" by Irma Walker Ross. 
+</p>
+</section>
     </div>
 
     <!-- FOOTER  -->
     <div id="footer_wrap" class="outer">
       <footer class="inner">
-        <p class="copyright">Twofishes maintained by <a href="https://github.com/foursquare">foursquare</a></p>
+        <p class="copyright">Twofishes maintained by <a href="https://github.com/foursquare">foursquare</a> and <a href="https://github.com/blackmad">blackmad</a></p>
         <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
       </footer>
     </div>
