@@ -174,7 +174,7 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
 
     this.adm1cap = false;
 
-    this.scalerank = 0;
+    this.scalerank = 20;
 
     this.labelrank = 0;
 
@@ -214,7 +214,7 @@ public class GeocodeFeatureAttributes implements TBase<GeocodeFeatureAttributes,
 
     this.adm1cap = false;
 
-    this.scalerank = 0;
+    this.scalerank = 20;
 
     this.labelrank = 0;
 

@@ -130,7 +130,7 @@ struct GeocodeRelation {
 struct GeocodeFeatureAttributes {
   1: optional bool adm0cap = 0,
   2: optional bool adm1cap = 0,
-  3: optional i32 scalerank = 0,
+  3: optional i32 scalerank = 20,
   4: optional i32 labelrank = 0,
   5: optional i32 natscale = 0,
   6: optional i32 population = 0,
