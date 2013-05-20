@@ -118,7 +118,7 @@ object GeocoderBuild extends Build {
           "thrift" % "libthrift" % "0.5.0" from "http://maven.twttr.com/org/apache/thrift/libthrift/0.5.0/libthrift-0.5.0.jar",
           "com.twitter" % "finagle-thrift" % "5.3.23",
           "org.slf4j" % "slf4j-api" % "1.6.1"
-        )
+        ) 
       ),
       base = file("interface"))
 
@@ -132,7 +132,13 @@ object GeocoderBuild extends Build {
           "com.twitter" % "finagle-http" % "5.3.23",
           "org.specs2" %% "specs2" % "1.8.2" % "test",
           "org.scala-tools.testing" %% "specs" % "1.6.9" % "test",
-          "com.github.scopt" %% "scopt" % "2.0.0"        )
+          "com.github.scopt" %% "scopt" % "2.0.0"        
+        ),
+        ivyXML := (
+          <dependencies>
+            <exclude org="org.mongodb" module="bson"/>
+          </dependencies>
+        )
       ),
       base = file("server")) dependsOn(core, interface, util, indexer % "test")
 

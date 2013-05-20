@@ -42,25 +42,12 @@
 </head>
 <body>
 
-  <form id="searchForm">
-    <input name="query" id="query"/><input type="button" id="search" name="Search" value="Search" placeholder="Search Geocoder" width="100"/></br>
+  <form id="searchForm" style="float:left">
+    <input name="query" id="query"/><input type="button" id="search" name="Search" value="Search" placeholder="Search Geocoder" width="200"/></br>
   </form>
 
-  <form id="lookupForm">
+  <form id="lookupForm" style="padding-left: 20px">
     <input name="lookup" id="lookup"/><input type="button" id="lookupButton" name="Lookup slug or id" value="Lookup slug/id" placeholder="Lookup slug or id" width="100"/></br>
-  </form>
-
-  <form id="revgeoForm">
-    <input name="revgeo" id="revgeo"/><input type="button" id="revgeoButton" name="Reverse Geocode" value="Reverse Geocode" placeholder="Reverse Geocode" width="100"/></br>
-  </form>
-
-  <form id="bulkLookupForm">
-    <input name="bulkLookup" id="bulkLookup"/><input type="button" id="bulkLookupButton" name="Lookup slugs or ids in bulk" value="Lookup slugs/ids in bulk" placeholder="Lookup slugs or ids in bulk" width="1000"/></br>
-  </form>
-
-  <form id="bulkRevGeoForm">
-    Separate your lat longs by pipes, i.e. 40.74,-74.0|37.8,-122.4:<br />
-    <input name="bulkRevGeo" id="bulkRevGeo"/><input type="button" id="bulkRevGeoButton" name="RevGeo points in bulk" value="RevGeo points in bulk" placeholder="RevGeo points in bulk" width="1000"/></br>
   </form>
 
   <div id="geocodes"></div>
@@ -257,6 +244,9 @@
           });
 
           var name = feature.highlightedName || feature.displayName || feature.name;
+          if (interp.what) {
+            name = interp.what + ' near ' + name;
+          }
           sectionDiv.append('<div class="highlightedName">Interp ' + (count+1) + ': ' + name + '</div>');
           if (allInterpretationIndexes.length > 0) {
             sectionDiv.append(
