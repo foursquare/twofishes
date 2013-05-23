@@ -197,6 +197,7 @@ import com.novus.salat.global._
         libraryDependencies ++= Seq(
           "com.google.caliper" % "caliper" % "0.5-rc1",
           "org.geotools" % "gt-shapefile" % "8.0-M1",
+          "org.geotools" % "gt-geojson" % "8.0-M1",
           "org.geotools" % "gt-epsg-hsql" % "8.0-M1",
           "org.mongodb" % "bson" % "2.10.1",
           "org.scalaj" %% "scalaj-collection" % "1.2",
