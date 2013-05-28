@@ -16,3 +16,5 @@
 5128581|4000000
 # bandung city 1650357 over bandung regency 1650352
 1650352|-4000000
+# boost amherst center (cdp) over amherst
+4929023|1000000

@@ -36,7 +36,13 @@ object PolygonLoader {
 
     def updateRecord(k: String, geom: Geometry) = {
       StoredFeatureId.fromHumanReadableString(k, Some(defaultNamespace)).foreach(fid => {
-        store.addPolygonToRecord(fid, wkbWriter.write(geom))
+        try {
+          store.addPolygonToRecord(fid, wkbWriter.write(geom))
+        } catch {
+          case e => {
+            throw new Exception("couldn't write poly to %s".format(fid), e)
+          }
+        }
       })
     }
 
@@ -71,7 +77,7 @@ object PolygonLoader {
             updateRecord(geoid, geom)
           } catch {
             case e: Exception =>
-              throw new RuntimeException("error with geoids %s in feature %s".format(geoids, shp), e)
+              throw new RuntimeException("error with geoids %s".format(geoids), e)
           }
         }
       } else if (shapeFileExtensions.has(extension)) {
@@ -84,7 +90,7 @@ object PolygonLoader {
           if (geom.isValid) {
             updateRecord(parts(0), geom)
           } else {
-            println("geom is not valid for %s: %s".format(parts(0), geom))
+            println("geom is not valid for %s".format(parts(0)))
           }
         })
       }

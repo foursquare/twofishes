@@ -16,6 +16,8 @@ object NameNormalizer {
     n = n.replaceAll("['\u2018\u2019\\.\u2013]", "")
     // change all other punctuation to spaces
     n = n.replaceAll("\\p{Punct}", " ")
+    // replace multiple spaces with one
+    n = " +".r.replaceAllIn(n, " ")
     n
   }
 
