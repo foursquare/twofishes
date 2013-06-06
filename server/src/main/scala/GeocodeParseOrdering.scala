@@ -71,7 +71,9 @@ class GeocodeParseOrdering(
       val attributes = Option(primaryFeature.feature.attributes)
       val scalerank = attributes.flatMap(a => Option(a.scalerank))
       scalerank.foreach(rank => {
-        modifySignal((20 - rank) * 1000000, "exponential scale rank increase")
+        if (rank > 0) {
+          // modifySignal((20 - rank) * 1000000, "exponential scale rank increase")
+        }
       })
 
       def distancePenalty(ll: GeocodePoint) {
