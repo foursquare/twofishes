@@ -29,7 +29,7 @@ object PolygonLoader {
       new File("data/computed/polygons"),
       new File("data/private/polygons")
     )
-    val polygonFiles = polygonDirs.flatMap(recursiveListFiles)
+    val polygonFiles = polygonDirs.flatMap(recursiveListFiles).sorted
 
     val wktReader = new WKTReader()
     val wkbWriter = new WKBWriter()

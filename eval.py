@@ -19,6 +19,8 @@ serverB = sys.argv[2]
 outputFile = open('eval-%s.html' % datetime.datetime.now(), 'w')
 
 def getUrl(server, param):
+  if not server.startsWith('http'):
+    server = 'http://%s' % server
   return server.rstrip('/') + '/' + param.lstrip('/')
 
 def getResponse(server, param):

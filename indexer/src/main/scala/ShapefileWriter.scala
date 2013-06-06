@@ -9,6 +9,7 @@ import com.vividsolutions.jts.geom.{GeometryFactory, MultiPolygon, Polygon}
 import com.vividsolutions.jts.io.WKBReader
 import java.io.File
 import org.geotools.data.{DataUtilities, DefaultTransaction}
+import org.geotools.data.collection.ListFeatureCollection
 import org.geotools.data.shapefile.{ShapefileDataStore, ShapefileDataStoreFactory}
 import org.geotools.data.simple.{SimpleFeatureCollection, SimpleFeatureStore}
 import org.geotools.feature.FeatureCollections
@@ -68,7 +69,7 @@ object BuildPolygonShapefile {
 
   def buildCollection(): SimpleFeatureCollection = {
     val featureBuilder = new SimpleFeatureBuilder(TYPE)
-    val collection = FeatureCollections.newCollection()
+    val collection = new ListFeatureCollection(TYPE)
 
     val total = MongoGeocodeDAO.count(MongoDBObject("hasPoly" -> true))
 

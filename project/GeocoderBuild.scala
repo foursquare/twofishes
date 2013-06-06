@@ -13,6 +13,7 @@ object GeocoderBuild extends Build {
 
   lazy val defaultSettings = super.settings ++ buildSettings ++ Defaults.defaultSettings ++ Seq(
     resolvers += "geomajas" at "http://maven.geomajas.org",
+    resolvers += "osgeo" at "http://download.osgeo.org/webdav/geotools/",
     resolvers += "twitter" at "http://maven.twttr.com",
     resolvers += "repo.novus rels" at "http://repo.novus.com/releases/",
     resolvers += "repo.novus snaps" at "http://repo.novus.com/snapshots/",
@@ -196,9 +197,9 @@ import com.novus.salat.global._
         publishArtifact := true,
         libraryDependencies ++= Seq(
           "com.google.caliper" % "caliper" % "0.5-rc1",
-          "org.geotools" % "gt-shapefile" % "8.0-M1",
-          "org.geotools" % "gt-geojson" % "8.0-M1",
-          "org.geotools" % "gt-epsg-hsql" % "8.0-M1",
+          "org.geotools" % "gt-shapefile" % "9.2",
+          "org.geotools" % "gt-geojson" % "9.2",
+          "org.geotools" % "gt-epsg-hsql" % "9.2",
           "org.mongodb" % "bson" % "2.10.1",
           "org.scalaj" %% "scalaj-collection" % "1.2",
           "org.specs2" %% "specs2" % "1.8.2" % "test"
