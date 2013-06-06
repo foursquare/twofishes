@@ -238,9 +238,10 @@ class AutocompleteGeocoderImpl(
     var validParses = parses
       .filterNot(p =>
         p.headOption.exists(f =>
-          f.fmatch.feature.woeType == YahooWoeType.ADMIN1 ||
-          f.fmatch.feature.woeType == YahooWoeType.CONTINENT ||
-          f.fmatch.feature.woeType == YahooWoeType.COUNTRY
+          (f.fmatch.feature.woeType == YahooWoeType.ADMIN1 ||
+           f.fmatch.feature.woeType == YahooWoeType.CONTINENT ||
+           f.fmatch.feature.woeType == YahooWoeType.COUNTRY) &&
+          (!commonParams.woeRestrict.asScala.has(f.fmatch.feature.woeType))
         )
       )
       .sorted(new GeocodeParseOrdering(store, commonParams, logger, List(downrankAirports)))
