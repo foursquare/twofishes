@@ -7,7 +7,7 @@ object GeocoderBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.foursquare.twofishes",
     name := "twofishes",
-    version      := "0.75.12",
+    version      := "0.75.13",
     scalaVersion := "2.9.1"
   )
 
@@ -52,7 +52,7 @@ object GeocoderBuild extends Build {
       </developers>),
 
     credentials ++= {
-      val sonatype = ("Sonatype Nexus Repository Manager", "repo.foursquare.com")
+      val sonatype = ("Sonatype Nexus Repository Manager", "nexus.prod.foursquare.com")
       def loadMavenCredentials(file: java.io.File) : Seq[Credentials] = {
         xml.XML.loadFile(file) \ "servers" \ "server" map (s => {
           val host = (s \ "id").text
