@@ -15,11 +15,12 @@ import traceback
 
 serverA = sys.argv[1]
 serverB = sys.argv[2]
+inputFile = sys.argv[3]
 
 outputFile = open('eval-%s.html' % datetime.datetime.now(), 'w')
 
 def getUrl(server, param):
-  if not server.startsWith('http'):
+  if not server.startswith('http'):
     server = 'http://%s' % server
   return server.rstrip('/') + '/' + param.lstrip('/')
 
@@ -161,7 +162,7 @@ if __name__ == '__main__':
     t.setDaemon(True)
     t.start()
 
-  for line in open(sys.argv[1]):
+  for line in open(inputFile):
     queue.put(line.strip())
 
   queue.join()
