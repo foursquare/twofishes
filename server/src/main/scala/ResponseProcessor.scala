@@ -467,7 +467,7 @@ class ResponseProcessor(
 
     // TODO: make this configurable
     // val sortedDedupedParses: SortedParseSeq = dedupedParses.sorted(new ParseOrdering).take(3)
-    val sortedDedupedParses: SortedParseSeq = dedupedParses.take(3)
+    val sortedDedupedParses: SortedParseSeq = dedupedParses.take(maxInterpretations)
     val polygonMap: Map[StoredFeatureId, Geometry] = if (GeocodeRequestUtils.shouldFetchPolygon(req)) {
       store.getPolygonByFeatureIds(sortedDedupedParses.flatMap(p =>
         StoredFeatureId.fromLong(p(0).fmatch.longId)))

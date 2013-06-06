@@ -15,11 +15,14 @@
   <div id="map" style="height: 600px; width: 600px; float: left"></div> <!-- width equals available horizontal space by default -->
   <div id="notmap" style="width: 400px; float: left">
     <form id="searchForm">
-      <input name="query" id="query" autocomplete="off"/></br>
+      max interpretations: <input name="maxInterps" id="maxInterps" value="3" autocomplete="off"/></br>
+      latlng hint: <input name="latlng" id="latlng" autocomplete="off"/></br>
       <label>
         Debug
         <input type="checkbox" id="debugButton"/>
       </label>
+      <p/>
+      Search: <input style="font-size: 150%" name="query" id="query" autocomplete="off"/></br>
     </form>
     <div id="status"></div>
     <div id="debug"></div>
@@ -29,6 +32,8 @@
 
     var statusArea = $('#status');
     var queryInput = $('#query');
+    var maxInterps = $('#maxInterps');
+    var latlngInput = $('#latlng');
     var searchForm = $('#searchForm');
     var debugSection = $('#debug');
     var request = null;
@@ -47,6 +52,10 @@
       }
       var query = location.hash.substr(1)
       var url = 'http://' + window.location.host + '/?autocomplete=true&query=' + query;
+      url += '&maxInterpretations=' + maxInterps.val()
+      if (latlngInput.val()) {
+        url += '&ll=' + latlngInput.val()
+      }
 
       if ($('#debugButton').attr('checked')) {
         url += '&debug=1';
@@ -132,6 +141,7 @@
       attributionControl: false
     }
      var map = new L.Map('map', opts);
+     queryInput.val(location.hash.substr(1));
      map.setView(new L.LatLng(40.74, -74.0), 13)
      geocode();
   </script>

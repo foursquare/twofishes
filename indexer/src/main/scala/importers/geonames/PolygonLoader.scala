@@ -64,6 +64,7 @@ object PolygonLoader {
             val geom = feature.getDefaultGeometry().asInstanceOf[Geometry]
             updateRecord(geoid, geom)
           }
+          features.close()
         }
       } else if (extension == "shp") {
         for {

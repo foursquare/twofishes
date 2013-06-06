@@ -133,11 +133,21 @@
       return false;
     })
 
+    function getParameterByName(name) {
+      name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+      var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+          results = regex.exec(location.search);
+      return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+    }
+
     function geocode() {
       var query = getQuery();
       var bulkInputs = [];
 
+      var maxInterpretations = getParameterByName('maxInterpretations') || 3;
+
       if (query.match(/bulkLookup=/)) {
+        maxInterpretations = 0;
         // bulk slug lookup
         var params = query.split('&')
         var rewrittenQuery = "";
@@ -153,6 +163,7 @@
         query = rewrittenQuery;
       } else if (query.match(/bulkRevGeo=/)) {
         // bulk revgeo
+        maxInterpretations = 0;
         var params = query.split('&')
         var rewrittenQuery = "";
         for (var i = 0; i < params.length; ++i) {
@@ -166,6 +177,7 @@
         }
         query = rewrittenQuery;
       } else if (query.match(/lookup=/)) {
+        maxInterpretations = 0;
         // one slug lookup
         var params = query.split('&')
         var rewrittenQuery = "";
@@ -179,6 +191,7 @@
         }
         query = rewrittenQuery;
       } else if (query.match(/revgeo=/)) {
+        maxInterpretations = 0;
         // one revgeo
         var params = query.split('&')
         var rewrittenQuery = "";
@@ -193,16 +206,15 @@
         query = rewrittenQuery;
       }
 
-      var maxInterpretations = 3;
-
       if (query.match(/.*=.*/)) {
-        $.getJSON('http://' + window.location.host + '/?debug=1&maxInterpretations=3&responseIncludes=EVERYTHING&' + query,
+      $.getJSON('http://' + window.location.host + '/?debug=1&maxInterpretations=' + maxInterpretations +
+        '&responseIncludes=EVERYTHING&' + query,
           function(data) { return success(data, bulkInputs) }, failure);
       } else if (query.match(/^([-+]?\d{1,2}([.]\d+)?),\s*([-+]?\d{1,3}([.]\d+)?)$/)) {
-        $.getJSON('http://' + window.location.host + '/?debug=1&&responseIncludes=EVERYTHING&ll=' + query,
+        $.getJSON('http://' + window.location.host + '/?debug=1&responseIncludes=EVERYTHING&ll=' + query,
           function(data) { return success(data, bulkInputs) }, failure);
       } else {
-        $.getJSON('http://' + window.location.host + '/?debug=1&maxInterpretations=3&responseIncludes=EVERYTHING&query=' + query,
+        $.getJSON('http://' + window.location.host + '/?debug=1&maxInterpretations=' + maxInterpretations + '&responseIncludes=EVERYTHING&query=' + query,
           function(data) { return success(data, bulkInputs) }, failure);
       }
     }
