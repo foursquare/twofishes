@@ -50,7 +50,7 @@
       if (!!request) {
         request.abort()
       }
-      var query = location.hash.substr(1)
+      var query = unescape(location.hash.substr(1))
       var url = 'http://' + window.location.host + '/?autocomplete=true&query=' + query;
       url += '&maxInterpretations=' + maxInterps.val()
       if (latlngInput.val()) {
