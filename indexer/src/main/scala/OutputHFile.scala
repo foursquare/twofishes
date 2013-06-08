@@ -407,7 +407,7 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
       val geom = wkbReader.read(polygon)
       size <- sizes
     } {
-      logDuration("clipped and outputted cover at size %s".format(size)) {
+      logDuration("clipped and outputted cover at size %s for %s".format(size, record._id)) {
         val gridifier = new Gridifier(size._1, size._2)
         gridifier.gridify(geom, true).foreach(cell => {
           val bucket = s2map.getOrElseUpdate(cell.cell.id, new ListBuffer[CellGeometry]())

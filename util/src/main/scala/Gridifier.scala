@@ -2,6 +2,7 @@
 
 package com.foursquare.geo.shapes
 
+import com.vividsolutions.jts.geom.prep.PreparedGeometryFactory
 import com.vividsolutions.jts.util.GeometricShapeFactory
 import com.vividsolutions.jts.geom.{Coordinate, Geometry}
 import java.io.File
@@ -50,12 +51,12 @@ class SimpleGeometryWriter() {
   val featureBuilder = new SimpleFeatureBuilder(TYPE)
   val collection = FeatureCollections.newCollection()
 
-  def add(g: Geometry, s: String) {
+  /*def add(g: Geometry, s: String) {
     featureBuilder.add(g);
     featureBuilder.add(s);
     val feature = featureBuilder.buildFeature(null);
     collection.add(feature);
-  }
+  }*/
 
   def write(filename: String) {
     val file = new File(filename)
@@ -130,8 +131,16 @@ class Gridifier(numXCells: Int, numYCells: Int) {
   // val debugWriter = new SimpleGeometryWriter()
 
   def gridify(g: Geometry, includeGeometry: Boolean): Seq[ClippedGridCell] = {
+    var geom = g
+    if (!geom.isValid()) {
+      geom = g.buffer(0)
+      if (!geom.isValid()) {
+        return Nil
+      }
+    }
+    geom = PreparedGeometryFactory.prepare(geom)
     //debugWriter.add(g, "geom")
-    val env = g.getEnvelope
+    val env = geom.getEnvelope
     assert(env.isRectangle)
 
     val minCell = toIndex(env.getCoordinates()(Coords.BottomLeft.id))
@@ -147,7 +156,7 @@ class Gridifier(numXCells: Int, numYCells: Int) {
         if (g.contains(cell.bounds)) {
           ClippedGridCell(cell, true)
         } else {
-          ClippedGridCell(cell, false, Some(cell.bounds.intersection(g)))
+          ClippedGridCell(cell, false, Some(cell.bounds.intersection(geom)))
         }
       } else {
         ClippedGridCell(cell, false)
