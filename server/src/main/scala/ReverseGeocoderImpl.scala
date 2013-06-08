@@ -1,7 +1,6 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
-import com.foursquare.geo.shapes.Gridifier
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.{GeoTools, GeometryUtils, StoredFeatureId, TwofishesLogger}
 import com.foursquare.twofishes.util.Lists.Implicits._
@@ -10,6 +9,7 @@ import com.twitter.util.Duration
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory, Point => JTSPoint}
 import com.vividsolutions.jts.io.{WKBReader, WKTWriter}
 import com.vividsolutions.jts.util.GeometricShapeFactory
+import com.foursquare.geo.shapes.Gridifier
 import org.bson.types.ObjectId
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._
@@ -53,7 +53,7 @@ class ReverseGeocoderHelperImpl(
   store: GeocodeStorageReadService,
   req: CommonGeocodeRequestParams,
   logger: MemoryLogger
-) extends GeocoderImplTypes with TimeResponseHelper {
+) extends GeocoderImplTypes with TimeResponseHelper with BulkImplHelpers {
   def featureGeometryIntersections(wkbGeometry: Array[Byte], otherGeom: Geometry) = {
     val wkbReader = new WKBReader()
     val geom = wkbReader.read(wkbGeometry)
@@ -110,7 +110,8 @@ class ReverseGeocoderHelperImpl(
     matches.toSeq
   }
 
-  def doBulkReverseGeocode(otherGeoms: Seq[Geometry]): Map[Int, Seq[GeocodeInterpretation]] = {
+  def doBulkReverseGeocode(otherGeoms: Seq[Geometry]):
+      (Seq[Seq[Int]], Seq[GeocodeInterpretation]) = {
     val geomIndexToCellIdMap: Map[Int, Seq[Long]] = (for {
       (g, index) <- otherGeoms.zipWithIndex
     } yield { index -> Gridifier.coverAtAllLevels(store.getSizes, g, false) }).toMap
@@ -121,8 +122,23 @@ class ReverseGeocoderHelperImpl(
       } yield {
         cellid -> store.getByS2CellId(cellid)
       }).toMap
-    
-    (for {
+
+    // need to get polygons if we need to calculate coverage
+    val polygonMap: Map[StoredFeatureId, Geometry] = (
+      if (GeocodeRequestUtils.shouldFetchPolygon(req)) {
+        val fids = (for {
+          cellGeometry <- cellGeometryMap.values.flatten.toSeq
+          oid = new ObjectId(cellGeometry.getOid())
+          fid <- StoredFeatureId.fromLegacyObjectId(oid)
+        } yield fid).distinct
+
+        store.getPolygonByFeatureIds(fids)
+      } else {
+        Map.empty
+      }
+    )
+
+    val parsesAndOtherGeomToFids: Seq[(SortedParseSeq, (Geometry, Seq[StoredFeatureId]))] = (for {
       (otherGeom, index) <- otherGeoms.zipWithIndex
     } yield {
       val cellGeometries = geomIndexToCellIdMap(index).flatMap(cellid => cellGeometryMap(cellid))
@@ -132,20 +148,12 @@ class ReverseGeocoderHelperImpl(
       val servingFeaturesMap: Map[StoredFeatureId, GeocodeServingFeature] =
         store.getByFeatureIds(featureOids.toSet.toList)
 
-      // need to get polygons if we need to calculate coverage
-      val polygonMap: Map[StoredFeatureId, Array[Byte]] =
-        if (GeocodeRequestUtils.shouldFetchPolygon(req)) {
-          store.getPolygonByFeatureIds(featureOids)
-        } else { Map.empty }
-
-      val wkbReader = new WKBReader()
       // for each, check if we're really in it
-      val parses: SortedParseSeq = servingFeaturesMap.map({ case (oid, f) => {
+      val parses: SortedParseSeq = servingFeaturesMap.map({ case (fid, f) => {
         val parse = Parse[Sorted](List(FeatureMatch(0, 0, "", f)))
         if (responseIncludes(ResponseIncludes.REVGEO_COVERAGE) &&
             otherGeom.getNumPoints > 2) {
-          polygonMap.get(oid).foreach(wkb => {
-            val geom = wkbReader.read(wkb)
+          polygonMap.get(fid).foreach(geom => {
             if (geom.getNumPoints > 2) {
               parse.scoringFeatures.setPercentOfRequestCovered(computeCoverage(geom, otherGeom))
               parse.scoringFeatures.setPercentOfFeatureCovered(computeCoverage(otherGeom, geom))
@@ -155,8 +163,6 @@ class ReverseGeocoderHelperImpl(
         parse
       }}).toSeq
 
-      val parseParams = ParseParams()
-
       val maxInterpretations = if (req.maxInterpretations <= 0) {
         parses.size
       } else {
@@ -164,12 +170,19 @@ class ReverseGeocoderHelperImpl(
       }
 
       val sortedParses = parses.sorted(new ReverseGeocodeParseOrdering).take(maxInterpretations)
-      val responseProcessor = new ResponseProcessor(req, store, logger)
-      val interpretations = responseProcessor.hydrateParses(sortedParses, parseParams, polygonMap,
-        fixAmbiguousNames = false)
 
-      (index -> interpretations)
-    }).toMap
+      (sortedParses, (otherGeom -> sortedParses.flatMap(p => StoredFeatureId.fromLong(p.fmatches(0).fmatch.longId))))
+    })
+    val sortedParses = parsesAndOtherGeomToFids.flatMap(_._1)
+    val otherGeomToFids = parsesAndOtherGeomToFids.map(_._2).toMap
+
+    val parseParams = ParseParams()
+
+    val responseProcessor = new ResponseProcessor(req, store, logger)
+    val interpretations = responseProcessor.hydrateParses(sortedParses, parseParams, polygonMap,
+      fixAmbiguousNames = false)
+
+    (makeBulkReply[Geometry](otherGeoms, otherGeomToFids, interpretations), interpretations)
   }
 }
 
@@ -183,8 +196,9 @@ class ReverseGeocoderImpl(
     new ReverseGeocoderHelperImpl(store, commonParams, logger)
 
   def doSingleReverseGeocode(geom: Geometry): GeocodeResponse = {
-    val interpretations = reverseGeocoder.doBulkReverseGeocode(List(geom))(0)
-    val response = ResponseProcessor.generateResponse(req.debug, logger, interpretations)
+    val (interpIdxes, interpretations) = reverseGeocoder.doBulkReverseGeocode(List(geom))
+    val response = ResponseProcessor.generateResponse(req.debug, logger,
+      interpIdxes(0).flatMap(interpIdx => interpretations.lift(interpIdx)))
     if (req.debug > 0) {
       val wktWriter = new WKTWriter
       response.setRequestWktGeometry(wktWriter.write(geom))
@@ -250,9 +264,11 @@ class BulkReverseGeocoderImpl(
   store: GeocodeStorageReadService,
   req: BulkReverseGeocodeRequest
 ) extends GeocoderImplTypes with TimeResponseHelper {
-  val logger = new MemoryLogger(req.params)
+  val params = Option(req.params).getOrElse(new CommonGeocodeRequestParams())
+
+  val logger = new MemoryLogger(params)
   val reverseGeocoder =
-    new ReverseGeocoderHelperImpl(store, Option(req.params).getOrElse(new CommonGeocodeRequestParams()), logger)
+    new ReverseGeocoderHelperImpl(store, Option(params).getOrElse(new CommonGeocodeRequestParams()), logger)
 
   def reverseGeocode(): BulkReverseGeocodeResponse = {
     Stats.incr("bulk-revgeo-requests", 1)
@@ -260,14 +276,18 @@ class BulkReverseGeocoderImpl(
     val geomFactory = new GeometryFactory()
 
     val points = req.latlngs.asScala.map(ll => geomFactory.createPoint(new Coordinate(ll.lng, ll.lat)))
-    val response = new BulkReverseGeocodeResponse()
-      .setInterpretationMap(
-        reverseGeocoder.doBulkReverseGeocode(points).mapValues(_.toList.asJava).asJava
-      )
 
-    if (req.params.debug > 0) {
-      response.setDebugLines(List[String]().asJava)
+    val (interpIdxs, interps) = reverseGeocoder.doBulkReverseGeocode(points)
+
+    val response = new BulkReverseGeocodeResponse()
+      .setDEPRECATED_interpretationMap(Map.empty.asJava)
+      .setInterpretationIndexes(interpIdxs.map(_.asJava).asJava)
+      .setInterpretations(interps.asJava)
+
+    if (params.debug > 0) {
+      response.setDebugLines(logger.getLines.asJava)
     }
     response
   }
 }
+
