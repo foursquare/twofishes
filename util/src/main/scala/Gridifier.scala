@@ -23,7 +23,7 @@ import org.geotools.data.DefaultTransaction;
 import org.geotools.data.Transaction;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.shapefile.ShapefileDataStoreFactory;
-import org.geotools.data.simple.SimpleFeatureCollection;
+import org.geotools.data.collection.ListFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.data.simple.SimpleFeatureStore;
 import org.geotools.feature.FeatureCollections;
@@ -48,7 +48,7 @@ class SimpleGeometryWriter() {
     "name:String" // <- a String attribute
   );
   val featureBuilder = new SimpleFeatureBuilder(TYPE)
-  val collection = FeatureCollections.newCollection()
+  val collection = new ListFeatureCollection(TYPE)
 
   def add(g: Geometry, s: String) {
     featureBuilder.add(g);
