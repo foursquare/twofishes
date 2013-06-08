@@ -69,13 +69,13 @@ object PolygonLoader {
       } else if (extension == "shp") {
         for {
           shp <- new ShapefileIterator(f)
-          geoids <- shp.propMap.get("geonameid") orElse shp.propMap.get("qs_gn_id")
+          geoids <- shp.propMap.get("geonameid") orElse shp.propMap.get("qs_gn_id") orElse shp.propMap.get("gn_id")
           geom <- shp.geometry
           geoid <- geoids.split(',')
           if !geoid.isEmpty
         } {
           try {
-            updateRecord(geoid, geom)
+            updateRecord(geoid.replace(".0", ""), geom)
           } catch {
             case e: Exception =>
               throw new RuntimeException("error with geoids %s".format(geoids), e)
