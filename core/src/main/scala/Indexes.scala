@@ -128,8 +128,8 @@ object Indexes {
   case object IdMappingIndex extends Index[String, StoredFeatureId](
     "id-mapping", Serde.StringSerde, Serde.StoredFeatureIdSerde)
 
-  case object S2Index extends Index[Long, CellGeometries](
-    "s2_index", Serde.LongSerde, Serde.ThriftSerde(Unit => new CellGeometries))
+  case object RevGeoIndex extends Index[Long, CellGeometries](
+    "revgeo_index", Serde.LongSerde, Serde.ThriftSerde(Unit => new CellGeometries))
 
   case object PrefixIndex extends Index[String, Seq[StoredFeatureId]](
     "prefix_index", Serde.StringSerde, Serde.StoredFeatureIdListSerde)

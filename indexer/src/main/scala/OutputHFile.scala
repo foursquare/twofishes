@@ -9,6 +9,7 @@ import com.novus.salat.annotations._
 import com.novus.salat.dao._
 import com.novus.salat.global._
 import com.twitter.util.Duration
+import com.foursquare.geo.shapes.Gridifier
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter}
 import java.io._
@@ -390,60 +391,47 @@ class PolygonIndexer(override val basepath: String, override val fidMap: FidMap)
 }
 
 class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) extends Indexer {
-  val minS2Level = 8
-  val maxS2Level = 12
-  val maxCells = 1000
-  val levelMod = 2
+  val sizes = List(
+    (200, 200),
+    (1000, 1000),
+    (2000, 2000)
+  )
 
   def calculateCoverForRecord(
-      record: GeocodeRecord, s2map: HashMap[Long, ListBuffer[CellGeometry]], s2shapes: HashMap[Long, Geometry]) = {
+      record: GeocodeRecord, s2map: HashMap[Long, ListBuffer[CellGeometry]]) = {
     val wkbReader = new WKBReader()
     val wkbWriter = new WKBWriter()
 
     for {
       polygon <- record.polygon
-    } {
-      //println("reading poly %s".format(index))
       val geom = wkbReader.read(polygon)
-
-      val cells = logDuration("generated cover ") {
-        GeometryUtils.s2PolygonCovering(
-          geom,
-          minS2Level,
-          maxS2Level,
-          levelMod = Some(levelMod),
-          maxCellsHintWhichMightBeIgnored = Some(1000)
-        )
-      }
-      logDuration("clipped and outputted cover for %d cells".format(cells.size)) {
-        cells.foreach(
-          (cellid: S2CellId) => {
-            val bucket = s2map.getOrElseUpdate(cellid.id, new ListBuffer[CellGeometry]())
-            val s2shape = s2shapes.getOrElseUpdate(cellid.id, ShapefileS2Util.fullGeometryForCell(cellid))
-            val cellGeometry = new CellGeometry()
-            val recordShape = geom.buffer(0)
-            if (recordShape.contains(s2shape)) {
-              cellGeometry.setFull(true)
-            } else {
-              cellGeometry.setWkbGeometry(wkbWriter.write(s2shape.intersection(recordShape)))
-            }
-            cellGeometry.setWoeType(record.woeType)
-            cellGeometry.setOid(record.featureId.legacyObjectId.toByteArray())
-            cellGeometry.setLongId(record._id)
-            bucket += cellGeometry
+      size <- sizes
+    } {
+      logDuration("clipped and outputted cover at size %s".format(size)) {
+        val gridifier = new Gridifier(size._1, size._2)
+        gridifier.gridify(geom, true).foreach(cell => {
+          val bucket = s2map.getOrElseUpdate(cell.cell.id, new ListBuffer[CellGeometry]())
+          val cellGeometry = new CellGeometry()
+          val recordShape = geom.buffer(0)
+          if (cell.full) {
+            cellGeometry.setFull(true)
+          } else {
+            cellGeometry.setWkbGeometry(wkbWriter.write(cell.g.get))
           }
-        )
+          cellGeometry.setWoeType(record.woeType)
+          cellGeometry.setOid(record.featureId.legacyObjectId.toByteArray())
+          cellGeometry.setLongId(record._id)
+          bucket += cellGeometry
+        })
       }
     }
   }
 
   def buildRevGeoIndex() {
     val writer = buildMapFileWriter(
-      Indexes.S2Index,
+      Indexes.RevGeoIndex,
       Map(
-        "minS2Level" -> minS2Level.toString,
-        "maxS2Level" -> maxS2Level.toString,
-        "levelMod" -> levelMod.toString
+        "sizes" -> sizes.map(s => "%s,%s".format(s._1, s._2)).mkString("|")
       )
     )
 
@@ -451,7 +439,6 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
     val numThreads = 5
     val subMaps = 0.until(numThreads).toList.map(offset => {
       val s2map = new HashMap[Long, ListBuffer[CellGeometry]]
-      val s2shapes = new HashMap[Long, Geometry]
       val thread = new Thread(new Runnable {
 
         def run() {
@@ -463,7 +450,7 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
 
           ids.zipWithIndex.filter(i => (i._2 % numThreads) == offset).grouped(200).foreach(chunk => {
             val records = MongoGeocodeDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> chunk.map(_._1)))).toList
-            records.foreach(r => calculateCoverForRecord(r, s2map, s2shapes))
+            records.foreach(r => calculateCoverForRecord(r, s2map))
 
             doneCount += chunk.size
             if (doneCount % 1000 == 0) {

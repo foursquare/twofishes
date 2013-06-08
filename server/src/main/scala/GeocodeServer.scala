@@ -277,19 +277,29 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
         response
       })
     } else {
+      println(params)
       val request = parseGeocodeRequest(params)
+
+      if (params.isEmpty) {
+        val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
+        Future.value(response)
+      }
 
       val commonParams = GeocodeRequestUtils.geocodeRequestToCommonRequestParams(request)
       if (params.getOrElse("method", Nil).has("bulkrevgeo")) {
+        println("bulk revgeo?")
         handleBulkReverseGeocodeQuery(commonParams, params.getOrElse("ll", Nil).map(v => {
           val ll = v.split(",").toList
           (ll(0).toDouble, ll(1).toDouble)
         }))
       } else if (params.getOrElse("method", Nil).has("bulksluglookup")) {
+        println("bulk slug?")
         handleBulkSlugLookupQuery(commonParams, params.getOrElse("slug", Nil))
       } else if (request.query == null && request.slug == null) {
+        println("bulk revgeo")
         handleReverseGeocodeQuery(request)
       } else {
+        println("bulk geo")
         handleGeocodeQuery(request)
       }
     }

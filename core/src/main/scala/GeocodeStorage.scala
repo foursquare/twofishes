@@ -214,9 +214,7 @@ trait GeocodeStorageReadService {
 
   def getBySlugOrFeatureIds(ids: Seq[String]): Map[String, GeocodeServingFeature]
 
-  def getMinS2Level: Int
-  def getMaxS2Level: Int
-  def getLevelMod: Int
+  def getSizes: List[(Int, Int)]
   def getByS2CellId(id: Long): Seq[CellGeometry]
   def getPolygonByFeatureId(id: StoredFeatureId): Option[Geometry]
   def getPolygonByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, Geometry]

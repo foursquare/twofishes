@@ -90,9 +90,7 @@ class HFileStorageService(basepath: String, shouldPreload: Boolean) extends Geoc
     }).toMap
   }
 
-  def getMinS2Level: Int = s2map.minS2Level
-  def getMaxS2Level: Int = s2map.maxS2Level
-  override def getLevelMod: Int = s2map.levelMod
+  override def getSizes = s2map.sizes.toList
 
   override val hotfixesDeletes: Seq[StoredFeatureId] = {
     val file = new File(basepath, "hotfixes_deletes.txt")
@@ -240,7 +238,7 @@ class PrefixIndexMapFileInput(basepath: String, shouldPreload: Boolean) {
 
 object ReverseGeocodeMapFileInput {
   def readInput(basepath: String, shouldPreload: Boolean) = {
-    if (new File(basepath, "s2_index").exists()) {
+    if (new File(basepath, "revgeo_index").exists()) {
       Some(new ReverseGeocodeMapFileInput(basepath, shouldPreload))
     } else {
       None
@@ -248,21 +246,15 @@ object ReverseGeocodeMapFileInput {
   }
 }
 
-
 class ReverseGeocodeMapFileInput(basepath: String, shouldPreload: Boolean) {
-  val s2Index = new MapFileInput(basepath, Indexes.S2Index, shouldPreload)
+  val s2Index = new MapFileInput(basepath, Indexes.RevGeoIndex, shouldPreload)
 
-  lazy val minS2Level = s2Index.fileInfo.getOrElse(
-    "minS2Level",
-    throw new Exception("missing minS2Level")).toInt
-
-  lazy val maxS2Level = s2Index.fileInfo.getOrElse(
-    "maxS2Level",
-    throw new Exception("missing maxS2Level")).toInt
-
-  lazy val levelMod = s2Index.fileInfo.getOrElse(
-    "levelMod",
-    throw new Exception("missing levelMod")).toInt
+  lazy val sizes = s2Index.fileInfo.getOrElse(
+    "sizes",
+    throw new Exception("missing sizes")).split("|").map(s => {
+      val parts = s.split(",")
+      (parts(0).toInt, parts(1).toInt)
+    })
 
   def get(cellid: Long): List[CellGeometry] = {
     s2Index.lookup(cellid).toList.flatMap(_.cells.asScala)
