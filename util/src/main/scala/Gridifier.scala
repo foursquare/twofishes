@@ -131,38 +131,43 @@ class Gridifier(numXCells: Int, numYCells: Int) {
   // val debugWriter = new SimpleGeometryWriter()
 
   def gridify(g: Geometry, includeGeometry: Boolean): Seq[ClippedGridCell] = {
-    var geom = g
-    if (!geom.isValid()) {
-      geom = g.buffer(0)
-      if (!geom.isValid()) {
+    var origGeom = g
+    if (!origGeom.isValid()) {
+      origGeom = origGeom.buffer(0)
+      if (!origGeom.isValid()) {
         return Nil
       }
     }
-    geom = PreparedGeometryFactory.prepare(geom)
+    val geom = PreparedGeometryFactory.prepare(origGeom)
+
     //debugWriter.add(g, "geom")
-    val env = geom.getEnvelope
+    val env = origGeom.getEnvelope
     assert(env.isRectangle)
 
     val minCell = toIndex(env.getCoordinates()(Coords.BottomLeft.id))
     val maxCell = toIndex(env.getCoordinates()(Coords.TopRight.id))
 
-    for {
+    (for {
       x <- minCell.x.to(maxCell.x)
       y <- minCell.y.to(maxCell.y)
     } yield {
       //debugWriter.add(GridCell(x, y).bounds, "%s,%s".format(x, y))
       val cell = GridCell(x, y)
       if (includeGeometry) {
-        if (g.contains(cell.bounds)) {
-          ClippedGridCell(cell, true)
+        if (geom.contains(cell.bounds)) {
+          Some(ClippedGridCell(cell, true))
+        } else if (geom.intersects(cell.bounds)) {
+          Some(ClippedGridCell(cell, false, Some(origGeom.intersection(cell.bounds))))
         } else {
-          ClippedGridCell(cell, false, Some(cell.bounds.intersection(geom)))
+          None
         }
+      } else if (geom.intersects(cell.bounds)) {
+        Some(ClippedGridCell(cell, false))
       } else {
-        ClippedGridCell(cell, false)
+        None
       }
       //debugWriter.add(intersection, "intersection")
-    }
+    }).flatten
     //debugWriter.write("debug.shp")
   }
 }
