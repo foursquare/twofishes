@@ -46,7 +46,12 @@ object PolygonLoader {
       })
     }
 
-    polygonFiles.foreach(f => {
+    for {
+      (f, index) <- polygonFiles.zipWithIndex
+    } {
+      if (index % 1000 == 0) {
+        System.gc();
+      }
       println("processing %s".format(f))
       val fparts = f.getName().split("\\.")
       val extension = fparts.lift(1).getOrElse("")
@@ -95,6 +100,6 @@ object PolygonLoader {
           }
         })
       }
-    })
+    }
   }
 }
