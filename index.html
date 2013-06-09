@@ -12,6 +12,16 @@
   </head>
 
   <body>
+  <script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+            })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+              ga('create', 'UA-41140331-1', 'twofishes.net');
+                ga('send', 'pageview');
+
+                </script>
 
     <!-- HEADER -->
     <div id="header_wrap" class="outer">
@@ -42,6 +52,8 @@
   <li> based primarily on <a href="http://geonames.org">geonames data</a>
 </ul>
 
+<hr>
+
 <h3>Features</h3>
 Please note that this is the unpolished developer debug interface for twofishes
 <img src="http://f.cl.ly/items/1y1H0a153q2f1v0P133v/Screen%20Shot%202013-05-19%20at%203.00.58%20PM.png"></img>
@@ -53,6 +65,8 @@ Please note that this is the unpolished developer debug interface for twofishes
 <li><a href="http://demo.twofishes.net/static/autocomplete.html#cobb">Geocode autocomplete with highlighting</a>
 </ul>
 
+<hr>
+
 <h3>Tech Specs</h3>
 <ul>
 <li>Written in <a href="http://twitter.github.io/finagle/">finagle</a> + scala
@@ -61,32 +75,31 @@ Please note that this is the unpolished developer debug interface for twofishes
 <li>Serves 1000s of qps, <10ms response time for most queries, faster for point reverse geocoding
 </ul>
 
+<hr>
+
 <h3>Getting started</h3>
-Twofishes requires a relatively beefy box to build an index from scratch. For that reason, prebuilt indexes! <br/>
+Twofishes requires a relatively beefy box to build an index from scratch. For that reason, prebuilt indexes and binaries exist! <br/>
 
 <h5>Prebuilt indexes</h5>
-Download and unzip one of the indexes
-<pre><code>git clone https://github.com/foursquare/twofishes.git
-./init.sh
-./serve.py [INDEX_DIRECTORY]</pre></code>
-The server's debug/json inteface will be accessible at http://localhost:8081/static/geocoder.html
+
+All indexes contain data from <a href="http://geonames.wordpress.com/about/">geonames.org (light cc-by)</a>, <a href="http://code.flickr.net/2009/05/21/flickr-shapefiles-public-dataset-10/">flickr (public domain)</a>, and <a href="http://www.naturalearthdata.com/about/terms-of-use/">natural earth (public domain)</a>.
+
+<p/>
+<a href="/binaries/latest.jar">Download server binary</a>
+<p/>
+<a href="/indexes/norevgeo/latest.zip">Download latest index without polygons (no reverse geocoding)</a> (updated 2013-05-19)<br/>
+<span style="font-weight: bold">License: CC-BY as required by geonames, please link to geonames.org somewhere on your site. For more information, see:  <a href="http://geonames.wordpress.com/about/">geonames.org (light cc-by)</a></span>
+
+<a href="/indexes/revgeo/latest.zip"><h5>Prebuilt: with polygon</h5></a>
+<b><a href="https://github.com/foursquare/quattroshapes/blob/master/LICENSE.md">License for this data. You are required to include this information on your site if you use the twofishes index</a></b>
+
+<h5>Serving a prebuilt index</h5>
+Download and unzip one of the indexes, download the server binary.
+<pre><code>java -jar server.jar --hfile_basepath INDEX_DIRECTORY</pre></code>
+The server's debug/json inteface will be accessible at http://localhost:8081/static/geocoder.html You can also serve a prebuilt binary by following the instructions below and skipping the index build step -- run serve.py with an argument of the index directory.
 <p/>
 
-All indexes contain data from:
-<ul>
-<li><a href="http://geonames.wordpress.com/about/">geonames.org (light cc-by)</a> You should link to geonames if you use this or nearly any twofishes index.
-<li><a href="http://code.flickr.net/2009/05/21/flickr-shapefiles-public-dataset-10/">flickr (nearly public domain)</a>
-<li><a href="http://www.naturalearthdata.com/about/terms-of-use/">natural earth (public domain)</a>. <br/>
-</ul>
-<b>Please link to geonames.org if you use any of these indexes</b>
-
-
-<a href="/indexes/norevgeo/latest.zip"><h5>Prebuilt: without polygons (no reverse geocoding)</h5></a>
-<!--<a href="/indexes/revgeo/latest.zip"><h5>coming soon: Prebuilt: with polygon</h5></a>
-<b><a href="revgeo_license.html">License for this data. You are required to link to this if you use the twofishes index</a></b>-->
-
-
-<h5>From Scratch</h5>
+<h5>Building an index from scratch</h5>
 See the <a href="https://github.com/foursquare/twofishes">documentation on github</a>
 but, very very quickly:
 <pre><code> git clone https://github.com/foursquare/twofishes.git
@@ -98,6 +111,11 @@ cd twofishes
 ./serve.py latest
 </code></pre>
 
+<hr>
+<h3>Mailing List</h3>
+Sign up for <a href="https://groups.google.com/forum/?fromgroups#!forum/twofishes">the google group</a> to get updates about new indexes, breaking changes, and, hopefully, discussion of features and development.
+
+<hr>
 
 <h3>FAQ</h3>
 <h5>Why not street level geocoding?</h5>
