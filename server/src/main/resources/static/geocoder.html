@@ -333,6 +333,10 @@
     }
 
      geocode();
+
+     $(window).on('hashchange', function() {
+       geocode();
+     });
   </script>
 </body>
 

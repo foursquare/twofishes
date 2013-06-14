@@ -141,6 +141,12 @@
       attributionControl: false
     }
      var map = new L.Map('map', opts);
+     map.on('dragend', function(event) {
+       latlngInput.val(
+        map.getCenter().lat + ',' + map.getCenter().lng
+      );
+     })
+
      queryInput.val(location.hash.substr(1));
      map.setView(new L.LatLng(40.74, -74.0), 13)
      geocode();
