@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ "$1" = "" ]; then
   echo "usage: $0 <2-letter-country-code>"
