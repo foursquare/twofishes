@@ -7,6 +7,8 @@ if [ "$1" = "" ]; then
   exit 1
 fi
 
+unzip -v >/dev/null 2>&1 || { echo >&2 "I require 'unzip' but it's not installed.  Aborting."; exit 1; }
+curl -h  >/dev/null 2>&1 || { echo >&2 "I require 'curl' but it's not installed.  Aborting."; exit 1; }
 
 COUNTRY=$1
 
