@@ -36,6 +36,7 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
   private static final TField WOE_TYPE_FIELD_DESC = new TField("woeType", TType.I32, (short)3);
   private static final TField FULL_FIELD_DESC = new TField("full", TType.BOOL, (short)4);
   private static final TField LONG_ID_FIELD_DESC = new TField("longId", TType.I64, (short)5);
+  private static final TField IS_APPROX_FIELD_DESC = new TField("isApprox", TType.BOOL, (short)6);
 
   public ByteBuffer oid;
   public ByteBuffer wkbGeometry;
@@ -46,6 +47,7 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
   public com.foursquare.twofishes.YahooWoeType woeType;
   public boolean full;
   public long longId;
+  public boolean isApprox;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
@@ -57,7 +59,8 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
      */
     WOE_TYPE((short)3, "woeType"),
     FULL((short)4, "full"),
-    LONG_ID((short)5, "longId");
+    LONG_ID((short)5, "longId"),
+    IS_APPROX((short)6, "isApprox");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -82,6 +85,8 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
           return FULL;
         case 5: // LONG_ID
           return LONG_ID;
+        case 6: // IS_APPROX
+          return IS_APPROX;
         default:
           return null;
       }
@@ -124,7 +129,8 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
   // isset id assignments
   private static final int __FULL_ISSET_ID = 0;
   private static final int __LONGID_ISSET_ID = 1;
-  private BitSet __isset_bit_vector = new BitSet(2);
+  private static final int __ISAPPROX_ISSET_ID = 2;
+  private BitSet __isset_bit_vector = new BitSet(3);
 
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
@@ -139,6 +145,8 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
         new FieldValueMetaData(TType.BOOL)));
     tmpMap.put(_Fields.LONG_ID, new FieldMetaData("longId", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.I64)));
+    tmpMap.put(_Fields.IS_APPROX, new FieldMetaData("isApprox", TFieldRequirementType.OPTIONAL, 
+        new FieldValueMetaData(TType.BOOL)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(CellGeometry.class, metaDataMap);
   }
@@ -165,6 +173,7 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
     }
     this.full = other.full;
     this.longId = other.longId;
+    this.isApprox = other.isApprox;
   }
 
   public CellGeometry deepCopy() {
@@ -180,6 +189,8 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
     this.full = false;
     setLongIdIsSet(false);
     this.longId = 0;
+    setIsApproxIsSet(false);
+    this.isApprox = false;
   }
 
   public byte[] getOid() {
@@ -328,6 +339,29 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
     __isset_bit_vector.set(__LONGID_ISSET_ID, value);
   }
 
+  public boolean isIsApprox() {
+    return this.isApprox;
+  }
+
+  public CellGeometry setIsApprox(boolean isApprox) {
+    this.isApprox = isApprox;
+    setIsApproxIsSet(true);
+    return this;
+  }
+
+  public void unsetIsApprox() {
+    __isset_bit_vector.clear(__ISAPPROX_ISSET_ID);
+  }
+
+  /** Returns true if field isApprox is set (has been asigned a value) and false otherwise */
+  public boolean isSetIsApprox() {
+    return __isset_bit_vector.get(__ISAPPROX_ISSET_ID);
+  }
+
+  public void setIsApproxIsSet(boolean value) {
+    __isset_bit_vector.set(__ISAPPROX_ISSET_ID, value);
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case OID:
@@ -370,6 +404,14 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
       }
       break;
 
+    case IS_APPROX:
+      if (value == null) {
+        unsetIsApprox();
+      } else {
+        setIsApprox((Boolean)value);
+      }
+      break;
+
     }
   }
 
@@ -389,6 +431,9 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
 
     case LONG_ID:
       return new Long(getLongId());
+
+    case IS_APPROX:
+      return new Boolean(isIsApprox());
 
     }
     throw new IllegalStateException();
@@ -411,6 +456,8 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
       return isSetFull();
     case LONG_ID:
       return isSetLongId();
+    case IS_APPROX:
+      return isSetIsApprox();
     }
     throw new IllegalStateException();
   }
@@ -470,6 +517,15 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
       if (!(this_present_longId && that_present_longId))
         return false;
       if (this.longId != that.longId)
+        return false;
+    }
+
+    boolean this_present_isApprox = true && this.isSetIsApprox();
+    boolean that_present_isApprox = true && that.isSetIsApprox();
+    if (this_present_isApprox || that_present_isApprox) {
+      if (!(this_present_isApprox && that_present_isApprox))
+        return false;
+      if (this.isApprox != that.isApprox)
         return false;
     }
 
@@ -539,6 +595,16 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetIsApprox()).compareTo(typedOther.isSetIsApprox());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetIsApprox()) {
+      lastComparison = TBaseHelper.compareTo(this.isApprox, typedOther.isApprox);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -593,6 +659,14 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
+        case 6: // IS_APPROX
+          if (field.type == TType.BOOL) {
+            this.isApprox = iprot.readBool();
+            setIsApproxIsSet(true);
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -637,6 +711,11 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
     if (isSetLongId()) {
       oprot.writeFieldBegin(LONG_ID_FIELD_DESC);
       oprot.writeI64(this.longId);
+      oprot.writeFieldEnd();
+    }
+    if (isSetIsApprox()) {
+      oprot.writeFieldBegin(IS_APPROX_FIELD_DESC);
+      oprot.writeBool(this.isApprox);
       oprot.writeFieldEnd();
     }
     oprot.writeFieldStop();
@@ -687,6 +766,12 @@ public class CellGeometry implements TBase<CellGeometry, CellGeometry._Fields>, 
       if (!first) sb.append(", ");
       sb.append("longId:");
       sb.append(this.longId);
+      first = false;
+    }
+    if (isSetIsApprox()) {
+      if (!first) sb.append(", ");
+      sb.append("isApprox:");
+      sb.append(this.isApprox);
       first = false;
     }
     sb.append(")");

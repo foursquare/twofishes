@@ -8,6 +8,7 @@ struct CellGeometry {
   3: optional geocoder.YahooWoeType woeType,
   4: optional bool full
   5: optional i64 longId
+  6: optional bool isApprox
 }
 
 struct CellGeometries {
