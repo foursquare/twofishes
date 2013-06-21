@@ -10,12 +10,31 @@ import datetime
 import Queue
 import threading
 import traceback
+from optparse import OptionParser
 
 # TODO: move this to thrift
 
-serverA = sys.argv[1]
-serverB = sys.argv[2]
-inputFile = sys.argv[3]
+parser = OptionParser(usage="%prog [input_file]")
+parser.add_option("-o", "--old", dest="serverOld")
+parser.add_option("-n", "--new", dest="serverNew")
+(options, args) = parser.parse_args()
+
+if not options.serverOld:
+  print 'missing old server'
+  parser.print_usage()
+  sys.exit(1)
+
+if not options.serverNew:
+  print 'missing new server'
+  parser.print_usage()
+  sys.exit(1)
+
+if len(args) != 1:
+  print 'weird number of remaining args'
+  parser.print_usage()
+  sys.exit(1)
+
+inputFile = args[0]
 
 outputFile = open('eval-%s.html' % datetime.datetime.now(), 'w')
 
@@ -78,8 +97,8 @@ class GeocodeFetch(threading.Thread):
       param_str = param[param.find('?')+1:]
       params = urlparse.parse_qs(param_str)
 
-      responseA = getResponse(serverA, param)
-      responseB = getResponse(serverB, param)
+      responseOld = getResponse(options.serverOld, param)
+      responseNew = getResponse(options.serverNew, param)
 
       def getId(response):
         if (response and
@@ -92,7 +111,7 @@ class GeocodeFetch(threading.Thread):
           return ''
 
       def evallog(message):
-        responseKey = '%s:%s' % (getId(responseA), getId(responseB))
+        responseKey = '%s:%s' % (getId(responseOld), getId(responseNew))
         if responseKey not in evalLogDict:
           evalLogDict[responseKey] = []
 
@@ -103,27 +122,27 @@ class GeocodeFetch(threading.Thread):
           query = params['ll'][0]
 
         message = ('%s: %s<br>' % (query, message) +
-                   ' -- <a href="%s">serverA</a>' % (serverA + '/static/geocoder.html#' + param_str) +
-                   ' - <a href="%s">serverB</a><p>' % (serverB + '/static/geocoder.html#' + param_str))
+                   ' -- <a href="%s">OLD</a>' % (options.serverOld + '/static/geocoder.html#' + param_str) +
+                   ' - <a href="%s">NEW</a><p>' % (options.serverNew + '/static/geocoder.html#' + param_str))
         evalLogDict[responseKey].append(message)
 
-      if (responseA == None and responseB == None):
+      if (responseOld == None and responseNew == None):
         pass
-      elif (responseA == None and responseB != None):
-        evallog('error from A, something from B')
-      elif (responseB == None and responseA != None):
-        evallog('error from B, something from A')
-      elif (len(responseA['interpretations']) == 0 and
-          len(responseB['interpretations']) > 0):
-        evallog('geocoded B, not A')
+      elif (responseOld == None and responseNew != None):
+        evallog('error from OLD, something from NEW')
+      elif (responseNew == None and responseOld != None):
+        evallog('error from NEW, something from OLD')
+      elif (len(responseOld['interpretations']) == 0 and
+          len(responseNew['interpretations']) > 0):
+        evallog('geocoded NEW, not OLD')
 
-      elif (len(responseA['interpretations']) > 0 and
-          len(responseB['interpretations']) == 0):
-        evallog('geocoded A, not B')
+      elif (len(responseOld['interpretations']) > 0 and
+          len(responseNew['interpretations']) == 0):
+        evallog('geocoded OLD, not NEW')
 
-      elif (len(responseA['interpretations']) and len(responseB['interpretations'])):
-        interpA = responseA['interpretations'][0]
-        interpB = responseB['interpretations'][0]
+      elif (len(responseOld['interpretations']) and len(responseNew['interpretations'])):
+        interpA = responseOld['interpretations'][0]
+        interpB = responseNew['interpretations'][0]
 
         if interpA['feature']['ids'] != interpB['feature']['ids'] and \
             interpA['feature']['woeType'] != 11 and \
@@ -143,12 +162,12 @@ class GeocodeFetch(threading.Thread):
           if distance > 0.1:
             evallog('moved by %s miles' % distance)
           if 'bounds' in geomA and 'bounds' not in geomB:
-            evallog('bounds in A, but not B')
+            evallog('bounds in OLD, but not NEW')
           elif 'bounds' not in geomA and 'bounds' in geomB:
-            evallog('bounds in B, but not A')
+            evallog('bounds in NEW, but not OLD')
           elif 'bounds' in geomA and 'bounds' in geomB and geomA['bounds'] != geomB['bounds']:
             evallog('bounds differ')
-          elif (len(responseA['interpretations']) != len(responseB['interpretations'])):
+          elif (len(responseOld['interpretations']) != len(responseNew['interpretations'])):
             evallog('# of interpretations differ')
           elif interpA['feature']['displayName'] != interpB['feature']['displayName']:
             evallog('displayName changed')

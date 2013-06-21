@@ -1,5 +1,6 @@
 package com.foursquare.twofishes
 
+import com.vividsolutions.jts.geom.prep.PreparedGeometryFactory
 import com.foursquare.geo.shapes.ShapefileS2Util
 import com.foursquare.twofishes.util.{GeometryUtils, StoredFeatureId}
 import com.google.common.geometry.S2CellId
@@ -392,7 +393,7 @@ class PolygonIndexer(override val basepath: String, override val fidMap: FidMap)
 class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) extends Indexer {
   val minS2Level = 8
   val maxS2Level = 12
-  val maxCells = 1000
+  val maxCells = 10000
   val levelMod = 2
 
   def calculateCoverForRecord(
@@ -406,7 +407,7 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
       //println("reading poly %s".format(index))
       val geom = wkbReader.read(polygon)
 
-      val cells = logDuration("generated cover ") {
+      val cells = logDuration("generated cover for %s".format(record.featureId)) {
         GeometryUtils.s2PolygonCovering(
           geom,
           minS2Level,
@@ -415,14 +416,16 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
           maxCellsHintWhichMightBeIgnored = Some(1000)
         )
       }
-      logDuration("clipped and outputted cover for %d cells".format(cells.size)) {
+
+      logDuration("clipped and outputted cover for %d cells (%s)".format(cells.size, record.featureId)) {
+        val recordShape = geom.buffer(0)
+	val preparedRecordShape = PreparedGeometryFactory.prepare(recordShape)
         cells.foreach(
           (cellid: S2CellId) => {
             val bucket = s2map.getOrElseUpdate(cellid.id, new ListBuffer[CellGeometry]())
             val s2shape = s2shapes.getOrElseUpdate(cellid.id, ShapefileS2Util.fullGeometryForCell(cellid))
             val cellGeometry = new CellGeometry()
-            val recordShape = geom.buffer(0)
-            if (recordShape.contains(s2shape)) {
+            if (preparedRecordShape.contains(s2shape)) {
               cellGeometry.setFull(true)
             } else {
               cellGeometry.setWkbGeometry(wkbWriter.write(s2shape.intersection(recordShape)))
@@ -448,7 +451,8 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
     )
 
     val ids = MongoGeocodeDAO.primitiveProjections[Long](MongoDBObject("hasPoly" -> true), "_id").toList
-    val numThreads = 5
+    var total = 0
+    val numThreads = 20
     val subMaps = 0.until(numThreads).toList.map(offset => {
       val s2map = new HashMap[Long, ListBuffer[CellGeometry]]
       val s2shapes = new HashMap[Long, Geometry]
@@ -466,8 +470,11 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
             records.foreach(r => calculateCoverForRecord(r, s2map, s2shapes))
 
             doneCount += chunk.size
+            total += chunk.size
             if (doneCount % 1000 == 0) {
-              println("Thread %d finished %d of %d %.2f".format(offset, doneCount, ids.size, doneCount * 100.0 / ids.size))
+              println("Thread %d finished %d of %d %.2f (total: %d of %d %.2f)".format(offset,
+               doneCount, ids.size, doneCount * 100.0 / ids.size,
+               total, ids.size, total * 100.0 / ids.size))
             }
           })
         }

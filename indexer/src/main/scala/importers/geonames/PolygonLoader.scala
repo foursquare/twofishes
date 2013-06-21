@@ -14,6 +14,9 @@ import java.io.File
 import scalaj.collection.Implicits._
 
 object PolygonLoader {
+  val wktReader = new WKTReader()
+  val wkbWriter = new WKBWriter()
+
   def recursiveListFiles(f: File): Array[File] = {
     val these = f.listFiles
     if (these != null) {
@@ -23,18 +26,12 @@ object PolygonLoader {
     }
   }
 
-  def load(store: GeocodeStorageWriteService,
-           defaultNamespace: FeatureNamespace): Unit = {
-    val polygonDirs = List(
-      new File("data/computed/polygons"),
-      new File("data/private/polygons")
-    )
-    val polygonFiles = polygonDirs.flatMap(recursiveListFiles).sorted
-
-    val wktReader = new WKTReader()
-    val wkbWriter = new WKBWriter()
-
-    def updateRecord(k: String, geom: Geometry) = {
+  def updateRecord(
+    store: GeocodeStorageWriteService,
+    defaultNamespace: FeatureNamespace,
+    k: String,
+    geom: Geometry
+  ) = {
       StoredFeatureId.fromHumanReadableString(k, Some(defaultNamespace)).foreach(fid => {
         try {
           store.addPolygonToRecord(fid, wkbWriter.write(geom))
@@ -46,12 +43,28 @@ object PolygonLoader {
       })
     }
 
+  def load(store: GeocodeStorageWriteService,
+           defaultNamespace: FeatureNamespace): Unit = {
+    val polygonDirs = List(
+      new File("data/computed/polygons"),
+      new File("data/private/polygons")
+    )
+    val polygonFiles = polygonDirs.flatMap(recursiveListFiles).sorted
+ 
     for {
       (f, index) <- polygonFiles.zipWithIndex
-    } {
+     } {
       if (index % 1000 == 0) {
         System.gc();
       }
+      load(store, defaultNamespace, f)
+    }
+  }
+
+   def load(store: GeocodeStorageWriteService,
+            defaultNamespace: FeatureNamespace,
+            f: File
+   ): Unit = {
       println("processing %s".format(f))
       val fparts = f.getName().split("\\.")
       val extension = fparts.lift(1).getOrElse("")
@@ -67,7 +80,7 @@ object PolygonLoader {
           if (features.hasNext()) {
             val feature = features.next()
             val geom = feature.getDefaultGeometry().asInstanceOf[Geometry]
-            updateRecord(geoid, geom)
+            updateRecord(store, defaultNamespace, geoid, geom)
           }
           features.close()
         }
@@ -80,7 +93,7 @@ object PolygonLoader {
           if !geoid.isEmpty
         } {
           try {
-            updateRecord(geoid.replace(".0", ""), geom)
+            updateRecord(store, defaultNamespace, geoid.replace(".0", ""), geom)
           } catch {
             case e: Exception =>
               throw new RuntimeException("error with geoids %s".format(geoids), e)
@@ -94,12 +107,11 @@ object PolygonLoader {
           val parts = l.split("\t")
           val geom = wktReader.read(parts(1)).buffer(0)
           if (geom.isValid) {
-            updateRecord(parts(0), geom)
+            updateRecord(store, defaultNamespace, parts(0), geom)
           } else {
             println("geom is not valid for %s".format(parts(0)))
           }
         })
       }
     }
-  }
 }
