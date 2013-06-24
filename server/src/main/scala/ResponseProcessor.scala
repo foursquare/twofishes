@@ -75,8 +75,10 @@ class ResponseProcessor(
     val dedupedMap = parseMap.mapValues(parsePairs => {
       // see if there's an earlier parse that's close enough,
       // if so, return false
+
       parsePairs.filterNot({case (parse, index) => {
         parsePairs.exists({case (otherParse, otherIndex) => {
+          logger.ifDebug("comparing %d against %d".format(index, otherIndex))
           def predicateBetter(f: (Int) => Boolean) = {
             val indexVal = f(index)
             val otherIndexVal = f(otherIndex)
@@ -84,11 +86,10 @@ class ResponseProcessor(
           }
 
           // the logic here is that an alias name should lose to an unaliased name
-          // if we don't have the clause in this line, we end up losing both nearby interps
           (
-            otherIndex < index &&
-            predicateBetter(isNotAliasName) &&
-            predicateBetter(hasPoly) &&
+            // if we don't have the clause in this line, we end up losing both nearby interps
+            otherIndex != index &&
+            (predicateBetter(isNotAliasName) || predicateBetter(hasPoly)) &&
             ParseUtils.parsesNear(parse, otherParse)
           )
           }})
