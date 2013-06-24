@@ -8,11 +8,13 @@ import com.foursquare.twofishes.util.{FeatureNamespace, StoredFeatureId}
 import com.foursquare.twofishes.util.Helpers
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
-import com.vividsolutions.jts.geom.Geometry
-import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
+import com.mongodb.casbah.Imports._
+import com.vividsolutions.jts.geom.{Geometry, GeometryFactory}
+import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTReader}
 import org.geotools.geojson.feature.FeatureJSON
 import java.io.File
 import scalaj.collection.Implicits._
+
 
 object PolygonLoader {
   val wktReader = new WKTReader()
@@ -117,5 +119,33 @@ object PolygonLoader {
           }
         })
       }
+      println("post processing, looking for bad poly matches")
+      val polygons =
+        MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
+          .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
+
+
+      val wkbReader = new WKBReader()
+
+      for {
+        (featureRecord, index) <- polygons.zipWithIndex
+        polyData <- featureRecord.polygon
+      } {
+        val polygon = wkbReader.read(polyData)
+        val point = featureRecord.center
+        if (!polygon.contains(point) && polygon.distance(point) > 0.03) {
+          println("bad poly on %s -- %s too far from %s".format(
+            featureRecord.featureId, polygon, point))
+
+            MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(featureRecord.featureId.longId))),
+              MongoDBObject("$set" ->
+                MongoDBObject(
+                  "polygon" -> None,
+                  "hasPoly" -> false
+                )
+              ),
+              false, false)
+          }
+        }
     }
 }

@@ -2,7 +2,7 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.util.StoredFeatureId
-import com.vividsolutions.jts.geom.Geometry
+import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory}
 import com.vividsolutions.jts.io.WKBReader
 import org.apache.thrift.{TDeserializer, TSerializer}
 import org.apache.thrift.protocol.TCompactProtocol
@@ -80,6 +80,11 @@ case class GeocodeRecord(
   def parentFeatureIds: List[StoredFeatureId] = parents.flatMap(StoredFeatureId.fromLong _)
 
   lazy val woeType = YahooWoeType.findByValue(_woeType)
+
+  def center = {
+    val geomFactory = new GeometryFactory()
+    geomFactory.createPoint(new Coordinate(lng, lat))
+  }
 
   def compare(that: GeocodeRecord): Int = {
     YahooWoeTypes.getOrdering(this.woeType) - YahooWoeTypes.getOrdering(that.woeType)
