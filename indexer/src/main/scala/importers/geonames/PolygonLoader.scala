@@ -5,6 +5,7 @@ import com.foursquare.geo.shapes.FsqSimpleFeatureImplicits._
 import com.foursquare.geo.shapes.ShapefileIterator
 import com.foursquare.twofishes._
 import com.foursquare.twofishes.util.{FeatureNamespace, StoredFeatureId}
+import com.foursquare.twofishes.util.Helpers
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.vividsolutions.jts.geom.Geometry
@@ -67,27 +68,30 @@ object PolygonLoader {
    ): Unit = {
       println("processing %s".format(f))
       val fparts = f.getName().split("\\.")
-      val extension = fparts.lift(1).getOrElse("")
+      val extension = fparts.lastOption.getOrElse("")
       val shapeFileExtensions = List("shx", "dbf", "prj", "xml", "cpg")
 
       if (extension == "json") {
-        for {
-          geoid <- fparts.lift(0)
-          if !geoid.contains("-")
-        } {
           val io = new FeatureJSON()
           val features = io.streamFeatureCollection(f)
-          if (features.hasNext()) {
+          while (features.hasNext()) {
             val feature = features.next()
             val geom = feature.getDefaultGeometry().asInstanceOf[Geometry]
-            updateRecord(store, defaultNamespace, geoid, geom)
+            val geoid: List[String] = fparts.lift(0).flatMap(p => Helpers.TryO(p.toInt.toString)).orElse(
+              feature.propMap.get("geonameid") orElse feature.propMap.get("qs_gn_id") orElse feature.propMap.get("gn_id")
+            ).toList.flatMap(_.split(","))
+            geoid.foreach(id => {
+              updateRecord(store, defaultNamespace, id, geom)
+            })
           }
           features.close()
-        }
       } else if (extension == "shp") {
         for {
           shp <- new ShapefileIterator(f)
-          geoids <- shp.propMap.get("geonameid") orElse shp.propMap.get("qs_gn_id") orElse shp.propMap.get("gn_id")
+          geoids <- shp.propMap.get("geonameid") orElse shp.propMap.get("qs_gn_id") orElse shp.propMap.get("gn_id") orElse {
+            println("no id on %s".format(f))
+            None
+          }
           geom <- shp.geometry
           geoid <- geoids.split(',')
           if !geoid.isEmpty
