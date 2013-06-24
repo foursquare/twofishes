@@ -62,8 +62,13 @@ class ResponseProcessor(
       }})
     }
 
-    def isAliasName(index: Int): Boolean = {
-      parseIndexToNameMatch(index).exists(_._1.flags.contains(
+    def isNotAliasName(index: Int): Boolean = {
+      !parseIndexToNameMatch(index).exists(_._1.flags.contains(
+        FeatureNameFlags.ALIAS))
+    }
+
+     def hasPoly(index: Int): Boolean = {
+      !parseIndexToNameMatch(index).exists(_._1.flags.contains(
         FeatureNameFlags.ALIAS))
     }
 
@@ -72,16 +77,21 @@ class ResponseProcessor(
       // if so, return false
       parsePairs.filterNot({case (parse, index) => {
         parsePairs.exists({case (otherParse, otherIndex) => {
+          def predicateBetter(f: (Int) => Boolean) = {
+            val indexVal = f(index)
+            val otherIndexVal = f(otherIndex)
+            (indexVal != otherIndexVal) && indexVal
+          }
+
           // the logic here is that an alias name should lose to an unaliased name
           // if we don't have the clause in this line, we end up losing both nearby interps
-          ((otherIndex < index && !(isAliasName(otherIndex) && !isAliasName(index)))
-            && (
-              YahooWoeTypes.getOrdering(parse.fmatches(0).fmatch.feature.woeType) < 
-              YahooWoeTypes.getOrdering(otherParse.fmatches(0).fmatch.feature.woeType)
-            )
-            || (!isAliasName(otherIndex) && isAliasName(index))) &&
+          (
+            otherIndex < index &&
+            predicateBetter(isNotAliasName) &&
+            predicateBetter(hasPoly) &&
             ParseUtils.parsesNear(parse, otherParse)
-        }})
+          )
+          }})
       }})
     })
 
