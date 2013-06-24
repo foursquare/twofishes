@@ -265,7 +265,12 @@ class ResponseProcessor(
       val what = if (hadConnector) {
         originalTokens.take(connectorStart).mkString(" ")
       } else {
-        tokens.take(tokens.size - parseLength).mkString(" ")
+        val whatTokens = tokens.take(tokens.size - parseLength)
+	(if (whatTokens.lastOption.exists(_ == "in")) {
+          whatTokens.dropRight(1)
+        } else {
+          whatTokens
+        }).mkString(" ")
       }
       val where = tokens.drop(tokens.size - parseLength).mkString(" ")
       logger.ifDebug("%d sorted parses", sortedParses.size)
