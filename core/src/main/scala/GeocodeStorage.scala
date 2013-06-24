@@ -187,6 +187,7 @@ case class GeocodeRecord(
     boost.foreach(b => scoring.setBoost(b))
     population.foreach(p => scoring.setPopulation(p))
     scoring.setParentIds(parents.asJava)
+    hasPoly.foreach(p => if (p) { scoring.setHasPoly(true) } )
 
     getAttributes().foreach(a => feature.setAttributes(a))
 

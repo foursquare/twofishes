@@ -35,12 +35,14 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
   private static final TField BOOST_FIELD_DESC = new TField("boost", TType.I32, (short)2);
   private static final TField PARENT_IDS_FIELD_DESC = new TField("parentIds", TType.LIST, (short)6);
   private static final TField CAN_GEOCODE_FIELD_DESC = new TField("canGeocode", TType.BOOL, (short)5);
+  private static final TField HAS_POLY_FIELD_DESC = new TField("hasPoly", TType.BOOL, (short)7);
   private static final TField DEPRECATED_PARENTS_FIELD_DESC = new TField("DEPRECATED_parents", TType.LIST, (short)3);
 
   public int population;
   public int boost;
   public List<Long> parentIds;
   public boolean canGeocode;
+  public boolean hasPoly;
   public List<String> DEPRECATED_parents;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
@@ -49,6 +51,7 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
     BOOST((short)2, "boost"),
     PARENT_IDS((short)6, "parentIds"),
     CAN_GEOCODE((short)5, "canGeocode"),
+    HAS_POLY((short)7, "hasPoly"),
     DEPRECATED_PARENTS((short)3, "DEPRECATED_parents");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
@@ -72,6 +75,8 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
           return PARENT_IDS;
         case 5: // CAN_GEOCODE
           return CAN_GEOCODE;
+        case 7: // HAS_POLY
+          return HAS_POLY;
         case 3: // DEPRECATED_PARENTS
           return DEPRECATED_PARENTS;
         default:
@@ -117,7 +122,8 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
   private static final int __POPULATION_ISSET_ID = 0;
   private static final int __BOOST_ISSET_ID = 1;
   private static final int __CANGEOCODE_ISSET_ID = 2;
-  private BitSet __isset_bit_vector = new BitSet(3);
+  private static final int __HASPOLY_ISSET_ID = 3;
+  private BitSet __isset_bit_vector = new BitSet(4);
 
   public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
@@ -130,6 +136,8 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
         new ListMetaData(TType.LIST, 
             new FieldValueMetaData(TType.I64))));
     tmpMap.put(_Fields.CAN_GEOCODE, new FieldMetaData("canGeocode", TFieldRequirementType.OPTIONAL, 
+        new FieldValueMetaData(TType.BOOL)));
+    tmpMap.put(_Fields.HAS_POLY, new FieldMetaData("hasPoly", TFieldRequirementType.OPTIONAL, 
         new FieldValueMetaData(TType.BOOL)));
     tmpMap.put(_Fields.DEPRECATED_PARENTS, new FieldMetaData("DEPRECATED_parents", TFieldRequirementType.OPTIONAL, 
         new ListMetaData(TType.LIST, 
@@ -146,6 +154,8 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
     this.parentIds = new ArrayList<Long>();
 
     this.canGeocode = true;
+
+    this.hasPoly = false;
 
     this.DEPRECATED_parents = new ArrayList<String>();
 
@@ -167,6 +177,7 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
       this.parentIds = __this__parentIds;
     }
     this.canGeocode = other.canGeocode;
+    this.hasPoly = other.hasPoly;
     if (other.isSetDEPRECATED_parents()) {
       List<String> __this__DEPRECATED_parents = new ArrayList<String>();
       for (String other_element : other.DEPRECATED_parents) {
@@ -189,6 +200,8 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
     this.parentIds = new ArrayList<Long>();
 
     this.canGeocode = true;
+
+    this.hasPoly = false;
 
     this.DEPRECATED_parents = new ArrayList<String>();
 
@@ -302,6 +315,29 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
     __isset_bit_vector.set(__CANGEOCODE_ISSET_ID, value);
   }
 
+  public boolean isHasPoly() {
+    return this.hasPoly;
+  }
+
+  public ScoringFeatures setHasPoly(boolean hasPoly) {
+    this.hasPoly = hasPoly;
+    setHasPolyIsSet(true);
+    return this;
+  }
+
+  public void unsetHasPoly() {
+    __isset_bit_vector.clear(__HASPOLY_ISSET_ID);
+  }
+
+  /** Returns true if field hasPoly is set (has been asigned a value) and false otherwise */
+  public boolean isSetHasPoly() {
+    return __isset_bit_vector.get(__HASPOLY_ISSET_ID);
+  }
+
+  public void setHasPolyIsSet(boolean value) {
+    __isset_bit_vector.set(__HASPOLY_ISSET_ID, value);
+  }
+
   public int getDEPRECATED_parentsSize() {
     return (this.DEPRECATED_parents == null) ? 0 : this.DEPRECATED_parents.size();
   }
@@ -375,6 +411,14 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
       }
       break;
 
+    case HAS_POLY:
+      if (value == null) {
+        unsetHasPoly();
+      } else {
+        setHasPoly((Boolean)value);
+      }
+      break;
+
     case DEPRECATED_PARENTS:
       if (value == null) {
         unsetDEPRECATED_parents();
@@ -400,6 +444,9 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
     case CAN_GEOCODE:
       return new Boolean(isCanGeocode());
 
+    case HAS_POLY:
+      return new Boolean(isHasPoly());
+
     case DEPRECATED_PARENTS:
       return getDEPRECATED_parents();
 
@@ -422,6 +469,8 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
       return isSetParentIds();
     case CAN_GEOCODE:
       return isSetCanGeocode();
+    case HAS_POLY:
+      return isSetHasPoly();
     case DEPRECATED_PARENTS:
       return isSetDEPRECATED_parents();
     }
@@ -474,6 +523,15 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
       if (!(this_present_canGeocode && that_present_canGeocode))
         return false;
       if (this.canGeocode != that.canGeocode)
+        return false;
+    }
+
+    boolean this_present_hasPoly = true && this.isSetHasPoly();
+    boolean that_present_hasPoly = true && that.isSetHasPoly();
+    if (this_present_hasPoly || that_present_hasPoly) {
+      if (!(this_present_hasPoly && that_present_hasPoly))
+        return false;
+      if (this.hasPoly != that.hasPoly)
         return false;
     }
 
@@ -542,6 +600,16 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetHasPoly()).compareTo(typedOther.isSetHasPoly());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetHasPoly()) {
+      lastComparison = TBaseHelper.compareTo(this.hasPoly, typedOther.hasPoly);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     lastComparison = Boolean.valueOf(isSetDEPRECATED_parents()).compareTo(typedOther.isSetDEPRECATED_parents());
     if (lastComparison != 0) {
       return lastComparison;
@@ -606,6 +674,14 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
           if (field.type == TType.BOOL) {
             this.canGeocode = iprot.readBool();
             setCanGeocodeIsSet(true);
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 7: // HAS_POLY
+          if (field.type == TType.BOOL) {
+            this.hasPoly = iprot.readBool();
+            setHasPolyIsSet(true);
           } else { 
             TProtocolUtil.skip(iprot, field.type);
           }
@@ -685,6 +761,11 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
         oprot.writeFieldEnd();
       }
     }
+    if (isSetHasPoly()) {
+      oprot.writeFieldBegin(HAS_POLY_FIELD_DESC);
+      oprot.writeBool(this.hasPoly);
+      oprot.writeFieldEnd();
+    }
     oprot.writeFieldStop();
     oprot.writeStructEnd();
   }
@@ -719,6 +800,12 @@ public class ScoringFeatures implements TBase<ScoringFeatures, ScoringFeatures._
       if (!first) sb.append(", ");
       sb.append("canGeocode:");
       sb.append(this.canGeocode);
+      first = false;
+    }
+    if (isSetHasPoly()) {
+      if (!first) sb.append(", ");
+      sb.append("hasPoly:");
+      sb.append(this.hasPoly);
       first = false;
     }
     if (isSetDEPRECATED_parents()) {
