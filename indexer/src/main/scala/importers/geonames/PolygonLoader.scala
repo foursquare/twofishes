@@ -62,6 +62,33 @@ object PolygonLoader {
       }
       load(store, defaultNamespace, f)
     }
+    println("post processing, looking for bad poly matches")
+      val polygons =
+        MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
+          .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
+
+      val wkbReader = new WKBReader()
+
+      for {
+        (featureRecord, index) <- polygons.zipWithIndex
+        polyData <- featureRecord.polygon
+      } {
+        val polygon = wkbReader.read(polyData)
+        val point = featureRecord.center
+        if (!polygon.contains(point) && polygon.distance(point) > 0.03) {
+          println("bad poly on %s -- %s too far from %s".format(
+            featureRecord.featureId, polygon, point))
+
+            MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(featureRecord.featureId.longId))),
+              MongoDBObject("$set" ->
+                MongoDBObject(
+                  "polygon" -> None,
+                  "hasPoly" -> false
+                )
+              ),
+              false, false)
+          }
+        }
   }
 
    def load(store: GeocodeStorageWriteService,
@@ -81,7 +108,7 @@ object PolygonLoader {
             val geom = feature.getDefaultGeometry().asInstanceOf[Geometry]
             val geoid: List[String] = fparts.lift(0).flatMap(p => Helpers.TryO(p.toInt.toString)).orElse(
               feature.propMap.get("geonameid") orElse feature.propMap.get("qs_gn_id") orElse feature.propMap.get("gn_id")
-            ).toList.flatMap(_.split(","))
+            ).toList.filterNot(_.isEmpty).flatMap(_.split(","))
             geoid.foreach(id => {
               updateRecord(store, defaultNamespace, id, geom)
             })
@@ -119,33 +146,5 @@ object PolygonLoader {
           }
         })
       }
-      println("post processing, looking for bad poly matches")
-      val polygons =
-        MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
-          .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
-
-
-      val wkbReader = new WKBReader()
-
-      for {
-        (featureRecord, index) <- polygons.zipWithIndex
-        polyData <- featureRecord.polygon
-      } {
-        val polygon = wkbReader.read(polyData)
-        val point = featureRecord.center
-        if (!polygon.contains(point) && polygon.distance(point) > 0.03) {
-          println("bad poly on %s -- %s too far from %s".format(
-            featureRecord.featureId, polygon, point))
-
-            MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(featureRecord.featureId.longId))),
-              MongoDBObject("$set" ->
-                MongoDBObject(
-                  "polygon" -> None,
-                  "hasPoly" -> false
-                )
-              ),
-              false, false)
-          }
-        }
     }
 }
