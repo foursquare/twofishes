@@ -62,43 +62,54 @@ class ResponseProcessor(
       }})
     }
 
-    def isNotAliasName(index: Int): Boolean = {
-      !parseIndexToNameMatch(index).exists(_._1.flags.contains(
+    def isAliasName(index: Int): Boolean = {
+      parseIndexToNameMatch(index).exists(_._1.flags.contains(
         FeatureNameFlags.ALIAS))
     }
 
-     def hasPoly(index: Int): Boolean = {
-      !parseIndexToNameMatch(index).exists(_._1.flags.contains(
-        FeatureNameFlags.ALIAS))
+    type ParsePair = (Parse[Sorted], Int)
+    object DuplicateGeocodeParseOrdering extends Ordering[ParsePair] {
+      def compare(a: ParsePair, b: ParsePair): Int = {
+        // negative if a < b
+        val isAliasA = isAliasName(a._2)
+        val isAliasB = isAliasName(b._2)
+        if (isAliasA != isAliasB) {
+          if (isAliasA) { return -1 }
+          else { return 1 }
+        }
+
+        val hasPolyA = a._1.headOption.exists(_.fmatch.scoringFeatures.hasPoly)
+        val hasPolyB = b._1.headOption.exists(_.fmatch.scoringFeatures.hasPoly)
+
+        if (hasPolyA != hasPolyB) {
+          if (hasPolyA) { return 1 }
+          else { return -11 }
+        }
+
+        // if a came before b, it was better
+        // a = 2, b = 3 ... b - a ... 3 - 2 ... 1
+        return b._2 - a._2
+      }
     }
 
-    val dedupedMap = parseMap.mapValues(parsePairs => {
-      // see if there's an earlier parse that's close enough,
-      // if so, return false
+   
 
-      parsePairs.filterNot({case (parse, index) => {
-        parsePairs.exists({case (otherParse, otherIndex) => {
-          logger.ifDebug("comparing %d against %d".format(index, otherIndex))
-          def predicateBetter(f: (Int) => Boolean) = {
-            val indexVal = f(index)
-            val otherIndexVal = f(otherIndex)
-            (indexVal != otherIndexVal) && indexVal
-          }
-
-          // the logic here is that an alias name should lose to an unaliased name
-          (
-            // if we don't have the clause in this line, we end up losing both nearby interps
-            otherIndex != index &&
-            (predicateBetter(isNotAliasName) || predicateBetter(hasPoly)) &&
-            ParseUtils.parsesNear(parse, otherParse)
-          )
-          }})
-      }})
-    })
-
+    val dedupedMap: Seq[(Parse[Sorted], Int)] = for {
+      (textKey, parsePairs) <- parseMap.toSeq
+      // bucket into 0.1 degree buckets (= 11km)
+      val geoBuckets = parsePairs.groupBy({case (parse, index) => {
+        "%s-%s".format(
+          parse.headOption.map(_.fmatch.feature.geometry.center.lat / 0.1).getOrElse(0.0).toInt,
+          parse.headOption.map(_.fmatch.feature.geometry.center.lng / 0.1).getOrElse(0.0).toInt)
+        }})
+        (geoKey, parses) <- geoBuckets
+      } yield {
+        logger.ifDebug("for %s, have %d parses in bucket %s".format(textKey, parses.size, geoKey))
+        parses.sorted(DuplicateGeocodeParseOrdering).lastOption.get
+      }
     // We have a map of [name -> List[Parse, Int]] ... extract out the parse-int pairs
     // join them, and re-sort by the int, which was their original ordering
-    dedupedMap.toList.flatMap(_._2).sortBy(_._2).map(_._1)
+    dedupedMap.toList.sortBy(_._2).map(_._1)
   }
 
    // Modifies a GeocodeFeature that is about to be returned
