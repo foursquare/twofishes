@@ -571,11 +571,13 @@ class GeonamesParser(
     val lines = scala.io.Source.fromFile(new File(filename)).getLines
 
     lines.foreach(line => {
-      val parts = line.split("\t").toList
+      val parts = line.split("[\t ]").toList
+ 
       for {
         gid <- parts.lift(0)
-        lang <- parts.lift(1).flatMap(_.split("\\|").lift(0))
-        name <- parts.lift(1).flatMap(_.split("\\|").lift(1))
+        val rest = parts.drop(1).mkString(" ")
+        lang <- rest.split("\\|").lift(0)
+        name <- rest.split("\\|").lift(1)
       } {
         val records = store.getById(GeonamesId(gid.toLong)).toList
         records match {
@@ -586,9 +588,11 @@ class GeonamesParser(
               if (dn.lang == lang) {
                 if (dn.name == name) {
                   foundName = true
-                  DisplayName(dn.lang, dn.name, dn.flags | FeatureNameFlags.PREFERRED.getValue())
+                  val newName = DisplayName(dn.lang, dn.name, dn.flags | FeatureNameFlags.PREFERRED.getValue())
+                  newName
                 } else {
-                  DisplayName(dn.lang, dn.name, dn.flags ^ FeatureNameFlags.PREFERRED.getValue())
+                  val newName = DisplayName(dn.lang, dn.name, dn.flags ^ FeatureNameFlags.PREFERRED.getValue())
+                  newName
                 }
               } else {
                 dn
