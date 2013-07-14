@@ -72,7 +72,7 @@ A better option is to run "./sbt server/assembly" and then use the resulting ser
 
 Technical Details
 =================
-I use mongo to save state during the index building phase (so that, for instance, we can parse the alternateNames file, which adds name+lang pairs to features defined in a separate file, or adding the flickr bounding boxes). A final pass goes over the databse, dereferences ids and outputs some hadoop mapfiles and hfiles. These two hfiles are all that is required for serving the data.
+I use mongo to save state during the index building phase (so that, for instance, we can parse the alternateNames file, which adds name+lang pairs to features defined in a separate file, or adding the flickr bounding boxes). A final pass goes over the database, dereferences ids and outputs some hadoop mapfiles and hfiles. These two hfiles are all that is required for serving the data.
 
 If we were doing heavier processing on the incoming data, a mapreduce that spits out hfiles might make more sense.
 
