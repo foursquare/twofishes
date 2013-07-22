@@ -591,7 +591,7 @@ class GeonamesParser(
                   val newName = DisplayName(dn.lang, dn.name, dn.flags | FeatureNameFlags.PREFERRED.getValue())
                   newName
                 } else {
-                  val newName = DisplayName(dn.lang, dn.name, dn.flags ^ FeatureNameFlags.PREFERRED.getValue())
+                  val newName = DisplayName(dn.lang, dn.name, dn.flags & ~FeatureNameFlags.PREFERRED.getValue())
                   newName
                 }
               } else {
