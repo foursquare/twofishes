@@ -7,8 +7,16 @@ object GeocoderBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.foursquare.twofishes",
     name := "twofishes",
-    version      := "0.75.17",
-    scalaVersion := "2.9.1"
+    version      := "0.76.1",
+    crossScalaVersions := Seq("2.9.2", "2.10.2")
+  )
+
+  lazy val scoptSettings = Seq(
+    libraryDependencies += 
+       "com.github.scopt" %% "scopt" % "2.1.0" cross CrossVersion.binaryMapped {
+         case "2.10.2" => "2.10"
+         case x => x
+       }
   )
 
   lazy val defaultSettings = super.settings ++ buildSettings ++ Defaults.defaultSettings ++ Seq(
@@ -89,7 +97,6 @@ object GeocoderBuild extends Build {
           "org.apache.hadoop" % "hadoop-client" % "2.0.0-cdh4.1.2" intransitive(),
           "org.apache.hadoop" % "hadoop-common" % "2.0.0-cdh4.1.2" ,
           "org.apache.hbase" % "hbase" % "0.92.1-cdh4.1.2" intransitive(),
-          "org.specs2" %% "specs2" % "1.8.2" % "test",
           "com.google.guava" % "guava" % "r09",
           "com.novus" % "salat-core_2.9.1" % "0.0.8",
           // "org.apache.thrift" % "libthrift" % "0.8.0",
@@ -100,6 +107,16 @@ object GeocoderBuild extends Build {
 
           // "thrift" % "libthrift" % "0.5.0" from "http://maven.twttr.com/org/apache/thrift/libthrift/0.5.0/libthrift-0.5.0.jar"
         ),
+        libraryDependencies <<= (scalaVersion, libraryDependencies) {(version, dependencies) =>
+          val specs2 =
+            if (version.startsWith("2.10"))
+            "org.specs2" %% "specs2" % "1.14" % "test"
+          else if (version == "2.9.3")
+            "org.specs2" %% "specs2" % "1.12.4.1" % "test"
+          else
+            "org.specs2" %% "specs2" % "1.12.3" % "test"
+          dependencies :+ specs2
+        },
         ivyXML := (
           <dependencies>
             <exclude org="thrift"/>
@@ -124,16 +141,14 @@ object GeocoderBuild extends Build {
       base = file("interface"))
 
   lazy val server = Project(id = "server",
-      settings = defaultSettings ++ assemblySettings ++ Seq(
+      settings = scoptSettings ++ defaultSettings ++ assemblySettings ++ Seq(
         mainClass in assembly := Some("com.foursquare.twofishes.GeocodeFinagleServer"),
         baseDirectory in run := file("."),
         publishArtifact := true,
         libraryDependencies ++= Seq(
           "com.twitter" % "ostrich" % "8.2.3",
           "com.twitter" % "finagle-http" % "5.3.23",
-          "org.specs2" %% "specs2" % "1.8.2" % "test",
-          "org.scala-tools.testing" %% "specs" % "1.6.9" % "test",
-          "com.github.scopt" %% "scopt" % "2.0.0"        
+          "org.scala-tools.testing" %% "specs" % "1.6.9" % "test"
         ),
         ivyXML := (
           <dependencies>
@@ -150,16 +165,15 @@ object GeocoderBuild extends Build {
         libraryDependencies ++= Seq(
           "com.twitter" % "ostrich" % "8.2.3",
           "com.twitter" % "finagle-http" % "5.3.23",
-          "org.specs2" %% "specs2" % "1.8.2" % "test",
-          "org.scala-tools.testing" %% "specs" % "1.6.9" % "test",
-          "com.github.scopt" %% "scopt" % "2.0.0"        )
+          "org.scala-tools.testing" %% "specs" % "1.6.9" % "test" 
+        )
       ),
       base = file("client")) dependsOn(interface)
 
 
   lazy val indexer = Project(id = "indexer",
       base = file("indexer"),
-      settings = defaultSettings ++ assemblySettings ++ Seq(
+      settings = defaultSettings ++ assemblySettings ++ scoptSettings ++ Seq(
         baseDirectory in run := file("."),
         mainClass in assembly := Some("com.foursquare.twofishes.importers.geonames.GeonamesParser"),
         initialCommands := """
@@ -170,10 +184,10 @@ object GeocoderBuild extends Build {
         import com.vividsolutions.jts.io._
 
         import com.mongodb.casbah.Imports._
-import com.novus.salat._
-import com.novus.salat.annotations._
-import com.novus.salat.dao._
-import com.novus.salat.global._
+        import com.novus.salat._
+        import com.novus.salat.annotations._
+        import com.novus.salat.dao._
+        import com.novus.salat.global._
 
         val store = new MongoGeocodeStorageService()
         val slugIndexer = new SlugIndexer()
@@ -182,11 +196,9 @@ import com.novus.salat.global._
 
         publishArtifact := false,
         libraryDependencies ++= Seq(
-          "org.specs2" %% "specs2" % "1.8.2" % "test",
           "com.twitter" % "util-core" % "5.3.14",
           "com.twitter" % "util-logging" % "5.3.14",
-          "com.novus" % "salat-core_2.9.1" % "0.0.8-SNAPSHOT",
-          "com.github.scopt" %% "scopt" % "2.0.0"
+          "com.novus" % "salat-core_2.9.1" % "0.0.8-SNAPSHOT"
         )
       )
   ) dependsOn(core, util)
@@ -201,8 +213,7 @@ import com.novus.salat.global._
           "org.geotools" % "gt-geojson" % "9.2",
           "org.geotools" % "gt-epsg-hsql" % "9.2",
           "org.mongodb" % "bson" % "2.10.1",
-          "org.scalaj" %% "scalaj-collection" % "1.2",
-          "org.specs2" %% "specs2" % "1.8.2" % "test"
+          "org.scalaj" %% "scalaj-collection" % "1.3"
         )
       )
     ) dependsOn(interface)
