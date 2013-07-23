@@ -99,7 +99,7 @@ object GeocoderBuild extends Build {
 
   lazy val core = Project(id = "core",
       base = file("core"),
-      settings = defaultSettings ++ Seq(
+      settings = defaultSettings ++ specsSettings ++ Seq(
         publishArtifact := true,
         libraryDependencies ++= Seq(
           "com.twitter" % "ostrich" % "8.2.3",
