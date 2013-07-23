@@ -36,7 +36,7 @@ object Serde {
 
   case object StringSerde extends Serde[String] {
     override def toBytes(t: String): Array[Byte] = t.getBytes("UTF-8")
-    override def fromBytes(bytes: Array[Byte]): String = new String(bytes)
+    override def fromBytes(bytes: Array[Byte]): String = new String(bytes, "UTF-8")
   }
 
   case object ObjectIdSerde extends Serde[ObjectId] {
