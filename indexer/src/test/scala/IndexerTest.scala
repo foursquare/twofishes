@@ -53,7 +53,6 @@ class IndexerSpec extends Specification {
       Nil, None)
 
     val feature = record.toGeocodeServingFeature.feature
-    println(feature.names.asScala)
     feature.names.size aka feature.names.asScala.toString mustEqual 3
   }
 
