@@ -4,7 +4,7 @@ import com.foursquare.twofishes.util.{GeonamesId, MaponicsId, GeonamesZip}
 import org.bson.types.ObjectId
 import org.specs2.mutable.Specification
 
-class StoredFeatureIdSpec extends Specification {
+class SerdeSpec extends Specification {
   def test[T](serde: Serde[T], v: T) = {
     serde.fromBytes(serde.toBytes(v)) must_== v
   }
