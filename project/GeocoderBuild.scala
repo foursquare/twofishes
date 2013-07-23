@@ -214,7 +214,7 @@ object GeocoderBuild extends Build {
           "org.geotools" % "gt-geojson" % "9.2",
           "org.geotools" % "gt-epsg-hsql" % "9.2",
           "org.mongodb" % "bson" % "2.10.1",
-          "org.scalaj" %% "scalaj-collection" % "1.3"
+          "org.scalaj" %% "scalaj-collection" % "1.5"
         )
       )
     ) dependsOn(interface)
