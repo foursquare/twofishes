@@ -19,6 +19,19 @@ object GeocoderBuild extends Build {
        }
   )
 
+  lazy val specsSettings = Seq(
+      libraryDependencies <<= (scalaVersion, libraryDependencies) {(version, dependencies) =>
+        val specs2 =
+          if (version.startsWith("2.10"))
+          "org.specs2" %% "specs2" % "1.14" % "test"
+        else if (version == "2.9.3")
+          "org.specs2" %% "specs2" % "1.12.4.1" % "test"
+        else
+          "org.specs2" %% "specs2" % "1.12.3" % "test"
+        dependencies :+ specs2
+      }
+  )
+
   lazy val defaultSettings = super.settings ++ buildSettings ++ Defaults.defaultSettings ++ Seq(
     resolvers += "geomajas" at "http://maven.geomajas.org",
     resolvers += "osgeo" at "http://download.osgeo.org/webdav/geotools/",
@@ -107,16 +120,6 @@ object GeocoderBuild extends Build {
 
           // "thrift" % "libthrift" % "0.5.0" from "http://maven.twttr.com/org/apache/thrift/libthrift/0.5.0/libthrift-0.5.0.jar"
         ),
-        libraryDependencies <<= (scalaVersion, libraryDependencies) {(version, dependencies) =>
-          val specs2 =
-            if (version.startsWith("2.10"))
-            "org.specs2" %% "specs2" % "1.14" % "test"
-          else if (version == "2.9.3")
-            "org.specs2" %% "specs2" % "1.12.4.1" % "test"
-          else
-            "org.specs2" %% "specs2" % "1.12.3" % "test"
-          dependencies :+ specs2
-        },
         ivyXML := (
           <dependencies>
             <exclude org="thrift"/>
@@ -141,14 +144,13 @@ object GeocoderBuild extends Build {
       base = file("interface"))
 
   lazy val server = Project(id = "server",
-      settings = scoptSettings ++ defaultSettings ++ assemblySettings ++ Seq(
+      settings = scoptSettings ++ defaultSettings ++ assemblySettings ++ specsSettings ++ Seq(
         mainClass in assembly := Some("com.foursquare.twofishes.GeocodeFinagleServer"),
         baseDirectory in run := file("."),
         publishArtifact := true,
         libraryDependencies ++= Seq(
           "com.twitter" % "ostrich" % "8.2.3",
-          "com.twitter" % "finagle-http" % "5.3.23",
-          "org.scala-tools.testing" %% "specs" % "1.6.9" % "test"
+          "com.twitter" % "finagle-http" % "5.3.23"
         ),
         ivyXML := (
           <dependencies>
@@ -159,13 +161,12 @@ object GeocoderBuild extends Build {
       base = file("server")) dependsOn(core, interface, util, indexer % "test")
 
    lazy val client = Project(id = "client",
-      settings = defaultSettings ++ assemblySettings ++ Seq(
+      settings = defaultSettings ++ assemblySettings ++ specsSettings ++ Seq(
         baseDirectory in run := file("."),
         publishArtifact := false,
         libraryDependencies ++= Seq(
           "com.twitter" % "ostrich" % "8.2.3",
-          "com.twitter" % "finagle-http" % "5.3.23",
-          "org.scala-tools.testing" %% "specs" % "1.6.9" % "test" 
+          "com.twitter" % "finagle-http" % "5.3.23"
         )
       ),
       base = file("client")) dependsOn(interface)
@@ -173,7 +174,7 @@ object GeocoderBuild extends Build {
 
   lazy val indexer = Project(id = "indexer",
       base = file("indexer"),
-      settings = defaultSettings ++ assemblySettings ++ scoptSettings ++ Seq(
+      settings = defaultSettings ++ assemblySettings ++ scoptSettings ++ specsSettings ++ Seq(
         baseDirectory in run := file("."),
         mainClass in assembly := Some("com.foursquare.twofishes.importers.geonames.GeonamesParser"),
         initialCommands := """
