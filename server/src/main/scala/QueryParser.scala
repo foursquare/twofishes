@@ -4,6 +4,7 @@ package com.foursquare.twofishes
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.{NameNormalizer, TwofishesLogger}
 import com.foursquare.twofishes.util.Lists.Implicits._
+import com.twitter.ostrich.stats.Stats
 import scalaj.collection.Implicits._
 
 case class ParseParams(
@@ -41,7 +42,9 @@ class QueryParser(logger: TwofishesLogger) {
 
     // Need to tune the algorithm to not explode on > 10 tokens
     // in the meantime, reject.
+    Stats.addMetric("query_length", originalTokens.size)
     if (originalTokens.size > 10) {
+      Stats.incr("too_many_tokens", 1)
       throw new Exception("too many tokens")
     }
 

@@ -4,6 +4,7 @@ package com.foursquare.twofishes
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.foursquare.twofishes.util.StoredFeatureId
+import com.twitter.ostrich.stats.Stats
 import com.vividsolutions.jts.geom.Geometry
 import org.bson.types.ObjectId
 import scalaj.collection.Implicits._
@@ -20,6 +21,7 @@ class SlugGeocoderImpl(
     logger)
 
   def doSlugGeocode(slug: String): GeocodeResponse = {
+    Stats.incr("slug-lookup-requests", 1)
     val parseParams = ParseParams()
 
     val featureMap: Map[String, GeocodeServingFeature] = store.getBySlugOrFeatureIds(List(slug))
@@ -43,6 +45,7 @@ class BulkSlugLookupImpl(
   val responseProcessor = new ResponseProcessor(params, store, logger)
 
   def slugLookup(): BulkSlugLookupResponse = {
+    Stats.incr("bulk-slug-lookup-requests", 1)
     val parseParams = ParseParams()
 
     val featureMap: Map[String, GeocodeServingFeature] = store.getBySlugOrFeatureIds(req.slugs.asScala)
