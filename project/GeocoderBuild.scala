@@ -206,7 +206,7 @@ object GeocoderBuild extends Build {
 
   lazy val util = Project(id = "util",
       base = file("util"),
-      settings = defaultSettings ++ assemblySettings ++ Seq(
+      settings = defaultSettings ++ assemblySettings ++ specsSettings ++ Seq(
         publishArtifact := true,
         libraryDependencies ++= Seq(
           "com.google.caliper" % "caliper" % "0.5-rc1",
