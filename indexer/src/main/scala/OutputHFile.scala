@@ -5,6 +5,7 @@ import com.foursquare.geo.shapes.ShapefileS2Util
 import com.foursquare.twofishes.util.{GeometryUtils, StoredFeatureId}
 import com.google.common.geometry.S2CellId
 import com.mongodb.casbah.Imports._
+import com.mongodb.Bytes
 import com.novus.salat._
 import com.novus.salat.annotations._
 import com.novus.salat.dao._
@@ -59,6 +60,7 @@ class FidMap(preload: Boolean) extends DurationUtils {
       var i = 0
       val total = MongoGeocodeDAO.collection.count
       val geocodeCursor = MongoGeocodeDAO.find(MongoDBObject())
+      geocodeCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
       geocodeCursor.foreach(geocodeRecord => {
         geocodeRecord.featureIds.foreach(id => {
           fidMap(id) = Some(geocodeRecord.featureId)
@@ -207,10 +209,12 @@ class PrefixIndexer(override val basepath: String, override val fidMap: FidMap) 
   }
 
   def getRecordsByPrefix(prefix: String, limit: Int) = {
-    NameIndexDAO.find(
+    val nameCursor = NameIndexDAO.find(
       MongoDBObject(
         "name" -> MongoDBObject("$regex" -> "^%s".format(prefix)))
     ).sort(orderBy = MongoDBObject("pop" -> -1)).limit(limit)
+    nameCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
+    nameCursor
   }
 
   def doOutputPrefixIndex(prefixSet: HashSet[String]) {
@@ -279,6 +283,7 @@ class NameIndexer(override val basepath: String, override val fidMap: FidMap, ou
     val nameSize = NameIndexDAO.collection.count
     val nameCursor = NameIndexDAO.find(MongoDBObject())
       .sort(orderBy = MongoDBObject("name" -> 1)) // sort by nameBytes asc
+    nameCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
 
     var prefixSet = new HashSet[String]
 
@@ -353,6 +358,7 @@ class FeatureIndexer(override val basepath: String, override val fidMap: FidMap)
     val fidSize = MongoGeocodeDAO.collection.count
     val fidCursor = MongoGeocodeDAO.find(MongoDBObject())
       .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
+    fidCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
     fidCursor.foreach(f => {
       writer.append(
         f.featureId, makeGeocodeRecordWithoutGeometry(f))
@@ -367,16 +373,17 @@ class FeatureIndexer(override val basepath: String, override val fidMap: FidMap)
 
 class PolygonIndexer(override val basepath: String, override val fidMap: FidMap) extends Indexer {
   def buildPolygonIndex() {
-    val polygons =
+    val polygonsCursor =
       MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
         .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
+    polygonsCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
 
     val writer = buildMapFileWriter(Indexes.GeometryIndex)
 
     val wkbReader = new WKBReader()
 
     for {
-      (featureRecord, index) <- polygons.zipWithIndex
+      (featureRecord, index) <- polygonsCursor.zipWithIndex
       polygon <- featureRecord.polygon
     } {
       if (index % 1000 == 0) {
@@ -466,8 +473,9 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
           var doneCount = 0
 
           ids.zipWithIndex.filter(i => (i._2 % numThreads) == offset).grouped(200).foreach(chunk => {
-            val records = MongoGeocodeDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> chunk.map(_._1)))).toList
-            records.foreach(r => calculateCoverForRecord(r, s2map, s2shapes))
+            val recordsCursor = MongoGeocodeDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> chunk.map(_._1))))
+            recordsCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
+            recordsCursor.foreach(r => calculateCoverForRecord(r, s2map, s2shapes))
 
             doneCount += chunk.size
             total += chunk.size

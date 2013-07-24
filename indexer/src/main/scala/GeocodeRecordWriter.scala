@@ -4,6 +4,7 @@ package com.foursquare.twofishes
 import com.foursquare.twofishes.util.StoredFeatureId
 import com.mongodb.casbah.Imports._
 import com.mongodb.casbah.MongoConnection
+import com.mongodb.Bytes
 import com.novus.salat._
 import com.novus.salat.annotations._
 import com.novus.salat.dao._
@@ -41,7 +42,9 @@ object NameIndexDAO extends SalatDAO[NameIndex, String](
 
 class MongoGeocodeStorageService extends GeocodeStorageWriteService {
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = {
-    MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.longId))))
+    val geocodeCursor = MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.longId))))
+    geocodeCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
+    geocodeCursor
   }
 
   def insert(record: GeocodeRecord) {
