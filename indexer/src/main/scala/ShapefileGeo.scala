@@ -32,7 +32,7 @@ object ShapefileGeo {
     def keyValue: Option[String]
     def shape: Geometry
   }
-  
+
   class ShapeLeafNode (value: String, geom: Geometry) extends KeyShape {
     override def keyValue = Some(value)
     override def shape = geom
@@ -66,7 +66,7 @@ object ShapefileGeo {
     var subGrid: Option[Array[Array[ShapeTrieNode]]] = None
     /** Some if the deepest level reached, but muliple keyValues
         point-in-plane called on each element */
-    var subList: List[ShapeLeafNode] = Nil 
+    var subList: List[ShapeLeafNode] = Nil
 
     def subGridSize: (Int,Int) = subGrid.map(v => (v.length, v(0).length)).getOrElse(0,0)
 
@@ -78,10 +78,10 @@ object ShapefileGeo {
     def getNearestList(geoLat: Double, geoLong: Double, fudger: Option[Fudger] = None): List[String] = keyValue match {
       case Some(keyValue) => List(keyValue)
       case None => subGrid match {
-        case Some(grid) => { 
-          val longIdx = math.max(0, math.min(subGridSize._1 - 1, 
+        case Some(grid) => {
+          val longIdx = math.max(0, math.min(subGridSize._1 - 1,
             math.floor((geoLong - bounds.minLong)/(bounds.width /subGridSize._1)).toInt))
-          val latIdx  = math.max(0, math.min(subGridSize._2 - 1, 
+          val latIdx  = math.max(0, math.min(subGridSize._2 - 1,
             math.floor((geoLat  - bounds.minLat )/(bounds.height/subGridSize._2)).toInt))
 
           // RECURSE
@@ -107,8 +107,8 @@ object ShapefileGeo {
         val longChunk = bounds.width/nLongs
         val latChunk = bounds.height/nLats
 
-        val grid = Array.tabulate(nLongs, nLats)((iLong, iLat) => 
-          new ShapeTrieNode(level+1, GeoBounds( bounds.minLong + longChunk * iLong, 
+        val grid = Array.tabulate(nLongs, nLats)((iLong, iLat) =>
+          new ShapeTrieNode(level+1, GeoBounds( bounds.minLong + longChunk * iLong,
                                                bounds.minLat + latChunk * iLat,
                                                longChunk,
                                                latChunk), alwaysCheckGeometry))
@@ -117,8 +117,8 @@ object ShapefileGeo {
     }
 
 
-    def addFeature(path: List[(Int, Int)], 
-                    keyVal: String, 
+    def addFeature(path: List[(Int, Int)],
+                    keyVal: String,
                     geometry: Geometry,
                     levelSizes: Array[Int]): Unit = path match {
       case Nil => subList ::= new ShapeLeafNode(keyVal, geometry)
@@ -130,7 +130,7 @@ object ShapefileGeo {
       }
     }
   } // end of ShapeTrieNode
-  
+
 
   // Loads in a shape file, simplifying if necessary
   def load(
@@ -165,7 +165,7 @@ object ShapefileGeo {
 
     val indexAttribute: String = featureSource.getSchema.getDescriptors.asScala.find(d =>
       d.getName.toString.startsWith(indexAttributePrefix)) match {
-      case None => 
+      case None =>
         throw new IllegalArgumentException("Schema has no attribute starting with \""+indexAttributePrefix+"\"")
       case Some(descriptor) => descriptor.getName.toString
     }
@@ -173,13 +173,13 @@ object ShapefileGeo {
 
     // build the world
     val bounds = featureSource.getInfo.getBounds
-    val world = new ShapeTrieNode( 0, 
-                              GeoBounds(bounds.getMinX, 
-                                        bounds.getMinY, 
-                                        bounds.getWidth, 
+    val world = new ShapeTrieNode( 0,
+                              GeoBounds(bounds.getMinX,
+                                        bounds.getMinY,
+                                        bounds.getWidth,
                                         bounds.getHeight), alwaysCheckGeometry)
 
-    
+
     // would love to do toScala here, but though it looks like an iterator
     // and quacks like an iterator, it is not a java iterator.
     val iterator: SimpleFeatureIterator = featureSource.getFeatures.features
@@ -211,7 +211,7 @@ object ShapefileGeo {
     *
     * - Or -
     *
-    * We are just straight up in the middle of some serious body of water. 
+    * We are just straight up in the middle of some serious body of water.
     * No land in sight*/
   trait Fudger{
     def fudge(lat: Double, long: Double, node: ShapeTrieNode): Option[String]
@@ -232,7 +232,7 @@ object ShapefileGeo {
   }
 
   /** Tries to fudge by drawing a bounding rectangle around each shape.
-    * 
+    *
      * Whoever contains the point wins, ties are broken by smallest area wins*/
   class BoxBoundaryFudger extends Fudger{
     def fudge(lat: Double, long: Double, node: ShapeTrieNode): Option[String] = {
@@ -298,15 +298,15 @@ object ShapefileGeo {
     }
   }
 
-  class MultiFudgerTZ extends MultiFudger(new OpenOceanMeridianFudgerTZ :: 
-                                          new BoxBoundaryFudger :: 
-                                          new CentroidDistanceFudger :: 
+  class MultiFudgerTZ extends MultiFudger(new OpenOceanMeridianFudgerTZ ::
+                                          new BoxBoundaryFudger ::
+                                          new CentroidDistanceFudger ::
                                           Nil)
-  
-  class MultiFudgerCC(default: String) 
-    extends MultiFudger(new OpenOceanDefaultFudger(default) :: 
-                        new BoxBoundaryFudger :: 
-                        new CentroidDistanceFudger :: 
+
+  class MultiFudgerCC(default: String)
+    extends MultiFudger(new OpenOceanDefaultFudger(default) ::
+                        new BoxBoundaryFudger ::
+                        new CentroidDistanceFudger ::
                         Nil)
 }
 

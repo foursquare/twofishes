@@ -330,9 +330,15 @@ class FeatureIndexer(override val basepath: String, override val fidMap: FidMap)
   def canonicalizeParentId(fid: StoredFeatureId) = fidMap.get(fid)
 
   def makeGeocodeRecordWithoutGeometry(g: GeocodeRecord): GeocodeServingFeature = {
-    val f = g.toGeocodeServingFeature()
-    f.feature.geometry.unsetWkbGeometry()
-    makeGeocodeServingFeature(f)
+    val fullFeature = g.toGeocodeServingFeature()
+
+    val partialFeature = fullFeature.copy(
+      feature = fullFeature.feature.copy(
+        geometry = fullFeature.feature.geometry.copy(wkbGeometry = null)
+      )
+    )
+
+    makeGeocodeServingFeature(partialFeature)
   }
 
   def makeGeocodeRecord(g: GeocodeRecord) = {
@@ -341,15 +347,16 @@ class FeatureIndexer(override val basepath: String, override val fidMap: FidMap)
 
   def makeGeocodeServingFeature(f: GeocodeServingFeature) = {
     val parents = for {
-      parentLongId <- f.scoringFeatures.parentIds.asScala
+      parentLongId <- f.scoringFeatures.parentIds
       parentFid <- StoredFeatureId.fromLong(parentLongId)
       parentId <- canonicalizeParentId(parentFid)
     } yield {
       parentFid
     }
 
-    f.scoringFeatures.setParentIds(parents.map(_.longId).asJava)
-    f
+    f.copy(
+      scoringFeatures = f.scoringFeatures.copy(parentIds = parents.map(_.longId))
+    )
   }
 
   def writeFeatures() {
@@ -431,16 +438,16 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
           (cellid: S2CellId) => {
             val bucket = s2map.getOrElseUpdate(cellid.id, new ListBuffer[CellGeometry]())
             val s2shape = s2shapes.getOrElseUpdate(cellid.id, ShapefileS2Util.fullGeometryForCell(cellid))
-            val cellGeometry = new CellGeometry()
+            val cellGeometryBuilder = CellGeometry.newBuilder
             if (preparedRecordShape.contains(s2shape)) {
-              cellGeometry.setFull(true)
+              cellGeometryBuilder.full(true)
             } else {
-              cellGeometry.setWkbGeometry(wkbWriter.write(s2shape.intersection(recordShape)))
+              cellGeometryBuilder.wkbGeometry(ByteBuffer.wrap(wkbWriter.write(s2shape.intersection(recordShape))))
             }
-            cellGeometry.setWoeType(record.woeType)
-            cellGeometry.setOid(record.featureId.legacyObjectId.toByteArray())
-            cellGeometry.setLongId(record._id)
-            bucket += cellGeometry
+            cellGeometryBuilder.woeType(record.woeType)
+            cellGeometryBuilder.oid(ByteBuffer.wrap(record.featureId.legacyObjectId.toByteArray()))
+            cellGeometryBuilder.longId(record._id)
+            bucket += cellGeometryBuilder.result
           }
         )
       }
@@ -502,7 +509,7 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
     sortedMapKeys.foreach(k => {
       val longKey = GeometryUtils.getLongFromBytes(k)
       val cells: List[CellGeometry] = subMaps.flatMap(_._1.get(longKey)).flatMap(_.toList)
-      val cellGeometries = new CellGeometries().setCells(cells.asJava)
+      val cellGeometries = CellGeometries(cells)
       writer.append(longKey, cellGeometries)
     })
 
