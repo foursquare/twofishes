@@ -114,15 +114,13 @@ class SlugIndexer {
       servingFeature <- findFeature(fid)
       if (servingFeature.scoringFeatures.population > 0 ||
           servingFeature.scoringFeatures.boost > 0 ||
-          servingFeature.feature.geometry.wkbGeometry != null ||
-          YahooWoeTypes.isAdminWoeType(servingFeature.feature.woeType) ||
-          (servingFeature.feature.attributes != null &&
-           (servingFeature.feature.attributes.adm1cap ||
-           servingFeature.feature.attributes.adm0cap)
-          )
-      )
+          servingFeature.feature.geometry.wkbGeometryOption.nonEmpty ||
+          servingFeature.feature.woeTypeOption.exists(YahooWoeTypes.isAdminWoeType) ||
+           (servingFeature.feature.attributesOption.exists(_.adm1capOption.exists(a => a)) ||
+            servingFeature.feature.attributesOption.exists(_.adm0capOption.exists(a => a)))
+        )
     } {
-      val parents = servingFeature.scoringFeatures.parentIds.asScala
+      val parents = servingFeature.scoringFeatures.parentIds
         .flatMap(StoredFeatureId.fromLong _)
         .flatMap(findParent _).toList
       var possibleSlugs = SlugBuilder.makePossibleSlugs(servingFeature.feature, parents)

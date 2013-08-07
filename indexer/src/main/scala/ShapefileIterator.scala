@@ -16,7 +16,7 @@ object FsqSimpleFeatureImplicits {
 
 class FsqSimpleFeature(val f: SimpleFeature) {
   val propMap = f.getProperties().asScala.flatMap(p => {
-    Option(p.getValue()).map(v => 
+    Option(p.getValue()).map(v =>
       (p.getName().toString, v.toString)
     )
   }).toMap
