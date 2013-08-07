@@ -202,6 +202,11 @@ object GeocoderBuild extends Build {
           "com.twitter" % "util-core" % "5.3.14",
           "com.twitter" % "util-logging" % "5.3.14",
           "com.novus" % "salat-core_2.9.1" % "0.0.8-SNAPSHOT"
+        ),
+        ivyXML := (
+          <dependencies>
+            <exclude org="org.slf4j" module="slf4j-log4j12"/>
+          </dependencies>
         )
       )
   ) dependsOn(core, util)
