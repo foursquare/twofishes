@@ -404,40 +404,40 @@ class GeonamesParser(
     }
 
     var attributesSet = false
-    lazy val attributes = {
+    lazy val attributesBuilder = {
       attributesSet = true
-      new GeocodeFeatureAttributes()
+      GeocodeFeatureAttributes.newBuilder
     }
 
     naturalEarthPopulatedPlacesMap.get(geonameId).map(sfeature => {
       sfeature.propMap.get("adm0cap").foreach(v =>
-        attributes.setAdm0cap(v.toDouble.toInt == 1)
+        attributesBuilder.adm0cap(v.toDouble.toInt == 1)
       )
       sfeature.propMap.get("scalerank").foreach(v =>
-        attributes.setScalerank(v.toInt)
+        attributesBuilder.scalerank(v.toInt)
       )
       sfeature.propMap.get("natscale").foreach(v =>
-        attributes.setNatscale(v.toInt)
+        attributesBuilder.natscale(v.toInt)
       )
       sfeature.propMap.get("labelrank").foreach(v =>
-        attributes.setLabelrank(v.toInt)
+        attributesBuilder.labelrank(v.toInt)
       )
     })
 
     if (feature.featureClass.isAdmin1Capital) {
-      attributes.setAdm1cap(true)
+      attributesBuilder.adm1cap(true)
     }
 
     feature.population.foreach(pop =>
-      attributes.setPopulation(pop)
+      attributesBuilder.population(pop)
     )
 
     feature.extraColumns.get("sociallyRelevant").map(v =>
-      attributes.setSociallyRelevant(v.toBoolean)
+      attributesBuilder.sociallyRelevant(v.toBoolean)
     )
 
     feature.extraColumns.get("neighborhoodType").map(v =>
-      attributes.setNeighborhoodType(NeighborhoodType.valueOf(v))
+      attributesBuilder.neighborhoodType(NeighborhoodType.findByNameOrNull(v))
     )
 
     val record = GeocodeRecord(
@@ -460,7 +460,7 @@ class GeonamesParser(
     )
 
     if (attributesSet) {
-      record.setAttributes(Some(attributes))
+      record.setAttributes(Some(attributesBuilder.result))
     }
 
     store.insert(record)
@@ -572,7 +572,7 @@ class GeonamesParser(
 
     lines.foreach(line => {
       val parts = line.split("[\t ]").toList
- 
+
       for {
         gid <- parts.lift(0)
         val rest = parts.drop(1).mkString(" ")

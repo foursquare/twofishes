@@ -96,7 +96,7 @@ object BuildPolygonShapefile {
       }
 
       featureBuilder.add(multiPolygon)
-      featureBuilder.add(record.toGeocodeServingFeature.feature.id + "," + record._woeType.toString)
+      featureBuilder.add(record.toGeocodeServingFeature.feature.longId + "," + record._woeType.toString)
       val feature = featureBuilder.buildFeature(null)
       collection.add(feature)
     }
