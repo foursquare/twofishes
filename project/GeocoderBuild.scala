@@ -12,7 +12,7 @@ object GeocoderBuild extends Build {
   )
 
   lazy val scoptSettings = Seq(
-    libraryDependencies += 
+    libraryDependencies +=
        "com.github.scopt" %% "scopt" % "2.1.0" cross CrossVersion.binaryMapped {
          case "2.10.2" => "2.10"
          case x => x
@@ -139,7 +139,7 @@ object GeocoderBuild extends Build {
           "thrift" % "libthrift" % "0.5.0" from "http://maven.twttr.com/org/apache/thrift/libthrift/0.5.0/libthrift-0.5.0.jar",
           "com.twitter" % "finagle-thrift" % "5.3.23",
           "org.slf4j" % "slf4j-api" % "1.6.1"
-        ) 
+        )
       ),
       base = file("interface"))
 
@@ -197,6 +197,8 @@ object GeocoderBuild extends Build {
 
         publishArtifact := false,
         libraryDependencies ++= Seq(
+          "com.weiglewilczek.slf4s" % "slf4s_2.9.1" % "1.0.7",
+          "ch.qos.logback" % "logback-classic" % "1.0.9",
           "com.twitter" % "util-core" % "5.3.14",
           "com.twitter" % "util-logging" % "5.3.14",
           "com.novus" % "salat-core_2.9.1" % "0.0.8-SNAPSHOT"
