@@ -43,7 +43,7 @@ sealed abstract class StoredFeatureId(val namespace: FeatureNamespace) {
     new ObjectId(arr)
   }
 
-  def thriftFeatureId: FeatureId = new FeatureId(namespace.name, namespaceSpecificId.toString)
+  def thriftFeatureId: FeatureId = FeatureId(namespace.name, namespaceSpecificId.toString)
 }
 
 case class GeonamesId(override val namespaceSpecificId: Long) extends StoredFeatureId(GeonamesNamespace)
@@ -64,7 +64,7 @@ case class GeonamesZip(override val namespaceSpecificId: Long) extends StoredFea
     new ObjectId(arr)
   }
 
-  override def thriftFeatureId: FeatureId = new FeatureId(namespace.name, countryAndPostalCode)
+  override def thriftFeatureId: FeatureId = FeatureId(namespace.name, countryAndPostalCode)
   override def humanReadableString = "%s:%s".format(namespace.name, countryAndPostalCode)
 }
 

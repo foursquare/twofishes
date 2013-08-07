@@ -1,6 +1,7 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.util
 
+import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.{FeatureName, FeatureNameFlags, GeocodeFeature, YahooWoeType, util}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import scalaj.collection.Implicits._
@@ -120,7 +121,7 @@ object NameFormatter {
         val parts = token.split("\\+")
         val woeType = parts(0)
         val preferAbbrev = parts.lift(1).getOrElse("") == "ABBR"
-        WoeToken(YahooWoeType.valueOf(woeType), preferAbbrev)
+        WoeToken(YahooWoeType.findByNameOrNull(woeType), preferAbbrev)
       })
 
       // println("looking at pattern: %s".format(pattern.pattern))
@@ -132,7 +133,7 @@ object NameFormatter {
 
       val tokenMatches = for {
         woeToken <- woeTokens
-        matchFeature <- featuresToSearch.find(_.woeType == woeToken.woeType)
+        matchFeature <- featuresToSearch.find(_.woeTypeOption.exists(_ =? woeToken.woeType))
         name <- NameUtils.bestName(matchFeature, lang, woeToken.preferAbbrev)
       } yield {
         if (matchFeature == feature) {
@@ -180,7 +181,7 @@ trait NameUtils {
 
       if (name.flags != null) {
         score += (for {
-          flag <- name.flags.asScala
+          flag <- name.flags
         } yield {
           flag match {
             case FeatureNameFlags.COLLOQUIAL => 10
@@ -206,11 +207,11 @@ trait NameUtils {
     lang: Option[String],
     preferAbbrev: Boolean
   ): Option[FeatureName] = {
-    if (preferAbbrev && f.woeType == YahooWoeType.COUNTRY) {
+    if (preferAbbrev && f.woeTypeOption.exists(_ =? YahooWoeType.COUNTRY)) {
       names.find(n => n.name.size == 2 && Option(n.flags).exists(_.contains(FeatureNameFlags.ABBREVIATION)))
     } else {
       val modifiedPreferAbbrev = preferAbbrev &&
-        f.woeType == YahooWoeType.ADMIN1 &&
+        f.woeTypeOption.exists(_ =? YahooWoeType.ADMIN1) &&
         (f.cc == "US" || f.cc == "CA")
       val scorer = new FeatureNameScorer(lang, modifiedPreferAbbrev)
       var bestScore = 0
@@ -245,14 +246,14 @@ trait NameUtils {
     logger: TwofishesLogger
   ): Option[BestNameMatch] = {
     val ret = matchedStringOpt.flatMap(matchedString => {
-      val namesNormalized = f.names.asScala.map(n => {
+      val namesNormalized = f.names.map(n => {
         (n, NameNormalizer.normalize(n.name))
       })
 
       val exactMatchNameCandidates = namesNormalized.filter(_._2 == matchedString).map(_._1)
       val prefixMatchNameCandidates = namesNormalized.filter(_._2.startsWith(matchedString)).map(_._1)
       val exactMatchesWithoutAirports =
-        if (f.woeType != YahooWoeType.AIRPORT) {
+        if (!f.woeTypeOption.exists(_ =? YahooWoeType.AIRPORT)) {
           exactMatchNameCandidates.filterNot(n => (n.lang == "iata" || n.lang == "icao"))
         } else {
           Nil
@@ -269,7 +270,7 @@ trait NameUtils {
       }
 
       val modifiedPreferAbbrev = preferAbbrev &&
-        f.woeType == YahooWoeType.ADMIN1 &&
+        f.woeTypeOption.exists(_ =? YahooWoeType.ADMIN1) &&
         (f.cc == "US" || f.cc == "CA")
 
       val bestNameMatch = bestNameFromList(f, nameCandidates, lang, modifiedPreferAbbrev)
