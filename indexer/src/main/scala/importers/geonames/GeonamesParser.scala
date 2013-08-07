@@ -572,7 +572,7 @@ class GeonamesParser(
 
     lines.foreach(line => {
       val parts = line.split("[\t ]").toList
- 
+
       for {
         gid <- parts.lift(0)
         val rest = parts.drop(1).mkString(" ")
@@ -588,7 +588,9 @@ class GeonamesParser(
               if (dn.lang == lang) {
                 if (dn.name == name) {
                   foundName = true
-                  val newName = DisplayName(dn.lang, dn.name, dn.flags | FeatureNameFlags.PREFERRED.getValue())
+                  val newName = DisplayName(dn.lang, dn.name,
+                    (dn.flags | FeatureNameFlags.PREFERRED.getValue()) &  ~FeatureNameFlags.ALIAS.getValue())
+
                   newName
                 } else {
                   val newName = DisplayName(dn.lang, dn.name, dn.flags & ~FeatureNameFlags.PREFERRED.getValue())

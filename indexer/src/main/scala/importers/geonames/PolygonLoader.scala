@@ -151,7 +151,7 @@ object PolygonLoader extends Logging {
         if (geom.isValid) {
           updateRecord(store, defaultNamespace, parts(0), geom)
         } else {
-          println("geom is not valid for %s".format(parts(0)))
+          logger.error("geom is not valid for %s".format(parts(0)))
         }
       })
     }
