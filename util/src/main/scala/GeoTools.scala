@@ -23,7 +23,7 @@ object GeoTools {
   }
 
   def S2LatLngToPoint(ll: S2LatLng): GeocodePoint = {
-    new GeocodePoint(ll.latDegrees, ll.lngDegrees)
+    GeocodePoint(ll.latDegrees, ll.lngDegrees)
   }
 
   def boundsContains(bounds: GeocodeBoundingBox, ll: GeocodePoint): Boolean = {
