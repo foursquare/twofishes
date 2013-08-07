@@ -4,7 +4,8 @@ package com.foursquare.twofishes
 import com.foursquare.twofishes.util.StoredFeatureId
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory}
 import com.vividsolutions.jts.io.WKBReader
-import org.apache.thrift.{TDeserializer, TSerializer}
+import java.nio.ByteBuffer
+import org.apache.thrift.{TBaseHelper, TDeserializer, TSerializer}
 import org.apache.thrift.protocol.TCompactProtocol
 import org.bson.types.ObjectId
 import scala.collection.mutable.HashMap
@@ -66,7 +67,7 @@ case class GeocodeRecord(
 
   def getAttributes(): Option[GeocodeFeatureAttributes] = {
     attributes.map(bytes => {
-      val attr = new GeocodeFeatureAttributes()
+      val attr = new RawGeocodeFeatureAttributes()
       deserializer.deserialize(attr, bytes)
       attr
     })
@@ -79,7 +80,7 @@ case class GeocodeRecord(
 
   def parentFeatureIds: List[StoredFeatureId] = parents.flatMap(StoredFeatureId.fromLong _)
 
-  lazy val woeType = YahooWoeType.findByValue(_woeType)
+  lazy val woeType = YahooWoeType.findByIdOrNull(_woeType)
 
   def center = {
     val geomFactory = new GeometryFactory()
@@ -92,8 +93,8 @@ case class GeocodeRecord(
 
   def toGeocodeServingFeature(): GeocodeServingFeature = {
     // geom
-    val geometry = new FeatureGeometry(
-      new GeocodePoint(lat, lng))
+    val geometryBuilder = FeatureGeometry.newBuilder
+      .center(GeocodePoint(lat, lng))
 
     boundingbox.foreach(bounds => {
       val currentBounds = (bounds.ne.lat, bounds.ne.lng, bounds.sw.lat, bounds.sw.lng)
@@ -110,14 +111,14 @@ case class GeocodeRecord(
         println("incorrect bounds %s -> %s".format(currentBounds, finalBounds))
       }
 
-      geometry.setBounds(new GeocodeBoundingBox(
-        new GeocodePoint(finalBounds._1, finalBounds._2),
-        new GeocodePoint(finalBounds._3, finalBounds._4)
+      geometryBuilder.bounds(GeocodeBoundingBox(
+        GeocodePoint(finalBounds._1, finalBounds._2),
+        GeocodePoint(finalBounds._3, finalBounds._4)
       ))
     })
 
     polygon.foreach(poly => {
-      geometry.setWkbGeometry(poly)
+      geometryBuilder.wkbGeometry(ByteBuffer.wrap(poly))
 
       if (boundingbox.isEmpty) {
         val wkbReader = new WKBReader()
@@ -125,23 +126,12 @@ case class GeocodeRecord(
 
         val envelope = g.getEnvelopeInternal()
 
-        geometry.setBounds(new GeocodeBoundingBox(
-          new GeocodePoint(envelope.getMaxY(), envelope.getMaxX()),
-          new GeocodePoint(envelope.getMinY(), envelope.getMinX())
+        geometryBuilder.bounds(GeocodeBoundingBox(
+          GeocodePoint(envelope.getMaxY(), envelope.getMaxX()),
+          GeocodePoint(envelope.getMinY(), envelope.getMinX())
         ))
       }
     })
-
-    val feature = new GeocodeFeature(
-      cc, geometry
-    )
-
-    feature.setWoeType(this.woeType)
-
-    feature.setIds(featureIds.map(_.thriftFeatureId).asJava)
-
-    featureIds.headOption.foreach(id => feature.setId(id.humanReadableString))
-    featureIds.headOption.foreach(id => feature.setLongId(id.longId))
 
     val filteredNames: List[DisplayName] = displayNames.filterNot(n => List("post", "link").contains(n.lang))
     var hackedNames: List[DisplayName] = Nil
@@ -173,37 +163,42 @@ case class GeocodeRecord(
         }
       })
 
-      val fname = new FeatureName(name.name, name.lang)
-      if (flags.nonEmpty) {
-        fname.setFlags(flags.asJava)
-      }
-      fname
+      FeatureName.newBuilder.name(name.name).lang(name.lang).flags(flags).result
     })
 
-    feature.setNames(nameCandidates
+    val finalNames = nameCandidates
       .groupBy(n => "%s%s%s".format(n.lang, n.name, n.flags))
       .flatMap({case (k,v) => v.headOption})
-      .toList.asJava
-    )
 
-    slug.foreach(s => feature.setSlug(s))
+    val feature = GeocodeFeature.newBuilder
+      .cc(cc)
+      .geometry(geometryBuilder.result)
+      .woeType(this.woeType)
+      .ids(featureIds.map(_.thriftFeatureId))
+      .id(featureIds.headOption.map(_.humanReadableString))
+      .longId(featureIds.headOption.map(_.longId))
+      .slug(slug)
+      .names(finalNames.toSeq)
+      .attributes(getAttributes())
+      .result
 
-    val scoring = new ScoringFeatures()
-    boost.foreach(b => scoring.setBoost(b))
-    population.foreach(p => scoring.setPopulation(p))
-    scoring.setParentIds(parents.asJava)
-    hasPoly.foreach(p => if (p) { scoring.setHasPoly(true) } )
-
-    getAttributes().foreach(a => feature.setAttributes(a))
+    val scoringBuilder = ScoringFeatures.newBuilder
+      .boost(boost)
+      .population(population)
+      .parentIds(parents)
+      .hasPoly(hasPoly)
 
     if (!canGeocode) {
-      scoring.setCanGeocode(false)
+      scoringBuilder.canGeocode(false)
     }
 
-    val servingFeature = new GeocodeServingFeature()
-    servingFeature.setLongId(featureId.longId)
-    servingFeature.setScoringFeatures(scoring)
-    servingFeature.setFeature(feature)
+    val scoring = scoringBuilder.result
+
+    val servingFeature = GeocodeServingFeature.newBuilder
+      .longId(featureId.longId)
+      .scoringFeatures(scoring)
+      .feature(feature)
+      .result
 
     servingFeature
   }

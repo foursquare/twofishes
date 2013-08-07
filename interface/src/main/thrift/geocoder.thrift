@@ -180,7 +180,7 @@ struct GeocodeServingFeature {
   3: GeocodeFeature feature,
   4: optional list<GeocodeFeature> parents,
 
-  1: string DEPRECATED_id
+  1: optional string DEPRECATED_id
 }
 
 struct InterpretationScoringFeatures {
