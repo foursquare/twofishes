@@ -132,7 +132,7 @@ class HFileInput[V](basepath: String, index: Index[String, V], shouldPreload: Bo
 
   val reader = HFile.createReader(path.getFileSystem(conf), path, cache)
 
-  val fileInfo = reader.loadFileInfo().asScala
+  val fileInfo = reader.loadFileInfo()
 
   // prefetch the hfile
   if (shouldPreload) {
@@ -280,7 +280,7 @@ class ReverseGeocodeMapFileInput(basepath: String, shouldPreload: Boolean) {
     throw new Exception("missing levelMod")).toInt
 
   def get(cellid: Long): List[CellGeometry] = {
-    s2Index.lookup(cellid).toList.flatMap(_.cells.asScala)
+    s2Index.lookup(cellid).toList.flatMap(_.cells)
   }
 }
 

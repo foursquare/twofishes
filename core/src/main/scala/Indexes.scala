@@ -123,13 +123,13 @@ object Indexes {
     "geometry", Serde.StoredFeatureIdSerde, Serde.GeometrySerde)
 
   case object FeatureIndex extends Index[StoredFeatureId, GeocodeServingFeature](
-    "features", Serde.StoredFeatureIdSerde, Serde.ThriftSerde(Unit => new GeocodeServingFeature))
+    "features", Serde.StoredFeatureIdSerde, Serde.ThriftSerde(Unit => new RawGeocodeServingFeature))
 
   case object IdMappingIndex extends Index[String, StoredFeatureId](
     "id-mapping", Serde.StringSerde, Serde.StoredFeatureIdSerde)
 
   case object S2Index extends Index[Long, CellGeometries](
-    "s2_index", Serde.LongSerde, Serde.ThriftSerde(Unit => new CellGeometries))
+    "s2_index", Serde.LongSerde, Serde.ThriftSerde(Unit => new RawCellGeometries))
 
   case object PrefixIndex extends Index[String, Seq[StoredFeatureId]](
     "prefix_index", Serde.StringSerde, Serde.StoredFeatureIdListSerde)
