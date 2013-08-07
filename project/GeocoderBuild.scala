@@ -1,3 +1,4 @@
+import com.foursquare.spindle.codegen.plugin.ThriftCodegenPlugin.thriftSettings
 import sbt._
 import sbt.Keys._
 import sbtassembly.Plugin._
@@ -135,11 +136,9 @@ object GeocoderBuild extends Build {
     ) dependsOn(interface, util)
 
   lazy val interface = Project(id = "interface",
-      settings = defaultSettings ++ Seq(
+      settings = defaultSettings ++ thriftSettings ++ Seq(
         publishArtifact := true,
         libraryDependencies ++= Seq(
-          "thrift" % "libthrift" % "0.5.0" from "http://maven.twttr.com/org/apache/thrift/libthrift/0.5.0/libthrift-0.5.0.jar",
-          "com.twitter" % "finagle-thrift" % "5.3.23",
           "org.slf4j" % "slf4j-api" % "1.6.1"
         )
       ),
