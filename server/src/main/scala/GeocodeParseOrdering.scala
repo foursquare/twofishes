@@ -54,7 +54,7 @@ class GeocodeParseOrdering(
         modifySignal(1000, "promoting feature with bounds")
       }
 
-      if (req.woeHint.asScala.has(primaryFeature.feature.woeType)) {
+      if (req.woeHint.has(primaryFeature.feature.woeType)) {
         modifySignal(50000000,
           "woe hint matches %d".format(primaryFeature.feature.woeType.getValue))
       }
@@ -194,18 +194,18 @@ class GeocodeParseOrdering(
           bFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY &&
           // if we have a hint that we want one of the types, then let the
           // scoring happen naturally
-          !req.woeHint.asScala.has(aFeature.fmatch.feature.woeType) &&
-          !req.woeHint.asScala.has(bFeature.fmatch.feature.woeType)
+          !req.woeHint.has(aFeature.fmatch.feature.woeType) &&
+          !req.woeHint.has(bFeature.fmatch.feature.woeType)
         ) {
         // if a is a parent of b, prefer b
-        if (aFeature.fmatch.scoringFeatures.parentIds.asScala.has(bFeature.fmatch.longId) &&
+        if (aFeature.fmatch.scoringFeatures.parentIds.has(bFeature.fmatch.longId) &&
           (aFeature.fmatch.scoringFeatures.population * 1.0 / bFeature.fmatch.scoringFeatures.population) > 0.05
         ) {
           logger.ifDebug("Preferring %s because it's a child of %s", a, b)
           return -1
         }
         // if b is a parent of a, prefer a
-        if (bFeature.fmatch.scoringFeatures.parentIds.asScala.has(aFeature.fmatch.longId) &&
+        if (bFeature.fmatch.scoringFeatures.parentIds.has(aFeature.fmatch.longId) &&
            (bFeature.fmatch.scoringFeatures.population * 1.0 / aFeature.fmatch.scoringFeatures.population) > 0.05
           ) {
           logger.ifDebug("Preferring %s because it's a child of %s", a, b)
@@ -217,8 +217,8 @@ class GeocodeParseOrdering(
     val scoreA = getScore(a)
     val scoreB = getScore(b)
     if (scoreA == scoreB) {
-      (a.headOption.map(_.fmatch.feature.ids.asScala.map(_.toString).hashCode).getOrElse(0).toLong -
-        b.headOption.map(_.fmatch.feature.ids.asScala.map(_.toString).hashCode).getOrElse(0).toLong).signum
+      (a.headOption.map(_.fmatch.feature.ids.map(_.toString).hashCode).getOrElse(0).toLong -
+        b.headOption.map(_.fmatch.feature.ids.map(_.toString).hashCode).getOrElse(0).toLong).signum
     } else {
       scoreB - scoreA
     }

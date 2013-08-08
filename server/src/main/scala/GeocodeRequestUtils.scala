@@ -7,8 +7,8 @@ import scalaj.collection.Implicits._
 
 object GeocodeRequestUtils {
   def responseIncludes(req: CommonGeocodeRequestParams, include: ResponseIncludes): Boolean = {
-    req.responseIncludes.asScala.has(include) ||
-      req.responseIncludes.asScala.has(ResponseIncludes.EVERYTHING)
+    req.responseIncludes.has(include) ||
+      req.responseIncludes.has(ResponseIncludes.EVERYTHING)
   }
 
   def shouldFetchPolygon(req: CommonGeocodeRequestParams) = 

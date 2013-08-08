@@ -19,13 +19,19 @@ object GeocodeServingFeatureOrdering extends Ordering[GeocodeServingFeature] {
 }
 
 object ResponseProcessor {
-  def generateResponse(debugLevel: Int, logger: MemoryLogger, interpretations: Seq[GeocodeInterpretation]): GeocodeResponse = {
-    val resp = new GeocodeResponse()
-    resp.setInterpretations(interpretations.asJava)
+  def generateResponse(
+    debugLevel: Int,
+    logger: MemoryLogger,
+    interpretations: Seq[GeocodeInterpretation],
+    requestGeom: Option[Geometry]): GeocodeResponse = {
+    val responseBuilder = new GeocodeResponse()
+    responseBuilder.interpretations(interpretations)
     if (debugLevel > 0) {
-      resp.setDebugLines(logger.getLines.asJava)
+      responseBuilder.debugLines(logger.getLines)
+      val wktWriter = new WKTWriter
+      responseBuilder.requestWktGeometry(wktWriter.write(geom))
     }
-    resp
+    responseBuilder.result
   }
 }
 
@@ -92,7 +98,7 @@ class ResponseProcessor(
       }
     }
 
-   
+
 
     val dedupedMap: Seq[(Parse[Sorted], Int)] = for {
       (textKey, parsePairs) <- parseMap.toSeq
@@ -212,12 +218,12 @@ class ResponseProcessor(
 
     // possibly clear names
     val names = f.names
-    f.setNames(names.asScala.filter(n =>
+    f.setNames(names.filter(n =>
       Option(n.flags).exists(_.contains(FeatureNameFlags.ABBREVIATION)) ||
       n.lang == req.lang ||
       n.lang == "en" ||
       namesToUse.contains(n)
-    ).asJava)
+    ))
 
     // now pull in extra parents
     parentsToUse.appendAll(
@@ -263,7 +269,7 @@ class ResponseProcessor(
     // })
 
     val parentIds: Seq[Long] = sortedParses.flatMap(
-      _.headOption.toList.flatMap(_.fmatch.scoringFeatures.parentIds.asScala))
+      _.headOption.toList.flatMap(_.fmatch.scoringFeatures.parentIds))
     val parentFids: Seq[StoredFeatureId] = parentIds.flatMap(StoredFeatureId.fromLong _)
     logger.ifDebug("parent ids: %s", parentFids)
 
@@ -298,7 +304,7 @@ class ResponseProcessor(
       val sortedParents = if (shouldFetchParents) {
         // we've seen dupe parents, not sure why, the toSet.toSeq fixes
         // TODO(blackmad): why dupe US parents on new york state?
-        p(0).fmatch.scoringFeatures.parentIds.asScala.toSet.toSeq
+        p(0).fmatch.scoringFeatures.parentIds.toSet.toSeq
           .flatMap(StoredFeatureId.fromLong _)
           .flatMap(fid => parentMap.get(fid)).sorted(GeocodeServingFeatureOrdering)
       } else {
@@ -306,16 +312,14 @@ class ResponseProcessor(
       }
       fixFeature(feature, sortedParents, Some(p), fillHighlightedName=parseParams.tokens.size > 0)
 
-      val interp = new GeocodeInterpretation()
-      interp.setWhat(what)
-      interp.setWhere(where)
-      interp.setFeature(feature)
-
-      val scores = p.scoringFeatures
-      interp.setScores(scores)
+      val interpBuilder = GeocodeInterpretation.newBuilder
+        .what(what)
+        .where(where)
+        .feature(feature)
+        .scores(p.scoringFeatures)
 
       if (req.debug > 0) {
-        p.debugInfo.foreach(interp.setDebugInfo)
+        p.debugInfo.foreach(interpBuilder.debugInfo)
       }
 
       if (responseIncludes(ResponseIncludes.WKT_GEOMETRY) ||
@@ -334,16 +338,16 @@ class ResponseProcessor(
       }
 
       if (responseIncludes(ResponseIncludes.PARENTS)) {
-        interp.setParents(sortedParents.map(parentFeature => {
-          val sortedParentParents = parentFeature.scoringFeatures.parentIds.asScala
+        interpBuilder.parents(sortedParents.map(parentFeature => {
+          val sortedParentParents = parentFeature.scoringFeatures.parentIds
             .flatMap(StoredFeatureId.fromLong _)
             .flatMap(parentFid => parentMap.get(parentFid)).sorted
           val feature = parentFeature.feature
           fixFeature(feature, sortedParentParents, None, fillHighlightedName=parseParams.tokens.size > 0)
           feature
-        }).asJava)
+        }))
       }
-      interp
+      interpBuilder.result
     })
 
     if (fixAmbiguousNames) {
@@ -374,7 +378,7 @@ class ResponseProcessor(
           val fmatch = p(0).fmatch
           val feature = p(0).fmatch.feature
           ambiguousIdMap.getOrElse(feature.ids.toString, Nil).foreach(interp => {
-            val sortedParents = p(0).fmatch.scoringFeatures.parentIds.asScala
+            val sortedParents = p(0).fmatch.scoringFeatures.parentIds
               .flatMap(StoredFeatureId.fromLong _)
               .flatMap(parentFid => parentMap.get(parentFid))
               .sorted(GeocodeServingFeatureOrdering)
@@ -403,7 +407,7 @@ class ResponseProcessor(
 
     var goodParses = if (req.woeRestrict.size > 0) {
       parses.filter(p =>
-        p.headOption.exists(f => req.woeRestrict.contains(f.fmatch.feature.woeType))
+        p.headOption.exists(f => f.fmatch.feature.woeTypeOption.exists(req.woeRestrict.has))
       )
     } else {
       parses
@@ -428,10 +432,10 @@ class ResponseProcessor(
 
     goodParses = goodParses.filter(p => p.headOption.exists(m => m.fmatch.scoringFeatures.canGeocode))
 
-    if (req.isSetAllowedSources()) {
-      val allowedSources = req.allowedSources.asScala
+    if (req.allowedSourcesIsSet) {
+      val allowedSources = req.allowedSources
       goodParses = goodParses.filter(p =>
-        p.headOption.exists(_.fmatch.feature.ids.asScala.exists(i => allowedSources.has(i.source)))
+        p.headOption.exists(_.fmatch.feature.ids.exists(i => allowedSources.has(i.source)))
       )
     }
 

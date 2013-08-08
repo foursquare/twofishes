@@ -30,8 +30,8 @@ trait Unsorted extends MaybeSorted
 // Parse = one particular interpretation of the query
 case class Parse[T <: MaybeSorted](
   fmatches: Seq[FeatureMatch],
-  scoringFeatures: InterpretationScoringFeatures = new InterpretationScoringFeatures(),
-  debugInfo: Option[InterpretationDebugInfo] = Some(new InterpretationDebugInfo())
+  scoringFeatures: InterpretationScoringFeatures.Builder.AllUnspecified = InterpretationScoringFeatures.newBuilder,
+  debugInfo: Option[InterpretationDebugInfo.Builder.AllUnspecified] = Some(InterpretationDebugInfo.newBuilder)
 ) extends Seq[FeatureMatch] {
   def apply(i: Int) = fmatches(i)
   def iterator = fmatches.iterator
@@ -44,8 +44,8 @@ case class Parse[T <: MaybeSorted](
       "%s, %s".format(name, cc)
     }).getOrElse("???")
     // god forgive this line of code
-    val id = this.headOption.toList.flatMap(f => Option(f.fmatch.feature.ids).map(_.asScala)).flatten.headOption
-      .map(fid => "%s:%s".format(fid.source, fid.id)).getOrElse("no:id")
+    val id = this.headOption.toList.flatMap(_.fmatch.feature.ids.headOption.map(
+      fid => "%s:%s".format(fid.source, fid.id))).getOrElse("no:id")
     "%s %s".format(id, name)
   }
 
@@ -90,9 +90,9 @@ object ParseUtils {
   }
 
   def boundsContains(f1: GeocodeFeature, f2: GeocodeFeature) = {
-    Option(f1.geometry.bounds).exists(bb =>
+    f1.geometry.boundsOption.exists(bb =>
       GeoTools.boundsContains(bb, f2.geometry.center)) ||
-    Option(f2.geometry.bounds).exists(bb =>
+    f2.geometry.boundsOption.exists(bb =>
       GeoTools.boundsContains(bb, f1.geometry.center))
   }
 

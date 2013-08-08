@@ -20,10 +20,10 @@ class GeocodeRequestDispatcher(
     Stats.incr("geocode-requests", 1)
 
     if (req.responseIncludes == null || req.responseIncludes.isEmpty) {
-      req.setResponseIncludes(List(ResponseIncludes.DISPLAY_NAME).asJava)
+      req.setResponseIncludes(List(ResponseIncludes.DISPLAY_NAME))
     } else {
       req.setResponseIncludes(
-        (ResponseIncludes.DISPLAY_NAME :: req.responseIncludes.asScala.toList).asJava
+        (ResponseIncludes.DISPLAY_NAME :: req.responseIncludes.toList)
       )
     }
 
