@@ -11,23 +11,24 @@ object GeocodeRequestUtils {
       req.responseIncludes.has(ResponseIncludes.EVERYTHING)
   }
 
-  def shouldFetchPolygon(req: CommonGeocodeRequestParams) = 
+  def shouldFetchPolygon(req: CommonGeocodeRequestParams) =
     responseIncludes(req, ResponseIncludes.WKB_GEOMETRY) ||
     responseIncludes(req, ResponseIncludes.WKT_GEOMETRY) ||
     responseIncludes(req, ResponseIncludes.REVGEO_COVERAGE)
 
   def geocodeRequestToCommonRequestParams(req: GeocodeRequest): CommonGeocodeRequestParams = {
-    new CommonGeocodeRequestParams()
-      .setDebug(req.debug)
-      .setWoeHint(req.woeHint)
-      .setWoeRestrict(req.woeRestrict)
-      .setCc(req.cc)
-      .setLang(req.lang)
-      .setResponseIncludes(req.responseIncludes)
-      .setAllowedSources(req.allowedSources)
-      .setLlHint(req.ll)
-      .setBounds(req.bounds)
-      .setMaxInterpretations(req.maxInterpretations)
+    CommonGeocodeRequestParams.newBuilder
+      .debug(req.debug)
+      .woeHint(req.woeHint)
+      .woeRestrict(req.woeRestrict)
+      .cc(req.ccOption)
+      .lang(req.langOption)
+      .responseIncludes(req.responseIncludes)
+      .allowedSources(req.allowedSources)
+      .llHint(req.llOption)
+      .bounds(req.boundsOption)
+      .maxInterpretations(req.maxInterpretationsOption)
+      .result
   }
 
 }

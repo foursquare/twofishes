@@ -96,7 +96,7 @@ class GeocoderImpl(
       if ((tokens.size - i) == 0) {
         featureMatches.flatMap(f => buildParse(f, NullParse))
       } else {
-        val subParses = cache.apply(tokens.size - i)
+        val subParses = cache.get(tokens.size - i)
 
         val subParsesByCountry: Map[String, SortedParseSeq] = subParses.groupBy(_.countryCode)
         val featuresByCountry: Map[String, Seq[FeatureMatch]] = featureMatches.groupBy(_.fmatch.feature.cc)
@@ -205,7 +205,7 @@ class GeocoderImpl(
     val cache = generateParses(tokens)
 
     val validParseCaches: Iterable[(Int, SortedParseSeq)] =
-      cache.filter(_._2.nonEmpty)
+      cache.asScala.filter(_._2.nonEmpty)
 
     if (validParseCaches.size > 0) {
       val longest = validParseCaches.map(_._1).max

@@ -7,6 +7,7 @@ import com.foursquare.twofishes.util.Lists.Implicits._
 import com.google.common.geometry.S2CellId
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTReader}
+import java.nio.ByteBuffer
 import org.bson.types.ObjectId
 import org.specs2.mutable._
 import scala.collection.JavaConverters._
@@ -38,8 +39,8 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
     (for {
       id <- ids
       feature <- idMap.values.filter(servingFeature =>
-        id == servingFeature.feature.slug ||
-        servingFeature.feature.ids.asScala.exists(fid => "%s:%s".format(fid.source, fid.id) == id)
+        id == servingFeature.feature.slugOrNull ||
+        servingFeature.feature.ids.exists(fid => "%s:%s".format(fid.source, fid.id) == id)
       )
     } yield {
       (id -> feature)
@@ -62,17 +63,18 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
     cells.asScala.foreach(cellid => {
       val s2shape = ShapefileS2Util.fullGeometryForCell(cellid)
       val bucket = s2map.getOrElseUpdate(cellid.id, new ListBuffer[CellGeometry]())
-      val cellGeometry = new CellGeometry()
+      val cellGeometryBuilder = CellGeometry.newBuilder
       val recordShape = geom.buffer(0)
       if (recordShape.contains(s2shape)) {
-        cellGeometry.setFull(true)
+        cellGeometryBuilder.full(true)
       } else {
-        cellGeometry.setWkbGeometry(wkbWriter.write(s2shape.intersection(recordShape)))
+        cellGeometryBuilder.wkbGeometry(
+          ByteBuffer.wrap(wkbWriter.write(s2shape.intersection(recordShape))))
       }
-      cellGeometry.setWoeType(woeType)
-      cellGeometry.setOid(id.legacyObjectId.toByteArray())
-      cellGeometry.setLongId(id.longId)
-      bucket += cellGeometry
+      cellGeometryBuilder.woeType(woeType)
+      cellGeometryBuilder.oid(ByteBuffer.wrap(id.legacyObjectId.toByteArray()))
+      cellGeometryBuilder.longId(id.longId)
+      bucket += cellGeometryBuilder.result
     })
   }
 
@@ -95,45 +97,46 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
     lng: Double,
     woeType: YahooWoeType,
     population: Option[Int] = None,
-    cc: String = "US"
-  ): GeocodeServingFeature = {
+    cc: String = "US",
+    slug: Option[String] = None
+  ): GeocodeServingFeature.Mutable = {
     val id = idCounter
     idCounter += 1
     val fid = GeonamesId(id)
 
-    val center = new GeocodePoint()
-    center.setLat(lat)
-    center.setLng(lng)
+    val center = GeocodePoint(lat, lng)
 
-    val geometry = new FeatureGeometry()
-    geometry.setCenter(center)
+    val geometry = FeatureGeometry.newBuilder.center(center).result
 
-    val feature = new GeocodeFeature()
-    feature.setGeometry(geometry)
-    feature.setCc(cc)
-    feature.setWoeType(woeType)
-    feature.setLongId(fid.longId)
+    val featureBuilder = GeocodeFeature.newBuilder
+      .geometry(geometry)
+      .cc(cc)
+      .woeType(woeType)
+      .longId(fid.longId)
+      .slug(slug)
 
-    val featureName = new FeatureName()
-    featureName.setName(name)
-    featureName.setLang("en")
-    featureName.setFlags(List(FeatureNameFlags.PREFERRED).asJava)
-    feature.setNames(List(featureName).asJava)
+    val featureName = FeatureName.newBuilder
+      .name(name)
+      .lang("en")
+      .flags(List(FeatureNameFlags.PREFERRED))
+      .result
+    featureBuilder.names(List(featureName))
 
-    feature.setIds(List(fid.thriftFeatureId).asJava)
+    featureBuilder.ids(List(fid.thriftFeatureId))
 
-    val scoringFeatures = new ScoringFeatures()
-    scoringFeatures.setParentIds(parents.map(_.longId: java.lang.Long).asJava)
-    population.foreach(p => scoringFeatures.setPopulation(p))
+    val scoringFeaturesBuilder = ScoringFeatures.newBuilder
+    scoringFeaturesBuilder.parentIds(parents.map(_.longId))
+    scoringFeaturesBuilder.population(population)
 
-    val servingFeature = new GeocodeServingFeature()
-    servingFeature.setScoringFeatures(scoringFeatures)
-    servingFeature.setLongId(fid.longId)
-    servingFeature.setFeature(feature)
+    val servingFeatureBuilder = GeocodeServingFeature.newBuilder
+      .scoringFeatures(scoringFeaturesBuilder.result)
+      .longId(fid.longId)
+      .feature(featureBuilder.result)
 
     nameMap(name.toLowerCase) = fid :: nameMap.getOrElse(name.toLowerCase, Nil)
-    idMap(fid) = servingFeature
 
+    val servingFeature = servingFeatureBuilder.resultMutable
+    idMap(fid) = servingFeature
     servingFeature
   }
 }
@@ -188,51 +191,53 @@ class GeocoderSpec extends Specification {
   "one feature geocodes succeeds with matching data" in {
     val store = buildRegoPark()
 
-    val req = new GeocodeRequest().setQuery("Rego Park")
+    val req = GeocodeRequest.newBuilder.query("Rego Park").result
 
-    val r = new GeocodeRequestDispatcher(store, req).geocode()
+    val r = new GeocodeRequestDispatcher(store).geocode(req)
     r.interpretations.size must_== 1
-    val interp = r.interpretations.asScala(0)
+    val interp = r.interpretations(0)
     interp.what must_== ""
     interp.feature.geometry.center.lat must_== 5
     interp.feature.geometry.center.lng must_== 6
-    interp.feature.displayName must_== "Rego Park, New York, US"
-    interp.feature.woeType must_== YahooWoeType.TOWN
-    interp.where must_== "rego park"
-    interp.parents mustEqual null
+    interp.feature.displayNameOrNull must_== "Rego Park, New York, US"
+    interp.feature.woeTypeOrNull must_== YahooWoeType.TOWN
+    interp.whereOrNull must_== "rego park"
+    interp.parents.isEmpty must_== true
   }
 
   "everything returns parents" in {
     val store = buildRegoPark()
 
-    val req = new GeocodeRequest().setQuery("Rego Park")
-    req.setResponseIncludes(List(ResponseIncludes.EVERYTHING).asJava)
+    val req = GeocodeRequest.newBuilder.query("Rego Park")
+      .responseIncludes(List(ResponseIncludes.EVERYTHING))
+      .result
 
-    val r = new GeocodeRequestDispatcher(store, req).geocode()
+    val r = new GeocodeRequestDispatcher(store).geocode(req)
     r.interpretations.size must_== 1
-    val interp = r.interpretations.asScala(0)
+    val interp = r.interpretations(0)
     interp.parents.size mustEqual 2
   }
 
   "don't include matching country in displayName" in {
     val store = buildRegoPark()
 
-    val req = new GeocodeRequest().setQuery("Rego Park")
-    req.setCc("US")
+    val req = GeocodeRequest.newBuilder.query("Rego Park")
+      .cc("US")
+      .result
 
-    val r2 = new GeocodeRequestDispatcher(store, req).geocode()
+    val r2 = new GeocodeRequestDispatcher(store).geocode(req)
     r2.interpretations.size must_== 1
-    val interp2 = r2.interpretations.asScala(0)
-    interp2.feature.displayName must_== "Rego Park, New York"
+    val interp2 = r2.interpretations(0)
+    interp2.feature.displayNameOrNull must_== "Rego Park, New York"
   }
 
   "hierarchical feature geocodes succeeds with matching data" in {
     val store = buildRegoPark()
 
-    val req = new GeocodeRequest().setQuery("Rego Park, New York")
-    val r = new GeocodeRequestDispatcher(store, req).geocode()
+    val req = GeocodeRequest.newBuilder.query("Rego Park, New York").result
+    val r = new GeocodeRequestDispatcher(store).geocode(req)
     r.interpretations.size must_== 1
-    val interp = r.interpretations.asScala(0)
+    val interp = r.interpretations(0)
     interp.what aka r.toString must_== ""
     interp.feature.geometry.center.lat must_== 5
     interp.feature.geometry.center.lng must_== 6
@@ -242,11 +247,11 @@ class GeocoderSpec extends Specification {
   "splitting geocodes succeeds with matching data" in {
     val store = buildRegoPark()
 
-    val req = new GeocodeRequest().setQuery("Pizza Rego Park, New York")
-    val r = new GeocodeRequestDispatcher(store, req).geocode()
+    val req = GeocodeRequest.newBuilder.query("Pizza Rego Park, New York").result
+    val r = new GeocodeRequestDispatcher(store).geocode(req)
 
     r.interpretations.size must_== 1
-    val interp = r.interpretations.asScala(0)
+    val interp = r.interpretations(0)
     interp.what must_== "pizza"
     interp.feature.geometry.center.lat must_== 5
     interp.feature.geometry.center.lng must_== 6
@@ -256,8 +261,8 @@ class GeocoderSpec extends Specification {
   "geocodes fails without matching data" in {
     val store = buildRegoPark()
 
-    val req = new GeocodeRequest().setQuery("Berlin, Germany")
-    val r = new GeocodeRequestDispatcher(store, req).geocode()
+    val req = GeocodeRequest.newBuilder.query("Berlin, Germany").result
+    val r = new GeocodeRequestDispatcher(store).geocode(req)
     r.interpretations.size must_== 0
   }
 
@@ -265,12 +270,14 @@ class GeocoderSpec extends Specification {
     val store = buildRegoPark()
     addLosAngeles(store)
 
-    val req = new GeocodeRequest().setQuery("Rego Park, California")
-    req.setDebug(4)
-    val r = new GeocodeRequestDispatcher(store, req).geocode()
+    val req = GeocodeRequest.newBuilder.query("Rego Park, California")
+      .debug(4)
+      .result
+
+    val r = new GeocodeRequestDispatcher(store).geocode(req)
     r.interpretations must haveSize(1)
     r.interpretations.size must_== 1
-    val interp = r.interpretations.asScala(0)
+    val interp = r.interpretations(0)
     interp.what must_== "rego park"
     interp.feature.geometry.center.lat must_== 10
     interp.feature.geometry.center.lng must_== 11
@@ -280,20 +287,21 @@ class GeocoderSpec extends Specification {
   "everything request fills parents" in {
     val store = buildRegoPark()
 
-    val req = new GeocodeRequest().setQuery("Rego Park, New York")
-    req.setResponseIncludes(List(ResponseIncludes.EVERYTHING).asJava)
-    val r = new GeocodeRequestDispatcher(store, req).geocode()
+    val req = GeocodeRequest.newBuilder.query("Rego Park, New York")
+      .responseIncludes(List(ResponseIncludes.EVERYTHING))
+      .result
+    val r = new GeocodeRequestDispatcher(store).geocode(req)
     r.interpretations.size must_== 1
-    val interp = r.interpretations.asScala(0)
+    val interp = r.interpretations(0)
     interp.what must_== ""
     interp.where must_== "rego park new york"
     interp.feature.geometry.center.lat must_== 5
     interp.feature.geometry.center.lng must_== 6
 
-    val parents = interp.parents.asScala
+    val parents = interp.parents
     parents.size must_== 2
-    parents(0).name mustEqual "New York"
-    parents(1).name mustEqual "US"
+    parents(0).nameOrNull mustEqual "New York"
+    parents(1).nameOrNull mustEqual "US"
   }
 
  "full request fills parents" in {
@@ -301,17 +309,18 @@ class GeocoderSpec extends Specification {
     addParisTX(store)
     addParisFrance(store)
 
-    val req = new GeocodeRequest().setQuery("Paris")
-    req.setMaxInterpretations(2)
-    req.setDebug(1)
-    val r = new GeocodeRequestDispatcher(store, req).geocode()
+    val req = GeocodeRequest.newBuilder.query("Paris")
+      .maxInterpretations(2)
+      .debug(1)
+      .result
+    val r = new GeocodeRequestDispatcher(store).geocode(req)
     r.interpretations.size must_== 2
-    val interp1 = r.interpretations.asScala(0)
+    val interp1 = r.interpretations(0)
     interp1.what must_== ""
     interp1.where must_== "paris"
     interp1.feature.cc must_== "FR"
 
-    val interp2 = r.interpretations.asScala(1)
+    val interp2 = r.interpretations(1)
     interp2.what must_== ""
     interp2.where must_== "paris"
     interp2.feature.cc must_== "US"
@@ -320,10 +329,10 @@ class GeocoderSpec extends Specification {
   "everything after connector geocodes" in {
     val store = buildRegoPark()
 
-    val req = new GeocodeRequest().setQuery("Pizza near Rego Park, New York")
-    val r = new GeocodeRequestDispatcher(store, req).geocode()
+    val req = GeocodeRequest.newBuilder.query("Pizza near Rego Park, New York").result
+    val r = new GeocodeRequestDispatcher(store).geocode(req)
     r.interpretations.size must_== 1
-    val interp = r.interpretations.asScala(0)
+    val interp = r.interpretations(0)
     interp.what must_== "pizza"
     interp.where must_== "rego park new york"
   }
@@ -331,8 +340,8 @@ class GeocoderSpec extends Specification {
   "not everything after connector geocodes" in {
     val store = buildRegoPark()
 
-    val req = new GeocodeRequest().setQuery("Pizza near lkjdsfjksl, New York")
-    val r = new GeocodeRequestDispatcher(store, req).geocode()
+    val req = GeocodeRequest.newBuilder.query("Pizza near lkjdsfjksl, New York").result
+    val r = new GeocodeRequestDispatcher(store).geocode(req)
     r.interpretations.size must_== 0
   }
 
@@ -340,60 +349,59 @@ class GeocoderSpec extends Specification {
     val store = buildRegoPark()
     addRego(store)
 
-    val req = new GeocodeRequest().setQuery("Rego")
-    req.setAutocomplete(true)
-    req.setDebug(2)
+    val req = GeocodeRequest.newBuilder.query("Rego")
+      .autocomplete(true)
+      .debug(2)
+      .result
 
     store.getIdsByNamePrefix("rego") must haveSize(2)
 
-    val r = new GeocodeRequestDispatcher(store, req).geocode()
+    val r = new GeocodeRequestDispatcher(store).geocode(req)
     r.interpretations must haveSize(2)
 
-    var interp = r.interpretations.asScala(0)
+    var interp = r.interpretations(0)
     interp.what must_== ""
     interp.where must_== "rego"
-    interp.feature.highlightedName must_== "<b>Rego</b> Park, New York, US"
+    interp.feature.highlightedNameOrNull must_== "<b>Rego</b> Park, New York, US"
 
-    interp = r.interpretations.asScala(1)
+    interp = r.interpretations(1)
     interp.what must_== ""
     interp.where must_== "rego"
-    interp.feature.highlightedName must_== "<b>Rego</b>, US"
+    interp.feature.highlightedNameOrNull must_== "<b>Rego</b>, US"
   }
 
   "autocomplete 2" in {
     val store = buildRegoPark()
     addRego(store)
 
-    val req = new GeocodeRequest().setQuery("Rego P")
-    req.setAutocomplete(true)
+    val req = GeocodeRequest.newBuilder.query("Rego P").autocomplete(true).result
 
     // validating our test harness
     store.getIdsByNamePrefix("rego p").size must_== 1
 
-    val r = new GeocodeRequestDispatcher(store, req).geocode()
+    val r = new GeocodeRequestDispatcher(store).geocode(req)
     r.interpretations.size must_== 1
 
-    val interp = r.interpretations.asScala(0)
+    val interp = r.interpretations(0)
     interp.what must_== ""
     interp.where must_== "rego p"
-    interp.feature.highlightedName must_== "<b>Rego P</b>ark, New York, US"
+    interp.feature.highlightedNameOrNull must_== "<b>Rego P</b>ark, New York, US"
   }
 
   "autocomplete 3" in {
     val store = buildRegoPark()
     addRego(store)
 
-    val req = new GeocodeRequest().setQuery("Rego Park New")
-    req.setAutocomplete(true).setDebug(1)
+    val req = GeocodeRequest.newBuilder.query("Rego Park New").autocomplete(true).debug(1).result
 
     // validating our test harness
     store.getIdsByNamePrefix("rego park").size must_== 1
     store.getIdsByNamePrefix("new").size must_== 1
 
-    val r = new GeocodeRequestDispatcher(store, req).geocode()
-    r.interpretations.size aka r.debugLines.asScala.mkString("\n") must_== 1
+    val r = new GeocodeRequestDispatcher(store).geocode(req)
+    r.interpretations.size aka r.debugLines.mkString("\n") must_== 1
 
-    // val interp = r.interpretations.asScala(0)
+    // val interp = r.interpretations(0)
     // interp.what must_== ""
     // interp.where must_== "rego park new"
     // interp.feature.highlightedName must_== "<b>Rego Park, New</b> York, US"
@@ -404,18 +412,18 @@ class GeocoderSpec extends Specification {
     val parisTownRecord = store.addGeocode("Paris", Nil, 5, 6, YahooWoeType.TOWN, cc="FR")
     val parisAdmin1Record = store.addGeocode("Paris", Nil, 10, 11, YahooWoeType.ADMIN1, cc="FR")
 
-    val req = new GeocodeRequest().setQuery("paris")
-    req.setWoeRestrict(List(YahooWoeType.ADMIN1).asJava)
+    val req = GeocodeRequest.newBuilder.query("paris").woeRestrict(List(YahooWoeType.ADMIN1)).result
 
-    val r = new GeocodeRequestDispatcher(store, req).geocode()
+    val r = new GeocodeRequestDispatcher(store).geocode(req)
     r.interpretations.size must_== 1
-    val interp = r.interpretations.asScala(0)
+    val interp = r.interpretations(0)
     interp.feature.geometry.center.lat must_== 10
     interp.feature.geometry.center.lng must_== 11
 
-    req.setWoeRestrict(List(YahooWoeType.ADMIN2).asJava)
+    val req2 = req.mutableCopy
+    req2.woeRestrict_=(List(YahooWoeType.ADMIN2))
 
-    val r2 = new GeocodeRequestDispatcher(store, req).geocode()
+    val r2 = new GeocodeRequestDispatcher(store).geocode(req2)
     r2.interpretations.size must_== 0
   }
 
@@ -424,44 +432,45 @@ class GeocoderSpec extends Specification {
     val parisTownRecord = store.addGeocode("Paris", Nil, 5, 6, YahooWoeType.TOWN, cc="FR")
     val parisAdmin1Record = store.addGeocode("Paris", Nil, 10, 11, YahooWoeType.ADMIN1, cc="FR")
 
-    val req = new GeocodeRequest().setQuery("paris")
-    req.setMaxInterpretations(2)
-    req.setWoeHint(List(YahooWoeType.ADMIN1).asJava)
+    val req = GeocodeRequest.newBuilder.query("paris")
+      .maxInterpretations(2)
+      .woeHint(List(YahooWoeType.ADMIN1))
+      .result
 
-    val r = new GeocodeRequestDispatcher(store, req).geocode()
+    val r = new GeocodeRequestDispatcher(store).geocode(req)
     r.interpretations.size must_== 2
-    val interp = r.interpretations.asScala(0)
+    val interp = r.interpretations(0)
     interp.feature.geometry.center.lat must_== 10
     interp.feature.geometry.center.lng must_== 11
   }
 
   "slug lookup works" in {
     val store = getStore
-    val parisTownRecord = store.addGeocode("Paris", Nil, 5, 6, YahooWoeType.TOWN, cc="FR")
-    parisTownRecord.feature.setSlug("paris-fr")
+    val parisTownRecord = store.addGeocode("Paris", Nil, 5, 6, YahooWoeType.TOWN,
+      cc="FR", slug=Some("paris-fr"))
 
-    val req = new GeocodeRequest().setSlug("paris-fr")
+    val req = GeocodeRequest.newBuilder.slug("paris-fr").result
 
-    val r = new GeocodeRequestDispatcher(store, req).geocode()
+    val r = new GeocodeRequestDispatcher(store).geocode(req)
     r.interpretations.size must_== 1
-    val interp = r.interpretations.asScala(0)
+    val interp = r.interpretations(0)
     interp.feature.geometry.center.lat must_== 5
     interp.feature.geometry.center.lng must_== 6
   }
 
   "bad slug lookup fails" in {
     val store = getStore
-    val parisTownRecord = store.addGeocode("Paris", Nil, 5, 6, YahooWoeType.TOWN, cc="FR")
-    parisTownRecord.feature.setSlug("paris-fr")
+    val parisTownRecord = store.addGeocode("Paris", Nil, 5, 6, YahooWoeType.TOWN,
+      cc="FR", slug = Some("paris-fr"))
 
-    val req = new GeocodeRequest().setSlug("paris")
+    val req = GeocodeRequest.newBuilder.slug("paris").result
 
-    val r = new GeocodeRequestDispatcher(store, req).geocode()
+    val r = new GeocodeRequestDispatcher(store).geocode(req)
     r.interpretations.size must_== 0
   }
 
   def getId(f: GeocodeServingFeature): StoredFeatureId = {
-    StoredFeatureId.fromThriftFeatureId(f.feature.ids.asScala(0)).get
+    StoredFeatureId.fromThriftFeatureId(f.feature.ids(0)).get
   }
 
   "reverse geocode" in {
@@ -482,20 +491,20 @@ class GeocoderSpec extends Specification {
       nyId
     )
 
-    val req = new GeocodeRequest().setLl(new GeocodePoint().setLat(48.7996273507997).setLng(2.43896484375))
+    var req = GeocodeRequest.newBuilder.ll(GeocodePoint(48.7996273507997, 2.43896484375)).result
     var r = new ReverseGeocoderImpl(store, req).reverseGeocode()
     r.interpretations.size must_== 1
-    r.interpretations.asScala(0).feature.name must_== "Paris"
+    r.interpretations(0).feature.nameOrNull must_== "Paris"
 
     // look up in kansas
-    req.setLl(new GeocodePoint().setLng(-97.822265625).setLat(38.06539235133249))
-    r = new ReverseGeocoderImpl(store, req).reverseGeocode()
+    var req2 = GeocodeRequest.newBuilder.ll(GeocodePoint(-97.822265625, 38.06539235133249)).result
+    r = new ReverseGeocoderImpl(store, req2).reverseGeocode()
     r.interpretations.size must_== 0
 
-    req.setLl(new GeocodePoint().setLat(40.74).setLng(-74))
-    r = new ReverseGeocoderImpl(store, req).reverseGeocode()
+    var req3 = GeocodeRequest.newBuilder.ll(GeocodePoint(40.74, -74)).result
+    r = new ReverseGeocoderImpl(store, req3).reverseGeocode()
     r.interpretations.size must_== 1
-    r.interpretations.asScala(0).feature.name must_== "New York"
+    r.interpretations(0).feature.nameOrNull must_== "New York"
   }
 
   // add a preferred name test

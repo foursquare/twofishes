@@ -7,6 +7,7 @@ import com.foursquare.twofishes.util.{NameUtils, StoredFeatureId}
 import com.foursquare.twofishes.util.NameUtils.BestNameMatch
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTWriter}
+import java.nio.ByteBuffer
 import org.bson.types.ObjectId
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._
@@ -23,13 +24,15 @@ object ResponseProcessor {
     debugLevel: Int,
     logger: MemoryLogger,
     interpretations: Seq[GeocodeInterpretation],
-    requestGeom: Option[Geometry]): GeocodeResponse = {
-    val responseBuilder = new GeocodeResponse()
-    responseBuilder.interpretations(interpretations)
+    requestGeom: Option[Geometry] = None): GeocodeResponse = {
+    val responseBuilder = GeocodeResponse.newBuilder
+      .interpretations(interpretations)
     if (debugLevel > 0) {
       responseBuilder.debugLines(logger.getLines)
-      val wktWriter = new WKTWriter
-      responseBuilder.requestWktGeometry(wktWriter.write(geom))
+      requestGeom.foreach(geom => {
+        val wktWriter = new WKTWriter
+        responseBuilder.requestWktGeometry(wktWriter.write(geom))
+      })
     }
     responseBuilder.result
   }
@@ -127,12 +130,15 @@ class ResponseProcessor(
       f: GeocodeFeature,
       parents: Seq[GeocodeServingFeature],
       parse: Option[Parse[Sorted]],
+      polygonMap: Map[StoredFeatureId, Geometry],
       numExtraParentsRequired: Int = 0,
       fillHighlightedName: Boolean = false
-    ) {
+    ): GeocodeFeature = {
     // set name
+    val mutableFeature = f.mutableCopy
+
     val name = NameUtils.bestName(f, Some(req.lang), false).map(_.name).getOrElse("")
-    f.setName(name)
+    mutableFeature.name_=(name)
 
     // rules
     // if you have a city parent, use it
@@ -148,7 +154,7 @@ class ResponseProcessor(
         parents.filter(p => p.feature.woeType == YahooWoeType.ADMIN1))
     }
 
-    val countryAbbrev: Option[String] = if (f.cc != req.cc) {
+    val countryAbbrev: Option[String] = if (f.cc != req.ccOption.getOrElse("XX")) {
       if (f.cc == "GB") {
         Some("UK")
       } else {
@@ -211,14 +217,14 @@ class ResponseProcessor(
           matchedNameParts ++= countryAbbrev.toList
           highlightedNameParts ++= countryAbbrev.toList
         }
-        f.setMatchedName(matchedNameParts.mkString(", "))
-        f.setHighlightedName(highlightedNameParts.mkString(", "))
+        mutableFeature.matchedName_=(matchedNameParts.mkString(", "))
+        mutableFeature.highlightedName_=(highlightedNameParts.mkString(", "))
       })
     }
 
     // possibly clear names
     val names = f.names
-    f.setNames(names.filter(n =>
+    mutableFeature.names_=(names.filter(n =>
       Option(n.flags).exists(_.contains(FeatureNameFlags.ABBREVIATION)) ||
       n.lang == req.lang ||
       n.lang == "en" ||
@@ -245,7 +251,27 @@ class ResponseProcessor(
     if (f.woeType != YahooWoeType.COUNTRY) {
       displayNameParts ++= countryAbbrev.toList
     }
-    f.setDisplayName(displayNameParts.mkString(", "))
+    mutableFeature.displayName_=(displayNameParts.mkString(", "))
+
+    if (responseIncludes(ResponseIncludes.WKT_GEOMETRY) ||
+        responseIncludes(ResponseIncludes.WKB_GEOMETRY)) {
+      for {
+        longId <- mutableFeature.longIdOption
+        fid <- StoredFeatureId.fromLong(longId)
+        geom <- polygonMap.get(fid)
+      } {
+        val mutableGeometry = mutableFeature.geometry.mutableCopy
+        val wkbWriter = new WKBWriter()
+        mutableGeometry.wkbGeometry_=(ByteBuffer.wrap(wkbWriter.write(geom)))
+        if (responseIncludes(ResponseIncludes.WKT_GEOMETRY)) {
+          val wktWriter = new WKTWriter()
+          mutableGeometry.wktGeometry_=(wktWriter.write(geom))
+        }
+        mutableFeature.geometry_=(mutableGeometry)
+      }
+    }
+
+    mutableFeature
   }
 
   // This function signature is gross
@@ -296,7 +322,7 @@ class ResponseProcessor(
         originalTokens.take(connectorStart).mkString(" ")
       } else {
         val whatTokens = tokens.take(tokens.size - parseLength)
-	(if (whatTokens.lastOption.exists(_ == "in")) {
+      	(if (whatTokens.lastOption.exists(_ == "in")) {
           whatTokens.dropRight(1)
         } else {
           whatTokens
@@ -322,31 +348,15 @@ class ResponseProcessor(
       } else {
         Nil
       }
-      fixFeature(feature, sortedParents, Some(p), fillHighlightedName=parseParams.tokens.size > 0)
 
       val interpBuilder = GeocodeInterpretation.newBuilder
         .what(what)
         .where(where)
-        .feature(feature)
-        .scores(p.scoringFeatures)
+        .feature(fixFeature(feature, sortedParents, Some(p), polygonMap, fillHighlightedName=parseParams.tokens.size > 0))
+        .scores(p.scoringFeatures.result)
 
       if (req.debug > 0) {
-        p.debugInfo.foreach(interpBuilder.debugInfo)
-      }
-
-      if (responseIncludes(ResponseIncludes.WKT_GEOMETRY) ||
-          responseIncludes(ResponseIncludes.WKB_GEOMETRY)) {
-        for {
-          fid <- StoredFeatureId.fromLong(fmatch.longId)
-          geom <- polygonMap.get(fid)
-        } {
-          val wkbWriter = new WKBWriter()
-          feature.geometry.setWkbGeometry(wkbWriter.write(geom))
-          if (responseIncludes(ResponseIncludes.WKT_GEOMETRY)) {
-            val wktWriter = new WKTWriter()
-            feature.geometry.setWktGeometry(wktWriter.write(geom))
-          }
-        }
+        // interpBuilder.debugInfo(p.debugInfo.map(_.result))
       }
 
       if (responseIncludes(ResponseIncludes.PARENTS)) {
@@ -354,9 +364,7 @@ class ResponseProcessor(
           val sortedParentParents = parentFeature.scoringFeatures.parentIds
             .flatMap(StoredFeatureId.fromLong _)
             .flatMap(parentFid => parentMap.get(parentFid)).sorted
-          val feature = parentFeature.feature
-          fixFeature(feature, sortedParentParents, None, fillHighlightedName=parseParams.tokens.size > 0)
-          feature
+          fixFeature(parentFeature.feature, sortedParentParents, None, polygonMap, fillHighlightedName=parseParams.tokens.size > 0)
         }))
       }
       interpBuilder.result
@@ -371,9 +379,9 @@ class ResponseProcessor(
       val ambiguousInterpretationsMap: Map[String, Seq[GeocodeInterpretation]] =
         interpretations.groupBy(interp => {
           if (dedupByMatchedName) {
-            interp.feature.matchedName
+            interp.feature.matchedNameOption.getOrElse("")
           } else {
-            interp.feature.displayName
+            interp.feature.displayNameOption.getOrElse("")
           }
         }).filter(_._2.size > 1)
       val ambiguousInterpretations: Iterable[GeocodeInterpretation] =
@@ -394,7 +402,7 @@ class ResponseProcessor(
               .flatMap(StoredFeatureId.fromLong _)
               .flatMap(parentFid => parentMap.get(parentFid))
               .sorted(GeocodeServingFeatureOrdering)
-            fixFeature(interp.feature, sortedParents, Some(p), 1)
+            fixFeature(interp.feature, sortedParents, Some(p), polygonMap, 1)
           })
         })
       }

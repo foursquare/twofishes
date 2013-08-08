@@ -12,35 +12,29 @@ import scalaj.collection.Implicits._
  */
 
 class GeocodeRequestDispatcher(
-  store: GeocodeStorageReadService,
-  req: GeocodeRequest) {
-  val logger = new MemoryLogger(req)
+  store: GeocodeStorageReadService) {
 
-  def geocode(): GeocodeResponse = {
+  def geocode(req: GeocodeRequest): GeocodeResponse = {
+    val logger = new MemoryLogger(req)
     Stats.incr("geocode-requests", 1)
+    val finalReq = req.mutable
 
-    if (req.responseIncludes == null || req.responseIncludes.isEmpty) {
-      req.setResponseIncludes(List(ResponseIncludes.DISPLAY_NAME))
-    } else {
-      req.setResponseIncludes(
-        (ResponseIncludes.DISPLAY_NAME :: req.responseIncludes.toList)
-      )
-    }
+    finalReq.responseIncludes_=(ResponseIncludes.DISPLAY_NAME :: req.responseIncludes.toList)
 
-    val query = Option(req.query).getOrElse("")
+    val query = req.queryOption.getOrElse("")
     val parseParams = new QueryParser(logger).parseQuery(query)
 
-    if (Option(req.slug).exists(_.nonEmpty)) {
+    if (req.slugOption.exists(_.nonEmpty)) {
       Stats.time("slug-geocode") {
-        new SlugGeocoderImpl(store, req, logger).doSlugGeocode(req.slug)
+        new SlugGeocoderImpl(store, finalReq, logger).doSlugGeocode(req.slugOption.getOrElse(""))
       }
     } else if (req.autocomplete) {
       Stats.time("autocomplete-geocode") {
-        new AutocompleteGeocoderImpl(store, req, logger).doAutocompleteGeocode(parseParams)
+        new AutocompleteGeocoderImpl(store, finalReq, logger).doAutocompleteGeocode(parseParams)
       }
     } else {
       Stats.time("geocode") {
-        new GeocoderImpl(store, req, logger).doNormalGeocode(parseParams)
+        new GeocoderImpl(store, finalReq, logger).doNormalGeocode(parseParams)
       }
     }
   }
