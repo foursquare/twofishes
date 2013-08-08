@@ -157,7 +157,7 @@ struct GeocodeFeature {
   //
   3: optional string name,
   4: optional string displayName,
-  5: optional YahooWoeType woeType,
+  5: optional YahooWoeType woeType = YahooWoeType.UNKNOWN,
   6: optional list<FeatureId> ids,
   7: optional list<FeatureName> names,
   8: optional list<string> attribution,

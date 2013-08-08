@@ -44,7 +44,7 @@ class AutocompleteGeocoderImpl(
   // Yet another huge hack because I don't know what name I hit
   def filterNonPrefExactAutocompleteMatch(ids: Seq[StoredFeatureId], phrase: String): Seq[StoredFeatureId] = {
     store.getByFeatureIds(ids).filter(f => {
-      f._2.feature.woeType == YahooWoeType.POSTAL_CODE ||
+      f._2.feature.woeTypeOption.exists(_ =? YahooWoeType.POSTAL_CODE) ||
       {
         val nameMatch = bestNameWithMatch(f._2.feature, Some(req.lang), false, Some(phrase))
         nameMatch.exists(nm =>
@@ -216,7 +216,7 @@ class AutocompleteGeocoderImpl(
       req.maxInterpretations
     }
   }
-  
+
   def downrankAirports(req: CommonGeocodeRequestParams, parse: Parse[Sorted], primaryFeature: GeocodeServingFeature, rest: Seq[FeatureMatch]): Option[(Int, String)] = {
     if (primaryFeature.feature.woeType == YahooWoeType.AIRPORT) {
       Some((-50000000, "downweight airports in autocomplete"))

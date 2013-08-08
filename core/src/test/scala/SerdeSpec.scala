@@ -44,7 +44,7 @@ class SerdeSpec extends Specification {
       test(TrivialSerde, Array[Byte]())
       test(TrivialSerde, Array[Byte](1))
 
-      test(ThriftSerde(Unit => new CellGeometry), (new CellGeometry).setFull(true))
+      test(ThriftSerde(Unit => CellGeometry.newBuilder.result), CellGeometry.newBuilder.full(true).result)
     }
   }
 }
