@@ -35,7 +35,7 @@ class QueryLogHttpHandler(
     val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
     val currentTime = System.nanoTime
 
-    val content = (queryMap.map({case (k, v) => {
+    val content = (queryMap.asScala.map({case (k, v) => {
       "Request has taken %dms so far\n%s".format((currentTime - v._2) / 1000000, v._1)
     }}).mkString("\n") +
     "\n-----------------------------------------\n" + "SLOW QUERIES\n"
@@ -116,7 +116,7 @@ class GeocodeServerImpl(store: GeocodeStorageReadService) extends Geocoder.Servi
   val queryFuturePool = FuturePool(StatsWrappedExecutors.create(24, 100, "geocoder"))
 
   def geocode(r: GeocodeRequest): Future[GeocodeResponse] = queryFuturePool {
-    new GeocodeRequestDispatcher(store, r).geocode()
+    new GeocodeRequestDispatcher(store).geocode(r)
   }
 
   def reverseGeocode(r: GeocodeRequest): Future[GeocodeResponse] = queryFuturePool {
@@ -157,16 +157,18 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
     handleQuery(request, geocoder.reverseGeocode)
 
   def handleBulkReverseGeocodeQuery(params: CommonGeocodeRequestParams, points: Seq[(Double, Double)]) = {
-    val request = new BulkReverseGeocodeRequest()
-    request.setParams(params)
-    request.setLatlngs(points.map(ll => new GeocodePoint(ll._1, ll._2)))
+    val request = BulkReverseGeocodeRequest.newBuilder
+      .params(params)
+      .latlngs(points.map(ll => GeocodePoint(ll._1, ll._2)))
+      .result
     handleQuery(request, geocoder.bulkReverseGeocode)
   }
 
   def handleBulkSlugLookupQuery(params: CommonGeocodeRequestParams, slugs: Seq[String]) = {
-    val request = new BulkSlugLookupRequest()
-    request.setParams(params)
-    request.setSlugs(slugs)
+    val request = BulkSlugLookupRequest.newBuilder
+      .params(params)
+      .slugs(slugs)
+      .result
     handleQuery(request, geocoder.bulkSlugLookup)
   }
 
@@ -180,7 +182,7 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
       val serializer = new TSerializer(new TSimpleJSONProtocol.Factory());
       val json = serializer.toString(geocode);
 
-      //"longId":72057594044179937 
+      //"longId":72057594044179937
       // javascript can't deal with longs, so we hack it to be a string
       val fixedJson = """"longId":(\d+)""".r.replaceAllIn(json, m => "\"longId\":\"%s\"".format(m.group(1)))
 
@@ -201,66 +203,64 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
   }
 
   def parseGeocodeRequest(params: Map[String, Seq[String]]): GeocodeRequest = {
-    val request = new GeocodeRequest()
-    params.get("query").foreach(_.headOption.foreach(request.setQuery))
-    params.get("slug").foreach(_.headOption.foreach(request.setSlug))
+    def getOpt(s: String): Option[String] = params.get(s).flatMap(_.headOption)
 
-    params.get("lang").foreach(_.headOption.foreach(v =>
-      request.setLang(v)))
-    params.get("cc").foreach(_.headOption.foreach(v =>
-      request.setCc(v)))
-    params.get("debug").foreach(_.headOption.foreach(v =>
-      request.setDebug(v.toInt)))
-    params.get("autocomplete").foreach(_.headOption.foreach(v =>
-      request.setAutocomplete(v.toBoolean)))
-    params.get("ll").foreach(_.headOption.foreach(v => {
+    val ll = getOpt("ll").map(v => {
       val ll = v.split(",").toList
-      request.setLl(new GeocodePoint(ll(0).toDouble, ll(1).toDouble))
-    }))
-    params.get("woeHint").foreach(_.headOption.foreach(hintStr => {
-      val hints = hintStr.split(",").map(i =>
-        if (Helpers.TryO(i.toInt).isDefined) {
-          YahooWoeType.findByValue(i.toInt)
-        } else {
-          YahooWoeType.valueOf(i)
-        }
-      )
-      request.setWoeHint(hints.toList)
-    }))
-    params.get("woeRestrict").foreach(_.headOption.foreach(hintStr => {
-      val hints = hintStr.split(",").map(i =>
-        if (Helpers.TryO(i.toInt).isDefined) {
-          YahooWoeType.findByValue(i.toInt)
-        } else {
-          YahooWoeType.valueOf(i)
-        }
-      )
-      request.setWoeRestrict(hints.toList)
-    }))
-    params.get("radius").foreach(_.headOption.foreach(v =>
-      request.setRadius(v.toInt)))
-    params.get("maxInterpretations").foreach(_.headOption.foreach(v =>
-      request.setMaxInterpretations(v.toInt)))
-    params.get("allowedSources").foreach(_.headOption.foreach(str => {
-      request.setAllowedSources(str.split(",").toList)
-    }))
-    params.get("responseIncludes").foreach(_.headOption.foreach(str => {
-      request.setResponseIncludes(str.split(",").toList.map(i => {
-        if (Helpers.TryO(i.toInt).isDefined) {
-          ResponseIncludes.findByValue(i.toInt)
-        } else {
-          ResponseIncludes.valueOf(i)
-        }
-      }))
-    }))
+      GeocodePoint(ll(0).toDouble, ll(1).toDouble)
+    })
 
-    request
+    val woeHint = getOpt("woeHint").toList.flatMap(hintStr => {
+      hintStr.split(",").map(i =>
+        if (Helpers.TryO(i.toInt).isDefined) {
+          YahooWoeType.findByIdOrNull(i.toInt)
+        } else {
+          YahooWoeType.findByNameOrNull(i)
+        }
+      )
+    })
+
+    val woeRestrict = getOpt("woeRestrict").toList.flatMap(hintStr => {
+      hintStr.split(",").map(i =>
+        if (Helpers.TryO(i.toInt).isDefined) {
+          YahooWoeType.findByIdOrNull(i.toInt)
+        } else {
+          YahooWoeType.findByNameOrNull(i)
+        }
+      )
+    })
+
+    val responseIncludes = getOpt("responseIncludes").toList.flatMap(str => {
+      str.split(",").toList.map(i => {
+        if (Helpers.TryO(i.toInt).isDefined) {
+          ResponseIncludes.findByIdOrNull(i.toInt)
+        } else {
+          ResponseIncludes.findByNameOrNull(i)
+        }
+      })
+    })
+
+    GeocodeRequest.newBuilder
+      .query(getOpt("query"))
+      .slug(getOpt("slug"))
+      .lang(getOpt("lang"))
+      .cc(getOpt("cc"))
+      .debug(getOpt("debug").map(_.toInt))
+      .autocomplete(getOpt("autocomplete").map(_.toBoolean))
+      .ll(ll)
+      .radius(getOpt("radius").map(_.toInt))
+      .maxInterpretations(getOpt("maxInterpretations").map(_.toInt))
+      .allowedSources(getOpt("allowedSources").toList.flatMap(_.split(",")))
+      .woeHint(woeHint)
+      .woeRestrict(woeRestrict)
+      .responseIncludes(responseIncludes)
+      .result
   }
 
   def apply(request: HttpRequest) = {
     // This is how you parse request parameters
     val queryString = new QueryStringDecoder(request.getUri())
-    val params = queryString.getParameters().mapValues(_).toMap
+    val params = queryString.getParameters().asScala.mapValues(_.asScala)
     val path = queryString.getPath()
 
     if (path.startsWith("/static/")) {
@@ -277,7 +277,7 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
         response
       })
     } else {
-      val request = parseGeocodeRequest(params)
+      val request = parseGeocodeRequest(params.toMap)
 
       val commonParams = GeocodeRequestUtils.geocodeRequestToCommonRequestParams(request)
       if (params.getOrElse("method", Nil).has("bulkrevgeo")) {
@@ -287,7 +287,7 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
         }))
       } else if (params.getOrElse("method", Nil).has("bulksluglookup")) {
         handleBulkSlugLookupQuery(commonParams, params.getOrElse("slug", Nil))
-      } else if (request.query == null && request.slug == null) {
+      } else if (request.queryOption.isEmpty && request.slugOption.isEmpty) {
         handleReverseGeocodeQuery(request)
       } else {
         handleGeocodeQuery(request)
@@ -311,46 +311,46 @@ object ServerStore {
   }
 }
 
-object GeocodeThriftServer extends Application {
-  class GeocodeServer(store: GeocodeStorageReadService) extends Geocoder.Iface {
-    override def geocode(request: GeocodeRequest): GeocodeResponse = {
-      Stats.incr("geocode-requests", 1)
-      new GeocodeRequestDispatcher(store, request).geocode()
-    }
+// object GeocodeThriftServer extends Application {
+//   class GeocodeServer(store: GeocodeStorageReadService) extends Geocoder.Iface {
+//     override def geocode(request: GeocodeRequest): GeocodeResponse = {
+//       Stats.incr("geocode-requests", 1)
+//       new GeocodeRequestDispatcher(store).geocode(request)
+//     }
 
-    override def bulkReverseGeocode(request: BulkReverseGeocodeRequest): BulkReverseGeocodeResponse = {
-      Stats.incr("bulk-geocode-requests", 1)
-      new BulkReverseGeocoderImpl(store, request).reverseGeocode()
-    }
+//     override def bulkReverseGeocode(request: BulkReverseGeocodeRequest): BulkReverseGeocodeResponse = {
+//       Stats.incr("bulk-geocode-requests", 1)
+//       new BulkReverseGeocoderImpl(store, request).reverseGeocode()
+//     }
 
-    override def bulkSlugLookup(request: BulkSlugLookupRequest): BulkSlugLookupResponse = {
-      Stats.incr("bulk-slug-lookups", 1)
-      new BulkSlugLookupImpl(store, request).slugLookup()
-    }
+//     override def bulkSlugLookup(request: BulkSlugLookupRequest): BulkSlugLookupResponse = {
+//       Stats.incr("bulk-slug-lookups", 1)
+//       new BulkSlugLookupImpl(store, request).slugLookup()
+//     }
 
-    override def reverseGeocode(request: GeocodeRequest): GeocodeResponse = {
-      Stats.incr("geocode-requests", 1)
-      new ReverseGeocoderImpl(store, request).reverseGeocode()
-    }
-  }
+//     override def reverseGeocode(request: GeocodeRequest): GeocodeResponse = {
+//       Stats.incr("geocode-requests", 1)
+//       new ReverseGeocoderImpl(store, request).reverseGeocode()
+//     }
+//   }
 
-  override def main(args: Array[String]) {
-    try {
-      val config = new GeocodeServerConfig(args)
+//   override def main(args: Array[String]) {
+//     try {
+//       val config = new GeocodeServerConfig(args)
 
-      val serverTransport = new TServerSocket(config.thriftServerPort)
-      val processor = new Geocoder.Processor(new GeocodeServer(ServerStore.getStore(config)))
-      val protFactory = new TBinaryProtocol.Factory(true, true)
-      val server = new TThreadPoolServer(processor, serverTransport, protFactory)
+//       val serverTransport = new TServerSocket(config.thriftServerPort)
+//       val processor = new Geocoder.Processor(new GeocodeServer(ServerStore.getStore(config)))
+//       val protFactory = new TBinaryProtocol.Factory(true, true)
+//       val server = new TThreadPoolServer(processor, serverTransport, protFactory)
 
-      println("serving vanilla thrift on port %d".format(config.thriftServerPort))
+//       println("serving vanilla thrift on port %d".format(config.thriftServerPort))
 
-      server.serve();
-    } catch {
-      case x: Exception => x.printStackTrace();
-    }
-  }
-}
+//       server.serve();
+//     } catch {
+//       case x: Exception => x.printStackTrace();
+//     }
+//   }
+// }
 
 object GeocodeFinagleServer {
   def main(args: Array[String]) {

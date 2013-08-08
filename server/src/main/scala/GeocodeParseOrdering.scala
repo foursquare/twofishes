@@ -33,9 +33,9 @@ class GeocodeParseOrdering(
       def modifySignal(value: Int, debug: String) {
         if (req.debug > 0) {
           logger.ifDebug("%s: %s + %s = %s", debug, signal, value, signal + value)
-          parse.debugInfo.foreach(_.addToScoreComponents(
-            new DebugScoreComponent(debug, value)
-          ))
+          // parse.debugInfo.foreach(_.addToScoreComponents(
+          //   new DebugScoreComponent(debug, value)
+          // ))
         }
         signal += value
       }
@@ -50,7 +50,7 @@ class GeocodeParseOrdering(
         modifySignal(-100000000, "downweighting dupe-feature parse")
       }
 
-      if (primaryFeature.feature.geometry.bounds != null) {
+      if (primaryFeature.feature.geometry.boundsOption.nonEmpty) {
         modifySignal(1000, "promoting feature with bounds")
       }
 
@@ -64,12 +64,12 @@ class GeocodeParseOrdering(
       modifySignal(-5000 * parse.length, "parse length boost")
 
       // Matching country hint is good
-      if (Option(req.cc).exists(_ == primaryFeature.feature.cc)) {
+      if (req.ccOption.exists(_ == primaryFeature.feature.cc)) {
         modifySignal(10000, "country code match")
       }
 
-      val attributes = Option(primaryFeature.feature.attributes)
-      val scalerank = attributes.flatMap(a => Option(a.scalerank))
+      val attributes = primaryFeature.feature.attributesOption
+      val scalerank = attributes.flatMap(_.scalerankOption)
       scalerank.foreach(rank => {
         if (rank > 0) {
           // modifySignal((20 - rank) * 1000000, "exponential scale rank increase")
@@ -77,8 +77,8 @@ class GeocodeParseOrdering(
       })
 
       def distancePenalty(ll: GeocodePoint) {
-        val distance = if (primaryFeature.feature.geometry.bounds != null) {
-          GeoTools.distanceFromPointToBounds(ll, primaryFeature.feature.geometry.bounds)
+        val distance = if (primaryFeature.feature.geometry.boundsOption.nonEmpty) {
+          GeoTools.distanceFromPointToBounds(ll, primaryFeature.feature.geometry.boundsOrThrow)
         } else {
           GeoTools.getDistance(ll.lat, ll.lng,
             primaryFeature.feature.geometry.center.lat,
@@ -92,8 +92,8 @@ class GeocodeParseOrdering(
         }
       }
 
-      val llHint = Option(req.llHint)
-      val boundsHint = Option(req.bounds)
+      val llHint = req.llHintOption
+      val boundsHint = req.boundsOption
       if (boundsHint.isDefined) {
         boundsHint.foreach(bounds => {
           // if you're in the bounds and the bounds are some small enough size
@@ -105,7 +105,7 @@ class GeocodeParseOrdering(
           val bboxContainsCenter =
             GeoTools.boundsContains(bounds, primaryFeature.feature.geometry.center)
           val bboxesIntersect =
-            Option(primaryFeature.feature.geometry.bounds).map(fBounds =>
+            primaryFeature.feature.geometry.boundsOption.map(fBounds =>
               GeoTools.boundsIntersect(bounds, fBounds)).getOrElse(false)
 
           if (bbox.lo().getEarthDistance(bbox.hi()) < 200 * 1000 &&
@@ -166,7 +166,7 @@ class GeocodeParseOrdering(
 
       if (req.debug > 0) {
         logger.ifDebug("final score %s", signal)
-        parse.debugInfo.foreach(_.setFinalScore(signal))
+//        parse.debugInfo.foreach(_.setFinalScore(signal))
       }
       signal
     }).getOrElse(0)

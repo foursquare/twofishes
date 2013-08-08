@@ -30,8 +30,7 @@ trait Unsorted extends MaybeSorted
 // Parse = one particular interpretation of the query
 case class Parse[T <: MaybeSorted](
   fmatches: Seq[FeatureMatch],
-  scoringFeatures: InterpretationScoringFeatures.Builder.AllUnspecified = InterpretationScoringFeatures.newBuilder,
-  debugInfo: Option[InterpretationDebugInfo.Builder.AllUnspecified] = Some(InterpretationDebugInfo.newBuilder)
+  scoringFeatures: InterpretationScoringFeatures.Builder.AllUnspecified = InterpretationScoringFeatures.newBuilder
 ) extends Seq[FeatureMatch] {
   def apply(i: Int) = fmatches(i)
   def iterator = fmatches.iterator
@@ -44,7 +43,7 @@ case class Parse[T <: MaybeSorted](
       "%s, %s".format(name, cc)
     }).getOrElse("???")
     // god forgive this line of code
-    val id = this.headOption.toList.flatMap(_.fmatch.feature.ids.headOption.map(
+    val id = this.headOption.flatMap(_.fmatch.feature.ids.headOption.map(
       fid => "%s:%s".format(fid.source, fid.id))).getOrElse("no:id")
     "%s %s".format(id, name)
   }

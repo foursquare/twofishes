@@ -53,7 +53,7 @@ class IndexerSpec extends Specification {
       Nil, None)
 
     val feature = record.toGeocodeServingFeature.feature
-    feature.names.size aka feature.names.asScala.toString mustEqual 3
+    feature.names.size aka feature.names.toString mustEqual 3
   }
 
   "rewrites work" in {
@@ -146,8 +146,8 @@ class IndexerSpec extends Specification {
     val wkbReader = new WKBReader
     out.foreach({
       case (cellid, cells) => cells.foreach(cell => {
-        cell.isFull must_== false
-        wktWriter.write(wkbReader.read(cell.wkbGeometry.array())) must_== wktWriter.write(wkbReader.read(geomBytes))
+        cell.fullOrDefault must_== false
+        wktWriter.write(wkbReader.read(cell.wkbGeometryOrNull.array())) must_== wktWriter.write(wkbReader.read(geomBytes))
       })
     })
   }
