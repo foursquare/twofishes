@@ -9,6 +9,7 @@ import com.twitter.util.Duration
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory, Point => JTSPoint}
 import com.vividsolutions.jts.io.{WKBReader, WKTWriter}
 import com.vividsolutions.jts.util.GeometricShapeFactory
+import org.apache.thrift.TBaseHelper
 import org.bson.types.ObjectId
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._
@@ -21,8 +22,10 @@ class ReverseGeocodeParseOrdering extends Ordering[Parse[Sorted]] {
     } yield {
       val aServingFeature = aFeatureMatch.fmatch
       val bServingFeature = bFeatureMatch.fmatch
-      val aWoeTypeOrder = YahooWoeTypes.getOrdering(aServingFeature.feature.woeType)
-      val bWoeTypeOrder = YahooWoeTypes.getOrdering(bServingFeature.feature.woeType)
+      val aWoeTypeOrder = YahooWoeTypes.getOrdering(
+        aServingFeature.feature.woeTypeOption.getOrElse(YahooWoeType.UNKNOWN))
+      val bWoeTypeOrder = YahooWoeTypes.getOrdering(
+        bServingFeature.feature.woeTypeOption.getOrElse(YahooWoeType.UNKNOWN))
       if (aWoeTypeOrder != bWoeTypeOrder) {
          aWoeTypeOrder - bWoeTypeOrder
       } else {
@@ -105,24 +108,25 @@ class ReverseGeocoderHelperImpl(
 
     for {
       cellGeometry <- cellGeometries
-      if (req.woeRestrict.isEmpty || req.woeRestrict.asScala.has(cellGeometry.woeType))
-      val oid = new ObjectId(cellGeometry.getOid())
+      if (req.woeRestrict.isEmpty || cellGeometry.woeTypeOption.exists(req.woeRestrict.has))
+      oid <- cellGeometry.oidOption.map(bb => new ObjectId(TBaseHelper.byteBufferToByteArray(bb)))
       fid <- StoredFeatureId.fromLegacyObjectId(oid)
     } yield {
       if (!matches.has(fid)) {
-        if (cellGeometry.isFull) {
+        if (cellGeometry.full) {
           logger.ifDebug("was full: %s", fid)
           matches.append(fid)
-        } else if (cellGeometry.wkbGeometry != null) {
-          val (geom, intersects) = logger.logDuration("intersectionCheck", "intersecting %s".format(fid)) {
-            featureGeometryIntersections(cellGeometry.getWkbGeometry(), otherGeom)
-          }
-          if (intersects) {
-            matches.append(fid)
-          } else {
-          }
         } else {
-          logger.ifDebug("not full and no geometry for: %s", fid)
+          cellGeometry.wkbGeometryOption match {
+            case Some(wkbGeometry) =>
+              val (geom, intersects) = logger.logDuration("intersectionCheck", "intersecting %s".format(fid)) {
+                featureGeometryIntersections(TBaseHelper.byteBufferToByteArray(wkbGeometry), otherGeom)
+              }
+              if (intersects) {
+                matches.append(fid)
+              }
+            case None => logger.ifDebug("not full and no geometry for: %s", fid)
+          }
         }
       }
     }
@@ -148,7 +152,7 @@ class ReverseGeocoderHelperImpl(
       if (GeocodeRequestUtils.shouldFetchPolygon(req)) {
         val fids = (for {
           cellGeometry <- cellGeometryMap.values.flatten.toSeq
-          oid = new ObjectId(cellGeometry.getOid())
+          oid <- cellGeometry.oidOption.map(bb => new ObjectId(TBaseHelper.byteBufferToByteArray(bb)))
           fid <- StoredFeatureId.fromLegacyObjectId(oid)
         } yield fid).distinct
 
@@ -175,8 +179,8 @@ class ReverseGeocoderHelperImpl(
             otherGeom.getNumPoints > 2) {
           polygonMap.get(fid).foreach(geom => {
             if (geom.getNumPoints > 2) {
-              parse.scoringFeatures.setPercentOfRequestCovered(computeCoverage(geom, otherGeom))
-              parse.scoringFeatures.setPercentOfFeatureCovered(computeCoverage(otherGeom, geom))
+              parse.scoringFeatures.percentOfRequestCovered(computeCoverage(geom, otherGeom))
+              parse.scoringFeatures.percentOfFeatureCovered(computeCoverage(otherGeom, geom))
             }
           })
         }
@@ -224,13 +228,9 @@ class ReverseGeocoderImpl(
 
   def doSingleReverseGeocode(geom: Geometry): GeocodeResponse = {
     val (interpIdxes, interpretations) = reverseGeocoder.doBulkReverseGeocode(List(geom))
-    val response = ResponseProcessor.generateResponse(req.debug, logger,
-      interpIdxes(0).flatMap(interpIdx => interpretations.lift(interpIdx)))
-    if (req.debug > 0) {
-      val wktWriter = new WKTWriter
-      response.setRequestWktGeometry(wktWriter.write(geom))
-    }
-    response
+    ResponseProcessor.generateResponse(req.debug, logger,
+      interpIdxes(0).flatMap(interpIdx => interpretations.lift(interpIdx)),
+      requestGeom = Some(geom))
   }
 
   def reverseGeocodePoint(ll: GeocodePoint): GeocodeResponse = {
@@ -244,45 +244,49 @@ class ReverseGeocoderImpl(
     doSingleReverseGeocode(geom)
   }
 
-  def reverseGeocode(): GeocodeResponse = {
-    Stats.incr("revgeo-requests", 1)
-    if (req.ll != null) {
-      if (req.isSetRadius && req.radius > 0) {
-        if (req.radius > 50000) {
-          println("too large revgeo: " + req)
-          //throw new Exception("radius too big (%d > %d)".format(req.radius, maxRadius))
-          new GeocodeResponse()
-        } else {
-          val sizeDegrees = req.radius / 111319.9
-          val gsf = new GeometricShapeFactory()
-          gsf.setSize(sizeDegrees)
-          gsf.setNumPoints(100)
-          gsf.setCentre(new Coordinate(req.ll.lng, req.ll.lat))
-          val geom = gsf.createCircle()
-          timeResponse("revgeo-geom") {
-            doGeometryReverseGeocode(geom)
-          }
-        }
-      } else {
-        timeResponse("revgeo-point") {
-          reverseGeocodePoint(req.ll)
-        }
-      }
-    } else if (req.bounds != null) {
-      val s2rect = GeoTools.boundingBoxToS2Rect(req.bounds)
-      val geomFactory = new GeometryFactory()
-      val geom = geomFactory.createLinearRing(Array(
-        new Coordinate(s2rect.lng.lo, s2rect.lat.lo),
-        new Coordinate(s2rect.lng.hi, s2rect.lat.lo),
-        new Coordinate(s2rect.lng.hi, s2rect.lat.hi),
-        new Coordinate(s2rect.lng.hi, s2rect.lat.lo),
-        new Coordinate(s2rect.lng.lo, s2rect.lat.lo)
-      ))
-      Stats.time("revgeo-geom") {
+  def doCircleRevgeo(ll: GeocodePoint, radius: Int): GeocodeResponse = {
+    if (req.radius > 50000) {
+      println("too large revgeo: " + req)
+      //throw new Exception("radius too big (%d > %d)".format(req.radius, maxRadius))
+      GeocodeResponse.newBuilder.interpretations(Nil).result
+    } else {
+      val sizeDegrees = req.radius / 111319.9
+      val gsf = new GeometricShapeFactory()
+      gsf.setSize(sizeDegrees)
+      gsf.setNumPoints(100)
+      gsf.setCentre(new Coordinate(ll.lng, ll.lat))
+      val geom = gsf.createCircle()
+      timeResponse("revgeo-geom") {
         doGeometryReverseGeocode(geom)
       }
-    } else {
-      throw new Exception("no bounds or ll")
+    }
+  }
+
+  def doBoundsRevgeo(bounds: GeocodeBoundingBox): GeocodeResponse = {
+    val s2rect = GeoTools.boundingBoxToS2Rect(bounds)
+    val geomFactory = new GeometryFactory()
+    val geom = geomFactory.createLinearRing(Array(
+      new Coordinate(s2rect.lng.lo, s2rect.lat.lo),
+      new Coordinate(s2rect.lng.hi, s2rect.lat.lo),
+      new Coordinate(s2rect.lng.hi, s2rect.lat.hi),
+      new Coordinate(s2rect.lng.hi, s2rect.lat.lo),
+      new Coordinate(s2rect.lng.lo, s2rect.lat.lo)
+    ))
+    Stats.time("revgeo-geom") {
+      doGeometryReverseGeocode(geom)
+    }
+  }
+
+  def reverseGeocode(): GeocodeResponse = {
+    Stats.incr("revgeo-requests", 1)
+
+    val radius = req.radiusOption.getOrElse(0)
+    (req.llOption, req.boundsOption) match {
+      case (Some(ll), None) if (radius > 0) => doCircleRevgeo(ll, radius)
+      case (Some(ll), None) => timeResponse("revgeo-point") { reverseGeocodePoint(ll) }
+      case (None, Some(bounds)) => doBoundsRevgeo(bounds)
+      case (None, None) => throw new Exception("no bounds or ll")
+      case (Some(ll), Some(bounds)) => throw new Exception("both bounds and ll, can't pick")
     }
   }
 }
@@ -291,30 +295,29 @@ class BulkReverseGeocoderImpl(
   store: GeocodeStorageReadService,
   req: BulkReverseGeocodeRequest
 ) extends GeocoderImplTypes with TimeResponseHelper {
-  val params = Option(req.params).getOrElse(new CommonGeocodeRequestParams())
+  val params = req.paramsOption.getOrElse(CommonGeocodeRequestParams.newBuilder.result)
 
   val logger = new MemoryLogger(params)
-  val reverseGeocoder =
-    new ReverseGeocoderHelperImpl(store, Option(params).getOrElse(new CommonGeocodeRequestParams()), logger)
+  val reverseGeocoder = new ReverseGeocoderHelperImpl(store, params, logger)
 
   def reverseGeocode(): BulkReverseGeocodeResponse = {
     Stats.incr("bulk-revgeo-requests", 1)
 
     val geomFactory = new GeometryFactory()
 
-    val points = req.latlngs.asScala.map(ll => geomFactory.createPoint(new Coordinate(ll.lng, ll.lat)))
+    val points = req.latlngs.map(ll => geomFactory.createPoint(new Coordinate(ll.lng, ll.lat)))
 
     val (interpIdxs, interps) = reverseGeocoder.doBulkReverseGeocode(points)
 
-    val response = new BulkReverseGeocodeResponse()
-      .setDEPRECATED_interpretationMap(Map.empty.asJava)
-      .setInterpretationIndexes(interpIdxs.map(_.asJava).asJava)
-      .setInterpretations(interps.asJava)
+    val responseBuilder = BulkReverseGeocodeResponse.newBuilder
+      .interpretationIndexes(interpIdxs)
+      .interpretations(interps)
+      .DEPRECATED_interpretationMap(Map.empty)
 
     if (params.debug > 0) {
-      response.setDebugLines(logger.getLines.asJava)
+      responseBuilder.debugLines(logger.getLines)
     }
-    response
+    responseBuilder.result
   }
 }
 

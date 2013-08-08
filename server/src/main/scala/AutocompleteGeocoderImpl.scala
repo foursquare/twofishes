@@ -102,7 +102,7 @@ class AutocompleteGeocoderImpl(
               fid, parse.map(_.fmatch.longId))
           }
 
-          val isValid = parse.exists(_.fmatch.scoringFeatures.parentIds.asScala.has(fid)) &&
+          val isValid = parse.exists(_.fmatch.scoringFeatures.parentIds.has(fid)) &&
             !parse.exists(_.fmatch.longId.toString == fid) &&
             featureMatch.possibleNameHits.exists(n => allowedLanguages.has(n.lang))
 
@@ -147,7 +147,7 @@ class AutocompleteGeocoderImpl(
         val possibleParents = (for {
           parse <- parses
           parseFeature <- parse
-          featureParentId <- parseFeature.fmatch.scoringFeatures.parentIds.asScala
+          featureParentId <- parseFeature.fmatch.scoringFeatures.parentIds
         } yield {
           StoredFeatureId.fromLong(featureParentId)
         }).flatten
@@ -170,14 +170,14 @@ class AutocompleteGeocoderImpl(
 
             store.getByFeatureIds(featureIds).map({case (oid, servingFeature) => {
               FeatureMatch(offset, offset + i, query, servingFeature,
-                servingFeature.feature.names.asScala.filter(n => matchName(n, query, isEnd)))
+                servingFeature.feature.names.filter(n => matchName(n, query, isEnd)))
             }}).toSeq
           } else {
             val parents = store.getByFeatureIds(possibleParents).toSeq
             logger.ifDebug("looking for %s in parents: %s", query, parents)
             for {
               (oid, servingFeature) <- parents
-              names = servingFeature.feature.names.asScala.filter(n => matchName(n, query, isEnd))
+              names = servingFeature.feature.names.filter(n => matchName(n, query, isEnd))
               if names.nonEmpty
             } yield {
               FeatureMatch(offset, offset + i, query, servingFeature, names)
@@ -241,7 +241,7 @@ class AutocompleteGeocoderImpl(
           (f.fmatch.feature.woeType == YahooWoeType.ADMIN1 ||
            f.fmatch.feature.woeType == YahooWoeType.CONTINENT ||
            f.fmatch.feature.woeType == YahooWoeType.COUNTRY) &&
-          (!commonParams.woeRestrict.asScala.has(f.fmatch.feature.woeType))
+          (!commonParams.woeRestrict.has(f.fmatch.feature.woeType))
         )
       )
       .sorted(new GeocodeParseOrdering(store, commonParams, logger, List(downrankAirports)))

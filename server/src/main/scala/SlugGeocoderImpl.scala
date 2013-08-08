@@ -39,7 +39,7 @@ class BulkSlugLookupImpl(
   store: GeocodeStorageReadService,
   req: BulkSlugLookupRequest
 ) extends GeocoderImplTypes with BulkImplHelpers {
-  val params = Option(req.params).getOrElse(new CommonGeocodeRequestParams())
+  val params = req.paramsOption.getOrElse(CommonGeocodeRequestParams.newBuilder.result)
   val logger = new MemoryLogger(params)
 
   val responseProcessor = new ResponseProcessor(params, store, logger)
@@ -48,8 +48,8 @@ class BulkSlugLookupImpl(
     Stats.incr("bulk-slug-lookup-requests", 1)
     val parseParams = ParseParams()
 
-    val featureMap: Map[String, GeocodeServingFeature] = store.getBySlugOrFeatureIds(req.slugs.asScala)
-    //val inputToIdxes: Map[String, Seq[Int]] = req.slugs.asScala.zipWithIndex.groupBy(_._1).mapValues(_.map(_._2))
+    val featureMap: Map[String, GeocodeServingFeature] = store.getBySlugOrFeatureIds(req.slugs)
+    //val inputToIdxes: Map[String, Seq[Int]] = req.slugs.zipWithIndex.groupBy(_._1).mapValues(_.map(_._2))
 
     val polygonMap: Map[StoredFeatureId, Geometry] = if (GeocodeRequestUtils.shouldFetchPolygon(params)) {
       store.getPolygonByFeatureIds(featureMap.values.flatMap(f => StoredFeatureId.fromLong(f.longId)).toSeq)
@@ -64,17 +64,17 @@ class BulkSlugLookupImpl(
       parseParams, polygonMap, fixAmbiguousNames = true, dedupByMatchedName = false)
 
     val interpIdxs: Seq[Seq[Int]] = makeBulkReply(
-      req.slugs.asScala,
+      req.slugs,
       featureMap.mapValues(servingFeature => StoredFeatureId.fromLong(servingFeature.feature.longId).toList),
       interps)
 
-    val resp = new BulkSlugLookupResponse()
-    resp.setInterpretations(interps.asJava)
-    // map from input idx to interpretation indexes
-    resp.setInterpretationIndexes(interpIdxs.map(_.asJava).asJava)
+    val respBuilder = BulkSlugLookupResponse.newBuilder
+      .interpretations(interps)
+      // map from input idx to interpretation indexes
+      .interpretationIndexes(interpIdxs)
     if (params.debug > 0) {
-      resp.setDebugLines(logger.getLines.asJava)
+      respBuilder.debugLines(logger.getLines)
     }
-    resp
+    respBuilder.result
   }
 }
