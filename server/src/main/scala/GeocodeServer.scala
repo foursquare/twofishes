@@ -36,7 +36,7 @@ class QueryLogHttpHandler(
     val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
     val currentTime = System.nanoTime
 
-    val content = (queryMap.asScala.map({case (k, v) => {
+    val content = (queryMap.map({case (k, v) => {
       "Request has taken %dms so far\n%s".format((currentTime - v._2) / 1000000, v._1)
     }}).mkString("\n") +
     "\n-----------------------------------------\n" + "SLOW QUERIES\n"
@@ -188,14 +188,14 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
   def handleBulkReverseGeocodeQuery(params: CommonGeocodeRequestParams, points: Seq[(Double, Double)]) = {
     val request = new BulkReverseGeocodeRequest()
     request.setParams(params)
-    request.setLatlngs(points.map(ll => new GeocodePoint(ll._1, ll._2)).asJava)
+    request.setLatlngs(points.map(ll => new GeocodePoint(ll._1, ll._2)))
     handleQuery(request, geocoder.bulkReverseGeocode)
   }
 
   def handleBulkSlugLookupQuery(params: CommonGeocodeRequestParams, slugs: Seq[String]) = {
     val request = new BulkSlugLookupRequest()
     request.setParams(params)
-    request.setSlugs(slugs.asJava)
+    request.setSlugs(slugs)
     handleQuery(request, geocoder.bulkSlugLookup)
   }
 
@@ -254,7 +254,7 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
           YahooWoeType.valueOf(i)
         }
       )
-      request.setWoeHint(hints.toList.asJava)
+      request.setWoeHint(hints.toList)
     }))
     params.get("woeRestrict").foreach(_.headOption.foreach(hintStr => {
       val hints = hintStr.split(",").map(i =>
@@ -264,14 +264,14 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
           YahooWoeType.valueOf(i)
         }
       )
-      request.setWoeRestrict(hints.toList.asJava)
+      request.setWoeRestrict(hints.toList)
     }))
     params.get("radius").foreach(_.headOption.foreach(v =>
       request.setRadius(v.toInt)))
     params.get("maxInterpretations").foreach(_.headOption.foreach(v =>
       request.setMaxInterpretations(v.toInt)))
     params.get("allowedSources").foreach(_.headOption.foreach(str => {
-      request.setAllowedSources(str.split(",").toList.asJava)
+      request.setAllowedSources(str.split(",").toList)
     }))
     params.get("responseIncludes").foreach(_.headOption.foreach(str => {
       request.setResponseIncludes(str.split(",").toList.map(i => {
@@ -280,7 +280,7 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
         } else {
           ResponseIncludes.valueOf(i)
         }
-      }).asJava)
+      }))
     }))
 
     request
@@ -289,7 +289,7 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
   def apply(request: HttpRequest) = {
     // This is how you parse request parameters
     val queryString = new QueryStringDecoder(request.getUri())
-    val params = queryString.getParameters().asScala.mapValues(_.asScala).toMap
+    val params = queryString.getParameters().mapValues(_).toMap
     val path = queryString.getPath()
 
     if (path.startsWith("/static/")) {
