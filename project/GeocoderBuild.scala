@@ -151,7 +151,10 @@ object GeocoderBuild extends Build {
         publishArtifact := true,
         libraryDependencies ++= Seq(
           "com.twitter" % "ostrich" % "8.2.3",
-          "com.twitter" %% "finagle-http" % "6.3.0"
+          "com.twitter" %% "finagle-http" % "6.3.0" cross CrossVersion.binaryMapped {
+            case "2.10.2" => "2.10"
+            case x => x
+          }
         ),
         ivyXML := (
           <dependencies>
@@ -167,7 +170,10 @@ object GeocoderBuild extends Build {
         publishArtifact := false,
         libraryDependencies ++= Seq(
           "com.twitter" % "ostrich" % "8.2.3",
-          "com.twitter" %% "finagle-http" % "5.3.23"
+          "com.twitter" %% "finagle-http" % "6.3.0" cross CrossVersion.binaryMapped {
+            case "2.10.2" => "2.10"
+            case x => x
+          }
         )
       ),
       base = file("client")) dependsOn(interface)
