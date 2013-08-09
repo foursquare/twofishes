@@ -438,13 +438,17 @@ class ResponseProcessor(
     })
     logger.ifDebug("have %d parses after removeLowRankingParses", goodParses.size)
 
-    goodParses = goodParses.filter(p => p.headOption.exists(m => m.fmatch.scoringFeatures.canGeocode))
+    goodParses = goodParses.filter(p => p.headOption.exists(m => {
+      !m.fmatch.scoringFeatures.canGeocodeIsSet || m.fmatch.scoringFeatures.canGeocode
+    }))
+    logger.ifDebug("have %d parses after filtering out canGeocode", goodParses.size)
 
     if (req.allowedSourcesIsSet) {
       val allowedSources = req.allowedSources
       goodParses = goodParses.filter(p =>
         p.headOption.exists(_.fmatch.feature.ids.exists(i => allowedSources.has(i.source)))
       )
+      logger.ifDebug("have %d parses after filtering out allowedSources", goodParses.size)
     }
 
     goodParses
