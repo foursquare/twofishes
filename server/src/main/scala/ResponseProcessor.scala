@@ -443,7 +443,7 @@ class ResponseProcessor(
     }))
     logger.ifDebug("have %d parses after filtering out canGeocode", goodParses.size)
 
-    if (req.allowedSourcesIsSet) {
+    if (req.allowedSourcesIsSet && req.allowedSources.size > 0) {
       val allowedSources = req.allowedSources
       goodParses = goodParses.filter(p =>
         p.headOption.exists(_.fmatch.feature.ids.exists(i => allowedSources.has(i.source)))
