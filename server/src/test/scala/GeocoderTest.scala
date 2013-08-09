@@ -191,10 +191,10 @@ class GeocoderSpec extends Specification {
   "one feature geocodes succeeds with matching data" in {
     val store = buildRegoPark()
 
-    val req = GeocodeRequest.newBuilder.query("Rego Park").result
+    val req = GeocodeRequest.newBuilder.query("Rego Park").debug(4).result
 
     val r = new GeocodeRequestDispatcher(store).geocode(req)
-    r.interpretations.size must_== 1
+    r.interpretations.size aka r.toString must_== 1
     val interp = r.interpretations(0)
     interp.what must_== ""
     interp.feature.geometry.center.lat must_== 5
