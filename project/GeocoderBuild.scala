@@ -41,7 +41,8 @@ object GeocoderBuild extends Build {
     resolvers += "repo.novus snaps" at "http://repo.novus.com/snapshots/",
     resolvers += "Java.net Maven 2 Repo" at "http://download.java.net/maven/2",
     resolvers += "apache" at "http://repo2.maven.org/maven2/org/apache/hbase/hbase/",
-    resolvers += "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos/",
+    // resolvers += "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos/",
+    resolvers += "springsource" at "http://repo.springsource.org/libs-release-remote",
     resolvers ++= Seq("snapshots" at "http://oss.sonatype.org/content/repositories/snapshots",
                       "releases"  at "http://oss.sonatype.org/content/repositories/releases"),
 
@@ -103,31 +104,37 @@ object GeocoderBuild extends Build {
       settings = defaultSettings ++ specsSettings ++ Seq(
         publishArtifact := true,
         libraryDependencies ++= Seq(
-          "com.twitter" % "ostrich" % "8.2.3",
-          "com.twitter" % "util-core" % "5.3.14",
-          "com.twitter" % "util-logging" % "5.3.14",
+          "com.twitter" %% "ostrich" % "9.1.0",
+          "com.twitter" %% "util-core" % "6.3.0" cross CrossVersion.binaryMapped {
+            case "2.10.2" => "2.10"
+            case x => x
+          },
+          "com.twitter" %% "util-logging" % "6.3.0"  cross CrossVersion.binaryMapped {
+            case "2.10.2" => "2.10"
+            case x => x
+          },
           "org.slf4j" % "slf4j-api" % "1.6.1",
           "org.apache.avro" % "avro" % "1.7.1.cloudera.2",
           "org.apache.hadoop" % "hadoop-client" % "2.0.0-cdh4.1.2" intransitive(),
           "org.apache.hadoop" % "hadoop-common" % "2.0.0-cdh4.1.2" ,
           "org.apache.hbase" % "hbase" % "0.92.1-cdh4.1.2" intransitive(),
           "com.google.guava" % "guava" % "r09",
-          "com.novus" % "salat-core_2.9.1" % "0.0.8",
-          // "org.apache.thrift" % "libthrift" % "0.8.0",
+          "com.novus" %% "salat-core" % "0.0.8",
           "commons-cli" % "commons-cli" % "1.2",
           "commons-logging" % "commons-logging" % "1.1.1",
           "commons-daemon" % "commons-daemon" % "1.0.9",
           "commons-configuration" % "commons-configuration" % "1.6"
-
-          // "thrift" % "libthrift" % "0.5.0" from "http://maven.twttr.com/org/apache/thrift/libthrift/0.5.0/libthrift-0.5.0.jar"
         ),
         ivyXML := (
           <dependencies>
             <exclude org="thrift"/>
+            <exclude org="com.twitter" module="finagle-core"/>
+	    <exclude org="org.scalaj" module="scalaj-collection_2.9.1"/>
             <exclude org="org.apache.thrift" module="thrift"/>
             <exclude org="commons-beanutils" module="commons-beanutils"/>
             <exclude org="commons-beanutils" module="commons-beanutils-core"/>
             <exclude org="org.mockito" module="mockito-all"/>
+            <exclude org="tomcat" module="jasper-runtime"/>
           </dependencies>
         )
       )
@@ -148,7 +155,7 @@ object GeocoderBuild extends Build {
         baseDirectory in run := file("."),
         publishArtifact := true,
         libraryDependencies ++= Seq(
-          "com.twitter" % "ostrich" % "8.2.3",
+          "com.twitter" %% "ostrich" % "9.1.0",
           "com.twitter" %% "finagle-http" % "6.3.0" cross CrossVersion.binaryMapped {
             case "2.10.2" => "2.10"
             case x => x
@@ -156,26 +163,13 @@ object GeocoderBuild extends Build {
         ),
         ivyXML := (
           <dependencies>
+            <exclude org="com.twitter" module="finagle-core"/>
+	    <exclude org="org.scalaj" module="scalaj-collection_2.9.1"/>
             <exclude org="org.mongodb" module="bson"/>
           </dependencies>
         )
       ),
       base = file("server")) dependsOn(core, interface, util, indexer % "test")
-
-   lazy val client = Project(id = "client",
-      settings = defaultSettings ++ assemblySettings ++ specsSettings ++ Seq(
-        baseDirectory in run := file("."),
-        publishArtifact := false,
-        libraryDependencies ++= Seq(
-          "com.twitter" % "ostrich" % "8.2.3",
-          "com.twitter" %% "finagle-http" % "6.3.0" cross CrossVersion.binaryMapped {
-            case "2.10.2" => "2.10"
-            case x => x
-          }
-        )
-      ),
-      base = file("client")) dependsOn(interface)
-
 
   lazy val indexer = Project(id = "indexer",
       base = file("indexer"),
@@ -200,12 +194,7 @@ object GeocoderBuild extends Build {
         val parser = new GeonamesParser(store, slugIndexer, Map.empty)
         """,
 
-        publishArtifact := false,
-        libraryDependencies ++= Seq(
-          "com.twitter" % "util-core" % "5.3.14",
-          "com.twitter" % "util-logging" % "5.3.14",
-          "com.novus" % "salat-core_2.9.1" % "0.0.8-SNAPSHOT"
-        )
+        publishArtifact := false
       )
   ) dependsOn(core, util)
 
