@@ -35,7 +35,7 @@ object BoundingBoxTsvImporter extends LogHelper {
               case None => logger.error("%s: couldn't parse into StoredFeatureId".format(line))
             }
           } catch {
-            case e =>
+            case e: Throwable =>
             logger.error("%s: %s".format(line, e))
           }
         }

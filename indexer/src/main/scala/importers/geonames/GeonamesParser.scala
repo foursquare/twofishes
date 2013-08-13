@@ -4,6 +4,7 @@ package com.foursquare.twofishes.importers.geonames
 import com.foursquare.geo.shapes.FsqSimpleFeatureImplicits._
 import com.foursquare.geo.shapes.ShapefileIterator
 import com.foursquare.twofishes._
+import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.{GeonamesId, GeonamesNamespace, Helpers, NameNormalizer, StoredFeatureId}
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
@@ -286,7 +287,7 @@ class GeonamesParser(
     // the primary name geonames gives us is english preferred
     var displayNames: List[DisplayName] = Nil
 
-    if (!preferredEnglishAltName.exists(_ == feature.name)) {
+    if (!preferredEnglishAltName.exists(_.name =? feature.name)) {
       displayNames ++= processFeatureName(
         feature.countryCode, "en", feature.name,
         isPrefName = !hasPreferredEnglishAltName,
@@ -609,6 +610,7 @@ class GeonamesParser(
 
             store.setRecordNames(GeonamesId(gid.toLong), newNames)
           }
+          case list => logger.error("multiple matches for id %s -- %s".format(gid, list))
         }
       }
     })
