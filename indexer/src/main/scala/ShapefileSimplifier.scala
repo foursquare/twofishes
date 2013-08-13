@@ -15,7 +15,7 @@ import org.opengis.feature.`type`.{AttributeDescriptor, AttributeType}
 import scalaj.collection.Imports._
 
 object ShapefileSimplifier{
-  val defaultLevels = Array(40,2,2,2)
+  val defaultLevels = Array(1000,10,4,4)
 
   object Coords extends Enumeration {
       type Coords = Value
@@ -37,16 +37,15 @@ object ShapefileSimplifier{
       def toIndex(coord: Coordinate): (Int, Int) = {
         ( ((coord.x - node.nodeBounds.minLong) / longChunk).toInt,
           ((coord.y - node.nodeBounds.minLat)  / latChunk ).toInt )
-
       }
 
 
       // initialize subGrid
       node.makeSubGrid(levels)
-      
+
 
       // process shapes into sub-shapes by intersecting the shapes with the grid
-      // this greatly reduces the # of points per shape, and contains(lat,lng) 
+      // this greatly reduces the # of points per shape, and contains(lat,lng)
       // is roughly linear to the number of points in the shape, so it speeds the
       // contains() operation sigificantly
       node.subList.foreach(keyShape => {
@@ -82,7 +81,7 @@ object ShapefileSimplifier{
               cell.subList ::= new ShapeLeafNode(keyShape.keyValue.get, cell.shape.intersection(validKeyShape))
             }
           } catch {
-            case e => {
+            case e: Throwable => {
               println(cell.shape)
               println(cell.shape.isValid())
               println(keyShape)
@@ -96,38 +95,12 @@ object ShapefileSimplifier{
         }
       })
 
-      // Compress shapes in the case where there is only one active timezone
-      // in the subgrid
-      var compacted: Int = 0
-      var noncompacted: Int=0
       for {
         longIdx <- 0 until nLongs
         latIdx <- 0 until nLats}
       {
         val cell = node.subGrid.get(longIdx)(latIdx)
-        // cell.shape = null
-        if (cell.subList.length > 0){
-          val headVal = cell.subList.head.keyValue
-          val same = cell.subList.forall(e => e.keyValue == headVal)
-          if (same) {
-            compacted += 1
-            cell.subList = cell.subList.head :: Nil
-          }
-          else{
-            noncompacted += 1
-            if (cell.nodeLevel < levels.length) {
-              // RECURSE
-              // If there are non-compacted cells, and we
-              // can go furher, do it!  Note:
-              // I have tried several different
-              // additional condtions, e.g. only if listSize > 5
-              // Doesn't seem to matter much.  Maybe a good tweak would
-              // be recurse if the aggregate number of points in the list
-              // is greater than some threshold 
-              gridifyList(cell)
-            }
-          }
-        }
+        gridifyList(cell)
       }
 
       node.subList = Nil
@@ -138,17 +111,17 @@ object ShapefileSimplifier{
     val transaction = new DefaultTransaction("addShapes")
     val schema = featureStore.getSchema(featureStore.getNames.get(0))
     val writer = featureStore.getFeatureWriterAppend(schema.getTypeName.asInstanceOf[String], transaction)
-    
+
     def addFeature(poly: Geometry, tz: String, path: String) = {
       val feat = writer.next()
       feat.setAttributes(Array[Object](poly,tz,path))
       writer.write()
     }
-    
+
     def enumerateFeatures(cell: ShapeTrieNode, path: String): Unit = cell.keyValue match {
       // if leaf (no subgrid or sublist), use shape
       case Some(tz) => addFeature(cell.shape, tz, path)
-      case None => 
+      case None =>
         cell.subGrid match {
           case Some(grid) => {
              for{ longIdx <- 0 until cell.subGridSize._1
@@ -166,14 +139,14 @@ object ShapefileSimplifier{
 
   }
 
-  def createSimplifiedFeatureStore( simplified: File, 
+  def createSimplifiedFeatureStore( simplified: File,
                                     originalSource: SimpleFeatureSource,
                                     keyAttribute: String,
                                     simplifiedKeyAttribute: String,
                                     levels: Array[Int]): AbstractDataStore = {
-    // Building Datasources: 
+    // Building Datasources:
     // http://docs.geotools.org/stable/userguide/examples/crslab.html
-    // Attrs/Features: 
+    // Attrs/Features:
     // http://docs.geotools.org/latest/userguide/library/main/feature.html
     val storeFactory: DataStoreFactorySpi = new ShapefileDataStoreFactory()
     val create = Map( "url" -> simplified.toURI.toURL)
@@ -190,14 +163,14 @@ object ShapefileSimplifier{
     keyTB.setBinding(classOf[String])
     keyTB.setNillable(originalKeyAttribute.isNillable)
     descriptorList.add(keyTB.buildDescriptor(simplifiedKeyAttribute))
-    
+
     val indexAttribute = ShapefileGeo.indexAttributePrefix + levels.mkString("_")
     if (indexAttribute.length > 10) {
       throw new IllegalArgumentException("Stringification of levels is too long"+
         " for DBF format. Index "+indexAttribute+
         " must be less than or equal to length 10")
     }
-   
+
 
     // Finally, add the new index parameter
     val indexTB = new AttributeTypeBuilder()
@@ -223,18 +196,18 @@ object ShapefileSimplifier{
   }
 
 
-  def loadOriginal( featureSource: SimpleFeatureSource, 
-                    keyAttribute: String, 
+  def loadOriginal( featureSource: SimpleFeatureSource,
+                    keyAttribute: String,
                     keyMap: Option[Map[String, String]]) = {
     // determine the key, index, attribute names, and the number and size of the index levels
     if (featureSource.getSchema.getDescriptor(keyAttribute) == null)
       throw new IllegalArgumentException("Schema has no attribute named \""+keyAttribute+"\"")
-    
+
     // build the world
     val bounds = featureSource.getInfo.getBounds
-    val world = new ShapeTrieNode( 0, GeoBounds(bounds.getMinX, 
-                                                bounds.getMinY, 
-                                                bounds.getWidth, 
+    val world = new ShapeTrieNode( 0, GeoBounds(bounds.getMinX,
+                                                bounds.getMinY,
+                                                bounds.getWidth,
                                                 bounds.getHeight), true)
     val iterator = featureSource.getFeatures.features
 
@@ -259,9 +232,9 @@ object ShapefileSimplifier{
     world
   }
 
-  def doSimplification( original: File, 
-                        simplified: File, 
-                        keyAttribute: String, 
+  def doSimplification( original: File,
+                        simplified: File,
+                        keyAttribute: String,
                         levels: Array[Int],
                         keyMap: Option[Map[String, String]],
                         newKeyAttribute: Option[String]){
@@ -270,12 +243,12 @@ object ShapefileSimplifier{
     val world = loadOriginal(originalSource, keyAttribute, keyMap)
     simplify(world, levels)
 
-    val featureStore = createSimplifiedFeatureStore(simplified, 
-                                                    originalSource, 
-                                                    keyAttribute, 
+    val featureStore = createSimplifiedFeatureStore(simplified,
+                                                    originalSource,
+                                                    keyAttribute,
                                                     simplifiedKeyAttribute,
                                                     levels)
-    saveSimplifiedFeatures(featureStore, world)                        
+    saveSimplifiedFeatures(featureStore, world)
   }
 
   def main(args: Array[String]) = {
@@ -303,14 +276,14 @@ object ShapefileSimplifier{
     if (simplified.exists){
       println(args(1)+" already exists! Too scared to overwrite.")
       System.exit(1)
-    } 
+    }
 
-    val levels = if (args.length > 3) { 
-      args(3).split("_").map(_.toInt) 
+    val levels = if (args.length > 3) {
+      args(3).split("_").map(_.toInt)
     } else {
       defaultLevels
     }
     doSimplification(original, simplified, keyAttribute, levels, None, None)
-   
+
   }
 }

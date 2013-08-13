@@ -219,7 +219,7 @@ class PrefixIndexer(override val basepath: String, override val fidMap: FidMap) 
 
   def doOutputPrefixIndex(prefixSet: HashSet[String]) {
     println("sorting prefix set")
-    val sortedPrefixes = prefixSet.toList.sort(lexicalSort)
+    val sortedPrefixes = prefixSet.toList.sortWith(lexicalSort)
     println("done sorting")
 
     val bestWoeTypes = List(
