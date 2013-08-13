@@ -13,7 +13,7 @@ object GeocoderBuild extends Build {
   )
 
   lazy val scoptSettings = Seq(
-    libraryDependencies += 
+    libraryDependencies +=
        "com.github.scopt" %% "scopt" % "2.1.0" cross CrossVersion.binaryMapped {
          case "2.10.2" => "2.10"
          case x => x
@@ -145,7 +145,7 @@ object GeocoderBuild extends Build {
         publishArtifact := true,
         libraryDependencies ++= Seq(
           "org.slf4j" % "slf4j-api" % "1.6.1"
-        ) 
+        )
       ),
       base = file("interface"))
 

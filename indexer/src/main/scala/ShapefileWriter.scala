@@ -55,7 +55,7 @@ object BuildPolygonShapefile {
             transaction.commit();
 
         } catch {
-          case problem => {
+          case problem: Throwable => {
             problem.printStackTrace();
             transaction.rollback();
           }

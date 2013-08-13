@@ -39,7 +39,7 @@ object PolygonLoader {
         try {
           store.addPolygonToRecord(fid, wkbWriter.write(geom))
         } catch {
-          case e => {
+          case e: Throwable => {
             throw new Exception("couldn't write poly to %s".format(fid), e)
           }
         }
@@ -53,7 +53,7 @@ object PolygonLoader {
       new File("data/private/polygons")
     )
     val polygonFiles = polygonDirs.flatMap(recursiveListFiles).sorted
- 
+
     for {
       (f, index) <- polygonFiles.zipWithIndex
      } {
