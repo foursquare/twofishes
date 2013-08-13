@@ -217,8 +217,8 @@ class GeocodeParseOrdering(
     val scoreA = getScore(a)
     val scoreB = getScore(b)
     if (scoreA == scoreB) {
-      (a.headOption.map(_.fmatch.feature.ids.map(_.toString).hashCode).getOrElse(0).toLong -
-        b.headOption.map(_.fmatch.feature.ids.map(_.toString).hashCode).getOrElse(0).toLong).signum
+      (a.headOption.map(_.fmatch.feature.longId).getOrElse(0L) -
+        b.headOption.map(_.fmatch.feature.longId).getOrElse(0L)).signum
     } else {
       scoreB - scoreA
     }
