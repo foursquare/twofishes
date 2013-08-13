@@ -32,7 +32,7 @@ class QueryParser(logger: TwofishesLogger) {
     logger.ifDebug("--> %s", originalTokens.mkString("_|_"))
 
     // This is awful connector parsing
-    val connectorStart = originalTokens.findIndexOf(_ == "near")
+    val connectorStart = originalTokens.indexOf("near")
     val connectorEnd = connectorStart
     val hadConnector = connectorStart != -1
 

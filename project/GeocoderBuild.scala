@@ -121,7 +121,7 @@ object GeocoderBuild extends Build {
           "org.apache.hadoop" % "hadoop-common" % "2.0.0-cdh4.1.2" ,
           "org.apache.hbase" % "hbase" % "0.92.1-cdh4.1.2" intransitive(),
           "com.google.guava" % "guava" % "r09",
-          "com.novus" %% "salat-core" % "0.0.8",
+          "com.novus" %% "salat" % "1.9.2-SNAPSHOT",
           "commons-cli" % "commons-cli" % "1.2",
           "commons-logging" % "commons-logging" % "1.1.1",
           "commons-daemon" % "commons-daemon" % "1.0.9",
