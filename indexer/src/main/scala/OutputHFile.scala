@@ -58,7 +58,7 @@ class FidMap(preload: Boolean) extends DurationUtils {
   if (preload) {
     logDuration("preloading fids") {
       var i = 0
-      val total = MongoGeocodeDAO.collection.count
+      val total = MongoGeocodeDAO.collection.count()
       val geocodeCursor = MongoGeocodeDAO.find(MongoDBObject())
       geocodeCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
       geocodeCursor.foreach(geocodeRecord => {
@@ -280,7 +280,7 @@ class NameIndexer(override val basepath: String, override val fidMap: FidMap, ou
 
   def writeNames() {
     var nameCount = 0
-    val nameSize = NameIndexDAO.collection.count
+    val nameSize = NameIndexDAO.collection.count()
     val nameCursor = NameIndexDAO.find(MongoDBObject())
       .sort(orderBy = MongoDBObject("name" -> 1)) // sort by nameBytes asc
     nameCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
@@ -362,7 +362,7 @@ class FeatureIndexer(override val basepath: String, override val fidMap: FidMap)
   def writeFeatures() {
     val writer = buildMapFileWriter(Indexes.FeatureIndex, indexInterval = Some(2))
     var fidCount = 0
-    val fidSize = MongoGeocodeDAO.collection.count
+    val fidSize = MongoGeocodeDAO.collection.count()
     val fidCursor = MongoGeocodeDAO.find(MongoDBObject())
       .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
     fidCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
