@@ -8,7 +8,7 @@ object GeocoderBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.foursquare.twofishes",
     name := "twofishes",
-    version      := "0.77.1",
+    version      := "0.77.4",
     crossScalaVersions := Seq("2.9.2", "2.10.2")
   )
 
@@ -119,17 +119,17 @@ object GeocoderBuild extends Build {
           "org.apache.hadoop" % "hadoop-common" % "2.0.0-cdh4.1.2" ,
           "org.apache.hbase" % "hbase" % "0.92.1-cdh4.1.2" intransitive(),
           "com.google.guava" % "guava" % "r09",
-          "com.novus" %% "salat" % "1.9.2-SNAPSHOT",
           "commons-cli" % "commons-cli" % "1.2",
           "commons-logging" % "commons-logging" % "1.1.1",
           "commons-daemon" % "commons-daemon" % "1.0.9",
-          "commons-configuration" % "commons-configuration" % "1.6"
+          "commons-configuration" % "commons-configuration" % "1.6",
+          "org.mongodb" % "mongo-java-driver" % "2.9.3"
         ),
         ivyXML := (
           <dependencies>
             <exclude org="thrift"/>
             <exclude org="com.twitter" module="finagle-core"/>
-	    <exclude org="org.scalaj" module="scalaj-collection_2.9.1"/>
+            <exclude org="org.scalaj" module="scalaj-collection_2.9.1"/>
             <exclude org="org.apache.thrift" module="thrift"/>
             <exclude org="commons-beanutils" module="commons-beanutils"/>
             <exclude org="commons-beanutils" module="commons-beanutils-core"/>
@@ -164,12 +164,12 @@ object GeocoderBuild extends Build {
         ivyXML := (
           <dependencies>
             <exclude org="com.twitter" module="finagle-core"/>
-	    <exclude org="org.scalaj" module="scalaj-collection_2.9.1"/>
+            <exclude org="org.scalaj" module="scalaj-collection_2.9.1"/>
             <exclude org="org.mongodb" module="bson"/>
           </dependencies>
         )
       ),
-      base = file("server")) dependsOn(core, interface, util, indexer % "test")
+      base = file("server")) dependsOn(core, interface, util)
 
   lazy val indexer = Project(id = "indexer",
       base = file("indexer"),
@@ -194,7 +194,10 @@ object GeocoderBuild extends Build {
         val parser = new GeonamesParser(store, slugIndexer, Map.empty)
         """,
 
-        publishArtifact := false
+        publishArtifact := false,
+        libraryDependencies ++= Seq(
+          "com.novus" %% "salat" % "1.9.2-SNAPSHOT"
+        )
       )
   ) dependsOn(core, util)
 
@@ -207,7 +210,6 @@ object GeocoderBuild extends Build {
           "org.geotools" % "gt-shapefile" % "9.2",
           "org.geotools" % "gt-geojson" % "9.2",
           "org.geotools" % "gt-epsg-hsql" % "9.2",
-          "org.mongodb" % "bson" % "2.10.1",
           "org.scalaj" %% "scalaj-collection" % "1.5"
         )
       )
