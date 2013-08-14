@@ -175,15 +175,19 @@ trait NameUtils {
   class FeatureNameScorer(lang: Option[String], preferAbbrev: Boolean) {
     def scoreName(name: FeatureName): Int = {
       var score = 0
-      if (lang.exists(_ == name.lang)) {
-        score += 2
+
+      lang match {
+        case Some(l) if name.lang == l =>
+          score += 2
+        case _ =>
+          ()
       }
 
       if (name.flags != null) {
-        score += (for {
-          flag <- name.flags
-        } yield {
-          flag match {
+        val it = name.flags.iterator
+        while (it.hasNext) {
+          val flag = it.next
+          score += (flag match {
             case FeatureNameFlags.COLLOQUIAL => 10
             case FeatureNameFlags.PREFERRED => 1
             case FeatureNameFlags.ALIAS => -1
@@ -193,8 +197,8 @@ trait NameUtils {
             }
             case FeatureNameFlags.ALT_NAME => 0
             case FeatureNameFlags.LOCAL_LANG => 0
-          }
-        }).sum
+          })
+        }
       }
 
       score
