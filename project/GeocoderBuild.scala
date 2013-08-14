@@ -8,8 +8,7 @@ object GeocoderBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.foursquare.twofishes",
     name := "twofishes",
-    version      := "0.77.4",
-    scalaVersion := "2.10.2",
+    version      := "0.77.4_b",
     crossScalaVersions := Seq("2.9.2", "2.10.2")
   )
 
