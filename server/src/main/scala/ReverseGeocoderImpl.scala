@@ -105,7 +105,6 @@ class ReverseGeocoderHelperImpl(
     }
 
     val matches = new ListBuffer[StoredFeatureId]()
-    print(req.woeRestrict)
 
     for {
       cellGeometry <- cellGeometries

@@ -23,6 +23,6 @@ object NullLogger {
 }
 
 
- trait LogHelper {
+trait LogHelper {
   val logger = NullLogger
- }
+}
