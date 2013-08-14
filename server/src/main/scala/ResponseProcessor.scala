@@ -92,7 +92,7 @@ class ResponseProcessor(
       }
     }
 
-   
+
 
     val dedupedMap: Seq[(Parse[Sorted], Int)] = for {
       (textKey, parsePairs) <- parseMap.toSeq
@@ -483,7 +483,7 @@ class ResponseProcessor(
       originalMaxInterpretations
     }
 
-    val dedupedParses = if (maxInterpretations > 1) {
+    val dedupedParses = if (maxInterpretations >= 1) {
       dedupeParses(filteredParses.take(maxInterpretations * 2)).take(maxInterpretations)
     } else {
       dedupeParses(filteredParses.take(maxInterpretations))
