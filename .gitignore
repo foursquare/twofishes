@@ -35,3 +35,6 @@ id-mapping.txt
 *.shx
 *.prj
 *.zip
+.idea
+latest
+*.iml

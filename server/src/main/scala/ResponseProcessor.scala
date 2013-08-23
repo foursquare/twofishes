@@ -246,7 +246,7 @@ class ResponseProcessor(
   // Given a set of parses, create a geocode response which has fully formed
   // versions of all the features in it (names, parents)
   def hydrateParses(
-    sortedParses: SortedParseSeq,
+    sortedParsesIn: SortedParseSeq,
     parseParams: ParseParams,
     polygonMap: Map[StoredFeatureId, Geometry],
     fixAmbiguousNames: Boolean,
@@ -262,8 +262,20 @@ class ResponseProcessor(
     //   logger.ifDebug(printDebugParse(p))
     // })
 
-    val parentIds: Seq[Long] = sortedParses.flatMap(
+    val sortedParses = {
+      // Order-preserving de-duplication by feature match id
+      val seen = scala.collection.mutable.HashSet[Long]()
+      sortedParsesIn.filter(sp => {
+        if (!seen(sp(0).fmatch.longId)) {
+          seen += sp(0).fmatch.longId
+          true
+        } else false
+      })
+    }
+
+    val parentIdsAll: Seq[Long] = sortedParses.flatMap(
       _.headOption.toList.flatMap(_.fmatch.scoringFeatures.parentIds.asScala))
+    val parentIds = parentIdsAll.distinct
     val parentFids: Seq[StoredFeatureId] = parentIds.flatMap(StoredFeatureId.fromLong _)
     logger.ifDebug("parent ids: %s", parentFids)
 
