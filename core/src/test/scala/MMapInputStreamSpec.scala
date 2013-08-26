@@ -40,6 +40,30 @@ class MMapInputStreamSpec extends Specification {
     }
   }
 
+  "should be able to do read byte at a time" in {
+    val Size = 1024
+    val (file, buf) = createTempFile(Size)
+    try {
+      val mmapStream = openWithMMap(file)
+      val hadoopStream = openWithHadoop(file)
+
+      for {
+        i <- 1 to Size
+      } {
+        mmapStream.read() must_== hadoopStream.read()
+        // Position should be advanced.
+        hadoopStream.getPos must_== i
+        mmapStream.getPos must_== i
+      }
+
+      // EOF should be signaled.
+      hadoopStream.read() must_== -1
+      mmapStream.read() must_== -1
+    } finally {
+      file.delete
+    }
+  }
+
   "should be able to do reads and seeks" in {
     val (file, buf) = createTempFile(100*1024)
     try {
