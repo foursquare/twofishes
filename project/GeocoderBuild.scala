@@ -7,12 +7,12 @@ object GeocoderBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.foursquare.twofishes",
     name := "twofishes",
-    version      := "0.76.2",
+    version      := "0.76.2.1",
     crossScalaVersions := Seq("2.9.2", "2.10.2")
   )
 
   lazy val scoptSettings = Seq(
-    libraryDependencies += 
+    libraryDependencies +=
        "com.github.scopt" %% "scopt" % "2.1.0" cross CrossVersion.binaryMapped {
          case "2.10.2" => "2.10"
          case x => x
@@ -139,7 +139,7 @@ object GeocoderBuild extends Build {
           "thrift" % "libthrift" % "0.5.0" from "http://maven.twttr.com/org/apache/thrift/libthrift/0.5.0/libthrift-0.5.0.jar",
           "com.twitter" % "finagle-thrift" % "5.3.23",
           "org.slf4j" % "slf4j-api" % "1.6.1"
-        ) 
+        )
       ),
       base = file("interface"))
 
