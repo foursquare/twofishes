@@ -4,7 +4,7 @@ import java.io.File
 import java.net.URI
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FSDataInputStream, FileSystem, LocalFileSystem, Path}
-import org.apache.hadoop.io.{BytesWritable, MapFile, SequenceFile, Text, Writable, WritableComparator}
+import org.apache.hadoop.io.{BytesWritable, MapFile, MapFileConcurrentReader, SequenceFile, Text, Writable, WritableComparator}
 import org.apache.hadoop.util.Options
 import scalaj.collection.Implicits._
 
@@ -35,7 +35,7 @@ class MemoryMappedSequenceFileReader(conf: Configuration, val shouldPreload: Boo
   * that problem.
   */
 class MemoryMappedMapFileReader(val path: Path, val conf: Configuration, val shouldPreload: Boolean)
-    extends { private var metadataOpt: Option[SequenceFile.Metadata] = None } with MapFile.Reader(path, conf) {
+    extends { private var metadataOpt: Option[SequenceFile.Metadata] = None } with MapFileConcurrentReader(path, conf) {
 
   // Called by the parent's ctor.
   override protected def createDataFileReader(
@@ -51,7 +51,8 @@ class MemoryMappedMapFileReader(val path: Path, val conf: Configuration, val sho
 }
 
 object MapFileUtils {
-  def readerAndInfoFromLocalPath(path: String, shouldPreload: Boolean): (MapFile.Reader, Map[String, String]) = {
+  def readerAndInfoFromLocalPath(path: String, shouldPreload: Boolean):
+    (MapFileConcurrentReader, Map[String, String]) = {
     val fs = new LocalFileSystem
     val conf = new Configuration
     fs.initialize(URI.create("file:///"), conf)
