@@ -325,13 +325,7 @@ class SlugFidMapFileInput(basepath: String, shouldPreload: Boolean) {
 }
 
 class GeocodeRecordMapFileInput(basepath: String, shouldPreload: Boolean) {
-  // This index is a contention point, and as a (very) short-term solution,
-  // this thread-local will allow us to have 4 copies of the index in-memory
-  // (and 4 locks).  Since we use mmap() behind the scenes, we'll only pay the
-  // cost of loading the index 4 times onto the heap, not the data. The real
-  // fix for this is to either make MapFile less contend-y and to use Future's.
-  val featureIndexes = (0 to 3).map(_ => new MapFileInput(basepath, Indexes.FeatureIndex, shouldPreload))
-  val featureIndexQueue = new LinkedBlockingQueue(featureIndexes.asJava)
+  val index = new MapFileInput(basepath, Indexes.FeatureIndex, shouldPreload)
 
   def getByFeatureIds(oids: Seq[StoredFeatureId]): Map[StoredFeatureId, GeocodeServingFeature] = {
     (for {
@@ -342,17 +336,7 @@ class GeocodeRecordMapFileInput(basepath: String, shouldPreload: Boolean) {
     }).toMap
   }
 
-  def doWithIndex[T](f: MapFileInput[StoredFeatureId, GeocodeServingFeature] => T): T = {
-    var index: MapFileInput[StoredFeatureId, GeocodeServingFeature] = null
-    try {
-      index = Stats.time("obtain-features-index") { featureIndexQueue.take() }
-      f(index)
-    } finally {
-      featureIndexQueue.put(index)
-    }
-  }
-
   def get(id: StoredFeatureId): Option[GeocodeServingFeature] = {
-    doWithIndex(_.lookup(id))
+    index.lookup(id)
   }
 }
