@@ -31,15 +31,16 @@ object GeocoderBuild extends Build {
   )
 
   lazy val defaultSettings = super.settings ++ buildSettings ++ Defaults.defaultSettings ++ Seq(
-    resolvers += "geomajas" at "http://maven.geomajas.org",
+    resolvers += "maven" at "http://repo2.maven.org/maven2//",
+    resolvers += "conjars" at "http://conjars.org/repo",
     resolvers += "osgeo" at "http://download.osgeo.org/webdav/geotools/",
     resolvers += "twitter" at "http://maven.twttr.com",
     resolvers += "repo.novus rels" at "http://repo.novus.com/releases/",
     resolvers += "repo.novus snaps" at "http://repo.novus.com/snapshots/",
     resolvers += "Java.net Maven 2 Repo" at "http://download.java.net/maven/2",
     resolvers += "apache" at "http://repo2.maven.org/maven2/org/apache/hbase/hbase/",
-    // resolvers += "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos/",
     resolvers += "springsource" at "http://repo.springsource.org/libs-release-remote",
+    resolvers += "geomajas" at "http://maven.geomajas.org",
     resolvers ++= Seq("snapshots" at "http://oss.sonatype.org/content/repositories/snapshots",
                       "releases"  at "http://oss.sonatype.org/content/repositories/releases"),
 
@@ -98,7 +99,7 @@ object GeocoderBuild extends Build {
 
   lazy val core = Project(id = "core",
       base = file("core"),
-      settings = defaultSettings ++ specsSettings ++ Seq(
+      settings = defaultSettings ++ specsSettings ++ assemblySettings ++ Seq(
         publishArtifact := true,
         libraryDependencies ++= Seq(
           "com.twitter" %% "ostrich" % "9.1.0",
@@ -112,8 +113,9 @@ object GeocoderBuild extends Build {
           },
           "org.slf4j" % "slf4j-api" % "1.6.1",
           "org.apache.avro" % "avro" % "1.7.1.cloudera.2",
-          "org.apache.hadoop" % "hadoop-client" % "2.0.0-cdh4.1.2" intransitive(),
-          "org.apache.hadoop" % "hadoop-common" % "2.0.0-cdh4.1.2" ,
+          //"org.apache.hadoop" % "hadoop-client" % "2.0.0-cdh4.1.2" intransitive(),
+          "org.apache.hadoop" % "hadoop-core" % "2.0.0-mr1-cdh4.1.2",
+          "org.apache.hadoop" % "hadoop-common" % "2.0.0-cdh4.1.2",
           "org.apache.hbase" % "hbase" % "0.92.1-cdh4.1.2" intransitive(),
           "com.google.guava" % "guava" % "r09",
           "commons-cli" % "commons-cli" % "1.2",
@@ -171,7 +173,7 @@ object GeocoderBuild extends Build {
       base = file("indexer"),
       settings = defaultSettings ++ assemblySettings ++ scoptSettings ++ specsSettings ++ Seq(
         baseDirectory in run := file("."),
-        mainClass in assembly := Some("com.foursquare.twofishes.importers.geonames.GeonamesParser"),
+        mainClass in assembly := Some("com.twitter.scalding.Tool"),
         initialCommands := """
         import com.foursquare.twofishes._
         import com.foursquare.twofishes.importers.geonames._
@@ -193,7 +195,22 @@ object GeocoderBuild extends Build {
         publishArtifact := false,
         libraryDependencies ++= Seq(
           "com.novus" %% "salat" % "1.9.2"
-        )
+        ),
+        ivyXML := (
+          <dependencies>
+            <exclude org="asm"/>
+            <exclude org="com.esotericsoftware.minlog" module="minlog"/>
+          </dependencies>
+        ),
+        mergeStrategy in assembly <<= (mergeStrategy in assembly) { mergeStrategy => {
+          case entry => {
+            val strategy = mergeStrategy(entry)
+            if (strategy == MergeStrategy.deduplicate) MergeStrategy.first
+            else strategy
+          }
+        }
+}
+>>>>>>> at least it compiles
       )
   ) dependsOn(core, util)
 
@@ -202,6 +219,7 @@ object GeocoderBuild extends Build {
       settings = defaultSettings ++ assemblySettings ++ specsSettings ++ Seq(
         publishArtifact := true,
         libraryDependencies ++= Seq(
+          "org.mongodb" %% "casbah-commons" % "2.6.2",
           "com.google.caliper" % "caliper" % "0.5-rc1",
           "org.geotools" % "gt-shapefile" % "9.2",
           "org.geotools" % "gt-geojson" % "9.2",
