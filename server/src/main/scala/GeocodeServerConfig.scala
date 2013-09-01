@@ -1,33 +1,37 @@
  //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
-class GeocodeServerConfig(args: Array[String]) {
-  var runHttpServer: Boolean = true
-  var thriftServerPort: Int = 8080
-  var hfileBasePath: String = null
-  var shouldPreload: Boolean = true
+case class GeocodeServerConfig(
+  runHttpServer: Boolean = true,
+  thriftServerPort: Int = 8080,
+  hfileBasePath: String = "",
+  shouldPreload: Boolean = true
+)
 
-  private val config = this
+object GeocodeServerConfigParser {
+  def parse(args: Array[String]): GeocodeServerConfig = {
+    val parser =
+      new scopt.OptionParser[GeocodeServerConfig]("twofishes") {
+        opt[Int]('p', "port")
+          .action { (x, c) => c.copy(thriftServerPort = x) }
+          .text("port to run thrift server on")
+        opt[Boolean]('h', "run_http_server")
+          .action { (x, c) => c.copy(runHttpServer = x) }
+          .text("whether or not to run http/json server on port+1")
+        opt[String]("hfile_basepath")
+          .text("directory containing output hfile for serving")
+          .action { (x, c) => c.copy(hfileBasePath = x) }
+          .required
+        opt[Boolean]("preload")
+          .text("scan the hfiles at startup to prevent a cold start, turn off when testing")
+          .action { (x, c) => c.copy(shouldPreload = x) }
+        }
 
-  val parser = 
-    new scopt.OptionParser("twofishes", "0.12") {
-      intOpt("p", "port", "port to run thrift server on",
-        { v: Int => config.thriftServerPort = v } )
-      booleanOpt("h", "run_http_server", "whether or not to run http/json server on port+1",
-        { v: Boolean => config.runHttpServer = v } )
-      opt("hfile_basepath", "directory containing output hfile for serving",
-        { v: String => config.hfileBasePath = v} )
-      booleanOpt("preload", "scan the hfiles at startup to prevent a cold start, turn off when testing",
-        { v: Boolean => config.shouldPreload = v} )
-      }
-
-  if (!parser.parse(args)) {
-    // arguments are bad, usage message will have been displayed
-    System.exit(1)
-  }
-
-  if (hfileBasePath == null) {
-    println("must specify --hfile_basepath")
-    System.exit(1)
+    // parser.parse returns Option[C]
+    parser.parse(args, GeocodeServerConfig()) getOrElse {
+      // arguments are bad, usage message will have been displayed
+      System.exit(1)
+      GeocodeServerConfig()
+    }
   }
 }

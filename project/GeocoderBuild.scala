@@ -9,15 +9,12 @@ object GeocoderBuild extends Build {
     organization := "com.foursquare.twofishes",
     name := "twofishes",
     version      := "0.77.4",
+    scalaVersion := "2.10.2",
     crossScalaVersions := Seq("2.9.2", "2.10.2")
   )
 
   lazy val scoptSettings = Seq(
-    libraryDependencies +=
-       "com.github.scopt" %% "scopt" % "2.1.0" cross CrossVersion.binaryMapped {
-         case "2.10.2" => "2.10"
-         case x => x
-       }
+    libraryDependencies += "com.github.scopt" %% "scopt" % "3.1.0"
   )
 
   lazy val specsSettings = Seq(
@@ -122,8 +119,7 @@ object GeocoderBuild extends Build {
           "commons-cli" % "commons-cli" % "1.2",
           "commons-logging" % "commons-logging" % "1.1.1",
           "commons-daemon" % "commons-daemon" % "1.0.9",
-          "commons-configuration" % "commons-configuration" % "1.6",
-          "org.mongodb" % "mongo-java-driver" % "2.9.3"
+          "commons-configuration" % "commons-configuration" % "1.6"
         ),
         ivyXML := (
           <dependencies>
@@ -196,7 +192,7 @@ object GeocoderBuild extends Build {
 
         publishArtifact := false,
         libraryDependencies ++= Seq(
-          "com.novus" %% "salat" % "1.9.2-SNAPSHOT"
+          "com.novus" %% "salat" % "1.9.2"
         )
       )
   ) dependsOn(core, util)
@@ -210,7 +206,8 @@ object GeocoderBuild extends Build {
           "org.geotools" % "gt-shapefile" % "9.2",
           "org.geotools" % "gt-geojson" % "9.2",
           "org.geotools" % "gt-epsg-hsql" % "9.2",
-          "org.scalaj" %% "scalaj-collection" % "1.5"
+          "org.scalaj" %% "scalaj-collection" % "1.5",
+          "org.mongodb" % "mongo-java-driver" % "2.9.3"
         )
       )
     ) dependsOn(interface)

@@ -68,7 +68,7 @@ object GeonamesParser {
   lazy val slugIndexer = new SlugIndexer()
 
   def main(args: Array[String]) {
-    config = new GeonamesImporterConfig(args)
+    config = GeonamesImporterConfigParser.parse(args)
 
     if (config.reloadData) {
       loadIntoMongo()
@@ -77,7 +77,7 @@ object GeonamesParser {
   }
 
   def writeIndex(args: Array[String]) {
-    config = new GeonamesImporterConfig(args)
+    config = GeonamesImporterConfigParser.parse(args)
     writeIndexes()
   }
 
