@@ -70,6 +70,45 @@ object GeonamesImporterConfigParser {
               throw new Exception("1 is reserved for geonameid")
             }
             c.copy(providerMapping = (c.providerMapping ++ Map(key -> value)))
+=======
+  var hfileBasePath: String = null
+
+  var outputPrefixIndex: Boolean = true
+  var outputRevgeo: Boolean = false
+
+  var reloadData: Boolean = true
+
+  private val config = this
+
+  val providerMapping = new HashMap[String, Int]
+  providerMapping("geonameid") = 1
+
+  val parser =
+    new scopt.OptionParser("twofishes") {
+      booleanOpt("parse_world", "parse the whole world, or one country",
+        { v: Boolean => config.parseWorld = v } )
+      opt("parse_country", "country to parse, two letter iso code",
+        { v: String => config.parseCountry = v } )
+      booleanOpt("parse_postal_codes", "parse postal codes",
+        { v: Boolean => config.importPostalCodes = v } )
+      opt("hfile_basepath", "directory to output hfiles to",
+        { v: String => config.hfileBasePath = v} )
+      booleanOpt("parse_alternate_names", "parse alternate names",
+        { v: Boolean => config.importAlternateNames = v } )
+      booleanOpt("output_prefix_index", "wheter or not to output autocomplete acceleration index",
+        { v: Boolean => config.outputPrefixIndex = v} )
+      booleanOpt("build_missing_slugs", "build pretty hopefully stable slugs per feature",
+        { v: Boolean => config.buildMissingSlugs = v } )
+      booleanOpt("output_revgeo_index", "whether or not to output s2 revgeo index",
+        { v: Boolean => config.outputRevgeo = v} )
+      booleanOpt("reload_data", "reload data into mongo",
+        { v: Boolean => config.reloadData = v} )
+      keyValueOpt("provider_mapping", "mapping from provider namespace to integer",
+        {(key: String, value: String) => {
+          println(key)
+          println(value)
+          if (value == "1") {
+            throw new Exception("1 is reserved for geonameid")
           }
           .keyValueName("providerid", "intValue")
       }
