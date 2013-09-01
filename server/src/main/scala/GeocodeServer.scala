@@ -346,7 +346,7 @@ object GeocodeFinagleServer {
 
     LogHelper.init
 
-    val config = new GeocodeServerConfig(args)
+    val config: GeocodeServerConfig = GeocodeServerConfigParser.parse(args)
 
     // Implement the Thrift Interface
     val processor = new QueryLoggingGeocodeServerImpl(new GeocodeServerImpl(ServerStore.getStore(config), config.shouldWarmup))

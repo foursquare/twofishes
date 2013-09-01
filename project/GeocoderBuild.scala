@@ -15,11 +15,7 @@ object GeocoderBuild extends Build {
   )
 
   lazy val scoptSettings = Seq(
-    libraryDependencies +=
-       "com.github.scopt" %% "scopt" % "2.1.0" cross CrossVersion.binaryMapped {
-         case "2.10.2" => "2.10"
-         case x => x
-       }
+    libraryDependencies += "com.github.scopt" %% "scopt" % "3.1.0"
   )
 
   lazy val specsSettings = Seq(
@@ -124,8 +120,7 @@ object GeocoderBuild extends Build {
           "commons-cli" % "commons-cli" % "1.2",
           "commons-logging" % "commons-logging" % "1.1.1",
           "commons-daemon" % "commons-daemon" % "1.0.9",
-          "commons-configuration" % "commons-configuration" % "1.6",
-          "org.mongodb" % "mongo-java-driver" % "2.9.3"
+          "commons-configuration" % "commons-configuration" % "1.6"
         ),
         ivyXML := (
           <dependencies>
@@ -198,17 +193,14 @@ object GeocoderBuild extends Build {
 
         publishArtifact := false,
         libraryDependencies ++= Seq(
-<<<<<<< HEAD
           "com.weiglewilczek.slf4s" % "slf4s_2.9.1" % "1.0.7",
           "ch.qos.logback" % "logback-classic" % "1.0.9",
+          "com.novus" %% "salat" % "1.9.2"
         ),
         ivyXML := (
           <dependencies>
             <exclude org="org.slf4j" module="slf4j-log4j12"/>
           </dependencies>
-=======
-          "com.novus" %% "salat" % "1.9.2-SNAPSHOT"
->>>>>>> more 2.10 fixes
         )
       )
   ) dependsOn(core, util)
@@ -222,7 +214,8 @@ object GeocoderBuild extends Build {
           "org.geotools" % "gt-shapefile" % "9.2",
           "org.geotools" % "gt-geojson" % "9.2",
           "org.geotools" % "gt-epsg-hsql" % "9.2",
-          "org.scalaj" %% "scalaj-collection" % "1.5"
+          "org.scalaj" %% "scalaj-collection" % "1.5",
+          "org.mongodb" % "mongo-java-driver" % "2.9.3"
         )
       )
     ) dependsOn(interface)
