@@ -38,6 +38,7 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
   private static final TField SCORING_FEATURES__DEPRECATED_FIELD_DESC = new TField("scoringFeatures_DEPRECATED", TType.STRUCT, (short)5);
   private static final TField SCORES_FIELD_DESC = new TField("scores", TType.STRUCT, (short)6);
   private static final TField DEBUG_INFO_FIELD_DESC = new TField("debugInfo", TType.STRUCT, (short)7);
+  private static final TField PARENT_LONG_IDS_FIELD_DESC = new TField("parentLongIds", TType.LIST, (short)8);
 
   public String what;
   public String where;
@@ -46,6 +47,7 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
   public ScoringFeatures scoringFeatures_DEPRECATED;
   public InterpretationScoringFeatures scores;
   public InterpretationDebugInfo debugInfo;
+  public List<Long> parentLongIds;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
@@ -55,7 +57,8 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
     PARENTS((short)4, "parents"),
     SCORING_FEATURES__DEPRECATED((short)5, "scoringFeatures_DEPRECATED"),
     SCORES((short)6, "scores"),
-    DEBUG_INFO((short)7, "debugInfo");
+    DEBUG_INFO((short)7, "debugInfo"),
+    PARENT_LONG_IDS((short)8, "parentLongIds");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -84,6 +87,8 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
           return SCORES;
         case 7: // DEBUG_INFO
           return DEBUG_INFO;
+        case 8: // PARENT_LONG_IDS
+          return PARENT_LONG_IDS;
         default:
           return null;
       }
@@ -143,6 +148,9 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
         new StructMetaData(TType.STRUCT, InterpretationScoringFeatures.class)));
     tmpMap.put(_Fields.DEBUG_INFO, new FieldMetaData("debugInfo", TFieldRequirementType.OPTIONAL, 
         new StructMetaData(TType.STRUCT, InterpretationDebugInfo.class)));
+    tmpMap.put(_Fields.PARENT_LONG_IDS, new FieldMetaData("parentLongIds", TFieldRequirementType.OPTIONAL, 
+        new ListMetaData(TType.LIST, 
+            new FieldValueMetaData(TType.I64))));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     FieldMetaData.addStructMetaDataMap(GeocodeInterpretation.class, metaDataMap);
   }
@@ -190,6 +198,13 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
     if (other.isSetDebugInfo()) {
       this.debugInfo = new InterpretationDebugInfo(other.debugInfo);
     }
+    if (other.isSetParentLongIds()) {
+      List<Long> __this__parentLongIds = new ArrayList<Long>();
+      for (Long other_element : other.parentLongIds) {
+        __this__parentLongIds.add(other_element);
+      }
+      this.parentLongIds = __this__parentLongIds;
+    }
   }
 
   public GeocodeInterpretation deepCopy() {
@@ -205,6 +220,7 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
     this.scoringFeatures_DEPRECATED = null;
     this.scores = null;
     this.debugInfo = null;
+    this.parentLongIds = null;
   }
 
   public String getWhat() {
@@ -390,6 +406,45 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
     }
   }
 
+  public int getParentLongIdsSize() {
+    return (this.parentLongIds == null) ? 0 : this.parentLongIds.size();
+  }
+
+  public java.util.Iterator<Long> getParentLongIdsIterator() {
+    return (this.parentLongIds == null) ? null : this.parentLongIds.iterator();
+  }
+
+  public void addToParentLongIds(long elem) {
+    if (this.parentLongIds == null) {
+      this.parentLongIds = new ArrayList<Long>();
+    }
+    this.parentLongIds.add(elem);
+  }
+
+  public List<Long> getParentLongIds() {
+    return this.parentLongIds;
+  }
+
+  public GeocodeInterpretation setParentLongIds(List<Long> parentLongIds) {
+    this.parentLongIds = parentLongIds;
+    return this;
+  }
+
+  public void unsetParentLongIds() {
+    this.parentLongIds = null;
+  }
+
+  /** Returns true if field parentLongIds is set (has been asigned a value) and false otherwise */
+  public boolean isSetParentLongIds() {
+    return this.parentLongIds != null;
+  }
+
+  public void setParentLongIdsIsSet(boolean value) {
+    if (!value) {
+      this.parentLongIds = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case WHAT:
@@ -448,6 +503,14 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
       }
       break;
 
+    case PARENT_LONG_IDS:
+      if (value == null) {
+        unsetParentLongIds();
+      } else {
+        setParentLongIds((List<Long>)value);
+      }
+      break;
+
     }
   }
 
@@ -474,6 +537,9 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
     case DEBUG_INFO:
       return getDebugInfo();
 
+    case PARENT_LONG_IDS:
+      return getParentLongIds();
+
     }
     throw new IllegalStateException();
   }
@@ -499,6 +565,8 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
       return isSetScores();
     case DEBUG_INFO:
       return isSetDebugInfo();
+    case PARENT_LONG_IDS:
+      return isSetParentLongIds();
     }
     throw new IllegalStateException();
   }
@@ -576,6 +644,15 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
       if (!(this_present_debugInfo && that_present_debugInfo))
         return false;
       if (!this.debugInfo.equals(that.debugInfo))
+        return false;
+    }
+
+    boolean this_present_parentLongIds = true && this.isSetParentLongIds();
+    boolean that_present_parentLongIds = true && that.isSetParentLongIds();
+    if (this_present_parentLongIds || that_present_parentLongIds) {
+      if (!(this_present_parentLongIds && that_present_parentLongIds))
+        return false;
+      if (!this.parentLongIds.equals(that.parentLongIds))
         return false;
     }
 
@@ -665,6 +742,16 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetParentLongIds()).compareTo(typedOther.isSetParentLongIds());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetParentLongIds()) {
+      lastComparison = TBaseHelper.compareTo(this.parentLongIds, typedOther.parentLongIds);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -746,6 +833,23 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
             TProtocolUtil.skip(iprot, field.type);
           }
           break;
+        case 8: // PARENT_LONG_IDS
+          if (field.type == TType.LIST) {
+            {
+              TList _list39 = iprot.readListBegin();
+              this.parentLongIds = new ArrayList<Long>(_list39.size);
+              for (int _i40 = 0; _i40 < _list39.size; ++_i40)
+              {
+                long _elem41;
+                _elem41 = iprot.readI64();
+                this.parentLongIds.add(_elem41);
+              }
+              iprot.readListEnd();
+            }
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
         default:
           TProtocolUtil.skip(iprot, field.type);
       }
@@ -781,9 +885,9 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
         oprot.writeFieldBegin(PARENTS_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.STRUCT, this.parents.size()));
-          for (GeocodeFeature _iter39 : this.parents)
+          for (GeocodeFeature _iter42 : this.parents)
           {
-            _iter39.write(oprot);
+            _iter42.write(oprot);
           }
           oprot.writeListEnd();
         }
@@ -808,6 +912,20 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
       if (isSetDebugInfo()) {
         oprot.writeFieldBegin(DEBUG_INFO_FIELD_DESC);
         this.debugInfo.write(oprot);
+        oprot.writeFieldEnd();
+      }
+    }
+    if (this.parentLongIds != null) {
+      if (isSetParentLongIds()) {
+        oprot.writeFieldBegin(PARENT_LONG_IDS_FIELD_DESC);
+        {
+          oprot.writeListBegin(new TList(TType.I64, this.parentLongIds.size()));
+          for (long _iter43 : this.parentLongIds)
+          {
+            oprot.writeI64(_iter43);
+          }
+          oprot.writeListEnd();
+        }
         oprot.writeFieldEnd();
       }
     }
@@ -880,6 +998,16 @@ public class GeocodeInterpretation implements TBase<GeocodeInterpretation, Geoco
         sb.append("null");
       } else {
         sb.append(this.debugInfo);
+      }
+      first = false;
+    }
+    if (isSetParentLongIds()) {
+      if (!first) sb.append(", ");
+      sb.append("parentLongIds:");
+      if (this.parentLongIds == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.parentLongIds);
       }
       first = false;
     }

@@ -200,13 +200,14 @@ struct InterpretationDebugInfo {
 }
 
 struct GeocodeInterpretation {
-  1: string what,
-  2: string where,
+  1: string what
+  2: string where
   3: GeocodeFeature feature
-  4: optional list<GeocodeFeature> parents,
-  5: optional ScoringFeatures scoringFeatures_DEPRECATED,
-  6: optional InterpretationScoringFeatures scores,
+  4: optional list<GeocodeFeature> parents
+  5: optional ScoringFeatures scoringFeatures_DEPRECATED
+  6: optional InterpretationScoringFeatures scores
   7: optional InterpretationDebugInfo debugInfo
+  8: optional list<i64> parentLongIds
 }
 
 struct GeocodeResponse {
@@ -324,9 +325,10 @@ struct BulkReverseGeocodeResponse {
 
   3: required list<GeocodeInterpretation> interpretations
   4: list<list<i32>> interpretationIndexes
+  5: optional list<GeocodeFeature> parentFeatures
 
   // only present if debug > 0 in request
-  2: optional list<string> debugLines,
+  2: optional list<string> debugLines
 }
 
 struct BulkSlugLookupRequest {
@@ -337,9 +339,10 @@ struct BulkSlugLookupRequest {
 struct BulkSlugLookupResponse {
   1: required list<GeocodeInterpretation> interpretations
   2: list<list<i32>> interpretationIndexes
+  4: optional list<GeocodeFeature> parentFeatures
 
   // only present if debug > 0 in request
-  3: optional list<string> debugLines,
+  3: optional list<string> debugLines
 }
 
 service Geocoder {

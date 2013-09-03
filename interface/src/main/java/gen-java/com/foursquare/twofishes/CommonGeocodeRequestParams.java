@@ -960,13 +960,13 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
         case 2: // WOE_HINT
           if (field.type == TType.LIST) {
             {
-              TList _list64 = iprot.readListBegin();
-              this.woeHint = new ArrayList<YahooWoeType>(_list64.size);
-              for (int _i65 = 0; _i65 < _list64.size; ++_i65)
+              TList _list68 = iprot.readListBegin();
+              this.woeHint = new ArrayList<YahooWoeType>(_list68.size);
+              for (int _i69 = 0; _i69 < _list68.size; ++_i69)
               {
-                YahooWoeType _elem66;
-                _elem66 = YahooWoeType.findByValue(iprot.readI32());
-                this.woeHint.add(_elem66);
+                YahooWoeType _elem70;
+                _elem70 = YahooWoeType.findByValue(iprot.readI32());
+                this.woeHint.add(_elem70);
               }
               iprot.readListEnd();
             }
@@ -977,13 +977,13 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
         case 3: // WOE_RESTRICT
           if (field.type == TType.LIST) {
             {
-              TList _list67 = iprot.readListBegin();
-              this.woeRestrict = new ArrayList<YahooWoeType>(_list67.size);
-              for (int _i68 = 0; _i68 < _list67.size; ++_i68)
+              TList _list71 = iprot.readListBegin();
+              this.woeRestrict = new ArrayList<YahooWoeType>(_list71.size);
+              for (int _i72 = 0; _i72 < _list71.size; ++_i72)
               {
-                YahooWoeType _elem69;
-                _elem69 = YahooWoeType.findByValue(iprot.readI32());
-                this.woeRestrict.add(_elem69);
+                YahooWoeType _elem73;
+                _elem73 = YahooWoeType.findByValue(iprot.readI32());
+                this.woeRestrict.add(_elem73);
               }
               iprot.readListEnd();
             }
@@ -1008,13 +1008,13 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
         case 6: // RESPONSE_INCLUDES
           if (field.type == TType.LIST) {
             {
-              TList _list70 = iprot.readListBegin();
-              this.responseIncludes = new ArrayList<ResponseIncludes>(_list70.size);
-              for (int _i71 = 0; _i71 < _list70.size; ++_i71)
+              TList _list74 = iprot.readListBegin();
+              this.responseIncludes = new ArrayList<ResponseIncludes>(_list74.size);
+              for (int _i75 = 0; _i75 < _list74.size; ++_i75)
               {
-                ResponseIncludes _elem72;
-                _elem72 = ResponseIncludes.findByValue(iprot.readI32());
-                this.responseIncludes.add(_elem72);
+                ResponseIncludes _elem76;
+                _elem76 = ResponseIncludes.findByValue(iprot.readI32());
+                this.responseIncludes.add(_elem76);
               }
               iprot.readListEnd();
             }
@@ -1025,13 +1025,13 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
         case 7: // ALLOWED_SOURCES
           if (field.type == TType.LIST) {
             {
-              TList _list73 = iprot.readListBegin();
-              this.allowedSources = new ArrayList<String>(_list73.size);
-              for (int _i74 = 0; _i74 < _list73.size; ++_i74)
+              TList _list77 = iprot.readListBegin();
+              this.allowedSources = new ArrayList<String>(_list77.size);
+              for (int _i78 = 0; _i78 < _list77.size; ++_i78)
               {
-                String _elem75;
-                _elem75 = iprot.readString();
-                this.allowedSources.add(_elem75);
+                String _elem79;
+                _elem79 = iprot.readString();
+                this.allowedSources.add(_elem79);
               }
               iprot.readListEnd();
             }
@@ -1088,9 +1088,9 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
         oprot.writeFieldBegin(WOE_HINT_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.I32, this.woeHint.size()));
-          for (YahooWoeType _iter76 : this.woeHint)
+          for (YahooWoeType _iter80 : this.woeHint)
           {
-            oprot.writeI32(_iter76.getValue());
+            oprot.writeI32(_iter80.getValue());
           }
           oprot.writeListEnd();
         }
@@ -1102,9 +1102,9 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
         oprot.writeFieldBegin(WOE_RESTRICT_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.I32, this.woeRestrict.size()));
-          for (YahooWoeType _iter77 : this.woeRestrict)
+          for (YahooWoeType _iter81 : this.woeRestrict)
           {
-            oprot.writeI32(_iter77.getValue());
+            oprot.writeI32(_iter81.getValue());
           }
           oprot.writeListEnd();
         }
@@ -1130,9 +1130,9 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
         oprot.writeFieldBegin(RESPONSE_INCLUDES_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.I32, this.responseIncludes.size()));
-          for (ResponseIncludes _iter78 : this.responseIncludes)
+          for (ResponseIncludes _iter82 : this.responseIncludes)
           {
-            oprot.writeI32(_iter78.getValue());
+            oprot.writeI32(_iter82.getValue());
           }
           oprot.writeListEnd();
         }
@@ -1144,9 +1144,9 @@ public class CommonGeocodeRequestParams implements TBase<CommonGeocodeRequestPar
         oprot.writeFieldBegin(ALLOWED_SOURCES_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.STRING, this.allowedSources.size()));
-          for (String _iter79 : this.allowedSources)
+          for (String _iter83 : this.allowedSources)
           {
-            oprot.writeString(_iter79);
+            oprot.writeString(_iter83);
           }
           oprot.writeListEnd();
         }

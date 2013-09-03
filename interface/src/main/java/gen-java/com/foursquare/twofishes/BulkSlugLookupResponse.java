@@ -33,16 +33,19 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
 
   private static final TField INTERPRETATIONS_FIELD_DESC = new TField("interpretations", TType.LIST, (short)1);
   private static final TField INTERPRETATION_INDEXES_FIELD_DESC = new TField("interpretationIndexes", TType.LIST, (short)2);
+  private static final TField PARENT_FEATURES_FIELD_DESC = new TField("parentFeatures", TType.LIST, (short)4);
   private static final TField DEBUG_LINES_FIELD_DESC = new TField("debugLines", TType.LIST, (short)3);
 
   public List<GeocodeInterpretation> interpretations;
   public List<List<Integer>> interpretationIndexes;
+  public List<GeocodeFeature> parentFeatures;
   public List<String> debugLines;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements TFieldIdEnum {
     INTERPRETATIONS((short)1, "interpretations"),
     INTERPRETATION_INDEXES((short)2, "interpretationIndexes"),
+    PARENT_FEATURES((short)4, "parentFeatures"),
     DEBUG_LINES((short)3, "debugLines");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
@@ -62,6 +65,8 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
           return INTERPRETATIONS;
         case 2: // INTERPRETATION_INDEXES
           return INTERPRETATION_INDEXES;
+        case 4: // PARENT_FEATURES
+          return PARENT_FEATURES;
         case 3: // DEBUG_LINES
           return DEBUG_LINES;
         default:
@@ -115,6 +120,9 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
         new ListMetaData(TType.LIST, 
             new ListMetaData(TType.LIST, 
                 new FieldValueMetaData(TType.I32)))));
+    tmpMap.put(_Fields.PARENT_FEATURES, new FieldMetaData("parentFeatures", TFieldRequirementType.OPTIONAL, 
+        new ListMetaData(TType.LIST, 
+            new StructMetaData(TType.STRUCT, GeocodeFeature.class))));
     tmpMap.put(_Fields.DEBUG_LINES, new FieldMetaData("debugLines", TFieldRequirementType.OPTIONAL, 
         new ListMetaData(TType.LIST, 
             new FieldValueMetaData(TType.STRING))));
@@ -156,6 +164,13 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
       }
       this.interpretationIndexes = __this__interpretationIndexes;
     }
+    if (other.isSetParentFeatures()) {
+      List<GeocodeFeature> __this__parentFeatures = new ArrayList<GeocodeFeature>();
+      for (GeocodeFeature other_element : other.parentFeatures) {
+        __this__parentFeatures.add(new GeocodeFeature(other_element));
+      }
+      this.parentFeatures = __this__parentFeatures;
+    }
     if (other.isSetDebugLines()) {
       List<String> __this__debugLines = new ArrayList<String>();
       for (String other_element : other.debugLines) {
@@ -173,6 +188,7 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
   public void clear() {
     this.interpretations = null;
     this.interpretationIndexes = null;
+    this.parentFeatures = null;
     this.debugLines = null;
   }
 
@@ -254,6 +270,45 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
     }
   }
 
+  public int getParentFeaturesSize() {
+    return (this.parentFeatures == null) ? 0 : this.parentFeatures.size();
+  }
+
+  public java.util.Iterator<GeocodeFeature> getParentFeaturesIterator() {
+    return (this.parentFeatures == null) ? null : this.parentFeatures.iterator();
+  }
+
+  public void addToParentFeatures(GeocodeFeature elem) {
+    if (this.parentFeatures == null) {
+      this.parentFeatures = new ArrayList<GeocodeFeature>();
+    }
+    this.parentFeatures.add(elem);
+  }
+
+  public List<GeocodeFeature> getParentFeatures() {
+    return this.parentFeatures;
+  }
+
+  public BulkSlugLookupResponse setParentFeatures(List<GeocodeFeature> parentFeatures) {
+    this.parentFeatures = parentFeatures;
+    return this;
+  }
+
+  public void unsetParentFeatures() {
+    this.parentFeatures = null;
+  }
+
+  /** Returns true if field parentFeatures is set (has been asigned a value) and false otherwise */
+  public boolean isSetParentFeatures() {
+    return this.parentFeatures != null;
+  }
+
+  public void setParentFeaturesIsSet(boolean value) {
+    if (!value) {
+      this.parentFeatures = null;
+    }
+  }
+
   public int getDebugLinesSize() {
     return (this.debugLines == null) ? 0 : this.debugLines.size();
   }
@@ -311,6 +366,14 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
       }
       break;
 
+    case PARENT_FEATURES:
+      if (value == null) {
+        unsetParentFeatures();
+      } else {
+        setParentFeatures((List<GeocodeFeature>)value);
+      }
+      break;
+
     case DEBUG_LINES:
       if (value == null) {
         unsetDebugLines();
@@ -330,6 +393,9 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
     case INTERPRETATION_INDEXES:
       return getInterpretationIndexes();
 
+    case PARENT_FEATURES:
+      return getParentFeatures();
+
     case DEBUG_LINES:
       return getDebugLines();
 
@@ -348,6 +414,8 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
       return isSetInterpretations();
     case INTERPRETATION_INDEXES:
       return isSetInterpretationIndexes();
+    case PARENT_FEATURES:
+      return isSetParentFeatures();
     case DEBUG_LINES:
       return isSetDebugLines();
     }
@@ -382,6 +450,15 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
       if (!(this_present_interpretationIndexes && that_present_interpretationIndexes))
         return false;
       if (!this.interpretationIndexes.equals(that.interpretationIndexes))
+        return false;
+    }
+
+    boolean this_present_parentFeatures = true && this.isSetParentFeatures();
+    boolean that_present_parentFeatures = true && that.isSetParentFeatures();
+    if (this_present_parentFeatures || that_present_parentFeatures) {
+      if (!(this_present_parentFeatures && that_present_parentFeatures))
+        return false;
+      if (!this.parentFeatures.equals(that.parentFeatures))
         return false;
     }
 
@@ -430,6 +507,16 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetParentFeatures()).compareTo(typedOther.isSetParentFeatures());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetParentFeatures()) {
+      lastComparison = TBaseHelper.compareTo(this.parentFeatures, typedOther.parentFeatures);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     lastComparison = Boolean.valueOf(isSetDebugLines()).compareTo(typedOther.isSetDebugLines());
     if (lastComparison != 0) {
       return lastComparison;
@@ -460,14 +547,14 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
         case 1: // INTERPRETATIONS
           if (field.type == TType.LIST) {
             {
-              TList _list113 = iprot.readListBegin();
-              this.interpretations = new ArrayList<GeocodeInterpretation>(_list113.size);
-              for (int _i114 = 0; _i114 < _list113.size; ++_i114)
+              TList _list121 = iprot.readListBegin();
+              this.interpretations = new ArrayList<GeocodeInterpretation>(_list121.size);
+              for (int _i122 = 0; _i122 < _list121.size; ++_i122)
               {
-                GeocodeInterpretation _elem115;
-                _elem115 = new GeocodeInterpretation();
-                _elem115.read(iprot);
-                this.interpretations.add(_elem115);
+                GeocodeInterpretation _elem123;
+                _elem123 = new GeocodeInterpretation();
+                _elem123.read(iprot);
+                this.interpretations.add(_elem123);
               }
               iprot.readListEnd();
             }
@@ -478,23 +565,41 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
         case 2: // INTERPRETATION_INDEXES
           if (field.type == TType.LIST) {
             {
-              TList _list116 = iprot.readListBegin();
-              this.interpretationIndexes = new ArrayList<List<Integer>>(_list116.size);
-              for (int _i117 = 0; _i117 < _list116.size; ++_i117)
+              TList _list124 = iprot.readListBegin();
+              this.interpretationIndexes = new ArrayList<List<Integer>>(_list124.size);
+              for (int _i125 = 0; _i125 < _list124.size; ++_i125)
               {
-                List<Integer> _elem118;
+                List<Integer> _elem126;
                 {
-                  TList _list119 = iprot.readListBegin();
-                  _elem118 = new ArrayList<Integer>(_list119.size);
-                  for (int _i120 = 0; _i120 < _list119.size; ++_i120)
+                  TList _list127 = iprot.readListBegin();
+                  _elem126 = new ArrayList<Integer>(_list127.size);
+                  for (int _i128 = 0; _i128 < _list127.size; ++_i128)
                   {
-                    int _elem121;
-                    _elem121 = iprot.readI32();
-                    _elem118.add(_elem121);
+                    int _elem129;
+                    _elem129 = iprot.readI32();
+                    _elem126.add(_elem129);
                   }
                   iprot.readListEnd();
                 }
-                this.interpretationIndexes.add(_elem118);
+                this.interpretationIndexes.add(_elem126);
+              }
+              iprot.readListEnd();
+            }
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 4: // PARENT_FEATURES
+          if (field.type == TType.LIST) {
+            {
+              TList _list130 = iprot.readListBegin();
+              this.parentFeatures = new ArrayList<GeocodeFeature>(_list130.size);
+              for (int _i131 = 0; _i131 < _list130.size; ++_i131)
+              {
+                GeocodeFeature _elem132;
+                _elem132 = new GeocodeFeature();
+                _elem132.read(iprot);
+                this.parentFeatures.add(_elem132);
               }
               iprot.readListEnd();
             }
@@ -505,13 +610,13 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
         case 3: // DEBUG_LINES
           if (field.type == TType.LIST) {
             {
-              TList _list122 = iprot.readListBegin();
-              this.debugLines = new ArrayList<String>(_list122.size);
-              for (int _i123 = 0; _i123 < _list122.size; ++_i123)
+              TList _list133 = iprot.readListBegin();
+              this.debugLines = new ArrayList<String>(_list133.size);
+              for (int _i134 = 0; _i134 < _list133.size; ++_i134)
               {
-                String _elem124;
-                _elem124 = iprot.readString();
-                this.debugLines.add(_elem124);
+                String _elem135;
+                _elem135 = iprot.readString();
+                this.debugLines.add(_elem135);
               }
               iprot.readListEnd();
             }
@@ -538,9 +643,9 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
       oprot.writeFieldBegin(INTERPRETATIONS_FIELD_DESC);
       {
         oprot.writeListBegin(new TList(TType.STRUCT, this.interpretations.size()));
-        for (GeocodeInterpretation _iter125 : this.interpretations)
+        for (GeocodeInterpretation _iter136 : this.interpretations)
         {
-          _iter125.write(oprot);
+          _iter136.write(oprot);
         }
         oprot.writeListEnd();
       }
@@ -550,13 +655,13 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
       oprot.writeFieldBegin(INTERPRETATION_INDEXES_FIELD_DESC);
       {
         oprot.writeListBegin(new TList(TType.LIST, this.interpretationIndexes.size()));
-        for (List<Integer> _iter126 : this.interpretationIndexes)
+        for (List<Integer> _iter137 : this.interpretationIndexes)
         {
           {
-            oprot.writeListBegin(new TList(TType.I32, _iter126.size()));
-            for (int _iter127 : _iter126)
+            oprot.writeListBegin(new TList(TType.I32, _iter137.size()));
+            for (int _iter138 : _iter137)
             {
-              oprot.writeI32(_iter127);
+              oprot.writeI32(_iter138);
             }
             oprot.writeListEnd();
           }
@@ -570,9 +675,23 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
         oprot.writeFieldBegin(DEBUG_LINES_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.STRING, this.debugLines.size()));
-          for (String _iter128 : this.debugLines)
+          for (String _iter139 : this.debugLines)
           {
-            oprot.writeString(_iter128);
+            oprot.writeString(_iter139);
+          }
+          oprot.writeListEnd();
+        }
+        oprot.writeFieldEnd();
+      }
+    }
+    if (this.parentFeatures != null) {
+      if (isSetParentFeatures()) {
+        oprot.writeFieldBegin(PARENT_FEATURES_FIELD_DESC);
+        {
+          oprot.writeListBegin(new TList(TType.STRUCT, this.parentFeatures.size()));
+          for (GeocodeFeature _iter140 : this.parentFeatures)
+          {
+            _iter140.write(oprot);
           }
           oprot.writeListEnd();
         }
@@ -603,6 +722,16 @@ public class BulkSlugLookupResponse implements TBase<BulkSlugLookupResponse, Bul
       sb.append(this.interpretationIndexes);
     }
     first = false;
+    if (isSetParentFeatures()) {
+      if (!first) sb.append(", ");
+      sb.append("parentFeatures:");
+      if (this.parentFeatures == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.parentFeatures);
+      }
+      first = false;
+    }
     if (isSetDebugLines()) {
       if (!first) sb.append(", ");
       sb.append("debugLines:");
