@@ -194,7 +194,9 @@ object GeocoderBuild extends Build {
 
         publishArtifact := false,
         libraryDependencies ++= Seq(
-          "com.novus" %% "salat" % "1.9.2"
+          "com.novus" %% "salat" % "1.9.2",
+           "com.twitter" %%  "scalding-core" % "0.8.9",
+           "backtype" % "cascading-thrift" % "0.2.5"
         ),
         ivyXML := (
           <dependencies>
@@ -209,9 +211,8 @@ object GeocoderBuild extends Build {
             else strategy
           }
         }
-}
->>>>>>> at least it compiles
-      )
+      }
+    )
   ) dependsOn(core, util)
 
   lazy val util = Project(id = "util",

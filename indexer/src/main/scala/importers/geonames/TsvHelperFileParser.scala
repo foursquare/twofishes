@@ -9,21 +9,29 @@ trait TsvHelperFileParserLogger {
   def logUnused
 }
 
-class GeoIdTsvHelperFileParser(defaultNamespace: FeatureNamespace, filenames: String*) extends TsvHelperFileParserLogger with LogHelper {
+class GeoIdTsvHelperFileParser(defaultNamespace: FeatureNamespace, fileSeq: Any*) extends TsvHelperFileParserLogger with LogHelper {
+  val files = fileSeq.head match {
+    case s: String => fileSeq.map(f => new File(f.asInstanceOf[String]))
+    case s: File => fileSeq.asInstanceOf[Seq[File]]
+    case _ => throw new Exception("ha!")
+  }
+
+  def this(defaultNamespace: FeatureNamespace, fileSeq: List[Any]) = this(defaultNamespace, fileSeq: _*)
+
   class TableEntry(val values: List[String]) {
     var used = false
     def markUsed { used = true}
   }
 
-  if (filenames.isEmpty) {
+  if (files.isEmpty) {
     throw new Exception("no filenames specified for parse, maybe you forgot to add defaultNamespace")
   }
 
   lazy val gidMap = new scala.collection.mutable.HashMap[String,TableEntry]()
   def parseInput() {
-    filenames.foreach(filename => {
-      if (new File(filename).exists()) {
-        val fileSource = scala.io.Source.fromFile(new File(filename))
+    files.foreach(file => {
+      if (file.exists()) {
+        val fileSource = scala.io.Source.fromFile(file)
         val lines = fileSource.getLines.filterNot(_.startsWith("#"))
 
         lines.foreach(line => {
@@ -32,7 +40,7 @@ class GeoIdTsvHelperFileParser(defaultNamespace: FeatureNamespace, filenames: St
             parts = line.split("\t")
           }
           if (parts.length != 2) {
-            logger.error("Broken line in %s: %s (%d parts, needs 2)".format(filename, line, parts.length))
+            logger.error("Broken line in %s: %s (%d parts, needs 2)".format(file, line, parts.length))
           } else {
             StoredFeatureId.fromHumanReadableString(parts(0), Some(defaultNamespace)).foreach(key => {
               var values: List[String] = parts(1).split(",").toList
@@ -63,13 +71,21 @@ class GeoIdTsvHelperFileParser(defaultNamespace: FeatureNamespace, filenames: St
   override def logUnused {
     gidMap.foreach({case (k, v) => {
       if (!v.used) {
-        logger.error("%s:%s in %s went unused".format(k, v, filenames.mkString(",")))
+        logger.error("%s:%s in %s went unused".format(k, v, files.mkString(",")))
       }
     }})
   }
 }
 
-class TsvHelperFileParser(filenames: String*) extends TsvHelperFileParserLogger with LogHelper {
+class TsvHelperFileParser(fileSeq: Any*) extends TsvHelperFileParserLogger with LogHelper {
+  val files = fileSeq.head match {
+    case s: String => fileSeq.map(f => new File(f.asInstanceOf[String]))
+    case s: File => fileSeq.asInstanceOf[Seq[File]]
+    case _ => throw new Exception("ha!")
+  }
+
+  def this(fileSeq: List[Any]) = this(fileSeq: _*)
+
   class TableEntry(val values: List[String]) {
     var used = false
     def markUsed { used = true}
@@ -77,14 +93,14 @@ class TsvHelperFileParser(filenames: String*) extends TsvHelperFileParserLogger 
 
   lazy val gidMap = new scala.collection.mutable.HashMap[String,TableEntry]()
 
-  if (filenames.isEmpty) {
+  if (files.isEmpty) {
     throw new Exception("no filenames specified for parse, maybe you forgot to add defaultNamespace")
   }
 
   def parseInput() {
-    filenames.foreach(filename => {
-      if (new File(filename).exists()) {
-        val fileSource = scala.io.Source.fromFile(new File(filename))
+    files.foreach(file => {
+      if (file.exists()) {
+        val fileSource = scala.io.Source.fromFile(file)
         val lines = fileSource.getLines.filterNot(_.startsWith("#"))
 
         lines.foreach(line => {
@@ -93,7 +109,7 @@ class TsvHelperFileParser(filenames: String*) extends TsvHelperFileParserLogger 
             parts = line.split("\t")
           }
           if (parts.length != 2) {
-            logger.error("Broken line in %s: %s (%d parts, needs 2)".format(filename, line, parts.length))
+            logger.error("Broken line in %s: %s (%d parts, needs 2)".format(file, line, parts.length))
           } else {
             val key = parts(0)
             var values: List[String] = parts(1).split(",").toList
@@ -113,7 +129,7 @@ class TsvHelperFileParser(filenames: String*) extends TsvHelperFileParserLogger 
   override def logUnused {
     gidMap.foreach({case (k, v) => {
       if (!v.used) {
-        logger.error("%s:%s in %s went unused".format(k, v, filenames.mkString(",")))
+        logger.error("%s:%s in %s went unused".format(k, v, files.mkString(",")))
       }
     }})
   }

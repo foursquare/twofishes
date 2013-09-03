@@ -17,10 +17,6 @@ import scala.collection.mutable.{HashMap, HashSet}
 import scala.io.Source
 import scalaj.collection.Implicits._
 
-// TODO
-// stop using string representations of "a:b" featureids everywhere, PLEASE
-// please, I'm begging you, be more disciplined about featureids in the parser
-
 object GeonamesParser {
   var config: GeonamesImporterConfig = null
 
@@ -224,17 +220,6 @@ class GeonamesParser(
         None
       }
     })
-  }
-
-  def doDeletes(names: List[String]) = {
-    val nameSet = new scala.collection.mutable.HashSet() ++ names.toSet
-    // val newNameSet = new scala.collection.mutable.HashSet() ++ names.toSet
-    deletesList.foreach(delete => {
-      nameSet.foreach(name => {
-        nameSet += name.replace(delete, "").split(" ").filterNot(_.isEmpty).mkString(" ")
-      })
-    })
-    nameSet.toList.filterNot(_.isEmpty)
   }
 
   def addDisplayNameToNameIndex(dn: DisplayName, fid: StoredFeatureId, record: Option[GeocodeRecord]) {
