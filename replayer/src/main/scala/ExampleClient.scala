@@ -16,6 +16,8 @@ import org.apache.thrift.protocol.TBinaryProtocol
 import org.apache.thrift.protocol.TMessage
 import org.apache.thrift.protocol.{TProtocolFactory, TProtocol}
 import com.twitter.util.Future
+import java.io.FileWriter
+import java.io.File
 
 import org.apache.thrift._
 import org.apache.thrift.protocol._
@@ -113,6 +115,7 @@ object ThriftPrinter {
 }
 
 class SeqFileByteIterator(fname: String) extends Iterator[Array[Byte]] {
+  println("loading: " + fname)
   val conf = new Configuration()
   val fs = FileSystem.get(conf)
   val key = NullWritable.get()
@@ -215,5 +218,67 @@ object GeocoderTestClient {
 
     0.to(50).foreach { p => requestLoop() }
     //throw new Exception("done!")
+  }
+}
+
+object ConvertSeqToJavascript {
+  def processMessage(output: FileWriter, rb: Array[Byte]) = {
+     val factory = new TBinaryProtocol.Factory()
+     val inputTransport = new org.apache.thrift.transport.TMemoryInputTransport(rb)
+     val iprot = factory.getProtocol(inputTransport)
+     val msg = iprot.readMessageBegin()
+     // println(msg.name)
+
+    val descriptor = Geocoder.functionDescriptors.find(_.functionName == msg.name).get
+    val req = descriptor.requestMetaRecord.createRawRecord.asInstanceOf[TBase[org.apache.thrift.TBase[_, _],org.apache.thrift.TFieldIdEnum]]
+    req.read(iprot)
+
+    output.write("/" + msg.name + "?json=" + req.toString + "\n")
+
+    // val params = new scala.collection.mutable.HashMap[String, String]()
+    // params("method") = msg.name
+    // def addParam(k: String, v: Option[Any]) {
+    //   v.foreach(vv => params(k) = vv.toString)
+    // }
+
+    // (msg.name) match {
+    //   case ("geocode") => {
+    //     val r = req.asInstanceOf[GeocodeRequest]
+    //     addParam("query", r.queryOption)
+    //     addParam("cc", r.ccOption)
+    //     addParam("lang", r.langOption)
+    //     addParam("ll", r.llOption.map(ll => "%s,%s".format(ll.lat, ll.lng)))
+    //     addParam("debug", r.debugOption)
+    //     addParam("autocomplete", r.autocompleteOption)
+    //     addParam("woeHint", r.woeHintOption.map(_.mkString(",")))
+    //     addParam("woeRestrict", r.woeRestrictOption.map(_.mkString(",")))
+    //     addParam("bounds", r.boundsOption)
+    //     addParam("slug", r.slugOption)
+    //     addParam("radius", r.slugOption)
+    //     addParam("", r.slugOption)
+
+    //   }
+    //   case ("reverseGeocode") => {
+    //     val r = req.asInstanceOf[GeocodeRequest]
+
+    //   }
+    //   case ("bulkReverseGeocode") => {
+    //     val r = req.asInstanceOf[BulkReverseGeocodeRequest]
+    //   }
+    //   case ("bulkSlugLookup") => {
+    //     val r = req.asInstanceOf[BulkSlugLookupRequest]
+    //   }
+    //   case _ => println("unknown name/msg pair: %s %s".format(msg.name, req))
+
+    // }
+  }
+
+  def main(args: Array[String]) {
+    val seqfile = args(1)
+    val output = new FileWriter(new File(args(2)))
+    val reader = new SeqFileByteIterator(seqfile)
+    val max = args.lift(3).map(_.toInt).getOrElse(40000000)
+    reader.take(max).foreach(l => processMessage(output, l))
+    output.close()
   }
 }

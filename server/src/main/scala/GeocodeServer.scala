@@ -2,6 +2,7 @@
 package com.foursquare.twofishes
 
 import org.apache.thrift.{TBase, TFieldIdEnum}
+import com.foursquare.spindle.{Record, MetaRecord, RecordProvider}
 import com.foursquare.common.thrift.json.TReadableJSONProtocol
 import com.foursquare.twofishes.util.Helpers
 import com.foursquare.twofishes.util.Lists.Implicits._
@@ -15,6 +16,7 @@ import com.twitter.ostrich.stats.Stats
 import com.twitter.util.{Future, FuturePool, RingBuffer}
 import java.io.InputStream
 import java.net.InetSocketAddress
+import org.apache.thrift.{TDeserializer, TSerializer}
 import java.util.Date
 import java.util.concurrent.{ConcurrentHashMap, Executors}
 import org.apache.thrift.{TBase, TFieldIdEnum, TSerializer}
@@ -265,6 +267,19 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
     val params = queryString.getParameters().asScala.mapValues(_.asScala)
     val path = queryString.getPath()
 
+    def getJsonRequest[R <: TBase[_ <: TBase[_, _], _ <: TFieldIdEnum] with Record[R]](meta: MetaRecord[R]): R = {
+      var json: Option[String] = params.get("json").map(a => a(0))
+
+      val content = request.getContent()
+      if (content.readable()) {
+        json = Some(content.toString(CharsetUtil.UTF_8))
+      }
+      val deserializer = new TDeserializer(new TReadableJSONProtocol.Factory(false))
+      val thriftRequest = meta.createRawRecord
+      deserializer.deserialize(thriftRequest, json.get.getBytes("UTF-8"))
+      thriftRequest
+    }
+
     if (path.startsWith("/static/")) {
       val dataRead = {
         inputStreamToByteArray(getClass.getResourceAsStream(path))
@@ -278,23 +293,14 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
         response.setContent(ChannelBuffers.copiedBuffer(data))
         response
       })
-    } else {
-      val content = request.getContent()
-      def getRequest[T <: com.foursquare.spindle.MetaRecord[T]](meta: T): T = {}
-      var request = parseGeocodeRequest(params.toMap)
-      val
-
-      if (content.readable()) {
-        val json = content.toString(CharsetUtil.UTF_8)
-        val deserializer = new TDeserializer(new TReadableJSONProtocol.Factory(false))
-        val request = GeocodeRequest.createRawRecord
-        deserializer.deserialize(conversationEvent, eventJson.getBytes("UTF-8"))
-        conversationEvent
-        GeocodeR
-      } else {
-
-      }
-
+    } else if (path.startsWith("/geocode") || path.startsWith("/reverseGeocode")) {
+      handleGeocodeQuery(getJsonRequest(GeocodeRequest))
+    } else if (path.startsWith("/bulkReverseGeocode")) {
+      handleQuery(getJsonRequest(BulkReverseGeocodeRequest), geocoder.bulkReverseGeocode)
+    } else if (path.startsWith("/bulkSlugLookup")) {
+      handleQuery(getJsonRequest(BulkSlugLookupRequest), geocoder.bulkSlugLookup)
+    } else if (params.size > 0) {
+      val request = parseGeocodeRequest(params.toMap)
 
       val commonParams = GeocodeRequestUtils.geocodeRequestToCommonRequestParams(request)
       if (params.getOrElse("method", Nil).has("bulkrevgeo")) {
@@ -309,12 +315,26 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
       } else {
         handleGeocodeQuery(request)
       }
+    } else {
+      val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
+      val msg = """
+        <html>
+          Welcome to twofishes!
+          </P>
+          To start exploring the server, you might want to check out the interactive interfaces for(  <- 0 to 10) {
+          <a href="/static/autocomplete.html">autocomplete</a> and
+          <a href="/static/geocoder.html">forward & reverse geocoding</a>
+          </P>
+          You can also treat this server as a json interface, either by hitting the "/" endpoint with get parameters,
+          such as <a href="/?query=nyc">/?query=nyc</a> or <a href="/?ll=40.74">/?ll=40.74</a>.
+          <br>
+          Or by hitting endpoints at /geocode, /reverseGeocode, /bulkReverseGeocode and /bulkSlugLookup that take pretty printed json requests as input
+          <a href="/geocode/?json={%22query%22 : %22London, UK%22}">like so</a>
+        </html>
+      """
+      response.setContent(ChannelBuffers.copiedBuffer(msg, CharsetUtil.UTF_8))
+      Future.value(response)
     }
-    // ).getOrElse({
-    //     val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
-    //     Future.value(response)
-    //   })
-    // }
   }
 }
 
