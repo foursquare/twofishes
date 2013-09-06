@@ -1,6 +1,8 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
+import org.apache.thrift.{TBase, TFieldIdEnum}
+import com.foursquare.common.thrift.json.TReadableJSONProtocol
 import com.foursquare.twofishes.util.Helpers
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.twitter.finagle.{Service, SimpleFilter}
@@ -306,7 +308,22 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
         response
       })
     } else {
-      val request = parseGeocodeRequest(params.toMap)
+      val content = request.getContent()
+      def getRequest[T <: com.foursquare.spindle.MetaRecord[T]](meta: T): T = {}
+      var request = parseGeocodeRequest(params.toMap)
+      val
+
+      if (content.readable()) {
+        val json = content.toString(CharsetUtil.UTF_8)
+        val deserializer = new TDeserializer(new TReadableJSONProtocol.Factory(false))
+        val request = GeocodeRequest.createRawRecord
+        deserializer.deserialize(conversationEvent, eventJson.getBytes("UTF-8"))
+        conversationEvent
+        GeocodeR
+      } else {
+
+      }
+
 
       val commonParams = GeocodeRequestUtils.geocodeRequestToCommonRequestParams(request)
       if (params.getOrElse("method", Nil).has("bulkrevgeo")) {

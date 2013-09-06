@@ -103,14 +103,8 @@ object GeocoderBuild extends Build {
         publishArtifact := true,
         libraryDependencies ++= Seq(
           "com.twitter" %% "ostrich" % "9.1.0",
-          "com.twitter" %% "util-core" % "6.3.0" cross CrossVersion.binaryMapped {
-            case "2.10.2" => "2.10"
-            case x => x
-          },
-          "com.twitter" %% "util-logging" % "6.3.0"  cross CrossVersion.binaryMapped {
-            case "2.10.2" => "2.10"
-            case x => x
-          },
+          "com.twitter" %% "util-core" % "6.3.0",
+          "com.twitter" %% "util-logging" % "6.3.0",
           "org.slf4j" % "slf4j-api" % "1.6.1",
           "org.apache.avro" % "avro" % "1.7.1.cloudera.2",
           "org.apache.hadoop" % "hadoop-client" % "2.0.0-cdh4.1.2" intransitive(),
@@ -153,10 +147,7 @@ object GeocoderBuild extends Build {
         publishArtifact := true,
         libraryDependencies ++= Seq(
           "com.twitter" %% "ostrich" % "9.1.0",
-          "com.twitter" %% "finagle-http" % "6.3.0" cross CrossVersion.binaryMapped {
-            case "2.10.2" => "2.10"
-            case x => x
-          }
+          "com.twitter" %% "finagle-http" % "6.3.0"
         ),
         ivyXML := (
           <dependencies>
@@ -219,4 +210,11 @@ object GeocoderBuild extends Build {
         )
       )
     ) dependsOn(interface)
+
+  lazy val replayer = Project(id = "replayer",
+      settings = scoptSettings ++ defaultSettings ++ assemblySettings ++ specsSettings ++ Seq(
+        mainClass in assembly := Some("com.foursquare.twofishes.replayer.GeocoderReplayerClient"),
+        libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.10.2"
+      ),
+      base = file("replayer")) dependsOn(core, interface, util)
 }
