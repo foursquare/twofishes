@@ -233,7 +233,9 @@ object ConvertSeqToJavascript {
     val req = descriptor.requestMetaRecord.createRawRecord.asInstanceOf[TBase[org.apache.thrift.TBase[_, _],org.apache.thrift.TFieldIdEnum]]
     req.read(iprot)
 
-    output.write("/" + msg.name + "?json=" + req.toString + "\n")
+    val field = req.fieldForId(1)
+    val innerReq = req.getFieldValue(field)
+    output.write("/" + msg.name + "?json=" + innerReq.asInstanceOf[TBase[_, _]].toString + "\n")
 
     // val params = new scala.collection.mutable.HashMap[String, String]()
     // params("method") = msg.name
