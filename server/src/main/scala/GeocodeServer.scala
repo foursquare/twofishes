@@ -293,11 +293,11 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
         response.setContent(ChannelBuffers.copiedBuffer(data))
         response
       })
-    } else if (path.startsWith("/geocode") || path.startsWith("/reverseGeocode")) {
+    } else if (path.startsWith("/search/geocode") || path.startsWith("/search/reverseGeocode")) {
       handleGeocodeQuery(getJsonRequest(GeocodeRequest))
-    } else if (path.startsWith("/bulkReverseGeocode")) {
+    } else if (path.startsWith("/search/bulkReverseGeocode")) {
       handleQuery(getJsonRequest(BulkReverseGeocodeRequest), geocoder.bulkReverseGeocode)
-    } else if (path.startsWith("/bulkSlugLookup")) {
+    } else if (path.startsWith("/search/bulkSlugLookup")) {
       handleQuery(getJsonRequest(BulkSlugLookupRequest), geocoder.bulkSlugLookup)
     } else if (params.size > 0) {
       val request = parseGeocodeRequest(params.toMap)
@@ -329,7 +329,7 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
           such as <a href="/?query=nyc">/?query=nyc</a> or <a href="/?ll=40.74">/?ll=40.74</a>.
           <br>
           Or by hitting endpoints at /geocode, /reverseGeocode, /bulkReverseGeocode and /bulkSlugLookup that take pretty printed json requests as input
-          <a href="/geocode/?json={%22query%22 : %22London, UK%22}">like so</a>
+          <a href="/search/geocode?json={%22query%22 : %22London, UK%22}">like so</a>
         </html>
       """
       response.setContent(ChannelBuffers.copiedBuffer(msg, CharsetUtil.UTF_8))
