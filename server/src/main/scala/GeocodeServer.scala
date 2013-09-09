@@ -322,11 +322,11 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
         response.setContent(ChannelBuffers.copiedBuffer(data))
         response
       })
-    } else if (path.startsWith("/geocode")) {
+    } else if (path.startsWith("/search/geocode")) {
       handleGeocodeQuery(getJsonRequest(GeocodeRequest))
-    } else if (path.startsWith("/reverseGeocode")) {
+    } else if (path.startsWith("/search/reverseGeocode")) {
       handleReverseGeocodeQuery(getJsonRequest(GeocodeRequest))
-    } else if (path.startsWith("/bulkReverseGeocode")) {
+    } else if (path.startsWith("/search/bulkReverseGeocode")) {
       handleQuery(getJsonRequest(BulkReverseGeocodeRequest), geocoder.bulkReverseGeocode)
     } else if (path.startsWith("/search/bulkSlugLookup")) {
       handleQuery(getJsonRequest(BulkSlugLookupRequest), geocoder.bulkSlugLookup)
