@@ -5,6 +5,7 @@ import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.{FeatureName, FeatureNameFlags, GeocodeFeature, YahooWoeType, util}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import scalaj.collection.Implicits._
+import scala.util.Sorting
 
 object SlugBuilder {
   import NameFormatter.FormatPattern
@@ -172,11 +173,7 @@ object NameFormatter {
 trait NameUtils {
   // Given an optional language and an abbreviation preference, find the best name
   // for a feature in the current context.
-  class FeatureNameComparator(lang: Option[String], preferAbbrev: Boolean) extends Ordering[FeatureName] {
-    def compare(a: FeatureName, b: FeatureName) = {
-      scoreName(b) - scoreName(a)
-    }
-
+  class FeatureNameScorer(lang: Option[String], preferAbbrev: Boolean) {
     def scoreName(name: FeatureName): Int = {
       var score = 0
 
@@ -209,20 +206,39 @@ trait NameUtils {
     }
   }
 
-  def bestName(
+  def bestNameFromList(
     f: GeocodeFeature,
+    names: Seq[FeatureName],
     lang: Option[String],
     preferAbbrev: Boolean
   ): Option[FeatureName] = {
     if (preferAbbrev && f.woeTypeOption.exists(_ =? YahooWoeType.COUNTRY)) {
-      f.names.find(n => n.name.size == 2 && Option(n.flags).exists(_.contains(FeatureNameFlags.ABBREVIATION)))
+      names.find(n => n.name.size == 2 && Option(n.flags).exists(_.contains(FeatureNameFlags.ABBREVIATION)))
     } else {
       val modifiedPreferAbbrev = preferAbbrev &&
         f.woeTypeOption.exists(_ =? YahooWoeType.ADMIN1) &&
         (f.cc == "US" || f.cc == "CA")
-      f.names.sorted(new FeatureNameComparator(lang, modifiedPreferAbbrev)).headOption
+      val scorer = new FeatureNameScorer(lang, modifiedPreferAbbrev)
+      var bestScore = 0
+      var bestName = names.headOption
+      for {
+        name <- names
+      } {
+        val score = scorer.scoreName(name)
+        if (score > bestScore) {
+          bestScore = score
+          bestName = Some(name)
+        }
+      }
+      bestName
     }
   }
+
+  def bestName(
+    f: GeocodeFeature,
+    lang: Option[String],
+    preferAbbrev: Boolean
+  ): Option[FeatureName] = bestNameFromList(f, f.names, lang, preferAbbrev)
 
   type BestNameMatch = (FeatureName, Option[String])
 
@@ -262,7 +278,8 @@ trait NameUtils {
         f.woeTypeOption.exists(_ =? YahooWoeType.ADMIN1) &&
         (f.cc == "US" || f.cc == "CA")
 
-      val bestNameMatch = nameCandidates.sorted(new FeatureNameComparator(lang, modifiedPreferAbbrev)).headOption
+      val bestNameMatch = bestNameFromList(f, nameCandidates, lang, modifiedPreferAbbrev)
+
       if (debugLevel > 1) {
         logger.ifDebug("name candidates: %s", nameCandidates)
         logger.ifDebug("best name match: %s", bestNameMatch)
