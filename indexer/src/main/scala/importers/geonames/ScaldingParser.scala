@@ -224,21 +224,7 @@ class ScaldingParseJob(args : Args) extends Job(args) {
       GeonamesFeature.parseFromAdminLine(0, line), "features", allowBuildings = false)
   }
 
-  def featuresToThrift(values: Iterator[(GeonamesFeature, List[AlternateNameEntry])]) = {
-    val features = values.toList
-
-    if (features.size == 0) {
-      throw new Exception("had no features for some reason")
-    }
-
-
-    if (features.size > 1) {
-      throw new Exception("had multiple features for %s".format(features(0)._1.geonameid))
-    }
-
-    val feature = features(0)._1
-    val altNames = features(0)._2
-
+  def featuresToThrift(feature: GeonamesFeature, altNames: List[AlternateNameEntry]) = {
     // Build ids
     val geonameId = feature.geonameid.flatMap(id => {
       StoredFeatureId.fromHumanReadableString(id, defaultNamespace = Some(GeonamesNamespace))
@@ -373,10 +359,21 @@ class ScaldingParseJob(args : Args) extends Job(args) {
       // }
     }
 
-    val altNames: Grouped[Long, List[AlternateNameEntry]] = parseAlternateNames()
-      .group.mapValueStream(v => List(v.toList).iterator)
+    val altNames: Grouped[Long, AlternateNameEntry] = parseAlternateNames().group //.mapValueStream(v => List(v.toList).iterator)
 
-    features.group.join(altNames).mapValueStream(featuresToThrift)
+    features.group.cogroup(altNames) { case (key, featuresIter, altNamesIter) => {
+      val features = featuresIter.toList
+      val altNames = altNamesIter.toList
+      if (altNames.size == 0) {
+        println("missing altnames for id: %s".format(key))
+      }
+      if (features.size == 0 || features.size > 1) {
+        println("missing feature for id: %s".format(key))
+        Iterator.empty
+      } else {
+        featuresToThrift(features(0), altNames)
+      }
+    }}
       .toTypedPipe
       .write(TypedSink[(Long, GeocodeServingFeature)](SequenceFile("/tmp/xxxx.seq")))
   }
