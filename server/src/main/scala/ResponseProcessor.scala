@@ -312,7 +312,11 @@ class ResponseProcessor(
     logger.ifDebug("parent ids: %s", parentFids)
 
     // possible optimization here: add in features we already have in our parses and don't refetch them
-    val parentMap = store.getByFeatureIds(parentFids)
+    val existingFeatures: Seq[GeocodeServingFeature] = sortedParses.flatMap(_.fmatches.map(_.fmatch))
+    val existingFeatureMap = existingFeatures.flatMap(f => StoredFeatureId.fromLong(f.longId).map(lid =>
+      (lid, f))).toMap
+    val missingParentIds = (parentFids.toSet -- existingFeatureMap.keys.toSet).toSeq
+    val parentMap = store.getByFeatureIds(missingParentIds) ++ existingFeatureMap
     logger.ifDebug("parentMap: %s", parentMap)
 
     val interpretations = sortedParses.map(p => {
@@ -359,28 +363,18 @@ class ResponseProcessor(
         // interpBuilder.debugInfo(p.debugInfo.map(_.result))
       }
 
-      if (responseIncludes(ResponseIncludes.PARENTS)) {
-<<<<<<< HEAD
-        val fixedParentMap = new scala.collection.mutable.HashMap[Long, GeocodeFeature]
-        def getFixedParent(parentFeature: GeocodeServingFeature): GeocodeFeature = {
-          fixedParentMap.getOrElseUpdate(parentFeature.longId, {
-            val sortedParentParents = parentFeature.scoringFeatures.parentIds.asScala
-              .flatMap(StoredFeatureId.fromLong _)
-              .flatMap(parentFid => parentMap.get(parentFid)).sorted
-            fixFeature(parentFeature.feature, sortedParentParents, None, fillHighlightedName=parseParams.tokens.size > 0)
-            parentFeature.feature
-          })
-        }
-
-        interp.setParents(sortedParents.map((parentFeature: GeocodeServingFeature) => getFixedParent(parentFeature)).asJava)
-=======
-        interpBuilder.parents(sortedParents.map(parentFeature => {
+      val fixedParentMap = new scala.collection.mutable.HashMap[Long, GeocodeFeature]
+      def getFixedParent(parentFeature: GeocodeServingFeature): GeocodeFeature = {
+        fixedParentMap.getOrElseUpdate(parentFeature.longId, {
           val sortedParentParents = parentFeature.scoringFeatures.parentIds
             .flatMap(StoredFeatureId.fromLong _)
             .flatMap(parentFid => parentMap.get(parentFid)).sorted
           fixFeature(parentFeature.feature, sortedParentParents, None, polygonMap, fillHighlightedName=parseParams.tokens.size > 0)
-        }))
->>>>>>> only 48 errors left to get server compiling
+        })
+      }
+
+      if (responseIncludes(ResponseIncludes.PARENTS)) {
+        interpBuilder.parents(sortedParents.map((parentFeature: GeocodeServingFeature) => getFixedParent(parentFeature)))
       }
       interpBuilder.result
     })
