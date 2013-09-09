@@ -3,14 +3,15 @@ import sbt._
 import sbt.Keys._
 import sbtassembly.Plugin._
 import sbtassembly.Plugin.AssemblyKeys._
+import net.virtualvoid.sbt.graph.Plugin.graphSettings
+
 
 object GeocoderBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.foursquare.twofishes",
     name := "twofishes",
     version      := "0.77.4",
-    scalaVersion := "2.10.2",
-    crossScalaVersions := Seq("2.9.2", "2.10.2")
+    scalaVersion := "2.10.2"
   )
 
   lazy val scoptSettings = Seq(
@@ -171,7 +172,7 @@ object GeocoderBuild extends Build {
 
   lazy val indexer = Project(id = "indexer",
       base = file("indexer"),
-      settings = defaultSettings ++ assemblySettings ++ scoptSettings ++ specsSettings ++ Seq(
+      settings = defaultSettings ++ graphSettings ++ assemblySettings ++ scoptSettings ++ specsSettings ++ Seq(
         baseDirectory in run := file("."),
         mainClass in assembly := Some("com.twitter.scalding.Tool"),
         initialCommands := """
