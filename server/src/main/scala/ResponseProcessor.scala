@@ -369,8 +369,9 @@ class ResponseProcessor(
           val sortedParentParents = parentFeature.scoringFeatures.parentIds
             .flatMap(StoredFeatureId.fromLong _)
             .flatMap(parentFid => parentMap.get(parentFid)).sorted
-          fixFeature(parentFeature.feature, sortedParentParents, None, polygonMap, fillHighlightedName=parseParams.tokens.size > 0)
-          })
+          // parents don't need polygons, what is wrong with me?
+          fixFeature(parentFeature.feature, sortedParentParents, None, Map.empty, fillHighlightedName=parseParams.tokens.size > 0)
+        })
       }
 
       if (responseIncludes(ResponseIncludes.PARENTS)) {
