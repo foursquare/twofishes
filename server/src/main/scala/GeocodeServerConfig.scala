@@ -5,7 +5,8 @@ case class GeocodeServerConfig(
   runHttpServer: Boolean = true,
   thriftServerPort: Int = 8080,
   hfileBasePath: String = "",
-  shouldPreload: Boolean = true
+  shouldPreload: Boolean = true,
+  shouldWarmup: Boolean = false
 )
 
 object GeocodeServerConfigParser {
@@ -25,6 +26,9 @@ object GeocodeServerConfigParser {
         opt[Boolean]("preload")
           .text("scan the hfiles at startup to prevent a cold start, turn off when testing")
           .action { (x, c) => c.copy(shouldPreload = x) }
+        opt[Boolean]("warmup")
+          .text("warmup the server at startup to prevent a cold start, turn off when testing")
+          .action { (x, c) => c.copy(shouldWarmup = x) }
         }
 
     // parser.parse returns Option[C]
