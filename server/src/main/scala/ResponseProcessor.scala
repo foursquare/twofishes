@@ -346,14 +346,18 @@ class ResponseProcessor(
       }
 
       if (responseIncludes(ResponseIncludes.PARENTS)) {
-        interp.setParents(sortedParents.map(parentFeature => {
-          val sortedParentParents = parentFeature.scoringFeatures.parentIds.asScala
-            .flatMap(StoredFeatureId.fromLong _)
-            .flatMap(parentFid => parentMap.get(parentFid)).sorted
-          val feature = parentFeature.feature
-          fixFeature(feature, sortedParentParents, None, fillHighlightedName=parseParams.tokens.size > 0)
-          feature
-        }).asJava)
+        val fixedParentMap = new scala.collection.mutable.HashMap[Long, GeocodeFeature]
+        def getFixedParent(parentFeature: GeocodeServingFeature): GeocodeFeature = {
+          fixedParentMap.getOrElseUpdate(parentFeature.longId, {
+            val sortedParentParents = parentFeature.scoringFeatures.parentIds.asScala
+              .flatMap(StoredFeatureId.fromLong _)
+              .flatMap(parentFid => parentMap.get(parentFid)).sorted
+            fixFeature(parentFeature.feature, sortedParentParents, None, fillHighlightedName=parseParams.tokens.size > 0)
+            parentFeature.feature
+          })
+        }
+
+        interp.setParents(sortedParents.map((parentFeature: GeocodeServingFeature) => getFixedParent(parentFeature)).asJava)
       }
       interp
     })
