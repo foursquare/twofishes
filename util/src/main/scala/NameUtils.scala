@@ -171,11 +171,7 @@ object NameFormatter {
 trait NameUtils {
   // Given an optional language and an abbreviation preference, find the best name
   // for a feature in the current context.
-  class FeatureNameComparator(lang: Option[String], preferAbbrev: Boolean) extends Ordering[FeatureName] {
-    def compare(a: FeatureName, b: FeatureName) = {
-      scoreName(b) - scoreName(a)
-    }
-
+  class FeatureNameScorer(lang: Option[String], preferAbbrev: Boolean) {
     def scoreName(name: FeatureName): Int = {
       var score = 0
       if (lang.exists(_ == name.lang)) {
@@ -204,20 +200,39 @@ trait NameUtils {
     }
   }
 
-  def bestName(
+  def bestNameFromList(
     f: GeocodeFeature,
+    names: Seq[FeatureName],
     lang: Option[String],
     preferAbbrev: Boolean
   ): Option[FeatureName] = {
     if (preferAbbrev && f.woeType == YahooWoeType.COUNTRY) {
-      f.names.asScala.find(n => n.name.size == 2 && Option(n.flags).exists(_.contains(FeatureNameFlags.ABBREVIATION)))
+      names.find(n => n.name.size == 2 && Option(n.flags).exists(_.contains(FeatureNameFlags.ABBREVIATION)))
     } else {
       val modifiedPreferAbbrev = preferAbbrev &&
         f.woeType == YahooWoeType.ADMIN1 &&
         (f.cc == "US" || f.cc == "CA")
-      f.names.asScala.sorted(new FeatureNameComparator(lang, modifiedPreferAbbrev)).headOption
+      val scorer = new FeatureNameScorer(lang, modifiedPreferAbbrev)
+      var bestScore = 0
+      var bestName = names.headOption
+      for {
+        name <- names
+      } {
+        val score = scorer.scoreName(name)
+        if (score > bestScore) {
+          bestScore = score
+          bestName = Some(name)
+        }
+      }
+      bestName
     }
   }
+
+  def bestName(
+    f: GeocodeFeature,
+    lang: Option[String],
+    preferAbbrev: Boolean
+  ): Option[FeatureName] = bestNameFromList(f, f.names.asScala, lang, preferAbbrev)
 
   type BestNameMatch = (FeatureName, Option[String])
 
@@ -237,7 +252,7 @@ trait NameUtils {
       val exactMatchNameCandidates = namesNormalized.filter(_._2 == matchedString).map(_._1)
       val prefixMatchNameCandidates = namesNormalized.filter(_._2.startsWith(matchedString)).map(_._1)
       val exactMatchesWithoutAirports =
-        if (f.woeType != YahooWoeType.AIRPORT) { 
+        if (f.woeType != YahooWoeType.AIRPORT) {
           exactMatchNameCandidates.filterNot(n => (n.lang == "iata" || n.lang == "icao"))
         } else {
           Nil
@@ -245,7 +260,7 @@ trait NameUtils {
 
       val nameCandidates = if (exactMatchesWithoutAirports.isEmpty) {
         if (prefixMatchNameCandidates.isEmpty) {
-          exactMatchNameCandidates 
+          exactMatchNameCandidates
         } else {
           prefixMatchNameCandidates
         }
@@ -257,7 +272,7 @@ trait NameUtils {
         f.woeType == YahooWoeType.ADMIN1 &&
         (f.cc == "US" || f.cc == "CA")
 
-      val bestNameMatch = nameCandidates.sorted(new FeatureNameComparator(lang, modifiedPreferAbbrev)).headOption
+      val bestNameMatch = bestNameFromList(f, nameCandidates, lang, modifiedPreferAbbrev)
       if (debugLevel > 1) {
         logger.ifDebug("name candidates: %s", nameCandidates)
         logger.ifDebug("best name match: %s", bestNameMatch)

@@ -180,7 +180,7 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
       val serializer = new TSerializer(new TSimpleJSONProtocol.Factory());
       val json = serializer.toString(geocode);
 
-      //"longId":72057594044179937 
+      //"longId":72057594044179937
       // javascript can't deal with longs, so we hack it to be a string
       val fixedJson = """"longId":(\d+)""".r.replaceAllIn(json, m => "\"longId\":\"%s\"".format(m.group(1)))
 
