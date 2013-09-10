@@ -25,6 +25,7 @@ import org.jboss.netty.handler.codec.http._
 import org.jboss.netty.util.CharsetUtil
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._
+import scala.io.BufferedSource
 
 class QueryLogHttpHandler(
   queryMap: ConcurrentHashMap[ObjectId, (TBase[_, _], Long)],
@@ -112,7 +113,21 @@ class QueryLoggingGeocodeServerImpl(service: Geocoder.ServiceIface) extends Geoc
   }
 }
 
-class GeocodeServerImpl(store: GeocodeStorageReadService) extends Geocoder.ServiceIface {
+class GeocodeServerImpl(store: GeocodeStorageReadService, doWarmup: Boolean) extends Geocoder.ServiceIface {
+  if (doWarmup) {
+    val lines = new BufferedSource(getClass.getResourceAsStream("warmup/geocodes.txt")).getLines.take(10000).toList
+    val request = new GeocodeRequest()
+    println("Warming up by geocoding %d queries".format(lines.size))
+    lines.zipWithIndex.foreach({ case (line, index) => {
+      if (index % 1000 == 0) {
+        println("finished %d queries".format(index))
+      }
+      request.setQuery(line)
+      new GeocodeRequestDispatcher(store, request).geocode()
+    }})
+    println("done")
+  }
+
   val queryFuturePool = FuturePool(StatsWrappedExecutors.create(24, 100, "geocoder"))
 
   def geocode(r: GeocodeRequest): Future[GeocodeResponse] = queryFuturePool {
@@ -311,47 +326,6 @@ object ServerStore {
   }
 }
 
-object GeocodeThriftServer extends Application {
-  class GeocodeServer(store: GeocodeStorageReadService) extends Geocoder.Iface {
-    override def geocode(request: GeocodeRequest): GeocodeResponse = {
-      Stats.incr("geocode-requests", 1)
-      new GeocodeRequestDispatcher(store, request).geocode()
-    }
-
-    override def bulkReverseGeocode(request: BulkReverseGeocodeRequest): BulkReverseGeocodeResponse = {
-      Stats.incr("bulk-geocode-requests", 1)
-      new BulkReverseGeocoderImpl(store, request).reverseGeocode()
-    }
-
-    override def bulkSlugLookup(request: BulkSlugLookupRequest): BulkSlugLookupResponse = {
-      Stats.incr("bulk-slug-lookups", 1)
-      new BulkSlugLookupImpl(store, request).slugLookup()
-    }
-
-    override def reverseGeocode(request: GeocodeRequest): GeocodeResponse = {
-      Stats.incr("geocode-requests", 1)
-      new ReverseGeocoderImpl(store, request).reverseGeocode()
-    }
-  }
-
-  override def main(args: Array[String]) {
-    try {
-      val config = new GeocodeServerConfig(args)
-
-      val serverTransport = new TServerSocket(config.thriftServerPort)
-      val processor = new Geocoder.Processor(new GeocodeServer(ServerStore.getStore(config)))
-      val protFactory = new TBinaryProtocol.Factory(true, true)
-      val server = new TThreadPoolServer(processor, serverTransport, protFactory)
-
-      println("serving vanilla thrift on port %d".format(config.thriftServerPort))
-
-      server.serve();
-    } catch {
-      case x: Exception => x.printStackTrace();
-    }
-  }
-}
-
 object GeocodeFinagleServer {
   def main(args: Array[String]) {
     val handleExceptions = new HandleExceptions
@@ -361,7 +335,7 @@ object GeocodeFinagleServer {
     val config = new GeocodeServerConfig(args)
 
     // Implement the Thrift Interface
-    val processor = new QueryLoggingGeocodeServerImpl(new GeocodeServerImpl(ServerStore.getStore(config)))
+    val processor = new QueryLoggingGeocodeServerImpl(new GeocodeServerImpl(ServerStore.getStore(config), config.shouldWarmup))
 
     // Convert the Thrift Processor to a Finagle Service
     val service = new Geocoder.Service(processor, new TBinaryProtocol.Factory())
