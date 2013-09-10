@@ -115,8 +115,8 @@ class QueryLoggingGeocodeServerImpl(service: Geocoder.ServiceIface) extends Geoc
 
 class GeocodeServerImpl(store: GeocodeStorageReadService, doWarmup: Boolean) extends Geocoder.ServiceIface {
   if (doWarmup) {
-    val lines = new BufferedSource(getClass.getResourceAsStream("warmup/geocodes.txt")).getLines.take(10000).toList
-    val request = new GeocodeRequest()
+    var lines = new BufferedSource(getClass.getResourceAsStream("/warmup/geocodes.txt")).getLines.take(10000).toList
+    var request = new GeocodeRequest()
     println("Warming up by geocoding %d queries".format(lines.size))
     lines.zipWithIndex.foreach({ case (line, index) => {
       if (index % 1000 == 0) {
@@ -126,6 +126,20 @@ class GeocodeServerImpl(store: GeocodeStorageReadService, doWarmup: Boolean) ext
       new GeocodeRequestDispatcher(store, request).geocode()
     }})
     println("done")
+
+    lines = new BufferedSource(getClass.getResourceAsStream("/warmup/revgeo.txt")).getLines.take(10000).toList
+    request = new GeocodeRequest()
+    println("Warming up by reverse geocoding %d queries".format(lines.size))
+    lines.zipWithIndex.foreach({ case (line, index) => {
+      if (index % 1000 == 0) {
+        println("finished %d queries".format(index))
+      }
+      val parts = line.split(",")
+      request.setLl(new GeocodePoint(parts(0).toDouble, parts(1).toDouble))
+      new ReverseGeocoderImpl(store, request).reverseGeocode()
+    }})
+    println("done")
+
   }
 
   val queryFuturePool = FuturePool(StatsWrappedExecutors.create(24, 100, "geocoder"))
