@@ -221,6 +221,8 @@ object GeocoderTestClient {
   }
 }
 
+import java.net.URLEncoder
+
 object ConvertSeqToJavascript {
   def processMessage(output: FileWriter, rb: Array[Byte]) = {
      val factory = new TBinaryProtocol.Factory()
@@ -235,7 +237,7 @@ object ConvertSeqToJavascript {
 
     val field = req.fieldForId(1)
     val innerReq = req.getFieldValue(field)
-    output.write("/" + msg.name + "?json=" + innerReq.asInstanceOf[TBase[_, _]].toString + "\n")
+    output.write("/" + msg.name + "?json=" + URLEncoder.encode(innerReq.asInstanceOf[TBase[_, _]].toString) + "\n")
 
     // val params = new scala.collection.mutable.HashMap[String, String]()
     // params("method") = msg.name
