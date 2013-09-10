@@ -11,6 +11,11 @@ object NameNormalizer {
 
   def normalize(s: String): String = {
     var n = s.toLowerCase
+    // change uppercase dotted I to uppercase I
+    // java7 does somethign weird when it lowercases this that isn't
+    // backwards comaptibel with an index generated in 6
+    // https://github.com/alexholmes/blog/blob/master/_posts/2013-02-14-java-7-and-the-dotted--and-dotless-i.markdown
+    n = n.replace('\u0130', 'I')
     // remove periods and quotes
     // \u2013 = en-dash
     n = n.replaceAll("['\u2018\u2019\\.\u2013]", "")
@@ -26,4 +31,4 @@ object NameNormalizer {
     val pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
     pattern.matcher(temp).replaceAll("");
   }
-} 
+}
