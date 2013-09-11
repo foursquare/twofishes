@@ -25,12 +25,13 @@ import org.apache.thrift.TSerializer
 import org.apache.thrift.protocol.TCompactProtocol
 import scala.collection.mutable.{HashMap, HashSet, ListBuffer}
 import scalaj.collection.Implicits._
+import com.weiglewilczek.slf4s.Logging
 
-trait DurationUtils {
+trait DurationUtils extends Logging {
   def logDuration[T](what: String)(f: => T): T = {
     val (rv, duration) = Duration.inNanoseconds(f)
     if (duration.inMilliseconds > 200) {
-      println(what + " in %s µs / %s ms".format(duration.inMicroseconds, duration.inMilliseconds))
+      logger.debug(what + " in %s µs / %s ms".format(duration.inMicroseconds, duration.inMilliseconds))
     }
     rv
   }
@@ -67,7 +68,7 @@ class FidMap(preload: Boolean) extends DurationUtils {
         })
         i += 1
         if (i % (100*1000) == 0) {
-          println("preloaded %d/%d fids".format(i, total))
+          logger.info("preloaded %d/%d fids".format(i, total))
         }
       })
     }
@@ -218,9 +219,9 @@ class PrefixIndexer(override val basepath: String, override val fidMap: FidMap) 
   }
 
   def doOutputPrefixIndex(prefixSet: HashSet[String]) {
-    println("sorting prefix set")
+    logger.info("sorting prefix set")
     val sortedPrefixes = prefixSet.toList.sortWith(lexicalSort)
-    println("done sorting")
+    logger.info("done sorting")
 
     val bestWoeTypes = List(
       YahooWoeType.POSTAL_CODE,
@@ -242,7 +243,7 @@ class PrefixIndexer(override val basepath: String, override val fidMap: FidMap) 
       (prefix, index) <- sortedPrefixes.zipWithIndex
     } {
       if (index % 1000 == 0) {
-        println("done with %d of %d prefixes".format(index, numPrefixes))
+        logger.info("done with %d of %d prefixes".format(index, numPrefixes))
       }
       val records = getRecordsByPrefix(prefix, 1000)
 
@@ -271,7 +272,7 @@ class PrefixIndexer(override val basepath: String, override val fidMap: FidMap) 
     }
 
     prefixWriter.close()
-    println("done")
+    logger.info("done")
   }
 }
 
@@ -314,7 +315,7 @@ class NameIndexer(override val basepath: String, override val fidMap: FidMap, ou
 
       nameCount += 1
       if (nameCount % 100000 == 0) {
-        println("processed %d of %d names".format(nameCount, nameSize))
+        logger.info("processed %d of %d names".format(nameCount, nameSize))
       }
     })
     writeFidsForLastName()
@@ -371,7 +372,7 @@ class FeatureIndexer(override val basepath: String, override val fidMap: FidMap)
         f.featureId, makeGeocodeRecordWithoutGeometry(f))
       fidCount += 1
       if (fidCount % 100000 == 0) {
-        println("processed %d of %d features".format(fidCount, fidSize))
+        logger.info("processed %d of %d features".format(fidCount, fidSize))
       }
     })
     writer.close()
@@ -394,13 +395,13 @@ class PolygonIndexer(override val basepath: String, override val fidMap: FidMap)
       polygon <- featureRecord.polygon
     } {
       if (index % 1000 == 0) {
-        println("outputted %d polys so far".format(index))
+        logger.info("outputted %d polys so far".format(index))
       }
       writer.append(featureRecord.featureId, wkbReader.read(polygon))
     }
     writer.close()
 
-    println("done")
+    logger.info("done")
   }
 }
 
@@ -473,9 +474,9 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
       val thread = new Thread(new Runnable {
 
         def run() {
-          println("thread: %d".format(offset))
-          println("seeing %d ids".format(ids.size))
-          println("filtering to %d ids on %d".format(ids.zipWithIndex.filter(i => (i._2 % numThreads) == offset).size, offset))
+          logger.info("thread: %d".format(offset))
+          logger.info("seeing %d ids".format(ids.size))
+          logger.info("filtering to %d ids on %d".format(ids.zipWithIndex.filter(i => (i._2 % numThreads) == offset).size, offset))
 
           var doneCount = 0
 
@@ -487,7 +488,7 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
             doneCount += chunk.size
             total += chunk.size
             if (doneCount % 1000 == 0) {
-              println("Thread %d finished %d of %d %.2f (total: %d of %d %.2f)".format(offset,
+              logger.info("Thread %d finished %d of %d %.2f (total: %d of %d %.2f)".format(offset,
                doneCount, ids.size, doneCount * 100.0 / ids.size,
                total, ids.size, total * 100.0 / ids.size))
             }
@@ -513,7 +514,7 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
       writer.append(longKey, cellGeometries)
     })
 
-    scala.util.Random.shuffle(ids).take(100).foreach(id => println("%sL".format(id)))
+    // scala.util.Random.shuffle(ids).take(100).foreach(id => println("%sL".format(id)))
 
     writer.close()
   }
