@@ -6,7 +6,7 @@ import com.foursquare.twofishes.util.{FeatureNamespace, StoredFeatureId}
 import java.io.File
 
 trait TsvHelperFileParserLogger {
-  def logUnused
+  def logUnused: Iterable[String]
 }
 
 class GeoIdTsvHelperFileParser(defaultNamespace: FeatureNamespace, filenames: String*) extends TsvHelperFileParserLogger with LogHelper {
@@ -60,10 +60,12 @@ class GeoIdTsvHelperFileParser(defaultNamespace: FeatureNamespace, filenames: St
     }
   }
 
-  override def logUnused {
-    gidMap.foreach({case (k, v) => {
+  override def logUnused: Iterable[String] = {
+    gidMap.flatMap({case (k, v) => {
       if (!v.used) {
-        logger.error("%s:%s in %s went unused".format(k, v, filenames.mkString(",")))
+        Some("%s:%s in %s went unused".format(k, v, filenames.mkString(",")))
+      } else {
+        None
       }
     }})
   }
@@ -110,10 +112,12 @@ class TsvHelperFileParser(filenames: String*) extends TsvHelperFileParserLogger 
 
   parseInput()
 
-  override def logUnused {
-    gidMap.foreach({case (k, v) => {
+  override def logUnused: Iterable[String] = {
+    gidMap.flatMap({case (k, v) => {
       if (!v.used) {
-        logger.error("%s:%s in %s went unused".format(k, v, filenames.mkString(",")))
+        Some("%s:%s in %s went unused".format(k, v, filenames.mkString(",")))
+      } else {
+        None
       }
     }})
   }
