@@ -16,6 +16,7 @@ import org.opengis.feature.simple.SimpleFeature
 import scala.collection.mutable.{HashMap, HashSet}
 import scala.io.Source
 import scalaj.collection.Implicits._
+import com.weiglewilczek.slf4s.Logging
 
 // TODO
 // stop using string representations of "a:b" featureids everywhere, PLEASE
@@ -154,7 +155,7 @@ class GeonamesParser(
   store: GeocodeStorageWriteService,
   slugIndexer: SlugIndexer,
   providerMapping: Map[String, Int]
-) extends SimplePrintLogger {
+) extends Logging {
   lazy val hierarchyTable = HierarchyParser.parseHierarchy(List(
     "data/downloaded/hierarchy.txt",
     "data/private/hierarchy.txt",
