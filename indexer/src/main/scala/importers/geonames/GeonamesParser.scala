@@ -198,7 +198,7 @@ class GeonamesParser(
   val helperTables = List(rewriteTable, boostTable, aliasTable)
 
   def logUnusedHelperEntries {
-    helperTables.foreach(_.logUnused)
+    helperTables.flatMap(_.logUnused).foreach(parser.logger.error)
   }
 
   val wkbWriter = new WKBWriter()
