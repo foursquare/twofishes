@@ -143,31 +143,33 @@ class ReverseGeocoderHelperImpl(
         cellid -> store.getByS2CellId(cellid)
       }).toMap
 
-    // need to get polygons if we need to calculate coverage
-    val polygonMap: Map[StoredFeatureId, Geometry] = (
-      if (GeocodeRequestUtils.shouldFetchPolygon(req)) {
-        val fids = (for {
-          cellGeometry <- cellGeometryMap.values.flatten.toSeq
-          oid = new ObjectId(cellGeometry.getOid())
-          fid <- StoredFeatureId.fromLegacyObjectId(oid)
-        } yield fid).distinct
-
-        store.getPolygonByFeatureIds(fids)
-      } else {
-        Map.empty
-      }
-    )
-
-    val parsesAndOtherGeomToFids: Seq[(SortedParseSeq, (Geometry, Seq[StoredFeatureId]))] = (for {
+    val geomToMatches = (for {
       (otherGeom, index) <- otherGeoms.zipWithIndex
     } yield {
       val cellGeometries = geomIndexToCellIdMap(index).flatMap(cellid => cellGeometryMap(cellid))
 
       val featureOids = findMatches(otherGeom, cellGeometries)
 
-      val servingFeaturesMap: Map[StoredFeatureId, GeocodeServingFeature] =
-        store.getByFeatureIds(featureOids.toSet.toList)
+      (otherGeom, featureOids)
+    })
 
+    val matchedIds = geomToMatches.flatMap(_._2).toSet.toList
+
+    // need to get polygons if we need to calculate coverage
+    val polygonMap: Map[StoredFeatureId, Geometry] = (
+      if (GeocodeRequestUtils.shouldFetchPolygon(req)) {
+        store.getPolygonByFeatureIds(matchedIds)
+      } else {
+        Map.empty
+      }
+    )
+
+    val servingFeaturesMap: Map[StoredFeatureId, GeocodeServingFeature] =
+      store.getByFeatureIds(matchedIds)
+
+    val parsesAndOtherGeomToFids: Seq[(SortedParseSeq, (Geometry, Seq[StoredFeatureId]))] = (for {
+      ((otherGeom, featureOids), index) <- geomToMatches.zipWithIndex
+    } yield {
       // for each, check if we're really in it
       val parses: SortedParseSeq = servingFeaturesMap.map({ case (fid, f) => {
         val parse = Parse[Sorted](List(FeatureMatch(0, 0, "", f)))
