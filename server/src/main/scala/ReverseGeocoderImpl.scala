@@ -176,8 +176,8 @@ class ReverseGeocoderHelperImpl(
     } yield {
       // for each, check if we're really in it
       val parses: SortedParseSeq = for {
-	fid <- featureIds
-	f <- servingFeaturesMap.get(fid)
+	      fid <- featureIds
+	      f <- servingFeaturesMap.get(fid)
       } yield {
         val parse = Parse[Sorted](List(FeatureMatch(0, 0, "", f)))
         if (responseIncludes(ResponseIncludes.REVGEO_COVERAGE) &&
