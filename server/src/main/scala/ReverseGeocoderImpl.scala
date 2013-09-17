@@ -174,6 +174,13 @@ class ReverseGeocoderHelperImpl(
     val parsesAndOtherGeomToFids: Seq[(SortedParseSeq, (Geometry, Seq[StoredFeatureId]))] = (for {
       ((otherGeom, featureIds), index) <- geomToMatches.zipWithIndex
     } yield {
+      val cellGeometries = geomIndexToCellIdMap(index).flatMap(cellid => cellGeometryMap(cellid))
+
+      val featureIds = findMatches(otherGeom, cellGeometries)
+
+      val servingFeaturesMap: Map[StoredFeatureId, GeocodeServingFeature] =
+        store.getByFeatureIds(featureIds.toSet.toList)
+
       // for each, check if we're really in it
       val parses: SortedParseSeq = for {
 	      fid <- featureIds
