@@ -148,9 +148,9 @@ class ReverseGeocoderHelperImpl(
     } yield {
       val cellGeometries = geomIndexToCellIdMap(index).flatMap(cellid => cellGeometryMap(cellid))
 
-      val featureOids = findMatches(otherGeom, cellGeometries)
+      val featureIds = findMatches(otherGeom, cellGeometries)
 
-      (otherGeom, featureOids)
+      (otherGeom, featureIds)
     })
 
     val matchedIds = geomToMatches.flatMap(_._2).toSet.toList
@@ -168,10 +168,13 @@ class ReverseGeocoderHelperImpl(
       store.getByFeatureIds(matchedIds)
 
     val parsesAndOtherGeomToFids: Seq[(SortedParseSeq, (Geometry, Seq[StoredFeatureId]))] = (for {
-      ((otherGeom, featureOids), index) <- geomToMatches.zipWithIndex
+      ((otherGeom, featureIds), index) <- geomToMatches.zipWithIndex
     } yield {
       // for each, check if we're really in it
-      val parses: SortedParseSeq = servingFeaturesMap.map({ case (fid, f) => {
+      val parses: SortedParseSeq = for {
+	fid <- featureIds
+	f <- servingFeaturesMap.get(fid)
+      } yield {
         val parse = Parse[Sorted](List(FeatureMatch(0, 0, "", f)))
         if (responseIncludes(ResponseIncludes.REVGEO_COVERAGE) &&
             otherGeom.getNumPoints > 2) {
@@ -183,7 +186,7 @@ class ReverseGeocoderHelperImpl(
           })
         }
         parse
-      }}).toSeq
+      }
 
       val maxInterpretations = if (req.maxInterpretations <= 0) {
         parses.size
