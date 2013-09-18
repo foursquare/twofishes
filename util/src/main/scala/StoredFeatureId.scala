@@ -33,7 +33,7 @@ sealed abstract class StoredFeatureId(val namespace: FeatureNamespace) {
     (namespace.id.toLong << 56) | lower56
   }
 
-  def humanReadableString: String = "%s:%s".format(namespace.name, namespaceSpecificId)
+  def humanReadableString: String = namespace.name + ":" + namespaceSpecificId
   override def toString: String = humanReadableString
 
   def legacyObjectId: ObjectId = {

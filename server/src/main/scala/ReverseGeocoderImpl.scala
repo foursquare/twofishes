@@ -119,7 +119,7 @@ class ReverseGeocoderHelperImpl(
         } else {
           cellGeometry.wkbGeometryOption match {
             case Some(wkbGeometry) =>
-              val (geom, intersects) = logger.logDuration("intersectionCheck", "intersecting %s".format(fid)) {
+              val (geom, intersects) = logger.logDuration("intersectionCheck", "intersectionCheck") {
                 featureGeometryIntersections(TBaseHelper.byteBufferToByteArray(wkbGeometry), otherGeom)
               }
               if (intersects) {

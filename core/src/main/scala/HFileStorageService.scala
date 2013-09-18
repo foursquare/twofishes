@@ -190,6 +190,7 @@ class MapFileInput[K, V](basepath: String, index: Index[K, V], shouldPreload: Bo
     rv
   }
 
+  val lookupMetricKey = "mapfile-%s-lookup_msec".format(index.filename)
   def lookup(key: K): Option[V] = {
     val valueBytes = new BytesWritable
     val (rv, duration) = Duration.inMilliseconds {
@@ -201,7 +202,7 @@ class MapFileInput[K, V](basepath: String, index: Index[K, V], shouldPreload: Bo
       }
     }
 
-    Stats.addMetric("mapfile-%s-lookup_msec".format(index.filename), duration.inMilliseconds.toInt)
+    Stats.addMetric(lookupMetricKey, duration.inMilliseconds.toInt)
     // This might just end up logging GC pauses, but it's possible we have
     // degenerate keys/values as well.
     if (duration.inMilliseconds > 100) {
