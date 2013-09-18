@@ -3,18 +3,21 @@ package com.foursquare.twofishes.importers.geonames
 
 import com.foursquare.twofishes._
 import com.foursquare.twofishes.util.StoredFeatureId
+import com.foursquare.twofishes.util.GeonamesNamespace
 import java.io.File
 import scala.collection.mutable.HashMap
+import com.weiglewilczek.slf4s.Logging
 
 // I could not for the life of me get the java geojson libraries to work
 // using a table I computer in python for the flickr bounding boxes.
 //
 // Please fix at some point.
 
-object BoundingBoxTsvImporter extends LogHelper {
+object BoundingBoxTsvImporter extends Logging {
   def parse(filenames: List[File]): HashMap[StoredFeatureId, BoundingBox] = {
     val map = new HashMap[StoredFeatureId, BoundingBox]
     filenames.foreach(file => {
+     logger.info("processing bounding box file %s".format(file))
       val lines = scala.io.Source.fromFile(file).getLines
       lines.foreach(line => {
         val parts = line.split("[\t ]")
@@ -29,9 +32,11 @@ object BoundingBoxTsvImporter extends LogHelper {
             val s = parts(2).toDouble
             val e = parts(3).toDouble
             val n = parts(4).toDouble
-
-            StoredFeatureId.fromHumanReadableString(id) match {
-              case Some(fid) => map(fid) = BoundingBox(Point(n, e), Point(s, w))
+            StoredFeatureId.fromHumanReadableString(id, Some(GeonamesNamespace)) match {
+              case Some(fid) => {
+                map(fid) = BoundingBox(Point(n, e), Point(s, w))
+                logger.debug("bbox %s %s".format(fid, parts.drop(1).mkString(",")))
+              }
               case None => logger.error("%s: couldn't parse into StoredFeatureId".format(line))
             }
           } catch {
@@ -42,5 +47,9 @@ object BoundingBoxTsvImporter extends LogHelper {
       })
     })
     map
+  }
+
+  def batchUpdate(filenames: List[File]) = {
+    Nil   
   }
 }
