@@ -180,9 +180,10 @@ class ResponseProcessor(
 
         val extraParents: Seq[(Option[FeatureMatch], GeocodeServingFeature)] =
           parents
-            .filterNot(f => partsFromParse.exists(_._2.longId =? f.longId))
-            .filterNot(f => partsFromParents.exists(_._2.longId =? f.longId))
-            .filterNot(p => p.feature.woeType == YahooWoeType.COUNTRY)
+            .filterNot(f =>
+                partsFromParse.exists(_._2.longId =? f.longId) &&
+                partsFromParents.exists(_._2.longId =? f.longId) &&
+                f.feature.woeType == YahooWoeType.COUNTRY)
             .takeRight(numExtraParentsRequired)
             .map(f => (None, f))
 
