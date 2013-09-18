@@ -29,26 +29,23 @@ trait BulkImplHelpers {
     })
 
     if (isolateParents) {
-      val parents = interps.flatMap(interp => if (interp.isSetParents) interp.parents.asScala else Nil)
+      val parents = interps.flatMap(_.parentsOption.flatten.toList)
       val allParentFeatures = {
         val seen = scala.collection.mutable.HashSet[Long]()
         parents.filter(p => {
-          if (!seen(p.longId)) {
-            seen += p.longId
+          if (!seen(p.longIdOrThrow)) {
+            seen += p.longIdOrThrow
             true
           } else false
         })
       }
 
-      interps.foreach(interp => {
-        if (interp.isSetParents) {
-          val parentIds = interp.parents.asScala.map(_.longId)
-          interp.unsetParents()
-          interp.setParentLongIds(parentIds.asJava)
-        }
+      val newInterps = interps.map(interp => {
+        val parentIds = interp.parents.map(_.longId)
+        interp.copy(parents = Nil, parentLongIds = parentIds)
       })
 
-      (inputIdxToInterpIdxs, interps, allParentFeatures)
+      (inputIdxToInterpIdxs, newInterps, allParentFeatures)
     } else {
       (inputIdxToInterpIdxs, interps, Nil)
     }

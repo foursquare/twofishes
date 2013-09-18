@@ -241,11 +241,8 @@ class ReverseGeocoderImpl(
   def doSingleReverseGeocode(geom: Geometry): GeocodeResponse = {
     val (interpIdxes, interpretations, _) = reverseGeocoder.doBulkReverseGeocode(List(geom), isolateParents = false)
     val response = ResponseProcessor.generateResponse(req.debug, logger,
-      interpIdxes(0).flatMap(interpIdx => interpretations.lift(interpIdx)))
-    if (req.debug > 0) {
-      val wktWriter = new WKTWriter
-      response.setRequestWktGeometry(wktWriter.write(geom))
-    }
+      interpIdxes(0).flatMap(interpIdx => interpretations.lift(interpIdx)),
+      requestGeom = if (req.debug > 0) { Some(geom) } else { None })
     response
   }
 
