@@ -152,9 +152,9 @@ class ReverseGeocoderHelperImpl(
     } yield {
       val cellGeometries = geomIndexToCellIdMap(index).flatMap(cellid => cellGeometryMap(cellid))
 
-      val featureOids = findMatches(otherGeom, cellGeometries)
+      val featureIds = findMatches(otherGeom, cellGeometries)
 
-      (otherGeom, featureOids)
+      (otherGeom, featureIds)
     })
 
     val matchedIds = geomToMatches.flatMap(_._2).toSet.toList
@@ -172,7 +172,7 @@ class ReverseGeocoderHelperImpl(
       store.getByFeatureIds(matchedIds)
 
     val parsesAndOtherGeomToFids: Seq[(SortedParseSeq, (Geometry, Seq[StoredFeatureId]))] = (for {
-      ((otherGeom, featureOids), index) <- geomToMatches.zipWithIndex
+      ((otherGeom, featureIds), index) <- geomToMatches.zipWithIndex
     } yield {
       val cellGeometries = geomIndexToCellIdMap(index).flatMap(cellid => cellGeometryMap(cellid))
 
