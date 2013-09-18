@@ -343,21 +343,7 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
       }
     } else {
       val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
-      val msg = """
-        <html>
-          Welcome to twofishes!
-          </P>
-          To start exploring the server, you might want to check out the interactive interfaces for(  <- 0 to 10) {
-          <a href="/static/autocomplete.html">autocomplete</a> and
-          <a href="/static/geocoder.html">forward & reverse geocoding</a>
-          </P>
-          You can also treat this server as a json interface, either by hitting the "/" endpoint with get parameters,
-          such as <a href="/?query=nyc">/?query=nyc</a> or <a href="/?ll=40.74">/?ll=40.74</a>.
-          <br>
-          Or by hitting endpoints at /geocode, /reverseGeocode, /bulkReverseGeocode and /bulkSlugLookup that take pretty printed json requests as input
-          <a href="/search/geocode?json={%22query%22 : %22London, UK%22}">like so</a>
-        </html>
-      """
+      val msg = new BufferedSource(getClass.getResourceAsStream("/static/index.html")).getLines.mkString("\n")
       response.setContent(ChannelBuffers.copiedBuffer(msg, CharsetUtil.UTF_8))
       Future.value(response)
     }
