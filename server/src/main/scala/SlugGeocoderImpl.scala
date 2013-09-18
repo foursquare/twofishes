@@ -63,15 +63,16 @@ class BulkSlugLookupImpl(
     val interps: Seq[GeocodeInterpretation] = responseProcessor.hydrateParses(parses,
       parseParams, polygonMap, fixAmbiguousNames = true, dedupByMatchedName = false)
 
-    val interpIdxs: Seq[Seq[Int]] = makeBulkReply(
+    val (interpIdxs, retInterps, parents) = makeBulkReply(
       req.slugs.asScala,
       featureMap.mapValues(servingFeature => StoredFeatureId.fromLong(servingFeature.feature.longId).toList),
-      interps)
+      interps, isolateParents = true)
 
     val resp = new BulkSlugLookupResponse()
-    resp.setInterpretations(interps.asJava)
+    resp.setInterpretations(retInterps.asJava)
     // map from input idx to interpretation indexes
     resp.setInterpretationIndexes(interpIdxs.map(_.asJava).asJava)
+    resp.setParentFeatures(parents.asJava)
     if (params.debug > 0) {
       resp.setDebugLines(logger.getLines.asJava)
     }

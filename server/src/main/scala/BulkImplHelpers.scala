@@ -5,8 +5,12 @@ import com.foursquare.twofishes.util.StoredFeatureId
 import scalaj.collection.Implicits._
 
 trait BulkImplHelpers {
-  def makeBulkReply[T](inputs: Seq[T], inputFids: Map[T, Seq[StoredFeatureId]], interps: Seq[GeocodeInterpretation]):
-      Seq[Seq[Int]] = {
+  def makeBulkReply[T](
+      inputs: Seq[T],
+      inputFids: Map[T, Seq[StoredFeatureId]],
+      interps: Seq[GeocodeInterpretation],
+      isolateParents: Boolean = false):
+      (Seq[Seq[Int]], Seq[GeocodeInterpretation], Seq[GeocodeFeature]) = {
     val inputToInputIdxes: Map[T, Seq[Int]] = inputs.zipWithIndex.groupBy(_._1).mapValues(_.map(_._2))
 
     val inputIdxToLongFids: Map[Int, Seq[Long]] = inputFids.flatMap({
@@ -24,6 +28,29 @@ trait BulkImplHelpers {
       longFids.flatMap(longFid => featureIdToInterpIdxes(longFid))
     })
 
-    inputIdxToInterpIdxs
+    if (isolateParents) {
+      val parents = interps.flatMap(interp => if (interp.isSetParents) interp.parents.asScala else Nil)
+      val allParentFeatures = {
+        val seen = scala.collection.mutable.HashSet[Long]()
+        parents.filter(p => {
+          if (!seen(p.longId)) {
+            seen += p.longId
+            true
+          } else false
+        })
+      }
+
+      interps.foreach(interp => {
+        if (interp.isSetParents) {
+          val parentIds = interp.parents.asScala.map(_.longId)
+          interp.unsetParents()
+          interp.setParentLongIds(parentIds.asJava)
+        }
+      })
+
+      (inputIdxToInterpIdxs, interps, allParentFeatures)
+    } else {
+      (inputIdxToInterpIdxs, interps, Nil)
+    }
   }
 }
