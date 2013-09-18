@@ -120,10 +120,18 @@ class GeocodeFetch(threading.Thread):
           query = params['query'][0]
         elif 'll' in params:
           query = params['ll'][0]
+        elif 'json' in params:
+          query = params['json'][0]
 
-        message = ('%s: %s<br>' % (query, message) +
+        if 'json' in params:
+          message = ('%s: %s<br>' % (query, message) +
+                   ' -- <a href="%s">OLD</a>' % (options.serverOld + param) +
+                   ' - <a href="%s">NEW</a><p>' % (options.serverNew + param))
+        else:
+          message = ('%s: <b>%s</b><br>' % (query, message) +
                    ' -- <a href="%s">OLD</a>' % (options.serverOld + '/static/geocoder.html#' + param_str) +
                    ' - <a href="%s">NEW</a><p>' % (options.serverNew + '/static/geocoder.html#' + param_str))
+
         evalLogDict[responseKey].append(message)
 
       if (responseOld == None and responseNew == None):
