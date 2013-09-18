@@ -143,12 +143,18 @@ class GeocodeFetch(threading.Thread):
       elif (len(responseOld['interpretations']) and len(responseNew['interpretations'])):
         interpA = responseOld['interpretations'][0]
         interpB = responseNew['interpretations'][0]
+        
+        oldIds = [str(interp['feature']['ids'][0]) for interp in responseOld['interpretations']]
+        newIds = [str(interp['feature']['ids'][0]) for interp in responseNew['interpretations']] 
 
         if interpA['feature']['ids'] != interpB['feature']['ids'] and \
             interpA['feature']['woeType'] != 11 and \
             interpB['feature']['woeType'] != 11 and \
             interpA['feature']['ids'] != filter(lambda x: x['source'] != 'woeid', interpB['feature']['ids']):
-          evallog('ids changed %s -> %s' % (interpA['feature']['ids'], interpB['feature']['ids']))
+       	  if set(oldIds) == set(newIds):
+            evallog('interp order changed %s -> %s' % (oldIds, newIds))
+          else:
+            evallog('ids changed %s -> %s' % (interpA['feature']['ids'], interpB['feature']['ids']))
         else:
           geomA = interpA['feature']['geometry']
           geomB = interpB['feature']['geometry']
