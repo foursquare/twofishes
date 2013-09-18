@@ -176,7 +176,7 @@ class ResponseProcessor(
           parentsToUse.filterNot((f: GeocodeServingFeature) => {
             partsFromParse.exists(_._2.longId =? f.longId)
           })
-            .map(f => (None, f))
+          .map(f => (None, f))
 
         val extraParents: Seq[(Option[FeatureMatch], GeocodeServingFeature)] =
           parents

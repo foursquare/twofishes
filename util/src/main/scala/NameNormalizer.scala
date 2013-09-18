@@ -9,6 +9,10 @@ object NameNormalizer {
     s.split(" ").filterNot(_.isEmpty).toList
   }
 
+  val spaceRegexp = " +".r
+  val punctRegexp = "\\p{Punct}".r
+  val dotsAndOtherRegexp = "['\u2018\u2019\\.\u2013]".r
+
   def normalize(s: String): String = {
     var n: String = null
 
@@ -24,11 +28,11 @@ object NameNormalizer {
 
     // remove periods and quotes
     // \u2013 = en-dash
-    n = n.replaceAll("['\u2018\u2019\\.\u2013]", "")
+    n = dotsAndOtherRegexp.replaceAllIn(n, "")
     // change all other punctuation to spaces
-    n = n.replaceAll("\\p{Punct}", " ")
+    n = punctRegexp.replaceAllIn(n, " ")
     // replace multiple spaces with one
-    n = " +".r.replaceAllIn(n, " ")
+    n = spaceRegexp.replaceAllIn(n, " ")
     n
   }
 
