@@ -155,7 +155,14 @@ object GeocoderBuild extends Build {
             <exclude org="org.scalaj" module="scalaj-collection_2.9.1"/>
             <exclude org="org.mongodb" module="bson"/>
           </dependencies>
-        )
+        ),
+        mergeStrategy in assembly <<= (mergeStrategy in assembly) { mergeStrategy => {
+          case entry => {
+            val strategy = mergeStrategy(entry)
+            if (strategy == MergeStrategy.deduplicate) MergeStrategy.first
+            else strategy
+          }
+        }}
       ),
       base = file("server")) dependsOn(core, interface, util)
 
