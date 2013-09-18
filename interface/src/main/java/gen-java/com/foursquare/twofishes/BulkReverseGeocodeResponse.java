@@ -34,11 +34,13 @@ public class BulkReverseGeocodeResponse implements TBase<BulkReverseGeocodeRespo
   private static final TField DEPRECATED_INTERPRETATION_MAP_FIELD_DESC = new TField("DEPRECATED_interpretationMap", TType.MAP, (short)1);
   private static final TField INTERPRETATIONS_FIELD_DESC = new TField("interpretations", TType.LIST, (short)3);
   private static final TField INTERPRETATION_INDEXES_FIELD_DESC = new TField("interpretationIndexes", TType.LIST, (short)4);
+  private static final TField PARENT_FEATURES_FIELD_DESC = new TField("parentFeatures", TType.LIST, (short)5);
   private static final TField DEBUG_LINES_FIELD_DESC = new TField("debugLines", TType.LIST, (short)2);
 
   public Map<Integer,List<GeocodeInterpretation>> DEPRECATED_interpretationMap;
   public List<GeocodeInterpretation> interpretations;
   public List<List<Integer>> interpretationIndexes;
+  public List<GeocodeFeature> parentFeatures;
   public List<String> debugLines;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
@@ -46,6 +48,7 @@ public class BulkReverseGeocodeResponse implements TBase<BulkReverseGeocodeRespo
     DEPRECATED_INTERPRETATION_MAP((short)1, "DEPRECATED_interpretationMap"),
     INTERPRETATIONS((short)3, "interpretations"),
     INTERPRETATION_INDEXES((short)4, "interpretationIndexes"),
+    PARENT_FEATURES((short)5, "parentFeatures"),
     DEBUG_LINES((short)2, "debugLines");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
@@ -67,6 +70,8 @@ public class BulkReverseGeocodeResponse implements TBase<BulkReverseGeocodeRespo
           return INTERPRETATIONS;
         case 4: // INTERPRETATION_INDEXES
           return INTERPRETATION_INDEXES;
+        case 5: // PARENT_FEATURES
+          return PARENT_FEATURES;
         case 2: // DEBUG_LINES
           return DEBUG_LINES;
         default:
@@ -125,6 +130,9 @@ public class BulkReverseGeocodeResponse implements TBase<BulkReverseGeocodeRespo
         new ListMetaData(TType.LIST, 
             new ListMetaData(TType.LIST, 
                 new FieldValueMetaData(TType.I32)))));
+    tmpMap.put(_Fields.PARENT_FEATURES, new FieldMetaData("parentFeatures", TFieldRequirementType.OPTIONAL, 
+        new ListMetaData(TType.LIST, 
+            new StructMetaData(TType.STRUCT, GeocodeFeature.class))));
     tmpMap.put(_Fields.DEBUG_LINES, new FieldMetaData("debugLines", TFieldRequirementType.OPTIONAL, 
         new ListMetaData(TType.LIST, 
             new FieldValueMetaData(TType.STRING))));
@@ -186,6 +194,13 @@ public class BulkReverseGeocodeResponse implements TBase<BulkReverseGeocodeRespo
       }
       this.interpretationIndexes = __this__interpretationIndexes;
     }
+    if (other.isSetParentFeatures()) {
+      List<GeocodeFeature> __this__parentFeatures = new ArrayList<GeocodeFeature>();
+      for (GeocodeFeature other_element : other.parentFeatures) {
+        __this__parentFeatures.add(new GeocodeFeature(other_element));
+      }
+      this.parentFeatures = __this__parentFeatures;
+    }
     if (other.isSetDebugLines()) {
       List<String> __this__debugLines = new ArrayList<String>();
       for (String other_element : other.debugLines) {
@@ -204,6 +219,7 @@ public class BulkReverseGeocodeResponse implements TBase<BulkReverseGeocodeRespo
     this.DEPRECATED_interpretationMap = null;
     this.interpretations = null;
     this.interpretationIndexes = null;
+    this.parentFeatures = null;
     this.debugLines = null;
   }
 
@@ -320,6 +336,45 @@ public class BulkReverseGeocodeResponse implements TBase<BulkReverseGeocodeRespo
     }
   }
 
+  public int getParentFeaturesSize() {
+    return (this.parentFeatures == null) ? 0 : this.parentFeatures.size();
+  }
+
+  public java.util.Iterator<GeocodeFeature> getParentFeaturesIterator() {
+    return (this.parentFeatures == null) ? null : this.parentFeatures.iterator();
+  }
+
+  public void addToParentFeatures(GeocodeFeature elem) {
+    if (this.parentFeatures == null) {
+      this.parentFeatures = new ArrayList<GeocodeFeature>();
+    }
+    this.parentFeatures.add(elem);
+  }
+
+  public List<GeocodeFeature> getParentFeatures() {
+    return this.parentFeatures;
+  }
+
+  public BulkReverseGeocodeResponse setParentFeatures(List<GeocodeFeature> parentFeatures) {
+    this.parentFeatures = parentFeatures;
+    return this;
+  }
+
+  public void unsetParentFeatures() {
+    this.parentFeatures = null;
+  }
+
+  /** Returns true if field parentFeatures is set (has been asigned a value) and false otherwise */
+  public boolean isSetParentFeatures() {
+    return this.parentFeatures != null;
+  }
+
+  public void setParentFeaturesIsSet(boolean value) {
+    if (!value) {
+      this.parentFeatures = null;
+    }
+  }
+
   public int getDebugLinesSize() {
     return (this.debugLines == null) ? 0 : this.debugLines.size();
   }
@@ -385,6 +440,14 @@ public class BulkReverseGeocodeResponse implements TBase<BulkReverseGeocodeRespo
       }
       break;
 
+    case PARENT_FEATURES:
+      if (value == null) {
+        unsetParentFeatures();
+      } else {
+        setParentFeatures((List<GeocodeFeature>)value);
+      }
+      break;
+
     case DEBUG_LINES:
       if (value == null) {
         unsetDebugLines();
@@ -407,6 +470,9 @@ public class BulkReverseGeocodeResponse implements TBase<BulkReverseGeocodeRespo
     case INTERPRETATION_INDEXES:
       return getInterpretationIndexes();
 
+    case PARENT_FEATURES:
+      return getParentFeatures();
+
     case DEBUG_LINES:
       return getDebugLines();
 
@@ -427,6 +493,8 @@ public class BulkReverseGeocodeResponse implements TBase<BulkReverseGeocodeRespo
       return isSetInterpretations();
     case INTERPRETATION_INDEXES:
       return isSetInterpretationIndexes();
+    case PARENT_FEATURES:
+      return isSetParentFeatures();
     case DEBUG_LINES:
       return isSetDebugLines();
     }
@@ -470,6 +538,15 @@ public class BulkReverseGeocodeResponse implements TBase<BulkReverseGeocodeRespo
       if (!(this_present_interpretationIndexes && that_present_interpretationIndexes))
         return false;
       if (!this.interpretationIndexes.equals(that.interpretationIndexes))
+        return false;
+    }
+
+    boolean this_present_parentFeatures = true && this.isSetParentFeatures();
+    boolean that_present_parentFeatures = true && that.isSetParentFeatures();
+    if (this_present_parentFeatures || that_present_parentFeatures) {
+      if (!(this_present_parentFeatures && that_present_parentFeatures))
+        return false;
+      if (!this.parentFeatures.equals(that.parentFeatures))
         return false;
     }
 
@@ -528,6 +605,16 @@ public class BulkReverseGeocodeResponse implements TBase<BulkReverseGeocodeRespo
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetParentFeatures()).compareTo(typedOther.isSetParentFeatures());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetParentFeatures()) {
+      lastComparison = TBaseHelper.compareTo(this.parentFeatures, typedOther.parentFeatures);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     lastComparison = Boolean.valueOf(isSetDebugLines()).compareTo(typedOther.isSetDebugLines());
     if (lastComparison != 0) {
       return lastComparison;
@@ -558,26 +645,26 @@ public class BulkReverseGeocodeResponse implements TBase<BulkReverseGeocodeRespo
         case 1: // DEPRECATED_INTERPRETATION_MAP
           if (field.type == TType.MAP) {
             {
-              TMap _map84 = iprot.readMapBegin();
-              this.DEPRECATED_interpretationMap = new HashMap<Integer,List<GeocodeInterpretation>>(2*_map84.size);
-              for (int _i85 = 0; _i85 < _map84.size; ++_i85)
+              TMap _map88 = iprot.readMapBegin();
+              this.DEPRECATED_interpretationMap = new HashMap<Integer,List<GeocodeInterpretation>>(2*_map88.size);
+              for (int _i89 = 0; _i89 < _map88.size; ++_i89)
               {
-                int _key86;
-                List<GeocodeInterpretation> _val87;
-                _key86 = iprot.readI32();
+                int _key90;
+                List<GeocodeInterpretation> _val91;
+                _key90 = iprot.readI32();
                 {
-                  TList _list88 = iprot.readListBegin();
-                  _val87 = new ArrayList<GeocodeInterpretation>(_list88.size);
-                  for (int _i89 = 0; _i89 < _list88.size; ++_i89)
+                  TList _list92 = iprot.readListBegin();
+                  _val91 = new ArrayList<GeocodeInterpretation>(_list92.size);
+                  for (int _i93 = 0; _i93 < _list92.size; ++_i93)
                   {
-                    GeocodeInterpretation _elem90;
-                    _elem90 = new GeocodeInterpretation();
-                    _elem90.read(iprot);
-                    _val87.add(_elem90);
+                    GeocodeInterpretation _elem94;
+                    _elem94 = new GeocodeInterpretation();
+                    _elem94.read(iprot);
+                    _val91.add(_elem94);
                   }
                   iprot.readListEnd();
                 }
-                this.DEPRECATED_interpretationMap.put(_key86, _val87);
+                this.DEPRECATED_interpretationMap.put(_key90, _val91);
               }
               iprot.readMapEnd();
             }
@@ -588,14 +675,14 @@ public class BulkReverseGeocodeResponse implements TBase<BulkReverseGeocodeRespo
         case 3: // INTERPRETATIONS
           if (field.type == TType.LIST) {
             {
-              TList _list91 = iprot.readListBegin();
-              this.interpretations = new ArrayList<GeocodeInterpretation>(_list91.size);
-              for (int _i92 = 0; _i92 < _list91.size; ++_i92)
+              TList _list95 = iprot.readListBegin();
+              this.interpretations = new ArrayList<GeocodeInterpretation>(_list95.size);
+              for (int _i96 = 0; _i96 < _list95.size; ++_i96)
               {
-                GeocodeInterpretation _elem93;
-                _elem93 = new GeocodeInterpretation();
-                _elem93.read(iprot);
-                this.interpretations.add(_elem93);
+                GeocodeInterpretation _elem97;
+                _elem97 = new GeocodeInterpretation();
+                _elem97.read(iprot);
+                this.interpretations.add(_elem97);
               }
               iprot.readListEnd();
             }
@@ -606,23 +693,41 @@ public class BulkReverseGeocodeResponse implements TBase<BulkReverseGeocodeRespo
         case 4: // INTERPRETATION_INDEXES
           if (field.type == TType.LIST) {
             {
-              TList _list94 = iprot.readListBegin();
-              this.interpretationIndexes = new ArrayList<List<Integer>>(_list94.size);
-              for (int _i95 = 0; _i95 < _list94.size; ++_i95)
+              TList _list98 = iprot.readListBegin();
+              this.interpretationIndexes = new ArrayList<List<Integer>>(_list98.size);
+              for (int _i99 = 0; _i99 < _list98.size; ++_i99)
               {
-                List<Integer> _elem96;
+                List<Integer> _elem100;
                 {
-                  TList _list97 = iprot.readListBegin();
-                  _elem96 = new ArrayList<Integer>(_list97.size);
-                  for (int _i98 = 0; _i98 < _list97.size; ++_i98)
+                  TList _list101 = iprot.readListBegin();
+                  _elem100 = new ArrayList<Integer>(_list101.size);
+                  for (int _i102 = 0; _i102 < _list101.size; ++_i102)
                   {
-                    int _elem99;
-                    _elem99 = iprot.readI32();
-                    _elem96.add(_elem99);
+                    int _elem103;
+                    _elem103 = iprot.readI32();
+                    _elem100.add(_elem103);
                   }
                   iprot.readListEnd();
                 }
-                this.interpretationIndexes.add(_elem96);
+                this.interpretationIndexes.add(_elem100);
+              }
+              iprot.readListEnd();
+            }
+          } else { 
+            TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 5: // PARENT_FEATURES
+          if (field.type == TType.LIST) {
+            {
+              TList _list104 = iprot.readListBegin();
+              this.parentFeatures = new ArrayList<GeocodeFeature>(_list104.size);
+              for (int _i105 = 0; _i105 < _list104.size; ++_i105)
+              {
+                GeocodeFeature _elem106;
+                _elem106 = new GeocodeFeature();
+                _elem106.read(iprot);
+                this.parentFeatures.add(_elem106);
               }
               iprot.readListEnd();
             }
@@ -633,13 +738,13 @@ public class BulkReverseGeocodeResponse implements TBase<BulkReverseGeocodeRespo
         case 2: // DEBUG_LINES
           if (field.type == TType.LIST) {
             {
-              TList _list100 = iprot.readListBegin();
-              this.debugLines = new ArrayList<String>(_list100.size);
-              for (int _i101 = 0; _i101 < _list100.size; ++_i101)
+              TList _list107 = iprot.readListBegin();
+              this.debugLines = new ArrayList<String>(_list107.size);
+              for (int _i108 = 0; _i108 < _list107.size; ++_i108)
               {
-                String _elem102;
-                _elem102 = iprot.readString();
-                this.debugLines.add(_elem102);
+                String _elem109;
+                _elem109 = iprot.readString();
+                this.debugLines.add(_elem109);
               }
               iprot.readListEnd();
             }
@@ -666,14 +771,14 @@ public class BulkReverseGeocodeResponse implements TBase<BulkReverseGeocodeRespo
       oprot.writeFieldBegin(DEPRECATED_INTERPRETATION_MAP_FIELD_DESC);
       {
         oprot.writeMapBegin(new TMap(TType.I32, TType.LIST, this.DEPRECATED_interpretationMap.size()));
-        for (Map.Entry<Integer, List<GeocodeInterpretation>> _iter103 : this.DEPRECATED_interpretationMap.entrySet())
+        for (Map.Entry<Integer, List<GeocodeInterpretation>> _iter110 : this.DEPRECATED_interpretationMap.entrySet())
         {
-          oprot.writeI32(_iter103.getKey());
+          oprot.writeI32(_iter110.getKey());
           {
-            oprot.writeListBegin(new TList(TType.STRUCT, _iter103.getValue().size()));
-            for (GeocodeInterpretation _iter104 : _iter103.getValue())
+            oprot.writeListBegin(new TList(TType.STRUCT, _iter110.getValue().size()));
+            for (GeocodeInterpretation _iter111 : _iter110.getValue())
             {
-              _iter104.write(oprot);
+              _iter111.write(oprot);
             }
             oprot.writeListEnd();
           }
@@ -687,9 +792,9 @@ public class BulkReverseGeocodeResponse implements TBase<BulkReverseGeocodeRespo
         oprot.writeFieldBegin(DEBUG_LINES_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.STRING, this.debugLines.size()));
-          for (String _iter105 : this.debugLines)
+          for (String _iter112 : this.debugLines)
           {
-            oprot.writeString(_iter105);
+            oprot.writeString(_iter112);
           }
           oprot.writeListEnd();
         }
@@ -700,9 +805,9 @@ public class BulkReverseGeocodeResponse implements TBase<BulkReverseGeocodeRespo
       oprot.writeFieldBegin(INTERPRETATIONS_FIELD_DESC);
       {
         oprot.writeListBegin(new TList(TType.STRUCT, this.interpretations.size()));
-        for (GeocodeInterpretation _iter106 : this.interpretations)
+        for (GeocodeInterpretation _iter113 : this.interpretations)
         {
-          _iter106.write(oprot);
+          _iter113.write(oprot);
         }
         oprot.writeListEnd();
       }
@@ -712,13 +817,13 @@ public class BulkReverseGeocodeResponse implements TBase<BulkReverseGeocodeRespo
       oprot.writeFieldBegin(INTERPRETATION_INDEXES_FIELD_DESC);
       {
         oprot.writeListBegin(new TList(TType.LIST, this.interpretationIndexes.size()));
-        for (List<Integer> _iter107 : this.interpretationIndexes)
+        for (List<Integer> _iter114 : this.interpretationIndexes)
         {
           {
-            oprot.writeListBegin(new TList(TType.I32, _iter107.size()));
-            for (int _iter108 : _iter107)
+            oprot.writeListBegin(new TList(TType.I32, _iter114.size()));
+            for (int _iter115 : _iter114)
             {
-              oprot.writeI32(_iter108);
+              oprot.writeI32(_iter115);
             }
             oprot.writeListEnd();
           }
@@ -726,6 +831,20 @@ public class BulkReverseGeocodeResponse implements TBase<BulkReverseGeocodeRespo
         oprot.writeListEnd();
       }
       oprot.writeFieldEnd();
+    }
+    if (this.parentFeatures != null) {
+      if (isSetParentFeatures()) {
+        oprot.writeFieldBegin(PARENT_FEATURES_FIELD_DESC);
+        {
+          oprot.writeListBegin(new TList(TType.STRUCT, this.parentFeatures.size()));
+          for (GeocodeFeature _iter116 : this.parentFeatures)
+          {
+            _iter116.write(oprot);
+          }
+          oprot.writeListEnd();
+        }
+        oprot.writeFieldEnd();
+      }
     }
     oprot.writeFieldStop();
     oprot.writeStructEnd();
@@ -759,6 +878,16 @@ public class BulkReverseGeocodeResponse implements TBase<BulkReverseGeocodeRespo
       sb.append(this.interpretationIndexes);
     }
     first = false;
+    if (isSetParentFeatures()) {
+      if (!first) sb.append(", ");
+      sb.append("parentFeatures:");
+      if (this.parentFeatures == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.parentFeatures);
+      }
+      first = false;
+    }
     if (isSetDebugLines()) {
       if (!first) sb.append(", ");
       sb.append("debugLines:");

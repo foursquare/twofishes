@@ -339,13 +339,13 @@ public class BulkSlugLookupRequest implements TBase<BulkSlugLookupRequest, BulkS
         case 1: // SLUGS
           if (field.type == TType.LIST) {
             {
-              TList _list109 = iprot.readListBegin();
-              this.slugs = new ArrayList<String>(_list109.size);
-              for (int _i110 = 0; _i110 < _list109.size; ++_i110)
+              TList _list117 = iprot.readListBegin();
+              this.slugs = new ArrayList<String>(_list117.size);
+              for (int _i118 = 0; _i118 < _list117.size; ++_i118)
               {
-                String _elem111;
-                _elem111 = iprot.readString();
-                this.slugs.add(_elem111);
+                String _elem119;
+                _elem119 = iprot.readString();
+                this.slugs.add(_elem119);
               }
               iprot.readListEnd();
             }
@@ -381,9 +381,9 @@ public class BulkSlugLookupRequest implements TBase<BulkSlugLookupRequest, BulkS
         oprot.writeFieldBegin(SLUGS_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.STRING, this.slugs.size()));
-          for (String _iter112 : this.slugs)
+          for (String _iter120 : this.slugs)
           {
-            oprot.writeString(_iter112);
+            oprot.writeString(_iter120);
           }
           oprot.writeListEnd();
         }

@@ -130,8 +130,8 @@ class ReverseGeocoderHelperImpl(
     matches.toSeq
   }
 
-  def doBulkReverseGeocode(otherGeoms: Seq[Geometry]):
-      (Seq[Seq[Int]], Seq[GeocodeInterpretation]) = {
+  def doBulkReverseGeocode(otherGeoms: Seq[Geometry], isolateParents: Boolean = false):
+      (Seq[Seq[Int]], Seq[GeocodeInterpretation], Seq[GeocodeFeature]) = {
     val geomIndexToCellIdMap: Map[Int, Seq[Long]] = (for {
       (g, index) <- otherGeoms.zipWithIndex
     } yield { index -> s2CoverGeometry(g) }).toMap
@@ -207,7 +207,7 @@ class ReverseGeocoderHelperImpl(
     val interpretations = responseProcessor.hydrateParses(sortedParses, parseParams, polygonMap,
       fixAmbiguousNames = false)
 
-    (makeBulkReply[Geometry](otherGeoms, otherGeomToFids, interpretations), interpretations)
+    makeBulkReply[Geometry](otherGeoms, otherGeomToFids, interpretations, isolateParents)
   }
 
   def getAllLevels(): Seq[Int] = {
@@ -228,7 +228,7 @@ class ReverseGeocoderImpl(
     new ReverseGeocoderHelperImpl(store, commonParams, logger)
 
   def doSingleReverseGeocode(geom: Geometry): GeocodeResponse = {
-    val (interpIdxes, interpretations) = reverseGeocoder.doBulkReverseGeocode(List(geom))
+    val (interpIdxes, interpretations, _) = reverseGeocoder.doBulkReverseGeocode(List(geom), isolateParents = false)
     val response = ResponseProcessor.generateResponse(req.debug, logger,
       interpIdxes(0).flatMap(interpIdx => interpretations.lift(interpIdx)))
     if (req.debug > 0) {
@@ -309,12 +309,13 @@ class BulkReverseGeocoderImpl(
 
     val points = req.latlngs.asScala.map(ll => geomFactory.createPoint(new Coordinate(ll.lng, ll.lat)))
 
-    val (interpIdxs, interps) = reverseGeocoder.doBulkReverseGeocode(points)
+    val (interpIdxs, interps, parents) = reverseGeocoder.doBulkReverseGeocode(points, isolateParents = true)
 
     val response = new BulkReverseGeocodeResponse()
       .setDEPRECATED_interpretationMap(Map.empty.asJava)
       .setInterpretationIndexes(interpIdxs.map(_.asJava).asJava)
       .setInterpretations(interps.asJava)
+      .setParentFeatures(parents.asJava)
 
     if (params.debug > 0) {
       response.setDebugLines(logger.getLines.asJava)

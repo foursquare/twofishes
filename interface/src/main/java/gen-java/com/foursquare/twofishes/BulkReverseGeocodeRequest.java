@@ -339,14 +339,14 @@ public class BulkReverseGeocodeRequest implements TBase<BulkReverseGeocodeReques
         case 1: // LATLNGS
           if (field.type == TType.LIST) {
             {
-              TList _list80 = iprot.readListBegin();
-              this.latlngs = new ArrayList<GeocodePoint>(_list80.size);
-              for (int _i81 = 0; _i81 < _list80.size; ++_i81)
+              TList _list84 = iprot.readListBegin();
+              this.latlngs = new ArrayList<GeocodePoint>(_list84.size);
+              for (int _i85 = 0; _i85 < _list84.size; ++_i85)
               {
-                GeocodePoint _elem82;
-                _elem82 = new GeocodePoint();
-                _elem82.read(iprot);
-                this.latlngs.add(_elem82);
+                GeocodePoint _elem86;
+                _elem86 = new GeocodePoint();
+                _elem86.read(iprot);
+                this.latlngs.add(_elem86);
               }
               iprot.readListEnd();
             }
@@ -382,9 +382,9 @@ public class BulkReverseGeocodeRequest implements TBase<BulkReverseGeocodeReques
         oprot.writeFieldBegin(LATLNGS_FIELD_DESC);
         {
           oprot.writeListBegin(new TList(TType.STRUCT, this.latlngs.size()));
-          for (GeocodePoint _iter83 : this.latlngs)
+          for (GeocodePoint _iter87 : this.latlngs)
           {
-            _iter83.write(oprot);
+            _iter87.write(oprot);
           }
           oprot.writeListEnd();
         }
