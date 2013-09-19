@@ -1,9 +1,9 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
-import com.foursquare.twofishes.gen._
 import com.foursquare.common.thrift.json.TReadableJSONProtocol
 import com.foursquare.spindle.{MetaRecord, Record}
+import com.foursquare.twofishes.gen._
 import com.foursquare.twofishes.util.Helpers
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.twitter.finagle.{Service, SimpleFilter}
