@@ -2,11 +2,11 @@
 package com.foursquare.twofishes
 
 import collection.JavaConverters._
-import com.foursquare.twofishes.gen._
 import com.foursquare.twofishes.importers.geonames._
 import com.foursquare.twofishes.util.{GeonamesId, StoredFeatureId}
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTReader, WKTWriter}
+import org.bson.types.ObjectId
 import org.specs2.mutable._
 import scala.collection.mutable.{HashMap, ListBuffer}
 

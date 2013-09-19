@@ -2,9 +2,9 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.Identity._
-import com.foursquare.twofishes.gen._
 import com.foursquare.twofishes.util.{GeoTools, StoredFeatureId, TwofishesLogger}
 import com.foursquare.twofishes.util.Lists.Implicits._
+import org.bson.types.ObjectId
 import scala.collection.mutable.HashMap
 import scalaj.collection.Implicits._
 

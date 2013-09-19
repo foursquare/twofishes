@@ -1,7 +1,6 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.Identity._
-import com.foursquare.twofishes.gen._
 import com.foursquare.twofishes.util.StoredFeatureId
 import scalaj.collection.Implicits._
 

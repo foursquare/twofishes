@@ -2,9 +2,9 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.util.StoredFeatureId
-import com.mongodb.Bytes
 import com.mongodb.casbah.Imports._
 import com.mongodb.casbah.MongoConnection
+import com.mongodb.Bytes
 import com.novus.salat._
 import com.novus.salat.annotations._
 import com.novus.salat.dao._

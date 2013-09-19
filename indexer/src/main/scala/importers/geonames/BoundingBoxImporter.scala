@@ -2,10 +2,11 @@
 package com.foursquare.twofishes.importers.geonames
 
 import com.foursquare.twofishes._
-import com.foursquare.twofishes.util.{GeonamesNamespace, StoredFeatureId}
-import com.weiglewilczek.slf4s.Logging
+import com.foursquare.twofishes.util.StoredFeatureId
+import com.foursquare.twofishes.util.GeonamesNamespace
 import java.io.File
 import scala.collection.mutable.HashMap
+import com.weiglewilczek.slf4s.Logging
 
 // I could not for the life of me get the java geojson libraries to work
 // using a table I computer in python for the flickr bounding boxes.

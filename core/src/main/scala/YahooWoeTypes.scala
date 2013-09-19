@@ -1,8 +1,7 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes
 
-import com.foursquare.twofishes.gen.YahooWoeType
-import com.foursquare.twofishes.gen.YahooWoeType._
+import com.foursquare.twofishes.YahooWoeType._
 
 object YahooWoeTypes {
   val order = List(POSTAL_CODE, AIRPORT, SUBURB, TOWN, ADMIN3, ADMIN2, ADMIN1, COUNTRY)
@@ -12,6 +11,6 @@ object YahooWoeTypes {
   }
 
   val isAdminWoeTypes = List(ADMIN3, ADMIN2, ADMIN1, COUNTRY)
-  def isAdminWoeType(woeType: YahooWoeType): Boolean =
+  def isAdminWoeType(woeType: YahooWoeType): Boolean = 
     isAdminWoeTypes.contains(woeType)
 }

@@ -1,12 +1,11 @@
 package com.foursquare.twofishes
 
-import com.foursquare.twofishes.gen._
 import com.foursquare.twofishes.util.{ByteUtils, StoredFeatureId}
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter}
 import java.nio.ByteBuffer
 import java.util.Arrays
-import org.apache.thrift.{TBase, TDeserializer, TFieldIdEnum, TSerializer}
+import org.apache.thrift.{TBase, TBaseHelper, TDeserializer, TFieldIdEnum, TSerializer}
 import org.apache.thrift.protocol.TCompactProtocol
 import org.bson.types.ObjectId
 

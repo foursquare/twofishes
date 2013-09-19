@@ -1,4 +1,4 @@
-namespace java com.foursquare.twofishes.gen
+namespace java com.foursquare.twofishes
 
 // "woe types" ie "where on earth types," these are represent various types
 // of geographic features in the world

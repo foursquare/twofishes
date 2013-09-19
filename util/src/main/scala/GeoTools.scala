@@ -1,7 +1,6 @@
 package com.foursquare.twofishes.util
 
 import com.foursquare.twofishes._
-import com.foursquare.twofishes.gen._
 import com.google.common.geometry.{S2LatLng, S2LatLngRect}
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory, Polygon}
 import com.vividsolutions.jts.operation.distance.DistanceOp

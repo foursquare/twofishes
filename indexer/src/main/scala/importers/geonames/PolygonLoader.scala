@@ -4,15 +4,16 @@ package com.foursquare.twofishes.importers.geonames
 import com.foursquare.geo.shapes.FsqSimpleFeatureImplicits._
 import com.foursquare.geo.shapes.ShapefileIterator
 import com.foursquare.twofishes._
-import com.foursquare.twofishes.util.{FeatureNamespace, Helpers, StoredFeatureId}
+import com.foursquare.twofishes.util.{FeatureNamespace, StoredFeatureId}
+import com.foursquare.twofishes.util.Helpers
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.mongodb.casbah.Imports._
-import com.vividsolutions.jts.geom.Geometry
+import com.vividsolutions.jts.geom.{Geometry, GeometryFactory}
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTReader}
+import org.geotools.geojson.feature.FeatureJSON
 import com.weiglewilczek.slf4s.Logging
 import java.io.File
-import org.geotools.geojson.feature.FeatureJSON
 import scalaj.collection.Implicits._
 
 

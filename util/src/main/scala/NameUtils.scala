@@ -2,9 +2,10 @@
 package com.foursquare.twofishes.util
 
 import com.foursquare.twofishes.Identity._
-import com.foursquare.twofishes.gen._
+import com.foursquare.twofishes.{FeatureName, FeatureNameFlags, GeocodeFeature, YahooWoeType, util}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import scalaj.collection.Implicits._
+import scala.util.Sorting
 
 object SlugBuilder {
   import NameFormatter.FormatPattern
@@ -278,7 +279,7 @@ trait NameUtils {
         (f.cc == "US" || f.cc == "CA")
 
       val bestNameMatch = bestNameFromList(f, nameCandidates, lang, modifiedPreferAbbrev)
-
+      
       if (debugLevel > 1) {
         logger.ifDebug("name candidates: %s", nameCandidates)
         logger.ifDebug("best name match: %s", bestNameMatch)

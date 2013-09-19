@@ -1,23 +1,41 @@
 package com.foursquare.twofishes.replayer
 
+import com.twitter.conversions.time._
 import com.foursquare.twofishes._
+import com.twitter.finagle.Service
+import com.twitter.finagle.builder.ClientBuilder
+import com.twitter.finagle.thrift.{ThriftClientFramedCodec, ThriftServerFramedCodec, ThriftClientRequest}
+import java.net.InetSocketAddress
+import org.apache.thrift.protocol.TBinaryProtocol
+import org.apache.thrift.transport.TSocket
+import scala.collection.JavaConverters._
+
 import com.twitter.conversions.time._
 import com.twitter.finagle.builder.ClientBuilder
-import com.twitter.finagle.thrift.{ThriftClientFramedCodec, ThriftClientRequest}
+import org.apache.thrift.protocol.TBinaryProtocol
+import org.apache.thrift.protocol.TMessage
+import org.apache.thrift.protocol.{TProtocolFactory, TProtocol}
 import com.twitter.util.Future
-import java.io.{File, FileWriter}
-import java.nio._
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.hadoop.io.{BytesWritable, NullWritable, SequenceFile}
-import org.apache.hadoop.io.SequenceFile.Reader
+import java.io.FileWriter
+import java.io.File
+
 import org.apache.thrift._
-import org.apache.thrift.protocol.{TBinaryProtocol, TMessage, TProtocol, TProtocolFactory, _}
+import org.apache.thrift.protocol._
 import org.apache.thrift.transport._
-import scala.collection.JavaConverters._
+import org.apache.hadoop.io.SequenceFile.Reader
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.io.SequenceFile
+import java.nio._
+import org.apache.thrift.protocol.TBinaryProtocol
+import org.apache.thrift.protocol.TCompactProtocol
+import org.apache.thrift.{TDeserializer, TSerializer}
+import org.apache.hadoop.io.BytesWritable
+import org.apache.hadoop.io.NullWritable
 import org.apache.hadoop.io.DataOutputBuffer;
 
-import com.twitter.util.Future
+import java.util.concurrent.{ConcurrentHashMap, Executors}
+import com.twitter.util.{Future, FuturePool, RingBuffer}
 
 object ThriftPrinter {
   def typeStr(t: Byte): String = {

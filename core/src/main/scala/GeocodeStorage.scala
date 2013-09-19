@@ -1,12 +1,11 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes
 
-import com.foursquare.twofishes.gen._
 import com.foursquare.twofishes.util.StoredFeatureId
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory}
 import com.vividsolutions.jts.io.WKBReader
 import java.nio.ByteBuffer
-import org.apache.thrift.{TDeserializer, TSerializer}
+import org.apache.thrift.{TBaseHelper, TDeserializer, TSerializer}
 import org.apache.thrift.protocol.TCompactProtocol
 import org.bson.types.ObjectId
 import scala.collection.mutable.HashMap

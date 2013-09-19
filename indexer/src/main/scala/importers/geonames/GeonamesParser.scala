@@ -3,27 +3,26 @@ package com.foursquare.twofishes.importers.geonames
 
 import com.foursquare.geo.shapes.FsqSimpleFeatureImplicits._
 import com.foursquare.geo.shapes.ShapefileIterator
-import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes._
-import com.foursquare.twofishes.gen.YahooWoeType._
-import com.foursquare.twofishes.gen._
+import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.{GeonamesId, GeonamesNamespace, Helpers, NameNormalizer, StoredFeatureId}
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
-import com.weiglewilczek.slf4s.Logging
-import java.io.{File, FileWriter}
+import java.io.{File, FileWriter, PrintStream}
+import org.bson.types.ObjectId
 import org.opengis.feature.simple.SimpleFeature
 import scala.collection.mutable.{HashMap, HashSet}
 import scala.io.Source
 import scalaj.collection.Implicits._
+import com.weiglewilczek.slf4s.Logging
 
 // TODO
 // stop using string representations of "a:b" featureids everywhere, PLEASE
 // please, I'm begging you, be more disciplined about featureids in the parser
 
-object GeonamesParser extends Logging {
+object GeonamesParser {
   var config: GeonamesImporterConfig = null
 
   var countryLangMap = new HashMap[String, List[String]]()
@@ -108,7 +107,7 @@ object GeonamesParser extends Logging {
     if (!config.parseWorld) {
       val countries = config.parseCountry.split(",")
       countries.foreach(f => {
-        logger.info("Parsing %s".format(f))
+        parser.logger.info("Parsing %s".format(f))
         parseAdminInfoFile("data/computed/adminCodes-%s.txt".format(f))
         parser.parseAdminFile(
           "data/downloaded/%s.txt".format(f))

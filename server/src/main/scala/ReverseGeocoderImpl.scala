@@ -2,13 +2,12 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.Identity._
-import com.foursquare.twofishes.gen._
-import com.foursquare.twofishes.util.{GeoTools, GeometryUtils, StoredFeatureId}
+import com.foursquare.twofishes.util.{GeoTools, GeometryUtils, StoredFeatureId, TwofishesLogger}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.twitter.ostrich.stats.Stats
 import com.twitter.util.Duration
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory, Point => JTSPoint}
-import com.vividsolutions.jts.io.WKBReader
+import com.vividsolutions.jts.io.{WKBReader, WKTWriter}
 import com.vividsolutions.jts.util.GeometricShapeFactory
 import org.apache.thrift.TBaseHelper
 import org.bson.types.ObjectId
