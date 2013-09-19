@@ -2,6 +2,7 @@
 package com.foursquare.twofishes
 
 import collection.JavaConverters._
+import com.foursquare.twofishes.gen._
 import com.foursquare.twofishes.importers.geonames._
 import com.foursquare.twofishes.util.{GeonamesId, StoredFeatureId}
 import com.vividsolutions.jts.geom.Geometry

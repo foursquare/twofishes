@@ -2,6 +2,7 @@
 package com.foursquare.twofishes
 
 import com.foursquare.geo.shapes.ShapefileS2Util
+import com.foursquare.twofishes.gen._
 import com.foursquare.twofishes.util.{GeometryUtils, GeonamesId, StoredFeatureId}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.vividsolutions.jts.geom.Geometry
