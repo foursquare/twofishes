@@ -148,6 +148,16 @@ class GeocoderSpec extends Specification {
     store
   }
 
+  def addSenayans(store: MockGeocodeStorageReadService) = {
+    val idRecord = store.addGeocode("ID", Nil, 1, 2, YahooWoeType.COUNTRY, cc="ID")
+    val adm1Record1 = store.addGeocode("Daerah Khusus Ibukota Jakarta", List(idRecord), 3, 4, YahooWoeType.ADMIN1, cc="ID")
+    val senayanRecord1 = store.addGeocode("Senayan", List(adm1Record1, idRecord), 5, 6, YahooWoeType.TOWN, population=Some(20000), cc="ID")
+
+    val adm1Record2 = store.addGeocode("Sumatera Utara", List(idRecord), 3, 4, YahooWoeType.ADMIN1, cc="ID")
+    val senayanRecord2 = store.addGeocode("Senayan", List(adm1Record2, idRecord), 10, 20, YahooWoeType.TOWN, population=Some(20000), cc="ID")
+    store
+  }
+
   def addParisTX(store: MockGeocodeStorageReadService) = {
     val usRecord = store.addGeocode("US", Nil, 1, 2, YahooWoeType.COUNTRY)
     val txRecord = store.addGeocode("Texas", List(usRecord), 3, 4, YahooWoeType.ADMIN1)
@@ -159,6 +169,16 @@ class GeocoderSpec extends Specification {
     val usRecord = store.addGeocode("US", Nil, 1, 2, YahooWoeType.COUNTRY)
     val ilRecord = store.addGeocode("Illinois", List(usRecord), 3, 4, YahooWoeType.ADMIN1)
     val parisRecord = store.addGeocode("Paris", List(ilRecord, usRecord), 2, 6, YahooWoeType.TOWN, population=Some(20000))
+    store
+  }
+
+  def addSohos(store: MockGeocodeStorageReadService) = {
+    val usRecord = store.addGeocode("US", Nil, 1, 2, YahooWoeType.COUNTRY)
+    val nyRecord = store.addGeocode("New York", List(usRecord), 3, 4, YahooWoeType.ADMIN1)
+    val soho1 = store.addGeocode("Soho", List(nyRecord, usRecord),
+      40.723537, -74.005313, YahooWoeType.TOWN, population = Some(500012))
+    val soho2 = store.addGeocode("Soho", List(nyRecord, usRecord),
+     40.72241, -73.99961, YahooWoeType.TOWN, population = Some(500012))
     store
   }
 
@@ -345,9 +365,11 @@ class GeocoderSpec extends Specification {
     r.interpretations.size aka r.toString must_== 2
     val interp1 = r.interpretations(0)
     interp1.feature.displayNameOrNull must_== "Paris, Texas, US"
+    interp1.feature.highlightedNameOrNull must_== "<b>Paris</b>, Texas, <b>US</b>"
 
     val interp2 = r.interpretations(1)
     interp2.feature.displayNameOrNull must_== "Paris, Illinois, US"
+    interp2.feature.highlightedNameOrNull must_== "<b>Paris</b>, Illinois, <b>US</b>"
   }
 
   "everything after connector geocodes" in {
@@ -529,6 +551,40 @@ class GeocoderSpec extends Specification {
     r = new ReverseGeocoderImpl(store, req3).reverseGeocode()
     r.interpretations.size must_== 1
     r.interpretations(0).feature.nameOrNull must_== "New York"
+  }
+
+ "ambiguous names outside US" in {
+    val store = getStore
+    addSenayans(store)
+
+    val req = GeocodeRequest.newBuilder.query("Senayan")
+      .maxInterpretations(2)
+      .debug(1)
+      .result
+    val r = new GeocodeRequestDispatcher(store).geocode(req)
+    r.interpretations.size aka r.toString must_== 2
+    val interp1 = r.interpretations(0)
+    interp1.feature.displayNameOrNull must_== "Senayan, Daerah Khusus Ibukota Jakarta, ID"
+    interp1.feature.highlightedNameOrNull must_== "<b>Senayan</b>, Daerah Khusus Ibukota Jakarta, ID"
+
+    val interp2 = r.interpretations(1)
+    interp2.feature.displayNameOrNull must_== "Senayan, Sumatera Utara, ID"
+    interp2.feature.highlightedNameOrNull must_== "<b>Senayan</b>, Sumatera Utara, ID"
+  }
+
+ "duplicate features" in {
+    val store = getStore
+    addSohos(store)
+
+    val req = GeocodeRequest.newBuilder.query("Soho")
+      .maxInterpretations(2)
+      .debug(1)
+      .result
+    val r = new GeocodeRequestDispatcher(store).geocode(req)
+    r.interpretations.size aka r.toString must_== 1
+    val interp1 = r.interpretations(0)
+    interp1.feature.displayNameOrNull must_== "Soho, New York, US"
+    interp1.feature.highlightedNameOrNull must_== "<b>Soho</b>, New York, US"
   }
 
   // add a preferred name test

@@ -101,21 +101,44 @@ class ResponseProcessor(
       }
     }
 
+import scala.collection.mutable.HashSet
+    val buckets = new HashSet[String]
 
+    // This is a hack to say that we're going to bucket the world into 'quantize' size
+    // cells. But if someone has already put something into a bucket that is one of your 8 siblings
+    // you should put yourself into that bucket instead. This is so that two places that happen
+    // to fall very near a cell border still end up in the same cell.
+    def findBucket(parse: Parse[_]): String = {
+      val quantize = 0.05
+      val startLat = parse.headOption.map(_.fmatch.feature.geometry.center.lat / quantize).getOrElse(0.0).toInt
+      val startLng = parse.headOption.map(_.fmatch.feature.geometry.center.lng / quantize).getOrElse(0.0).toInt
+      val checks = List(0, -1, 1)
+      for {
+        latOffset <- checks
+        lngOffset <- checks
+        lat = startLat + latOffset
+        lng = startLng + lngOffset
+        bucketKey = lat + "-" + lng
+      } {
+        if (buckets.has(bucketKey)) {
+          return bucketKey
+        }
+      }
+
+      val bucketKey = startLat + "-" + startLng
+      buckets += bucketKey
+      return bucketKey
+    }
 
     val dedupedMap: Seq[(Parse[Sorted], Int)] = for {
       (textKey, parsePairs) <- parseMap.toSeq
       // bucket into 0.1 degree buckets (= 11km)
-      val geoBuckets = parsePairs.groupBy({case (parse, index) => {
-        "%s-%s".format(
-          parse.headOption.map(_.fmatch.feature.geometry.center.lat / 0.1).getOrElse(0.0).toInt,
-          parse.headOption.map(_.fmatch.feature.geometry.center.lng / 0.1).getOrElse(0.0).toInt)
-        }})
-        (geoKey, parses) <- geoBuckets
-      } yield {
-        logger.ifDebug("for %s, have %d parses in bucket %s".format(textKey, parses.size, geoKey))
-        parses.sorted(DuplicateGeocodeParseOrdering).lastOption.get
-      }
+      val geoBuckets = parsePairs.groupBy({case (parse, index) => findBucket(parse) })
+      (geoKey, parses) <- geoBuckets
+    } yield {
+      logger.ifDebug("for %s, have %d parses in bucket %s".format(textKey, parses.size, geoKey))
+      parses.sorted(DuplicateGeocodeParseOrdering).lastOption.get
+    }
     // We have a map of [name -> List[Parse, Int]] ... extract out the parse-int pairs
     // join them, and re-sort by the int, which was their original ordering
     dedupedMap.toList.sortBy(_._2).map(_._1)
@@ -414,10 +437,10 @@ class ResponseProcessor(
           val feature = p(0).fmatch.feature
           ambiguousIdMap.getOrElse(feature.ids.toString, Nil).foreach(interp => {
             val sortedParents = p(0).fmatch.scoringFeatures.parentIds
-              .flatMap(StoredFeatureId.fromLong _)
-              .flatMap(parentFid => parentMap.get(parentFid))
+              .flatMap(id => StoredFeatureId.fromLong(id).flatMap(parentMap.get))
               .sorted(GeocodeServingFeatureOrdering)
-            fixFeatureMutable(interp.feature.mutable, sortedParents, Some(p), polygonMap, 1)
+            fixFeatureMutable(interp.feature.mutable, sortedParents, Some(p), polygonMap,
+              numExtraParentsRequired=1, fillHighlightedName=parseParams.tokens.size > 0)
           })
         })
       }
