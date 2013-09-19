@@ -1,18 +1,20 @@
 package com.foursquare.twofishes
 
-import com.vividsolutions.jts.geom.prep.PreparedGeometryFactory
 import com.foursquare.geo.shapes.ShapefileS2Util
+import com.foursquare.twofishes.gen._
 import com.foursquare.twofishes.util.{GeometryUtils, StoredFeatureId}
 import com.google.common.geometry.S2CellId
-import com.mongodb.casbah.Imports._
 import com.mongodb.Bytes
+import com.mongodb.casbah.Imports._
 import com.novus.salat._
 import com.novus.salat.annotations._
 import com.novus.salat.dao._
 import com.novus.salat.global._
 import com.twitter.util.Duration
 import com.vividsolutions.jts.geom.Geometry
+import com.vividsolutions.jts.geom.prep.PreparedGeometryFactory
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter}
+import com.weiglewilczek.slf4s.Logging
 import java.io._
 import java.net.URI
 import java.nio.ByteBuffer
@@ -21,11 +23,9 @@ import org.apache.hadoop.fs.{LocalFileSystem, Path}
 import org.apache.hadoop.hbase.io.hfile.{Compression, HFile}
 import org.apache.hadoop.hbase.util.Bytes._
 import org.apache.hadoop.io.{BytesWritable, MapFile}
-import org.apache.thrift.TSerializer
 import org.apache.thrift.protocol.TCompactProtocol
 import scala.collection.mutable.{HashMap, HashSet, ListBuffer}
 import scalaj.collection.Implicits._
-import com.weiglewilczek.slf4s.Logging
 
 trait DurationUtils extends Logging {
   def logDuration[T](what: String)(f: => T): T = {

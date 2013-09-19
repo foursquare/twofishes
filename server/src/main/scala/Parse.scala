@@ -1,11 +1,12 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
+import com.foursquare.twofishes.gen._
 import com.foursquare.twofishes.util.GeoTools
 import com.foursquare.twofishes.util.Lists.Implicits._
+import com.foursquare.twofishes.util.NameUtils
 import java.util.concurrent.ConcurrentHashMap
 import scalaj.collection.Implicits._
-import com.foursquare.twofishes.util.NameUtils
 
 // Represents a match from a run of tokens to one particular feature
 case class FeatureMatch(

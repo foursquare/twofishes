@@ -2,13 +2,13 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.Identity._
-import com.foursquare.twofishes.util.Lists.Implicits._
+import com.foursquare.twofishes.gen._
 import com.foursquare.twofishes.util.{NameUtils, StoredFeatureId}
+import com.foursquare.twofishes.util.Lists.Implicits._
 import com.foursquare.twofishes.util.NameUtils.BestNameMatch
 import com.vividsolutions.jts.geom.Geometry
-import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTWriter}
+import com.vividsolutions.jts.io.{WKBWriter, WKTWriter}
 import java.nio.ByteBuffer
-import org.bson.types.ObjectId
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._
 
@@ -164,7 +164,7 @@ class ResponseProcessor(
       None
     }
 
-    var namesToUse: Seq[(com.foursquare.twofishes.FeatureName, Option[String])] = Nil
+    var namesToUse: Seq[(FeatureName, Option[String])] = Nil
 
     // set highlightedName and matchedName
     if (fillHighlightedName) {

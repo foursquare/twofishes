@@ -4,11 +4,9 @@ package com.foursquare.twofishes
 import com.foursquare.geo.shapes.ShapefileS2Util
 import com.foursquare.twofishes.util.{GeometryUtils, GeonamesId, StoredFeatureId}
 import com.foursquare.twofishes.util.Lists.Implicits._
-import com.google.common.geometry.S2CellId
 import com.vividsolutions.jts.geom.Geometry
-import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTReader}
+import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
 import java.nio.ByteBuffer
-import org.bson.types.ObjectId
 import org.specs2.mutable._
 import scala.collection.JavaConverters._
 import scala.collection.mutable.{HashMap, ListBuffer}

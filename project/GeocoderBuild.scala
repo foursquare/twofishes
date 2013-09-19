@@ -1,8 +1,8 @@
 import com.foursquare.spindle.codegen.plugin.ThriftCodegenPlugin.thriftSettings
-import sbt._
 import sbt.Keys._
-import sbtassembly.Plugin._
+import sbt._
 import sbtassembly.Plugin.AssemblyKeys._
+import sbtassembly.Plugin._
 
 object GeocoderBuild extends Build {
   lazy val buildSettings = Seq(
@@ -175,14 +175,13 @@ object GeocoderBuild extends Build {
         import com.foursquare.twofishes._
         import com.foursquare.twofishes.importers.geonames._
         import com.foursquare.twofishes.util.Helpers._
-        import java.io.File
-        import com.vividsolutions.jts.io._
-
         import com.mongodb.casbah.Imports._
         import com.novus.salat._
         import com.novus.salat.annotations._
         import com.novus.salat.dao._
         import com.novus.salat.global._
+        import com.vividsolutions.jts.io._
+        import java.io.File
 
         val store = new MongoGeocodeStorageService()
         val slugIndexer = new SlugIndexer()

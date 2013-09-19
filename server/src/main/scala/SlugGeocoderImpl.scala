@@ -2,11 +2,11 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.Identity._
+import com.foursquare.twofishes.gen._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.foursquare.twofishes.util.StoredFeatureId
 import com.twitter.ostrich.stats.Stats
 import com.vividsolutions.jts.geom.Geometry
-import org.bson.types.ObjectId
 import scalaj.collection.Implicits._
 
 class SlugGeocoderImpl(

@@ -2,10 +2,10 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.Identity._
+import com.foursquare.twofishes.gen._
 import com.foursquare.twofishes.util.{NameNormalizer, NameUtils, StoredFeatureId}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.foursquare.twofishes.util.NameUtils.BestNameMatch
-import org.bson.types.ObjectId
 import scala.collection.mutable.HashMap
 import scalaj.collection.Implicits._
 

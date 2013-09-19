@@ -1,8 +1,8 @@
 package com.foursquare.twofishes.util
 
 import com.foursquare.twofishes._
+import com.foursquare.twofishes.gen._
 import org.bson.types.ObjectId
-import scala.io.Source
 
 sealed abstract class FeatureNamespace(val name: String, val id: Byte)
 case object MaponicsNamespace extends FeatureNamespace("maponics", 0.toByte)

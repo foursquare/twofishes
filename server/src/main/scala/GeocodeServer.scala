@@ -1,9 +1,9 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
-import org.apache.thrift.{TBase, TFieldIdEnum}
-import com.foursquare.spindle.{Record, MetaRecord, RecordProvider}
+import com.foursquare.twofishes.gen._
 import com.foursquare.common.thrift.json.TReadableJSONProtocol
+import com.foursquare.spindle.{MetaRecord, Record}
 import com.foursquare.twofishes.util.Helpers
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.twitter.finagle.{Service, SimpleFilter}
@@ -12,24 +12,20 @@ import com.twitter.finagle.http.Http
 import com.twitter.finagle.thrift.ThriftServerFramedCodec
 import com.twitter.ostrich.admin._
 import com.twitter.ostrich.admin.config._
-import com.twitter.ostrich.stats.Stats
 import com.twitter.util.{Future, FuturePool, RingBuffer}
 import java.io.InputStream
 import java.net.InetSocketAddress
-import org.apache.thrift.{TDeserializer, TSerializer}
 import java.util.Date
 import java.util.concurrent.{ConcurrentHashMap, Executors}
-import org.apache.thrift.{TBase, TFieldIdEnum, TSerializer}
+import org.apache.thrift.{TBase, TDeserializer, TFieldIdEnum, TSerializer}
 import org.apache.thrift.protocol.{TBinaryProtocol, TSimpleJSONProtocol}
-import org.apache.thrift.server.TThreadPoolServer
-import org.apache.thrift.transport.TServerSocket
 import org.bson.types.ObjectId
 import org.jboss.netty.buffer.ChannelBuffers
 import org.jboss.netty.handler.codec.http._
 import org.jboss.netty.util.CharsetUtil
 import scala.collection.mutable.ListBuffer
-import scalaj.collection.Implicits._
 import scala.io.BufferedSource
+import scalaj.collection.Implicits._
 
 class QueryLogHttpHandler(
   queryMap: ConcurrentHashMap[ObjectId, (TBase[_, _], Long)],
@@ -120,7 +116,7 @@ class QueryLoggingGeocodeServerImpl(service: Geocoder.ServiceIface) extends Geoc
 class GeocodeServerImpl(store: GeocodeStorageReadService, doWarmup: Boolean) extends Geocoder.ServiceIface {
   if (doWarmup) {
     var lines = new BufferedSource(getClass.getResourceAsStream("/warmup/geocodes.txt")).getLines.take(10000).toList
-    
+
     println("Warming up by geocoding %d queries".format(lines.size))
     lines.zipWithIndex.foreach({ case (line, index) => {
       if (index % 1000 == 0) {

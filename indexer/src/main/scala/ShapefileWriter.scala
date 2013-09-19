@@ -1,5 +1,6 @@
 package com.foursquare.twofishes
 
+import com.foursquare.twofishes.gen.YahooWoeType
 import com.mongodb.casbah.Imports._
 import com.novus.salat._
 import com.novus.salat.annotations._
@@ -12,7 +13,6 @@ import org.geotools.data.{DataUtilities, DefaultTransaction}
 import org.geotools.data.collection.ListFeatureCollection
 import org.geotools.data.shapefile.{ShapefileDataStore, ShapefileDataStoreFactory}
 import org.geotools.data.simple.{SimpleFeatureCollection, SimpleFeatureStore}
-import org.geotools.feature.FeatureCollections
 import org.geotools.feature.simple.SimpleFeatureBuilder
 import org.geotools.referencing.crs.DefaultGeographicCRS
 import org.opengis.feature.simple.SimpleFeatureType
