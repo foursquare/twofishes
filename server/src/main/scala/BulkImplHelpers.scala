@@ -29,7 +29,7 @@ trait BulkImplHelpers {
     })
 
     if (isolateParents) {
-      val parents = interps.flatMap(_.parentsOption.flatten.toList)
+      val parents = interps.flatMap(_.parentsOption.toList.flatten)
       val allParentFeatures = {
         val seen = scala.collection.mutable.HashSet[Long]()
         parents.filter(p => {
