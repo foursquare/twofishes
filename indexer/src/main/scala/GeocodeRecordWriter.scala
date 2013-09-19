@@ -27,6 +27,7 @@ case class NameIndex(
 trait GeocodeStorageWriteService {
   def insert(record: GeocodeRecord): Unit
   def setRecordNames(id: StoredFeatureId, names: List[DisplayName])
+  def addBoundingBoxToRecord(bbox: BoundingBox, id: StoredFeatureId)
   def addNameToRecord(name: DisplayName, id: StoredFeatureId)
   def addNameIndex(name: NameIndex)
   def addPolygonToRecord(id: StoredFeatureId, wkbGeometry: Array[Byte])
@@ -49,6 +50,12 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
 
   def insert(record: GeocodeRecord) {
     MongoGeocodeDAO.insert(record)
+  }
+
+  def addBoundingBoxToRecord(bbox: BoundingBox, id: StoredFeatureId) {
+    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.longId))),
+      MongoDBObject("$set" -> MongoDBObject("boundingbox" -> grater[BoundingBox].asDBObject(bbox))),
+      false, false)
   }
 
   def addNameToRecord(name: DisplayName, id: StoredFeatureId) {

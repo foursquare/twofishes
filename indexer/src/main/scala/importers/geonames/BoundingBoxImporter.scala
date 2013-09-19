@@ -49,7 +49,9 @@ object BoundingBoxTsvImporter extends Logging {
     map
   }
 
-  def batchUpdate(filenames: List[File]) = {
-    Nil   
+  def batchUpdate(filenames: List[File], store: GeocodeStorageWriteService) = {
+    parse(filenames).foreach({case (fid, bbox) => {
+      store.addBoundingBoxToRecord(bbox, fid)
+    }})
   }
 }

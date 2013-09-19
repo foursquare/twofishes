@@ -27,6 +27,7 @@ class MockGeocodeStorageWriteService extends GeocodeStorageWriteService {
   def addSlugToRecord(id: StoredFeatureId, slug: String) {}
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = Nil.iterator
   def addNameIndex(name: NameIndex) {}
+  def addBoundingBoxToRecord(bbox: BoundingBox, id: StoredFeatureId) {}
 }
 
 class IndexerSpec extends Specification {
