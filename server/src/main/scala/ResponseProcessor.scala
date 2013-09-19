@@ -133,10 +133,21 @@ class ResponseProcessor(
       polygonMap: Map[StoredFeatureId, Geometry],
       numExtraParentsRequired: Int = 0,
       fillHighlightedName: Boolean = false
-    ): GeocodeFeature = {
+    ): GeocodeFeature.Mutable = {
     // set name
     val mutableFeature = f.mutableCopy
+    fixFeatureMutable(mutableFeature, parents, parse, polygonMap, numExtraParentsRequired, fillHighlightedName)
+  }
 
+  def fixFeatureMutable(
+    mutableFeature: GeocodeFeature.Mutable,
+    parents: Seq[GeocodeServingFeature],
+    parse: Option[Parse[Sorted]],
+    polygonMap: Map[StoredFeatureId, Geometry],
+    numExtraParentsRequired: Int = 0,
+    fillHighlightedName: Boolean = false
+  ): GeocodeFeature.Mutable = {
+    val f = mutableFeature
     val name = NameUtils.bestName(f, Some(req.lang), false).map(_.name).getOrElse("")
     mutableFeature.name_=(name)
 
@@ -154,15 +165,9 @@ class ResponseProcessor(
         parents.filter(p => p.feature.woeType == YahooWoeType.ADMIN1))
     }
 
-    val countryAbbrev: Option[String] = if (f.cc != req.ccOption.getOrElse("XX")) {
-      if (f.cc == "GB") {
-        Some("UK")
-      } else {
-        Some(f.cc)
-      }
-    } else {
-      None
-    }
+    val countryName =
+      parents.find(_.feature.woeType == YahooWoeType.COUNTRY).flatMap(f =>
+        NameUtils.bestName(f.feature, Some(req.lang), false).map(_.name))
 
     var namesToUse: Seq[(FeatureName, Option[String])] = Nil
 
@@ -181,8 +186,8 @@ class ResponseProcessor(
         val extraParents: Seq[(Option[FeatureMatch], GeocodeServingFeature)] =
           parents
             .filterNot(f =>
-                partsFromParse.exists(_._2.longId =? f.longId) &&
-                partsFromParents.exists(_._2.longId =? f.longId) &&
+                partsFromParse.exists(_._2.longId =? f.longId) ||
+                partsFromParents.exists(_._2.longId =? f.longId) ||
                 f.feature.woeType == YahooWoeType.COUNTRY)
             .takeRight(numExtraParentsRequired)
             .map(f => (None, f))
@@ -215,8 +220,8 @@ class ResponseProcessor(
           }}))
 
         if (!partsToUse.exists(_._2.feature.woeType == YahooWoeType.COUNTRY)) {
-          matchedNameParts ++= countryAbbrev.toList
-          highlightedNameParts ++= countryAbbrev.toList
+          matchedNameParts ++= countryName.toList
+          highlightedNameParts ++= countryName.toList
         }
         mutableFeature.matchedName_=(matchedNameParts.mkString(", "))
         mutableFeature.highlightedName_=(highlightedNameParts.mkString(", "))
@@ -235,8 +240,7 @@ class ResponseProcessor(
     // now pull in extra parents
     parentsToUse.appendAll(
       parents
-        .filterNot(p => parentsToUse.has(p))
-        .filterNot(p => p.feature.woeType == YahooWoeType.COUNTRY)
+        .filterNot(p => parentsToUse.has(p) || p.feature.woeType == YahooWoeType.COUNTRY)
         .takeRight(numExtraParentsRequired)
     )
 
@@ -244,13 +248,11 @@ class ResponseProcessor(
       .sorted(GeocodeServingFeatureOrdering)
       .map(p =>
         NameUtils.bestName(p.feature, Some(req.lang), true).map(_.name).getOrElse(""))
-       .filterNot(parentName => {
-         name == parentName
-       })
+       .filterNot(parentName => name == parentName)
 
     var displayNameParts = Vector(name) ++ parentNames
-    if (f.woeType != YahooWoeType.COUNTRY) {
-      displayNameParts ++= countryAbbrev.toList
+    if (f.woeType != YahooWoeType.COUNTRY && req.ccOrNull != f.cc) {
+      displayNameParts ++= countryName.toList
     }
     mutableFeature.displayName_=(displayNameParts.mkString(", "))
 
@@ -354,10 +356,12 @@ class ResponseProcessor(
         Nil
       }
 
+      val fixedFeature = fixFeature(feature, sortedParents, Some(p), polygonMap, fillHighlightedName=parseParams.tokens.size > 0)
+
       val interpBuilder = GeocodeInterpretation.newBuilder
         .what(what)
         .where(where)
-        .feature(fixFeature(feature, sortedParents, Some(p), polygonMap, fillHighlightedName=parseParams.tokens.size > 0))
+        .feature(fixedFeature)
         .scores(p.scoringFeatures.result)
 
       if (req.debug > 0) {
@@ -413,7 +417,7 @@ class ResponseProcessor(
               .flatMap(StoredFeatureId.fromLong _)
               .flatMap(parentFid => parentMap.get(parentFid))
               .sorted(GeocodeServingFeatureOrdering)
-            fixFeature(interp.feature, sortedParents, Some(p), polygonMap, 1)
+            fixFeatureMutable(interp.feature.mutable, sortedParents, Some(p), polygonMap, 1)
           })
         })
       }
