@@ -155,6 +155,13 @@ class GeocoderSpec extends Specification {
     store
   }
 
+  def addParisIL(store: MockGeocodeStorageReadService) = {
+    val usRecord = store.addGeocode("US", Nil, 1, 2, YahooWoeType.COUNTRY)
+    val ilRecord = store.addGeocode("Illinois", List(usRecord), 3, 4, YahooWoeType.ADMIN1)
+    val parisRecord = store.addGeocode("Paris", List(ilRecord, usRecord), 2, 6, YahooWoeType.TOWN, population=Some(20000))
+    store
+  }
+
   def addRegoPark(store: MockGeocodeStorageReadService) = {
     val usRecord = store.addGeocode("US", Nil, 1, 2, YahooWoeType.COUNTRY)
     val nyRecord = store.addGeocode("New York", List(usRecord), 3, 4, YahooWoeType.ADMIN1)
@@ -323,6 +330,24 @@ class GeocoderSpec extends Specification {
     interp2.what must_== ""
     interp2.where must_== "paris"
     interp2.feature.cc must_== "US"
+  }
+
+ "ambiguous names" in {
+    val store = getStore
+    addParisTX(store)
+    addParisIL(store)
+
+    val req = GeocodeRequest.newBuilder.query("Paris US")
+      .maxInterpretations(2)
+      .debug(1)
+      .result
+    val r = new GeocodeRequestDispatcher(store).geocode(req)
+    r.interpretations.size aka r.toString must_== 2
+    val interp1 = r.interpretations(0)
+    interp1.feature.displayNameOrNull must_== "Paris, Texas, US"
+
+    val interp2 = r.interpretations(1)
+    interp2.feature.displayNameOrNull must_== "Paris, Illinois, US"
   }
 
   "everything after connector geocodes" in {
