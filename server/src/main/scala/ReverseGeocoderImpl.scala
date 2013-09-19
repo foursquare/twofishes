@@ -134,7 +134,7 @@ class ReverseGeocoderHelperImpl(
     matches.toSeq
   }
 
-  def doBulkReverseGeocode(otherGeoms: Seq[Geometry], isolateParents: Boolean = false):
+  def doBulkReverseGeocode(otherGeoms: Seq[Geometry]):
       (Seq[Seq[Int]], Seq[GeocodeInterpretation], Seq[GeocodeFeature]) = {
     val geomIndexToCellIdMap: Map[Int, Seq[Long]] = (for {
       (g, index) <- otherGeoms.zipWithIndex
@@ -218,7 +218,7 @@ class ReverseGeocoderHelperImpl(
     val interpretations = responseProcessor.hydrateParses(sortedParses, parseParams, polygonMap,
       fixAmbiguousNames = false)
 
-    makeBulkReply[Geometry](otherGeoms, otherGeomToFids, interpretations, isolateParents)
+    makeBulkReply[Geometry](otherGeoms, otherGeomToFids, interpretations)
   }
 
   def getAllLevels(): Seq[Int] = {
@@ -239,7 +239,7 @@ class ReverseGeocoderImpl(
     new ReverseGeocoderHelperImpl(store, commonParams, logger)
 
   def doSingleReverseGeocode(geom: Geometry): GeocodeResponse = {
-    val (interpIdxes, interpretations, _) = reverseGeocoder.doBulkReverseGeocode(List(geom), isolateParents = false)
+    val (interpIdxes, interpretations, _) = reverseGeocoder.doBulkReverseGeocode(List(geom)) 
     val response = ResponseProcessor.generateResponse(req.debug, logger,
       interpIdxes(0).flatMap(interpIdx => interpretations.lift(interpIdx)),
       requestGeom = if (req.debug > 0) { Some(geom) } else { None })
@@ -320,7 +320,7 @@ class BulkReverseGeocoderImpl(
 
     val points = req.latlngs.map(ll => geomFactory.createPoint(new Coordinate(ll.lng, ll.lat)))
 
-    val (interpIdxs, interps, parents) = reverseGeocoder.doBulkReverseGeocode(points, isolateParents = true)
+    val (interpIdxs, interps, parents) = reverseGeocoder.doBulkReverseGeocode(points) 
 
     val responseBuilder = BulkReverseGeocodeResponse.newBuilder
       .interpretationIndexes(interpIdxs)

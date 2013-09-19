@@ -8,8 +8,7 @@ trait BulkImplHelpers {
   def makeBulkReply[T](
       inputs: Seq[T],
       inputFids: Map[T, Seq[StoredFeatureId]],
-      interps: Seq[GeocodeInterpretation],
-      isolateParents: Boolean = false):
+      interps: Seq[GeocodeInterpretation]):
       (Seq[Seq[Int]], Seq[GeocodeInterpretation], Seq[GeocodeFeature]) = {
     val inputToInputIdxes: Map[T, Seq[Int]] = inputs.zipWithIndex.groupBy(_._1).mapValues(_.map(_._2))
 
@@ -28,27 +27,6 @@ trait BulkImplHelpers {
       longFids.flatMap(longFid => featureIdToInterpIdxes(longFid))
     })
 
-    if (isolateParents) {
-      val parents = interps.flatMap(_.parentsOption.toList.flatten)
-      val allParentFeatures = {
-        val seen = scala.collection.mutable.HashSet[Long]()
-        parents.filter(p => {
-          if (!seen(p.longIdOrThrow)) {
-            seen += p.longIdOrThrow
-            true
-          } else false
-        })
-      }
-
-      val newInterps = interps.map(interp => {
-        val parentIds = interp.parents.map(_.longId)
-        // interp.copy(parents = Nil, parentLongIds = parentIds)
-        interp.copy(parents = Nil, parentLongIds = parentIds)
-      })
-
-      (inputIdxToInterpIdxs, newInterps, allParentFeatures)
-    } else {
-      (inputIdxToInterpIdxs, interps, Nil)
-    }
+    (inputIdxToInterpIdxs, interps, Nil)
   }
 }
