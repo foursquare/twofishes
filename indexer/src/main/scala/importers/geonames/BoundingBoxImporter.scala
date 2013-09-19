@@ -19,7 +19,7 @@ object BoundingBoxTsvImporter extends Logging {
     filenames.foreach(file => {
      logger.info("processing bounding box file %s".format(file))
       val lines = scala.io.Source.fromFile(file).getLines
-      lines.foreach(line => {
+      lines.filterNot(_.startsWith("#")).foreach(line => {
         val parts = line.split("[\t ]")
         // 0: geonameid
         // 1->5:       // west, south, east, north
