@@ -42,6 +42,7 @@ trait BulkImplHelpers {
 
       val newInterps = interps.map(interp => {
         val parentIds = interp.parents.map(_.longId)
+        // interp.copy(parents = Nil, parentLongIds = parentIds)
         interp.copy(parents = Nil, parentLongIds = parentIds)
       })
 
