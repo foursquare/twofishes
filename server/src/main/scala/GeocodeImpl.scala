@@ -85,7 +85,7 @@ class GeocoderImpl(
   }
 
   def generateParsesHelper(tokens: List[String], offset: Int, cache: ParseCache): SortedParseSeq = {
-    var i = 0
+    var i = 1
     var hasPrefix = true
 
     val sortedParses = new ListBuffer[Parse[Sorted]]()
@@ -96,6 +96,9 @@ class GeocoderImpl(
         val (prefixMatch, matches) = store.getByName(searchStr)
 
         hasPrefix = prefixMatch
+        if (!prefixMatch) {
+          logger.ifDebug("aborting search for %s due to no prefix match".format(searchStr))
+        }
 
         matches.map((f: GeocodeServingFeature) =>
           FeatureMatch(offset, offset + i, searchStr, f)
@@ -106,6 +109,7 @@ class GeocoderImpl(
       val newParses = if ((tokens.size - i) == 0) {
         featureMatches.flatMap(f => buildParse(f, NullParse))
       } else {
+        //val subParses = Option(cache.get(tokens.size - i)).getOrElse(List(NullParse).toSeq)
         val subParses = cache.get(tokens.size - i)
 
         val subParsesByCountry: Map[String, SortedParseSeq] = subParses.groupBy(_.countryCode)
@@ -121,6 +125,7 @@ class GeocoderImpl(
       }
 
       sortedParses ++= newParses
+      i += 1
     }
 
     sortedParses.toSeq

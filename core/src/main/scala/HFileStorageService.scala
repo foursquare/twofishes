@@ -161,15 +161,18 @@ class HFileInput[V](basepath: String, index: Index[String, V], shouldPreload: Bo
   def lookupWithPrefixStatus(keyStr: String): (Boolean, Option[V]) = {
     val key = ByteBuffer.wrap(keyStr.getBytes)
     val scanner: HFileScanner = reader.getScanner(true, true)
+    
+    val exactMatch = (scanner.reseekTo(key.array, key.position, key.remaining) == 0)
 
-    if (!new String(scanner.getKeyValue().getKey()).startsWith(keyStr)) {
+    // actually needed?
+    /*if (!new String(scanner.getKeyValue().getKey()).startsWith(keyStr)) {
       scanner.next()
-    }
+    }*/
 
-    if (scanner.reseekTo(key.array, key.position, key.remaining) == 0) {
+    if (exactMatch) {
       (true, Some(index.valueSerde.fromBytes(TBaseHelper.byteBufferToByteArray(scanner.getValue.duplicate()))))
     } else {
-      (new String(scanner.getKeyValue().getKey()).startsWith(keyStr), None)
+      (scanner.getKeyValue() != null && new String(scanner.getKeyValue().getKey()).startsWith(keyStr), None)
     }
   }
 
