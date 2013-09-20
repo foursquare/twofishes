@@ -154,18 +154,17 @@ class GeocoderImpl(
       // little hack--
       // if in the US, admin1 comes earlier in the parse than city, neighborhood, reject it
       if (List("CA", "US").has(most_specific.fmatch.feature.cc)) {
-         for {
-          stateTokenPos <- parse.find(_.fmatch.feature.woeType == YahooWoeType.ADMIN1).map(_.tokenStart)
-          cityOrNeighborhoodTokenPos <- parse.find(f =>
-            List(AIRPORT, SUBURB, TOWN, ADMIN3, ADMIN2).has(f.fmatch.feature.woeType)).map(_.tokenStart)
+        for {
+          stateTokenPos: Int <- parse.filter(_.fmatch.feature.woeType == YahooWoeType.ADMIN1).minByOption(_.tokenStart).map(_.tokenStart)
+          cityOrNeighborhoodTokenPos: Int <- parse.filter(f =>
+            List(AIRPORT, SUBURB, TOWN, ADMIN3, ADMIN2).has(f.fmatch.feature.woeType)).minByOption(_.tokenStart).map(_.tokenStart)
         } {
           if (stateTokenPos < cityOrNeighborhoodTokenPos) {
             return false
           }
         }
       }
-
-
+      
       rest.forall(f => {
         //logger.ifDebug("checking if %s in parents".format(f.fmatch.id))
         f.fmatch.longId == most_specific.fmatch.longId ||

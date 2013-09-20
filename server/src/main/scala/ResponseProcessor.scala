@@ -109,7 +109,7 @@ import scala.collection.mutable.HashSet
     // you should put yourself into that bucket instead. This is so that two places that happen
     // to fall very near a cell border still end up in the same cell.
     def findBucket(parse: Parse[_]): String = {
-      val quantize = 0.05
+      val quantize = 0.15
       val startLat = parse.headOption.map(_.fmatch.feature.geometry.center.lat / quantize).getOrElse(0.0).toInt
       val startLng = parse.headOption.map(_.fmatch.feature.geometry.center.lng / quantize).getOrElse(0.0).toInt
       val checks = List(0, -1, 1)

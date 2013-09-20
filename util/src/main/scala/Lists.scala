@@ -29,4 +29,30 @@ class FSTraversable[CC[X] <: Traversable[X], T, Repr <: TraversableLike[T, Repr]
     }
     case _ => xs.exists(_ == e)
   }
+
+  /**
+   * Return the smallest element from the Seq according to the supplied sort function.
+   */
+  def minByOption[U](f: T => U)(implicit ord: Ordering[U]): Option[T] = {
+    var first = true
+    var min: Option[T] = None
+    var minValue: Option[U] = None
+
+    for (x <- xs) {
+      if (first) {
+        min = Some(x)
+        minValue = Some(f(x))
+        first = false
+      }
+
+      val value = f(x)
+
+      if (ord.lt(value, minValue.get)) {
+        min = Some(x)
+        minValue = Some(value)
+      }
+    }
+
+    min
+  }
 }
