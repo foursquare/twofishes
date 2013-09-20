@@ -6,8 +6,18 @@ case class GeocodeServerConfig(
   thriftServerPort: Int = 8080,
   hfileBasePath: String = "",
   shouldPreload: Boolean = true,
-  shouldWarmup: Boolean = false
+  shouldWarmup: Boolean = false,
+  maxTokens: Int = 10
 )
+
+object GeocodeServerConfigSingleton {
+  var config: GeocodeServerConfig = null
+
+  def init(args: Array[String]) = {
+    config = GeocodeServerConfigParser.parse(args)
+    config
+  }
+}
 
 object GeocodeServerConfigParser {
   def parse(args: Array[String]): GeocodeServerConfig = {
@@ -30,6 +40,9 @@ object GeocodeServerConfigParser {
           .text("warmup the server at startup to prevent a cold start, turn off when testing")
           .action { (x, c) => c.copy(shouldWarmup = x) }
         }
+        opt[Int]("max_tokens")
+          .action { (x, c) => c.copy(maxTokens = x) }
+          .text("maximum number of tokens to allow geocoding")
 
     // parser.parse returns Option[C]
     parser.parse(args, GeocodeServerConfig()) getOrElse {

@@ -43,7 +43,7 @@ class QueryParser(logger: TwofishesLogger) {
     // Need to tune the algorithm to not explode on > 10 tokens
     // in the meantime, reject.
     Stats.addMetric("query_length", originalTokens.size)
-    if (originalTokens.size > 10) {
+    if (originalTokens.size > GeocodeServerConfigSingleton.config.maxTokens) {
       Stats.incr("too_many_tokens", 1)
       throw new Exception("too many tokens")
     }
