@@ -210,7 +210,7 @@ case class GeocodeRecord(
 trait GeocodeStorageReadService {
   def getIdsByName(name: String): Seq[StoredFeatureId]
   def getIdsByNamePrefix(name: String): Seq[StoredFeatureId]
-  def getByName(name: String): Seq[GeocodeServingFeature]
+  def getByName(name: String): (Boolean, Seq[GeocodeServingFeature])
   def getByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, GeocodeServingFeature]
 
   def getBySlugOrFeatureIds(ids: Seq[String]): Map[String, GeocodeServingFeature]

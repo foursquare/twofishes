@@ -53,11 +53,13 @@ class HFileStorageService(basepath: String, shouldPreload: Boolean) extends Geoc
   }
 
   def getIdsByName(name: String): Seq[StoredFeatureId] = {
-    nameMap.get(name)
+    val (prefixMatch, matches) = nameMap.get(name)
+    matches
   }
 
-  def getByName(name: String): Seq[GeocodeServingFeature] = {
-    getByFeatureIds(nameMap.get(name)).map(_._2).toSeq
+  def getByName(name: String): (Boolean, Seq[GeocodeServingFeature]) = {
+    val (prefixMatch, matches) = nameMap.get(name)
+    (prefixMatch, getByFeatureIds(matches).map(_._2).toSeq)
   }
 
   def getByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, GeocodeServingFeature] = {
@@ -148,10 +150,26 @@ class HFileInput[V](basepath: String, index: Index[String, V], shouldPreload: Bo
   def lookup(keyStr: String): Option[V] = {
     val key = ByteBuffer.wrap(keyStr.getBytes)
     val scanner: HFileScanner = reader.getScanner(true, true)
+
     if (scanner.reseekTo(key.array, key.position, key.remaining) == 0) {
       Some(index.valueSerde.fromBytes(TBaseHelper.byteBufferToByteArray(scanner.getValue.duplicate())))
     } else {
       None
+    }
+  }
+
+  def lookupWithPrefixStatus(keyStr: String): (Boolean, Option[V]) = {
+    val key = ByteBuffer.wrap(keyStr.getBytes)
+    val scanner: HFileScanner = reader.getScanner(true, true)
+
+    if (!new String(scanner.getKeyValue().getKey()).startsWith(keyStr)) {
+      scanner.next()
+    }
+
+    if (scanner.reseekTo(key.array, key.position, key.remaining) == 0) {
+      (true, Some(index.valueSerde.fromBytes(TBaseHelper.byteBufferToByteArray(scanner.getValue.duplicate()))))
+    } else {
+      (new String(scanner.getKeyValue().getKey()).startsWith(keyStr), None)
     }
   }
 
@@ -163,7 +181,6 @@ class HFileInput[V](basepath: String, index: Index[String, V], shouldPreload: Bo
     if (!new String(scanner.getKeyValue().getKey()).startsWith(key)) {
       scanner.next()
     }
-
 
     val ret: ListBuffer[Array[Byte]] = new ListBuffer()
 
@@ -218,8 +235,9 @@ class NameIndexHFileInput(basepath: String, shouldPreload: Boolean) {
   val nameIndex = new HFileInput(basepath, Indexes.NameIndex, shouldPreload)
   val prefixMapOpt = PrefixIndexMapFileInput.readInput(basepath, shouldPreload)
 
-  def get(name: String): List[StoredFeatureId] = {
-    nameIndex.lookup(name).toList.flatten
+  def get(name: String): (Boolean, List[StoredFeatureId]) = {
+    val (prefixMatch, matches) = nameIndex.lookupWithPrefixStatus(name)
+    (prefixMatch, matches.toList.flatten)
   }
 
   def getPrefix(name: String): Seq[StoredFeatureId] = {

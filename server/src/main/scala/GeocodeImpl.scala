@@ -85,16 +85,25 @@ class GeocoderImpl(
   }
 
   def generateParsesHelper(tokens: List[String], offset: Int, cache: ParseCache): SortedParseSeq = {
-    1.to(tokens.size).flatMap(i => {
+    var i = 0
+    var hasPrefix = true
+
+    val sortedParses = new ListBuffer[Parse[Sorted]]()
+
+    while (i <= tokens.size && hasPrefix) {
       val searchStr = tokens.take(i).mkString(" ")
       val featureMatches = logger.logDuration("get-by-name", "get-by-name for %s".format(searchStr)) {
-        store.getByName(searchStr).map((f: GeocodeServingFeature) =>
+        val (prefixMatch, matches) = store.getByName(searchStr)
+
+        hasPrefix = prefixMatch
+
+        matches.map((f: GeocodeServingFeature) =>
           FeatureMatch(offset, offset + i, searchStr, f)
         )
       }
       logger.ifDebug("got %d features for %s", featureMatches.size, searchStr)
 
-      if ((tokens.size - i) == 0) {
+      val newParses = if ((tokens.size - i) == 0) {
         featureMatches.flatMap(f => buildParse(f, NullParse))
       } else {
         val subParses = cache.get(tokens.size - i)
@@ -110,7 +119,11 @@ class GeocoderImpl(
           buildParse(f, p)
         }).flatten
       }
-    })
+
+      sortedParses ++= newParses
+    }
+
+    sortedParses.toSeq
   }
 
   def isValidParse(parse: Parse[Sorted]): Boolean = {
