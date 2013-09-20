@@ -232,6 +232,23 @@ class GeocoderSpec extends Specification {
     interp.parents.isEmpty must_== true
   }
 
+  "admin1, city fails" in {
+    val store = buildRegoPark()
+
+    val req = GeocodeRequest.newBuilder.query("New York Rego Park").debug(4).result
+
+    val r = new GeocodeRequestDispatcher(store).geocode(req)
+    r.interpretations.size aka r.toString must_== 1
+    val interp = r.interpretations(0)
+    interp.what must_== "new york"
+    interp.feature.geometry.center.lat must_== 5
+    interp.feature.geometry.center.lng must_== 6
+    interp.feature.displayNameOrNull must_== "Rego Park, New York, US"
+    interp.feature.woeTypeOrNull must_== YahooWoeType.TOWN
+    interp.whereOrNull must_== "rego park"
+    interp.parents.isEmpty must_== true
+  }
+
   "everything returns parents" in {
     val store = buildRegoPark()
 

@@ -2,6 +2,7 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.Identity._
+import com.foursquare.twofishes.YahooWoeType._
 import com.foursquare.twofishes.util.GeoTools
 import com.foursquare.twofishes.util.Lists.Implicits._
 import org.bson.types.ObjectId
@@ -148,6 +149,23 @@ class GeocoderImpl(
       //logger.ifDebug("most specific: " + most_specific)
       //logger.ifDebug("most specific: parents" + most_specific.fmatch.scoringFeatures.parents)
       val rest = parse.drop(1)
+
+      // "pizza in cincinnati" picks cincinnati IN over cincinnati OH
+      // little hack--
+      // if in the US, admin1 comes earlier in the parse than city, neighborhood, reject it
+      if (List("CA", "US").has(most_specific.fmatch.feature.cc)) {
+         for {
+          stateTokenPos <- parse.find(_.fmatch.feature.woeType == YahooWoeType.ADMIN1).map(_.tokenStart)
+          cityOrNeighborhoodTokenPos <- parse.find(f =>
+            List(AIRPORT, SUBURB, TOWN, ADMIN3, ADMIN2).has(f.fmatch.feature.woeType)).map(_.tokenStart)
+        } {
+          if (stateTokenPos < cityOrNeighborhoodTokenPos) {
+            return false
+          }
+        }
+      }
+
+
       rest.forall(f => {
         //logger.ifDebug("checking if %s in parents".format(f.fmatch.id))
         f.fmatch.longId == most_specific.fmatch.longId ||
