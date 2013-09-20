@@ -33,3 +33,5 @@
 5108554|Bed-Stuy
 7177540|Boerum Hill
 4929023|Amherst
+4930396|The Berkshires
+4930396|Berkshires
