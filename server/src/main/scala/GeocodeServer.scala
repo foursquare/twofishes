@@ -38,26 +38,26 @@ class QueryLogHttpHandler(
 ) extends Service[HttpRequest, HttpResponse] {
   def apply(request: HttpRequest) = {
     val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
-    val currentTime = System.nanoTime
+    val currentTime = System.currentTimeMillis()
 
     val content = (queryMap.asScala.map({case (k, v) => {
-      "Request has taken %dms so far\n%s".format((currentTime - v._2) / 1000000, v._1)
+      "Request has taken %dms so far\n%s".format(currentTime - v._2, v._1)
     }}).mkString("\n") +
     "\n-----------------------------------------\n" + "SLOW QUERIES\n"
       + slowQueries.reverse.map({case ((req, start, end)) => {
         "Query took %d ms --  started at %s, ended at %s\n%s".format(
-          (end - start) / 1000000,
-          new Date(start / 1000000),
-          new Date(end / 1000000),
+          (end - start),
+          new Date(start),
+          new Date(end),
           req
         )
       }}).mkString("\n") +
       "\n-----------------------------------------\n" + "RECENT QUERIES\n"
       + recentQueries.reverse.map({case ((req, start, end)) => {
         "Query took %d ms --  started at %s, ended at %s\n%s".format(
-          (end - start) / 1000000,
-          new Date(start / 1000000),
-          new Date(end / 1000000),
+          (end - start),
+          new Date(start),
+          new Date(end),
           req
         )
       }}).mkString("\n")
@@ -79,16 +79,16 @@ class QueryLoggingGeocodeServerImpl(service: Geocoder.ServiceIface) extends Geoc
 
   def queryLogProcessor[Req <: TBase[_, _], Res <: TBase[_, _]](r: Req, f: (Req => Future[Res])): Future[Res] = {
     // log the start of this query
-    val start = System.nanoTime
+    val start = System.currentTimeMillis()
     val id = new ObjectId()
     queryMap.put(id, (r, start))
 
     def logCompletion() {
-      val end = System.nanoTime
-      // greater than 1 second
-      if (end - start > (1000*1000*1000)) {
+      val end = System.currentTimeMillis()
+      // greater than 500 ms
+      if (end - start > 500) {
         // log slow query
-        println("%s took %dns %d ms".format(r, end - start, (end - start) / 1000000))
+        println("%s took %d ms".format(r, end - start))
         slowQueries.synchronized {
           slowQueries += (r, start, end)
         }
@@ -367,7 +367,7 @@ object GeocodeFinagleServer {
 
     LogHelper.init
 
-    val config: GeocodeServerConfig = GeocodeServerConfigParser.parse(args)
+    val config: GeocodeServerConfig = GeocodeServerConfigSingleton.init(args)
 
     // Implement the Thrift Interface
     val processor = new QueryLoggingGeocodeServerImpl(new GeocodeServerImpl(ServerStore.getStore(config), config.shouldWarmup))
