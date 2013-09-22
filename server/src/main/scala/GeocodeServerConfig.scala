@@ -39,10 +39,10 @@ object GeocodeServerConfigParser {
         opt[Boolean]("warmup")
           .text("warmup the server at startup to prevent a cold start, turn off when testing")
           .action { (x, c) => c.copy(shouldWarmup = x) }
-        }
         opt[Int]("max_tokens")
           .action { (x, c) => c.copy(maxTokens = x) }
           .text("maximum number of tokens to allow geocoding")
+        }
 
     // parser.parse returns Option[C]
     parser.parse(args, GeocodeServerConfig()) getOrElse {
