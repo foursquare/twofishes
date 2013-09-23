@@ -365,13 +365,7 @@ object GeocodeFinagleServer extends Logging {
   def main(args: Array[String]) {
     val handleExceptions = new HandleExceptions
 
-<<<<<<< HEAD
-    LogHelper.init
-
     val config: GeocodeServerConfig = GeocodeServerConfigSingleton.init(args)
-=======
-    val config = GeocodeServerConfigSingleton.init(args)
->>>>>>> kill all printlns in server code in favor of slf4s
 
     // Implement the Thrift Interface
     val processor = new QueryLoggingGeocodeServerImpl(new GeocodeServerImpl(ServerStore.getStore(config), config.shouldWarmup))
