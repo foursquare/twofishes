@@ -192,12 +192,8 @@ object GeometryUtils {
       val level = cellid.level()
       allCells += cellid
 
-      // println("looking at cell %s at level %d".format(cellid, level))
-
       if (level > minS2Level) {
-        // println("need parents")
         level.to(minS2Level, -levelMod.getOrElse(1)).drop(1).foreach(l => {
-          // println("adding parent at level %d".format(l))
           val p = cellid.parent(l)
           allCells += p
         })

@@ -8,7 +8,7 @@ object GeocoderBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.foursquare.twofishes",
     name := "twofishes",
-    version      := "0.80.2_c",
+    version      := "0.80.2_e",
     crossScalaVersions := Seq("2.9.2", "2.10.2"),
     javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
     javacOptions in doc := Seq("-source", "1.6")
@@ -191,14 +191,7 @@ object GeocoderBuild extends Build {
 
         publishArtifact := false,
         libraryDependencies ++= Seq(
-          "com.weiglewilczek.slf4s" % "slf4s_2.9.1" % "1.0.7",
-          "ch.qos.logback" % "logback-classic" % "1.0.9",
           "com.novus" %% "salat" % "1.9.2"
-        ),
-        ivyXML := (
-          <dependencies>
-            <exclude org="org.slf4j" module="slf4j-log4j12"/>
-          </dependencies>
         )
       )
   ) dependsOn(core, util)
@@ -213,7 +206,14 @@ object GeocoderBuild extends Build {
           "org.geotools" % "gt-geojson" % "9.2",
           "org.geotools" % "gt-epsg-hsql" % "9.2",
           "org.scalaj" %% "scalaj-collection" % "1.5",
-          "org.mongodb" % "mongo-java-driver" % "2.9.3"
+          "org.mongodb" % "mongo-java-driver" % "2.9.3",
+          "com.weiglewilczek.slf4s" % "slf4s_2.9.1" % "1.0.7",
+          "ch.qos.logback" % "logback-classic" % "1.0.9"
+        ),
+        ivyXML := (
+          <dependencies>
+            <exclude org="org.slf4j" module="slf4j-log4j12"/>
+          </dependencies>
         )
       )
     ) dependsOn(interface)

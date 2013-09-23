@@ -1,9 +1,10 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.importers.geonames
 
-import com.foursquare.twofishes.{LogHelper, YahooWoeType}
+import com.foursquare.twofishes.YahooWoeType
 import com.foursquare.twofishes.util.GeonamesZip
 import com.foursquare.twofishes.util.Helpers._
+import com.weiglewilczek.slf4s.Logging
 
 object GeonamesFeatureColumns extends Enumeration {
    type GeonamesFeatureColumns = Value
@@ -15,7 +16,7 @@ object GeonamesFeatureColumns extends Enumeration {
 
 import GeonamesFeatureColumns._
 
-object GeonamesFeature extends LogHelper {
+object GeonamesFeature extends Logging {
   val adminColumns = List(
     GEONAMEID,
     NAME,

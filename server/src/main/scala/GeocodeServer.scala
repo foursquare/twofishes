@@ -3,7 +3,6 @@ package com.foursquare.twofishes
 
 import com.foursquare.common.thrift.json.TReadableJSONProtocol
 import com.foursquare.spindle.{MetaRecord, Record}
-import com.foursquare.common.thrift.json.TReadableJSONProtocol
 import com.foursquare.twofishes.util.Helpers
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.twitter.finagle.{Service, SimpleFilter}
@@ -30,6 +29,7 @@ import org.jboss.netty.util.CharsetUtil
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._
 import scala.io.BufferedSource
+import com.weiglewilczek.slf4s.Logging
 
 class QueryLogHttpHandler(
   queryMap: ConcurrentHashMap[ObjectId, (TBase[_, _], Long)],
@@ -69,7 +69,7 @@ class QueryLogHttpHandler(
   }
 }
 
-class QueryLoggingGeocodeServerImpl(service: Geocoder.ServiceIface) extends Geocoder.ServiceIface {
+class QueryLoggingGeocodeServerImpl(service: Geocoder.ServiceIface) extends Geocoder.ServiceIface with Logging {
   val queryMap = new ConcurrentHashMap[ObjectId, (TBase[_, _], Long)]
 
   val recentQueries = new RingBuffer[(TBase[_, _], Long, Long)](1000)
@@ -88,7 +88,7 @@ class QueryLoggingGeocodeServerImpl(service: Geocoder.ServiceIface) extends Geoc
       // greater than 500 ms
       if (end - start > 500) {
         // log slow query
-        println("%s took %d ms".format(r, end - start))
+        logger.info("%s took %d ms".format(r, end - start))
         slowQueries.synchronized {
           slowQueries += (r, start, end)
         }
@@ -117,29 +117,29 @@ class QueryLoggingGeocodeServerImpl(service: Geocoder.ServiceIface) extends Geoc
   }
 }
 
-class GeocodeServerImpl(store: GeocodeStorageReadService, doWarmup: Boolean) extends Geocoder.ServiceIface {
+class GeocodeServerImpl(store: GeocodeStorageReadService, doWarmup: Boolean) extends Geocoder.ServiceIface with Logging {
   if (doWarmup) {
     var lines = new BufferedSource(getClass.getResourceAsStream("/warmup/geocodes.txt")).getLines.take(10000).toList
-    
-    println("Warming up by geocoding %d queries".format(lines.size))
+
+    logger.info("Warming up by geocoding %d queries".format(lines.size))
     lines.zipWithIndex.foreach({ case (line, index) => {
       if (index % 1000 == 0) {
-        println("finished %d queries".format(index))
+        logger.info("finished %d queries".format(index))
       }
       new GeocodeRequestDispatcher(store).geocode(GeocodeRequest.newBuilder.query(line).result)
     }})
-    println("done")
+    logger.info("done")
 
     val revgeoLines = new BufferedSource(getClass.getResourceAsStream("/warmup/revgeo.txt")).getLines.take(10000).toList
-    println("Warming up by reverse geocoding %d queries".format(lines.size))
+    logger.info("Warming up by reverse geocoding %d queries".format(lines.size))
     revgeoLines.zipWithIndex.foreach({ case (line, index) => {
       if (index % 1000 == 0) {
-        println("finished %d queries".format(index))
+        logger.info("finished %d queries".format(index))
       }
       val parts = line.split(",")
       new ReverseGeocoderImpl(store, GeocodeRequest.newBuilder.ll(GeocodePoint(parts(0).toDouble, parts(1).toDouble)).result).reverseGeocode()
     }})
-    println("done")
+    logger.info("done")
   }
 
   val queryFuturePool = FuturePool(StatsWrappedExecutors.create(24, 100, "geocoder"))
@@ -161,12 +161,12 @@ class GeocodeServerImpl(store: GeocodeStorageReadService, doWarmup: Boolean) ext
   }
 }
 
-class HandleExceptions extends SimpleFilter[HttpRequest, HttpResponse] {
+class HandleExceptions extends SimpleFilter[HttpRequest, HttpResponse] with Logging {
   def apply(request: HttpRequest, service: Service[HttpRequest, HttpResponse]) = {
     // `handle` asynchronously handles exceptions.
     service(request) handle {
       case error: Exception =>
-        println("got error: %s".format(error))
+        logger.error("got error: %s".format(error))
         error.printStackTrace
         val statusCode = HttpResponseStatus.INTERNAL_SERVER_ERROR
         val errorResponse = new DefaultHttpResponse(HttpVersion.HTTP_1_1, statusCode)
@@ -361,13 +361,17 @@ object ServerStore {
   }
 }
 
-object GeocodeFinagleServer {
+object GeocodeFinagleServer extends Logging {
   def main(args: Array[String]) {
     val handleExceptions = new HandleExceptions
 
+<<<<<<< HEAD
     LogHelper.init
 
     val config: GeocodeServerConfig = GeocodeServerConfigSingleton.init(args)
+=======
+    val config = GeocodeServerConfigSingleton.init(args)
+>>>>>>> kill all printlns in server code in favor of slf4s
 
     // Implement the Thrift Interface
     val processor = new QueryLoggingGeocodeServerImpl(new GeocodeServerImpl(ServerStore.getStore(config), config.shouldWarmup))
@@ -375,10 +379,10 @@ object GeocodeFinagleServer {
     // Convert the Thrift Processor to a Finagle Service
     val service = new Geocoder.Service(processor, new TBinaryProtocol.Factory())
 
-    println("serving finagle-thrift on port %d".format(config.thriftServerPort))
-    println("serving http/json on port %d".format(config.thriftServerPort + 1))
-    println("serving debug info on port %d".format(config.thriftServerPort + 2))
-    println("serving slow query http/json on port %d".format(config.thriftServerPort + 3))
+    logger.info("serving finagle-thrift on port %d".format(config.thriftServerPort))
+    logger.info("serving http/json on port %d".format(config.thriftServerPort + 1))
+    logger.info("serving debug info on port %d".format(config.thriftServerPort + 2))
+    logger.info("serving slow query http/json on port %d".format(config.thriftServerPort + 3))
 
     val server: Server = ServerBuilder()
       .bindTo(new InetSocketAddress(config.thriftServerPort))

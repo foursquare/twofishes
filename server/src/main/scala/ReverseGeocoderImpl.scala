@@ -239,7 +239,7 @@ class ReverseGeocoderImpl(
     new ReverseGeocoderHelperImpl(store, commonParams, logger)
 
   def doSingleReverseGeocode(geom: Geometry): GeocodeResponse = {
-    val (interpIdxes, interpretations, _) = reverseGeocoder.doBulkReverseGeocode(List(geom)) 
+    val (interpIdxes, interpretations, _) = reverseGeocoder.doBulkReverseGeocode(List(geom))
     val response = ResponseProcessor.generateResponse(req.debug, logger,
       interpIdxes(0).flatMap(interpIdx => interpretations.lift(interpIdx)),
       requestGeom = if (req.debug > 0) { Some(geom) } else { None })
@@ -259,7 +259,6 @@ class ReverseGeocoderImpl(
 
   def doCircleRevgeo(ll: GeocodePoint, radius: Int): GeocodeResponse = {
     if (req.radius > 50000) {
-      println("too large revgeo: " + req)
       //throw new Exception("radius too big (%d > %d)".format(req.radius, maxRadius))
       GeocodeResponse.newBuilder.interpretations(Nil).result
     } else {
@@ -320,7 +319,7 @@ class BulkReverseGeocoderImpl(
 
     val points = req.latlngs.map(ll => geomFactory.createPoint(new Coordinate(ll.lng, ll.lat)))
 
-    val (interpIdxs, interps, parents) = reverseGeocoder.doBulkReverseGeocode(points) 
+    val (interpIdxs, interps, parents) = reverseGeocoder.doBulkReverseGeocode(points)
 
     val responseBuilder = BulkReverseGeocodeResponse.newBuilder
       .interpretationIndexes(interpIdxs)

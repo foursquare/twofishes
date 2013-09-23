@@ -20,8 +20,9 @@ import org.bson.types.ObjectId
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.WKBReader
 import scalaj.collection.Implicits._
+import com.weiglewilczek.slf4s.Logging
 
-class HFileStorageService(basepath: String, shouldPreload: Boolean) extends GeocodeStorageReadService {
+class HFileStorageService(basepath: String, shouldPreload: Boolean) extends GeocodeStorageReadService with Logging {
   val nameMap = new NameIndexHFileInput(basepath, shouldPreload)
   val oidMap = new GeocodeRecordMapFileInput(basepath, shouldPreload)
   val geomMapOpt = GeometryMapFileInput.readInput(basepath, shouldPreload)
@@ -33,7 +34,7 @@ class HFileStorageService(basepath: String, shouldPreload: Boolean) extends Geoc
     scala.io.Source.fromFile(infoFile).getLines.foreach(line => {
       val parts = line.split(": ")
       if (parts.size != 2) {
-        println("badly formatted info line: " + line)
+        logger.error("badly formatted info line: " + line)
       }
       for {
         key <- parts.lift(0)
@@ -122,7 +123,7 @@ class HFileStorageService(basepath: String, shouldPreload: Boolean) extends Geoc
   }
 }
 
-class HFileInput[V](basepath: String, index: Index[String, V], shouldPreload: Boolean) {
+class HFileInput[V](basepath: String, index: Index[String, V], shouldPreload: Boolean) extends Logging {
   val conf = new Configuration()
   val fs = new LocalFileSystem()
   fs.initialize(URI.create("file:///"), conf)
@@ -142,7 +143,7 @@ class HFileInput[V](basepath: String, index: Index[String, V], shouldPreload: Bo
       while(scanner.next()) {}
     })
 
-    println("took %s seconds to read %s".format(duration.inSeconds, index.filename))
+    logger.info("took %s seconds to read %s".format(duration.inSeconds, index.filename))
   }
 
   def lookup(keyStr: String): Option[V] = {
@@ -181,12 +182,12 @@ class HFileInput[V](basepath: String, index: Index[String, V], shouldPreload: Bo
   }
 }
 
-class MapFileInput[K, V](basepath: String, index: Index[K, V], shouldPreload: Boolean) {
+class MapFileInput[K, V](basepath: String, index: Index[K, V], shouldPreload: Boolean) extends Logging {
   val (reader, fileInfo) = {
     val (rv, duration) = Duration.inMilliseconds({
       MapFileUtils.readerAndInfoFromLocalPath(new File(basepath, index.filename).toString, shouldPreload)
     })
-    println("took %s seconds to read %s".format(duration.inSeconds, index.filename))
+    logger.info("took %s seconds to read %s".format(duration.inSeconds, index.filename))
     rv
   }
 
@@ -206,7 +207,7 @@ class MapFileInput[K, V](basepath: String, index: Index[K, V], shouldPreload: Bo
     // This might just end up logging GC pauses, but it's possible we have
     // degenerate keys/values as well.
     if (duration.inMilliseconds > 100) {
-      println("reading key '%s' from index '%s' took %s milliseconds. valueOpt is %s bytes long".format(
+      logger.info("reading key '%s' from index '%s' took %s milliseconds. valueOpt is %s bytes long".format(
         key.toString, index.filename, duration.inMilliseconds, rv.map(_ => valueBytes.getLength)))
     }
 

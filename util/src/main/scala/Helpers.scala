@@ -2,11 +2,12 @@
 package com.foursquare.twofishes.util
 
 import com.twitter.util.Duration
+import com.weiglewilczek.slf4s.Logging
 
-object Helpers {
+object Helpers extends Logging {
   def duration[T](name: String)(f: => T): T = {
     val (rv, duration) = Duration.inMilliseconds(f)
-    println("%s took %s seconds".format(name, duration.inSeconds))
+    logger.info("%s took %s seconds".format(name, duration.inSeconds))
     rv
   }
 

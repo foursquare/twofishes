@@ -125,9 +125,6 @@ object NameFormatter {
         WoeToken(YahooWoeType.findByNameOrNull(woeType), preferAbbrev)
       })
 
-      // println("looking at pattern: %s".format(pattern.pattern))
-      // println("woeTokenString: %s".format(woeTokenStrings.mkString(", ")))
-
       // see if we can find all the types
       val featuresToSearch = parents ++ (if (!hasGeneralFeatureToken) { List(feature) } else { Nil })
       var usedPrimaryFeature = false
@@ -142,8 +139,6 @@ object NameFormatter {
         }
         WoeTokenMatch(woeToken, name.name)
       }
-
-      // println("had %d woeTokens and %d matches".format(tokenMatches.size, woeTokens.size))
 
       if (!usedPrimaryFeature && !hasGeneralFeatureToken) {
         None
@@ -279,7 +274,7 @@ trait NameUtils {
         (f.cc == "US" || f.cc == "CA")
 
       val bestNameMatch = bestNameFromList(f, nameCandidates, lang, modifiedPreferAbbrev)
-      
+
       if (debugLevel > 1) {
         logger.ifDebug("name candidates: %s", nameCandidates)
         logger.ifDebug("best name match: %s", bestNameMatch)

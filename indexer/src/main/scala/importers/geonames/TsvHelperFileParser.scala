@@ -1,15 +1,15 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.importers.geonames
 
-import com.foursquare.twofishes.LogHelper
 import com.foursquare.twofishes.util.{FeatureNamespace, StoredFeatureId}
 import java.io.File
+import com.weiglewilczek.slf4s.Logging
 
 trait TsvHelperFileParserLogger {
   def logUnused: Iterable[String]
 }
 
-class GeoIdTsvHelperFileParser(defaultNamespace: FeatureNamespace, filenames: String*) extends TsvHelperFileParserLogger with LogHelper {
+class GeoIdTsvHelperFileParser(defaultNamespace: FeatureNamespace, filenames: String*) extends TsvHelperFileParserLogger with Logging {
   class TableEntry(val values: List[String]) {
     var used = false
     def markUsed { used = true}
@@ -71,7 +71,7 @@ class GeoIdTsvHelperFileParser(defaultNamespace: FeatureNamespace, filenames: St
   }
 }
 
-class TsvHelperFileParser(filenames: String*) extends TsvHelperFileParserLogger with LogHelper {
+class TsvHelperFileParser(filenames: String*) extends TsvHelperFileParserLogger with Logging {
   class TableEntry(val values: List[String]) {
     var used = false
     def markUsed { used = true}
