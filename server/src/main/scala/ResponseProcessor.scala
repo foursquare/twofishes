@@ -216,7 +216,7 @@ import scala.collection.mutable.HashSet
             .map(f => (None, f))
 
         val partsToUse = (partsFromParse ++ partsFromParents ++ extraParents).sortBy(_._2)(GeocodeServingFeatureOrdering)
-        // logger.ifDebug("parts to use: " + partsToUse)
+
         var i = 0
         namesToUse = partsToUse.flatMap({case(fmatchOpt, servingFeature) => {
           // awful hack because most states outside the US don't actually
@@ -241,8 +241,9 @@ import scala.collection.mutable.HashSet
            namesToUse.map({case(fname, highlightedName) => {
             highlightedName.getOrElse(fname.name)
           }}))
+       println(namesToUse)
 
-        if (!partsToUse.exists(_._2.feature.woeType == YahooWoeType.COUNTRY)) {
+       if (f.woeType != YahooWoeType.COUNTRY && req.ccOrNull != f.cc) {
           matchedNameParts ++= countryName.toList
           highlightedNameParts ++= countryName.toList
         }
