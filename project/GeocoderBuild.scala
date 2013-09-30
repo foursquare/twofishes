@@ -3,6 +3,7 @@ import sbt._
 import sbt.Keys._
 import sbtassembly.Plugin._
 import sbtassembly.Plugin.AssemblyKeys._
+import net.virtualvoid.sbt.graph.Plugin.graphSettings
 
 object GeocoderBuild extends Build {
   lazy val buildSettings = Seq(
@@ -141,7 +142,7 @@ object GeocoderBuild extends Build {
       base = file("interface"))
 
   lazy val server = Project(id = "server",
-      settings = scoptSettings ++ defaultSettings ++ assemblySettings ++ specsSettings ++ Seq(
+      settings = graphSettings ++ scoptSettings ++ defaultSettings ++ assemblySettings ++ specsSettings ++ Seq(
         mainClass in assembly := Some("com.foursquare.twofishes.GeocodeFinagleServer"),
         baseDirectory in run := file("."),
         publishArtifact := true,
@@ -154,6 +155,7 @@ object GeocoderBuild extends Build {
             <exclude org="com.twitter" module="finagle-core"/>
             <exclude org="org.scalaj" module="scalaj-collection_2.9.1"/>
             <exclude org="org.mongodb" module="bson"/>
+            <exclude org="org.slf4j" module="slf4j-log4j12"/>
           </dependencies>
         ),
         mergeStrategy in assembly <<= (mergeStrategy in assembly) { mergeStrategy => {
