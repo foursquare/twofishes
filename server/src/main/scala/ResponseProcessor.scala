@@ -241,9 +241,10 @@ import scala.collection.mutable.HashSet
            namesToUse.map({case(fname, highlightedName) => {
             highlightedName.getOrElse(fname.name)
           }}))
-       println(namesToUse)
 
-       if (f.woeType != YahooWoeType.COUNTRY && req.ccOrNull != f.cc) {
+       if (f.woeType != YahooWoeType.COUNTRY
+          && req.ccOrNull != f.cc
+          && !partsToUse.exists(_._2.feature.woeType == YahooWoeType.COUNTRY)) {
           matchedNameParts ++= countryName.toList
           highlightedNameParts ++= countryName.toList
         }
