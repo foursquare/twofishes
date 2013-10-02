@@ -134,9 +134,10 @@
     })
 
     function getParameterByName(name) {
+      params = location.search || location.hash;
       name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
-      var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
-          results = regex.exec(location.search);
+      var regex = new RegExp("[\\?&#]" + name + "=([^&#]*)"),
+          results = regex.exec(params);
       return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
     }
 
@@ -311,19 +312,25 @@
             map.addLayer(wkt.toObject({color: 'blue'}));
           }
 
-          if (data.requestWktGeometry) {
+	  var myIcon = L.icon({
+            iconAnchor: [8, 8],
+            iconUrl: '/static/leaflet/images/red_dot.png',
+          });
 
-            var myIcon = L.icon({
-              iconAnchor: [8, 8],
-              iconUrl: '/static/leaflet/images/red_dot.png',
-            });
-
+          if (data.requestWktGeometry) { 
             var wkt = new Wkt.Wkt();
             wkt.read(data.requestWktGeometry)
             map.addLayer(wkt.toObject({
               color: '#ff0000',
               fillColor: '#ff0000',
               icon: myIcon}));
+          } else {
+	    var ll = getParameterByName('ll')
+            if (ll) {
+              var parts = ll.split(',');
+              var marker = new L.Marker(new L.LatLng(parts[0], parts[1]), {icon: myIcon})
+              map.addLayer(marker);
+            }
           }
         }
       });
