@@ -187,6 +187,8 @@ struct InterpretationScoringFeatures {
 //  1: optional i32 population = 0,
   2: optional double percentOfRequestCovered = 0.0,
   3: optional double percentOfFeatureCovered = 0.0
+
+  4: optional double finalScore = 0.0
 }
 
 struct DebugScoreComponent {

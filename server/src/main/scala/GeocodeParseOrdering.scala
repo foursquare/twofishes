@@ -33,9 +33,9 @@ class GeocodeParseOrdering(
       def modifySignal(value: Int, debug: String) {
         if (req.debug > 0) {
           logger.ifDebug("%s: %s + %s = %s", debug, signal, value, signal + value)
-          // parse.debugInfo.foreach(_.addToScoreComponents(
-          //   new DebugScoreComponent(debug, value)
-          // ))
+          parse.addDebugLine(
+            DebugScoreComponent(debug, value)
+          )
         }
         signal += value
       }
@@ -87,6 +87,10 @@ class GeocodeParseOrdering(
         val distancePenalty = (distance.toInt / 100)
         if (distance < 5000) {
           modifySignal(200000, "5km distance BONUS for being %s meters away".format(distance))
+
+          if (primaryFeature.feature.woeType =? YahooWoeType.SUBURB) {
+              modifySignal(3000000, "5km distance neightborhood intersection BONUS")
+            }
         } else {
           modifySignal(-distancePenalty, "distance penalty for being %s meters away".format(distance))
         }
@@ -111,6 +115,10 @@ class GeocodeParseOrdering(
           if (bbox.lo().getEarthDistance(bbox.hi()) < 200 * 1000 &&
             (bboxContainsCenter || bboxesIntersect)) {
             modifySignal(200000, "200km bbox intersection BONUS")
+
+            if (primaryFeature.feature.woeType =? YahooWoeType.SUBURB) {
+              modifySignal(3000000, "200km bbox neightborhood intersection BONUS")
+            }
           } else {
             // fall back to basic distance-from-center logic
             distancePenalty(GeoTools.S2LatLngToPoint(bbox.getCenter))
@@ -166,7 +174,7 @@ class GeocodeParseOrdering(
 
       if (req.debug > 0) {
         logger.ifDebug("final score %s", signal)
-//        parse.debugInfo.foreach(_.setFinalScore(signal))
+        parse.setFinalScore(signal)
       }
       signal
     }).getOrElse(0)

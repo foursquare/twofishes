@@ -6,6 +6,7 @@ import com.foursquare.twofishes.util.Lists.Implicits._
 import java.util.concurrent.ConcurrentHashMap
 import scalaj.collection.Implicits._
 import com.foursquare.twofishes.util.NameUtils
+import scala.collection.mutable.ListBuffer
 
 // Represents a match from a run of tokens to one particular feature
 case class FeatureMatch(
@@ -35,6 +36,15 @@ case class Parse[T <: MaybeSorted](
   def apply(i: Int) = fmatches(i)
   def iterator = fmatches.iterator
   def length = fmatches.length
+
+  val debugLines = new ListBuffer[DebugScoreComponent]
+  var finalScore = 0.0
+
+  def addDebugLine(component: DebugScoreComponent) {
+    debugLines.append(component)
+  }
+
+  def setFinalScore(score: Double) { finalScore = score }
 
   override def toString: String = {
     val name = this.headOption.map(f => {

@@ -41,17 +41,14 @@
     queryInput.keyup(function() {
       var query = queryInput.val();
       console.log('changed: ' + query);
-        window.location.hash = escape(query);
-        geocode();
+      window.location.hash = escape(buildQueryParams());
+      geocode();
       return true;
     })
-    
-    function geocode() {
-      if (!!request) {
-        request.abort()
-      }
-      var query = unescape(location.hash.substr(1))
-      var url = 'http://' + window.location.host + '/?autocomplete=true&query=' + query;
+
+    function buildQueryParams() {
+      var query = queryInput.val();
+      var url = 'query=' + query;
       url += '&maxInterpretations=' + maxInterps.val()
       if (latlngInput.val()) {
         url += '&ll=' + latlngInput.val()
@@ -60,6 +57,14 @@
       if ($('#debugButton').attr('checked')) {
         url += '&debug=1';
       }
+      return url;
+    }
+
+    function geocode() {
+      if (!!request) {
+        request.abort()
+      }
+      var url = 'http://' + window.location.host + '/?autocomplete=true&' + buildQueryParams();
       request = $.getJSON(url, _.bind(success, this, newestRequest), failure);
       newestRequest += 1;
     }
@@ -81,7 +86,7 @@
 
       statusArea.empty();
       debugSection.empty();
-      
+
       _(data.debugLines).each(function(l) {
         debugSection.append(l);
         debugSection.append($('<br>'));
@@ -135,19 +140,38 @@
 
     function failure() {
     }
-  
+
+
+    function getParameterByName(name) {
+      hash = unescape(location.hash);
+      name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+      var regex = new RegExp("[\\?&#]" + name + "=([^&#]*)");
+      var results = regex.exec(hash);
+      return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+    }
+
     var opts = {
        layers: new L.TileLayer.MapQuestOpen.OSM(),
       attributionControl: false
     }
-     var map = new L.Map('map', opts);
-     map.on('dragend', function(event) {
-       latlngInput.val(
-        map.getCenter().lat + ',' + map.getCenter().lng
-      );
-     })
+    var map = new L.Map('map', opts);
+     // map.on('dragend', function(event) {
+     //   latlngInput.val(
+     //    map.getCenter().lat + ',' + map.getCenter().lng
+     //  );
+     // })
 
-     queryInput.val(location.hash.substr(1));
+    hash = unescape(location.hash.substr(1))
+     if (hash.indexOf('=') == -1) {
+       queryInput.val(hash)
+     } else {
+      if (getParameterByName('debug')) {
+        $('#debugButton').attr('checked', 'checked');
+      }
+      queryInput.val(getParameterByName('query'));
+      latlngInput.val(getParameterByName('ll'));
+      maxInterps.val(getParameterByName('maxInterpretations'));
+     }
      map.setView(new L.LatLng(40.74, -74.0), 13)
      geocode();
   </script>

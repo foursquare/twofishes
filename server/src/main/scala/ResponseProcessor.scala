@@ -9,7 +9,7 @@ import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTWriter}
 import java.nio.ByteBuffer
 import org.bson.types.ObjectId
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ListBuffer, HashSet}
 import scalaj.collection.Implicits._
 
 // Sort a list of features, smallest to biggest
@@ -101,7 +101,6 @@ class ResponseProcessor(
       }
     }
 
-import scala.collection.mutable.HashSet
     val buckets = new HashSet[String]
 
     // This is a hack to say that we're going to bucket the world into 'quantize' size
@@ -259,7 +258,8 @@ import scala.collection.mutable.HashSet
       Option(n.flags).exists(_.contains(FeatureNameFlags.ABBREVIATION)) ||
       n.lang == req.lang ||
       n.lang == "en" ||
-      namesToUse.contains(n)
+      namesToUse.contains(n) ||
+      responseIncludes(ResponseIncludes.ALL_NAMES)
     ))
 
     // now pull in extra parents
@@ -552,16 +552,17 @@ import scala.collection.mutable.HashSet
     }
 
     val dedupedParses = if (maxInterpretations >= 1) {
-      dedupeParses(filteredParses.take(maxInterpretations * 2)).take(maxInterpretations)
+      val dedupedParses = dedupeParses(filteredParses.take(maxInterpretations * 2))
+      if (req.debug > 0) {
+        logger.ifDebug("%d parses after deduping", dedupedParses.size)
+        dedupedParses.zipWithIndex.foreach({case (parse, index) =>
+          logger.ifDebug("%d: deduped parse ids: %s (score: %s)", index, parse.map(f =>
+            StoredFeatureId.fromLong(f.fmatch.longId).get), parse.finalScore)
+        })
+      }
+      dedupedParses.take(maxInterpretations)
     } else {
       dedupeParses(filteredParses.take(maxInterpretations))
-    }
-
-    if (req.debug > 0) {
-      logger.ifDebug("%d parses after deduping", dedupedParses.size)
-      dedupedParses.zipWithIndex.foreach({case (parse, index) =>
-        logger.ifDebug("deduped parse ids: %s", parse.map(_.fmatch.longId))
-      })
     }
 
     // TODO: make this configurable
