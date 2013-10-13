@@ -32,7 +32,7 @@ These queries also work as parameters to the debug interface either after the ? 
 - ll=[lat,lng] -- latlng as comma separated double ie, 40.74,-74.0
     - if query is specified, this will be a hint to bias returned results
     - if query is not specified, it will reverse geocode this latlng
-- lang=[two letter language code] -- i.e. es, en or zh. Influences what langauges are used in constructing the displayName in the response. Defaults to en. geocoding "nyc" in with lang=es will suggest "Nueva York" as the best name. Additionally, the server will return all alternate names in english + this language.
+- lang=[two letter language code] -- i.e. es, en or zh. Influences what languages are used in constructing the displayName in the response. Defaults to en. geocoding "nyc" in with lang=es will suggest "Nueva York" as the best name. Additionally, the server will return all alternate names in english + this language.
 - cc=[two letter country code] -- biases geocoding similar to ll (prefer matches in this country). Also influences name formatting -- a feature in this country will not include the country name in the displayName
 - debug=[integer] -- specify the amount of debugging in the server response. 1 is a lot of debug info, 4 is a tremendous amount of debug info. Slows down the server a lot.
 - maxInterpretations=[integer] -- specify the number of different interpretations of the query (or reverse geocode) that you want. Larger value means slower & bigger response.
@@ -40,7 +40,7 @@ These queries also work as parameters to the debug interface either after the ? 
     - in autocomplete mode, 0 or unset means 3
     - in geocode mode, 0 or unset means 1
 - woeHint=[comma separated list of YahooWoeType integers or enum names] - ie woeHint=7,10 or woeHint=TOWN,ADMIN3 - look at the [YahooWoeType enum](https://github.com/foursquare/twofishes/blob/master/interface/src/main/thrift/geocoder.thrift#L3) for total range of values. Biases the geocoder to prefer features of these types
-- woeRestrict=[comma separated list of YahooWoeType integers or enum names] - same arguments as woeHint. Geocoder wil *only* return features of these types.
+- woeRestrict=[comma separated list of YahooWoeType integers or enum names] - same arguments as woeHint. Geocoder will *only* return features of these types.
 - responseIncludes=[comma separated list of ResponseIncludes integers or enum names] - ie responseIncludes=PARENTS,ALL_NAMES - influences what is contained within the returned interpretations. Most of these make the response slightly slower.
     - EVERYTHING - includes everything listed below
     - PARENTS - include the parent features of a venue (ie NY state, US inside the interpretation for 'new york city')
