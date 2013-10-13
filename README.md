@@ -72,7 +72,7 @@ A better option is to run "./sbt server/assembly" and then use the resulting ser
 
 Talking to the Server
 =====================
-- [Twofishes Request Format Documentation](https://github.com/foursquare/twofishes/blob/master/docs/twofishes_requests.md)
+- [Twofishes Request Format Documentation](docs/twofishes_requests.md)
 
 Technical Details
 =================
