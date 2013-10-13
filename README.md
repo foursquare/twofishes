@@ -70,6 +70,10 @@ NOTE: mongod is not required for serving, only index building.
 
 A better option is to run "./sbt server/assembly" and then use the resulting server/target/server-assembly-VERSION.jar. Serve that with java -jar JARFILE --hfile_basepath /directory
 
+Talking to the Server
+=====================
+- [Twofishes Request Format Documentation](https://github.com/foursquare/twofishes/blob/master/docs/twofishes_requests.md)
+
 Technical Details
 =================
 I use mongo to save state during the index building phase (so that, for instance, we can parse the alternateNames file, which adds name+lang pairs to features defined in a separate file, or adding the flickr bounding boxes). A final pass goes over the database, dereferences ids and outputs some hadoop mapfiles and hfiles. These two hfiles are all that is required for serving the data.
@@ -95,6 +99,12 @@ Also US-centric are zillow neighborhood polygons, also CC-by-SA. I might add an 
 Me
 ==
 David Blackman <blackmad@foursquare.com>
+
+Contributors
+============
+Many thanks to @nsanch for cleaning up lots of this code and working out lots of performance issues
+@jorgeo has been helping me tune the java performance of this since day 1, and worked out lots of issues with [spindle](https://github.com/foursquare/spindle) in the process
+@slackhappy has yet to make a contribution to the codebase, but has spent a lot of time reasoning about our internal deployments of twofishes
 
 Unrelated
 =========
