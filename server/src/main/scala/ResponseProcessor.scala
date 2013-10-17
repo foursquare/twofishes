@@ -154,11 +154,13 @@ class ResponseProcessor(
       parse: Option[Parse[Sorted]],
       polygonMap: Map[StoredFeatureId, Geometry],
       numExtraParentsRequired: Int = 0,
-      fillHighlightedName: Boolean = false
+      fillHighlightedName: Boolean = false,
+      includeAllNames: Boolean = false
     ): GeocodeFeature.Mutable = {
     // set name
     val mutableFeature = f.mutableCopy
-    fixFeatureMutable(mutableFeature, parents, parse, polygonMap, numExtraParentsRequired, fillHighlightedName)
+    fixFeatureMutable(mutableFeature, parents, parse, polygonMap, numExtraParentsRequired,
+      fillHighlightedName, includeAllNames)
   }
 
   def fixFeatureMutable(
@@ -167,7 +169,8 @@ class ResponseProcessor(
     parse: Option[Parse[Sorted]],
     polygonMap: Map[StoredFeatureId, Geometry],
     numExtraParentsRequired: Int = 0,
-    fillHighlightedName: Boolean = false
+    fillHighlightedName: Boolean = false,
+    includeAllNames: Boolean = false
   ): GeocodeFeature.Mutable = {
     val f = mutableFeature
     val name = NameUtils.bestName(f, Some(req.lang), false).map(_.name).getOrElse("")
@@ -259,7 +262,7 @@ class ResponseProcessor(
       n.lang == req.lang ||
       n.lang == "en" ||
       namesToUse.contains(n) ||
-      responseIncludes(ResponseIncludes.ALL_NAMES)
+      includeAllNames
     ))
 
     // now pull in extra parents
@@ -345,7 +348,7 @@ class ResponseProcessor(
       (lid, f))).toMap
     val missingParentIds = (parentFids.toSet -- existingFeatureMap.keys.toSet).toSeq
     val parentMap = store.getByFeatureIds(missingParentIds) ++ existingFeatureMap
-    logger.ifDebug("parentMap: %s", parentMap)
+    logger.ifLevelDebug(4, "parentMap: %s", parentMap)
 
     val interpretations = sortedParses.map(p => {
       val parseLength = p.tokenLength
@@ -381,7 +384,9 @@ class ResponseProcessor(
         Nil
       }
 
-      val fixedFeature = fixFeature(feature, sortedParents, Some(p), polygonMap, fillHighlightedName=parseParams.tokens.size > 0)
+      val fixedFeature = fixFeature(feature, sortedParents, Some(p), polygonMap,
+        fillHighlightedName=parseParams.tokens.size > 0,
+        includeAllNames=responseIncludes(ResponseIncludes.ALL_NAMES))
 
       val interpBuilder = GeocodeInterpretation.newBuilder
         .what(what)
@@ -442,7 +447,8 @@ class ResponseProcessor(
               .flatMap(id => StoredFeatureId.fromLong(id).flatMap(parentMap.get))
               .sorted(GeocodeServingFeatureOrdering)
             fixFeatureMutable(interp.feature.mutable, sortedParents, Some(p), polygonMap,
-              numExtraParentsRequired=1, fillHighlightedName=parseParams.tokens.size > 0)
+              numExtraParentsRequired=1, fillHighlightedName=parseParams.tokens.size > 0,
+              includeAllNames=responseIncludes(ResponseIncludes.PARENT_ALL_NAMES))
           })
         })
       }

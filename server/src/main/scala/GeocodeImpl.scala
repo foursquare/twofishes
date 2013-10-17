@@ -94,6 +94,12 @@ class GeocoderImpl(
       }
       logger.ifDebug("got %d features for %s", featureMatches.size, searchStr)
 
+
+      featureMatches.foreach(fm => {
+        logger.ifLevelDebug(2, fm.toString)
+      })
+
+
       if ((tokens.size - i) == 0) {
         featureMatches.flatMap(f => buildParse(f, NullParse))
       } else {
@@ -164,7 +170,7 @@ class GeocoderImpl(
           }
         }
       }
-      
+
       rest.forall(f => {
         //logger.ifDebug("checking if %s in parents".format(f.fmatch.id))
         f.fmatch.longId == most_specific.fmatch.longId ||

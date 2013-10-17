@@ -51,6 +51,7 @@ case class GeocodeRecord(
   population: Option[Int],
   boost: Option[Int] = None,
   boundingbox: Option[BoundingBox] = None,
+  displayBounds: Option[BoundingBox] = None,
   canGeocode: Boolean = true,
   slug: Option[String] = None,
   polygon: Option[Array[Byte]] = None,
@@ -112,6 +113,27 @@ case class GeocodeRecord(
       }
 
       geometryBuilder.bounds(GeocodeBoundingBox(
+        GeocodePoint(finalBounds._1, finalBounds._2),
+        GeocodePoint(finalBounds._3, finalBounds._4)
+      ))
+    })
+
+    displayBounds.foreach(bounds => {
+      val currentBounds = (bounds.ne.lat, bounds.ne.lng, bounds.sw.lat, bounds.sw.lng)
+
+      // This breaks at 180, I get that, to fix.
+      val finalBounds = (
+        List(bounds.ne.lat, bounds.sw.lat).max,
+        List(bounds.ne.lng, bounds.sw.lng).max,
+        List(bounds.ne.lat, bounds.sw.lat).min,
+        List(bounds.ne.lng, bounds.sw.lng).min
+      )
+
+      if (finalBounds != currentBounds) {
+        println("incorrect bounds %s -> %s".format(currentBounds, finalBounds))
+      }
+
+      geometryBuilder.displayBounds(GeocodeBoundingBox(
         GeocodePoint(finalBounds._1, finalBounds._2),
         GeocodePoint(finalBounds._3, finalBounds._4)
       ))

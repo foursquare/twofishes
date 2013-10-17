@@ -195,6 +195,15 @@ class GeonamesParser(
   }).sorted
   lazy val bboxTable = BoundingBoxTsvImporter.parse(bboxFiles)
 
+  val displayBboxDirs = List(
+    new File("data/computed/display_bboxes/"),
+    new File("data/private/display_bboxes/")
+  )
+  val displayBboxFiles = displayBboxDirs.flatMap(bboxDir => {
+    if (bboxDir.exists) { bboxDir.listFiles.toList } else { Nil }
+  }).sorted
+  lazy val displayBboxTable = BoundingBoxTsvImporter.parse(displayBboxFiles)
+
   val helperTables = List(rewriteTable, boostTable, aliasTable)
 
   def logUnusedHelperEntries {
@@ -455,6 +464,7 @@ class GeonamesParser(
       displayNames = displayNames,
       boost = boost,
       boundingbox = bbox,
+      displayBounds = displayBboxTable.get(geonameId),
       canGeocode = canGeocode,
       slug = slug,
       polygon = polygonExtraEntry.map(wkbWriter.write),

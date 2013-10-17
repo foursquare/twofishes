@@ -100,12 +100,17 @@ struct FeatureName {
 
 struct FeatureGeometry {
   1: GeocodePoint center,
-  2: optional GeocodeBoundingBox bounds,
+  2: optional GeocodeBoundingBox bounds
 
   // "well known binary"
   // only present if we have a polygon for this feature
-  3: optional binary wkbGeometry,
+  3: optional binary wkbGeometry
   4: optional string wktGeometry
+
+  5: optional binary wkbGeometrySimplified,
+  6: optional string wktGeometrySimplified
+
+  7: optional GeocodeBoundingBox displayBounds
 }
 
 enum GeocodeRelationType {
@@ -187,8 +192,6 @@ struct InterpretationScoringFeatures {
 //  1: optional i32 population = 0,
   2: optional double percentOfRequestCovered = 0.0,
   3: optional double percentOfFeatureCovered = 0.0
-
-  4: optional double finalScore = 0.0
 }
 
 struct DebugScoreComponent {
@@ -234,7 +237,7 @@ enum ResponseIncludes {
   WKT_GEOMETRY,
   // include geometry coverage information (revgeo only)
   REVGEO_COVERAGE,
-  // controls if we should fetch parents to construct string likes "New York, NY"
+  // controls if we should fetch parents to construct a string like "New York, NY"
   // for legacy reasons, this is automatically turned on for geocode queries for now.
   // it's mainly here because reverse geocode clients often don't need it
   DISPLAY_NAME
