@@ -58,8 +58,6 @@ class HFileStorageService(basepath: String, shouldPreload: Boolean) extends Geoc
   }
 
   def getByName(name: String): Seq[GeocodeServingFeature] = {
-    println(nameMap.get(name))
-    println(nameMap.get(name).size)
     getByFeatureIds(nameMap.get(name)).map(_._2).toSeq
   }
 
