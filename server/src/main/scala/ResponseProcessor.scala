@@ -7,6 +7,7 @@ import com.foursquare.twofishes.util.{NameUtils, StoredFeatureId}
 import com.foursquare.twofishes.util.NameUtils.BestNameMatch
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTWriter}
+import com.vividsolutions.jts.simplify.DouglasPeuckerSimplifier
 import java.nio.ByteBuffer
 import org.bson.types.ObjectId
 import scala.collection.mutable.{ListBuffer, HashSet}
@@ -285,19 +286,36 @@ class ResponseProcessor(
     mutableFeature.displayName_=(displayNameParts.mkString(", "))
 
     if (responseIncludes(ResponseIncludes.WKT_GEOMETRY) ||
-        responseIncludes(ResponseIncludes.WKB_GEOMETRY)) {
+        responseIncludes(ResponseIncludes.WKB_GEOMETRY) ||
+        responseIncludes(ResponseIncludes.WKB_GEOMETRY_SIMPLIFIED) ||
+        responseIncludes(ResponseIncludes.WKT_GEOMETRY_SIMPLIFIED)) {
       for {
         longId <- mutableFeature.longIdOption
         fid <- StoredFeatureId.fromLong(longId)
         geom <- polygonMap.get(fid)
       } {
         val mutableGeometry = mutableFeature.geometry.mutableCopy
-        val wkbWriter = new WKBWriter()
-        mutableGeometry.wkbGeometry_=(ByteBuffer.wrap(wkbWriter.write(geom)))
+        if (req.responseIncludes.has(ResponseIncludes.WKB_GEOMETRY_SIMPLIFIED)) {
+          val wkbWriter = new WKBWriter()
+          mutableGeometry.wkbGeometrySimplified_=(ByteBuffer.wrap(wkbWriter.write(
+            DouglasPeuckerSimplifier.simplify(geom, 0.0001)))) // 11m tolerance
+        }
+        if (responseIncludes(ResponseIncludes.WKB_GEOMETRY)) {
+          val wkbWriter = new WKBWriter()
+          mutableGeometry.wkbGeometry_=(ByteBuffer.wrap(wkbWriter.write(geom)))
+        }
+
+        if (req.responseIncludes.has(ResponseIncludes.WKT_GEOMETRY_SIMPLIFIED)) {
+          val wktWriter = new WKTWriter()
+          mutableGeometry.wktGeometrySimplified_=(wktWriter.write(
+            DouglasPeuckerSimplifier.simplify(geom, 0.0001))) // 11m tolerance
+        }
+
         if (responseIncludes(ResponseIncludes.WKT_GEOMETRY)) {
           val wktWriter = new WKTWriter()
           mutableGeometry.wktGeometry_=(wktWriter.write(geom))
         }
+
         mutableFeature.geometry_=(mutableGeometry)
       }
     }

@@ -209,13 +209,13 @@
 
       if (query.match(/.*=.*/)) {
       $.getJSON('http://' + window.location.host + '/?debug=1&maxInterpretations=' + maxInterpretations +
-        '&responseIncludes=EVERYTHING&' + query,
+        '&responseIncludes=EVERYTHING,WKT_GEOMETRY_SIMPLIFIED&' + query,
           function(data) { return success(data, bulkInputs) }, failure);
       } else if (query.match(/^([-+]?\d{1,2}([.]\d+)?),\s*([-+]?\d{1,3}([.]\d+)?)$/)) {
-        $.getJSON('http://' + window.location.host + '/?debug=1&responseIncludes=EVERYTHING&ll=' + query,
+        $.getJSON('http://' + window.location.host + '/?debug=1&responseIncludes=EVERYTHING,WKT_GEOMETRY_SIMPLIFIED&ll=' + query,
           function(data) { return success(data, bulkInputs) }, failure);
       } else {
-        $.getJSON('http://' + window.location.host + '/?debug=1&maxInterpretations=' + maxInterpretations + '&responseIncludes=EVERYTHING&query=' + query,
+        $.getJSON('http://' + window.location.host + '/?debug=1&maxInterpretations=' + maxInterpretations + '&responseIncludes=EVERYTHING,WKT_GEOMETRY_SIMPLIFIED&query=' + query,
           function(data) { return success(data, bulkInputs) }, failure);
       }
     }
@@ -306,18 +306,19 @@
             map.fitBounds(boundingBox);
           }
 
-          if (feature.geometry.wktGeometry) {
+          var wktGeometry = feature.geometry.wktGeometrySimplified || feature.geometry.wktGeometry;
+          if (wktGeometry) {
             var wkt = new Wkt.Wkt();
             wkt.read(feature.geometry.wktGeometry);
             map.addLayer(wkt.toObject({color: 'blue'}));
           }
 
-	  var myIcon = L.icon({
+      	  var myIcon = L.icon({
             iconAnchor: [8, 8],
             iconUrl: '/static/leaflet/images/red_dot.png',
           });
 
-          if (data.requestWktGeometry) { 
+          if (data.requestWktGeometry) {
             var wkt = new Wkt.Wkt();
             wkt.read(data.requestWktGeometry)
             map.addLayer(wkt.toObject({
@@ -325,7 +326,7 @@
               fillColor: '#ff0000',
               icon: myIcon}));
           } else {
-	    var ll = getParameterByName('ll')
+      	    var ll = getParameterByName('ll')
             if (ll) {
               var parts = ll.split(',');
               var marker = new L.Marker(new L.LatLng(parts[0], parts[1]), {icon: myIcon})
@@ -339,11 +340,11 @@
     function failure() {
     }
 
-     geocode();
+    geocode();
 
-     $(window).on('hashchange', function() {
-       geocode();
-     });
+    $(window).on('hashchange', function() {
+      geocode();
+    });
   </script>
 </body>
 

@@ -240,7 +240,11 @@ enum ResponseIncludes {
   // controls if we should fetch parents to construct a string like "New York, NY"
   // for legacy reasons, this is automatically turned on for geocode queries for now.
   // it's mainly here because reverse geocode clients often don't need it
-  DISPLAY_NAME
+  DISPLAY_NAME,
+  // include (11m tolerance simplified) geometry in wkb or wkt format if available
+  // make display in json much more pleasant
+  WKB_GEOMETRY_SIMPLIFIED,
+  WKT_GEOMETRY_SIMPLIFIED,
 }
 
 struct GeocodeRequest {
