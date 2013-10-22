@@ -156,7 +156,7 @@ class ResponseProcessor(
       polygonMap: Map[StoredFeatureId, Geometry],
       numExtraParentsRequired: Int = 0,
       fillHighlightedName: Boolean = false,
-      includeAllNames: Boolean = false
+      includeAllNames: Boolean
     ): GeocodeFeature.Mutable = {
     // set name
     val mutableFeature = f.mutableCopy
@@ -423,7 +423,9 @@ class ResponseProcessor(
             .flatMap(StoredFeatureId.fromLong _)
             .flatMap(parentFid => parentMap.get(parentFid)).sorted
           // parents don't need polygons, what is wrong with me?
-          fixFeature(parentFeature.feature, sortedParentParents, None, Map.empty, fillHighlightedName=parseParams.tokens.size > 0)
+          fixFeature(parentFeature.feature, sortedParentParents, None, Map.empty,
+            fillHighlightedName=parseParams.tokens.size > 0,
+            includeAllNames=responseIncludes(ResponseIncludes.PARENT_ALL_NAMES))
         })
       }
 
