@@ -35,3 +35,5 @@
 4929023|Amherst
 4930396|The Berkshires
 4930396|Berkshires
+1642903|DKI Jakarta
+1642903|Jakarta Capital Region
