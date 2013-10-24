@@ -179,44 +179,64 @@ class HandleExceptions extends SimpleFilter[HttpRequest, HttpResponse] with Logg
 class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpRequest, HttpResponse] {
   val diskIoFuturePool = FuturePool(Executors.newFixedThreadPool(8))
 
-  def handleGeocodeQuery(request: GeocodeRequest) =
-    handleQuery(request, geocoder.geocode)
+  def handleGeocodeQuery(request: GeocodeRequest, callback: Option[String]) =
+    handleQuery(request, geocoder.geocode, callback)
 
-  def handleReverseGeocodeQuery(request: GeocodeRequest) =
-    handleQuery(request, geocoder.reverseGeocode)
+  def handleReverseGeocodeQuery(request: GeocodeRequest, callback: Option[String]) =
+    handleQuery(request, geocoder.reverseGeocode, callback)
 
-  def handleBulkReverseGeocodeQuery(params: CommonGeocodeRequestParams, points: Seq[(Double, Double)]) = {
+  def handleBulkReverseGeocodeQuery(
+    params: CommonGeocodeRequestParams,
+    points: Seq[(Double, Double)],
+    callback: Option[String]
+  ) = {
     val request = BulkReverseGeocodeRequest.newBuilder
       .params(params)
       .latlngs(points.map(ll => GeocodePoint(ll._1, ll._2)))
       .result
-    handleQuery(request, geocoder.bulkReverseGeocode)
+    handleQuery(request, geocoder.bulkReverseGeocode, callback)
   }
 
-  def handleBulkSlugLookupQuery(params: CommonGeocodeRequestParams, slugs: Seq[String]) = {
+  def handleBulkSlugLookupQuery(
+    params: CommonGeocodeRequestParams,
+    slugs: Seq[String],
+    callback: Option[String]
+  ) = {
     val request = BulkSlugLookupRequest.newBuilder
       .params(params)
       .slugs(slugs)
       .result
-    handleQuery(request, geocoder.bulkSlugLookup)
+    handleQuery(request, geocoder.bulkSlugLookup, callback)
   }
 
   def handleQuery[T, TType <: TBase[_ <: TBase[_ <: AnyRef, _ <: TFieldIdEnum], _ <: TFieldIdEnum]](
       request: T,
-      queryProcessor: T => Future[TType]
+      queryProcessor: T => Future[TType],
+      callback: Option[String]
   ): Future[DefaultHttpResponse] = {
     val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
 
     queryProcessor(request).map(geocode => {
       val serializer = new TSerializer(new TSimpleJSONProtocol.Factory());
-      val json = serializer.toString(geocode);
+      val json = {
+        val json = serializer.toString(geocode);
 
-      //"longId":72057594044179937
-      // javascript can't deal with longs, so we hack it to be a string
-      val fixedJson = """"longId":(\d+)""".r.replaceAllIn(json, m => "\"longId\":\"%s\"".format(m.group(1)))
+        //"longId":72057594044179937
+        // javascript can't deal with longs, so we hack it to be a string
+        val fixedJson = """"longId":(\d+)""".r.replaceAllIn(json, m => "\"longId\":\"%s\"".format(m.group(1)))
+
+        callback.map(cb => {
+          val sb = new StringBuilder(fixedJson.size + cb.size + 10)
+          sb ++= cb
+          sb += '('
+          sb ++= fixedJson
+          sb += ')'
+          sb.toString
+        }).getOrElse(fixedJson)
+      }
 
       response.setHeader("Content-Type", "application/json; charset=utf-8")
-      response.setContent(ChannelBuffers.copiedBuffer(fixedJson, CharsetUtil.UTF_8))
+      response.setContent(ChannelBuffers.copiedBuffer(json, CharsetUtil.UTF_8))
       response
     })
   }
@@ -286,10 +306,10 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
   }
 
   def apply(request: HttpRequest) = {
-    // This is how you parse request parameters
     val queryString = new QueryStringDecoder(request.getUri())
     val params = queryString.getParameters().asScala.mapValues(_.asScala)
     val path = queryString.getPath()
+    val callback = params.get("callback").flatMap(_.headOption)
 
     def getJsonRequest[R <: TBase[_ <: TBase[_, _], _ <: TFieldIdEnum] with Record[R]](meta: MetaRecord[R]): R = {
       var json: Option[String] = params.get("json").map(a => a(0))
@@ -318,13 +338,13 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
         response
       })
     } else if (path.startsWith("/search/geocode")) {
-      handleGeocodeQuery(getJsonRequest(GeocodeRequest))
+      handleGeocodeQuery(getJsonRequest(GeocodeRequest), callback)
     } else if (path.startsWith("/search/reverseGeocode")) {
-      handleReverseGeocodeQuery(getJsonRequest(GeocodeRequest))
+      handleReverseGeocodeQuery(getJsonRequest(GeocodeRequest), callback)
     } else if (path.startsWith("/search/bulkReverseGeocode")) {
-      handleQuery(getJsonRequest(BulkReverseGeocodeRequest), geocoder.bulkReverseGeocode)
+      handleQuery(getJsonRequest(BulkReverseGeocodeRequest), geocoder.bulkReverseGeocode, callback)
     } else if (path.startsWith("/search/bulkSlugLookup")) {
-      handleQuery(getJsonRequest(BulkSlugLookupRequest), geocoder.bulkSlugLookup)
+      handleQuery(getJsonRequest(BulkSlugLookupRequest), geocoder.bulkSlugLookup, callback)
     } else if (params.size > 0) {
       val request = parseGeocodeRequest(params.toMap)
 
@@ -333,13 +353,13 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
         handleBulkReverseGeocodeQuery(commonParams, params.getOrElse("ll", Nil).map(v => {
           val ll = v.split(",").toList
           (ll(0).toDouble, ll(1).toDouble)
-        }))
+        }), callback)
       } else if (params.getOrElse("method", Nil).has("bulksluglookup")) {
-        handleBulkSlugLookupQuery(commonParams, params.getOrElse("slug", Nil))
+        handleBulkSlugLookupQuery(commonParams, params.getOrElse("slug", Nil), callback)
       } else if (request.queryOption.isEmpty && request.slugOption.isEmpty) {
-        handleReverseGeocodeQuery(request)
+        handleReverseGeocodeQuery(request, callback)
       } else {
-        handleGeocodeQuery(request)
+        handleGeocodeQuery(request, callback)
       }
     } else {
       val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
