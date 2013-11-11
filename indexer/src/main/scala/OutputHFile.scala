@@ -18,7 +18,7 @@ import java.net.URI
 import java.nio.ByteBuffer
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{LocalFileSystem, Path}
-import org.apache.hadoop.hbase.io.hfile.{Compression, HFile}
+import org.apache.hadoop.hbase.io.hfile.{FoursquareCacheConfig, Compression, HFile}
 import org.apache.hadoop.hbase.util.Bytes._
 import org.apache.hadoop.io.{BytesWritable, MapFile}
 import org.apache.thrift.TSerializer
@@ -130,10 +130,11 @@ abstract class Indexer extends DurationUtils {
     val compressionAlgorithm: Compression.Algorithm =
       Compression.getCompressionAlgorithmByName("none")
 
-    val writer = HFile.getWriterFactory(hadoopConfiguration).createWriter(fs,
-      path,
-      blockSize, compressionAlgorithm,
-      null)
+    val writer = HFile.getWriterFactory(hadoopConfiguration, new FoursquareCacheConfig(hadoopConfiguration))
+      .withPath(fs, path)
+      .withBlockSize(blockSize)
+      .withCompression(compressionAlgorithm)
+      .create()
 
     info.foreach({case (k, v) => writer.appendFileInfo(k.getBytes("UTF-8"), v.getBytes("UTF-8")) })
 
