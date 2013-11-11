@@ -33,7 +33,7 @@ private class InMemoryBlockCache extends BlockCache {
 
   def evictBlocksByHfileName(hfileName: String) = throw new Exception("evictBlocksByHfileName ot supported")
 
-  def getBlock(cacheKey: BlockCacheKey, caching: Boolean) = cache.get(cacheKey)
+  def getBlock(cacheKey: BlockCacheKey, caching: Boolean, isRepeatRequest: Boolean) = cache.get(cacheKey)
 
   def getBlockCacheColumnFamilySummaries(conf: Configuration) = List.empty[BlockCacheColumnFamilySummary].asJava
 
@@ -53,8 +53,8 @@ private class InMemoryBlockCache extends BlockCache {
 }
 
 // The following is a simple wrapper around CacheConfig to force it to use the supplied BlockCache implementation.
-class FoursquareCacheConfig(cacheLimit: Option[Int] = None) extends
-    CacheConfig(cacheLimit.map(new LruBlockCache(_, 4*1024)).getOrElse(new InMemoryBlockCache()),
+class FoursquareCacheConfig(config: Configuration, cacheLimit: Option[Int] = None) extends
+    CacheConfig(cacheLimit.map(new LruBlockCache(_, 4*1024, config)).getOrElse(new InMemoryBlockCache()),
                 true, cacheLimit.isEmpty, true, true, true, true, false) {
       // TODO (norberthu): Not sure if inMemory arg should use cacheLimit.isEmpty or hardcod to true. Still need to
       // investigate how LruBlockCache.cacheBlock treats this flag. The documentation for CacheConfig is not apparent

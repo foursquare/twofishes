@@ -129,7 +129,7 @@ class HFileInput[V](basepath: String, index: Index[String, V], shouldPreload: Bo
   fs.initialize(URI.create("file:///"), conf)
 
   val path = new Path(new File(basepath, index.filename).getAbsolutePath())
-  val cache = new FoursquareCacheConfig()
+  val cache = new FoursquareCacheConfig(conf)
 
   val reader = HFile.createReader(path.getFileSystem(conf), path, cache)
 
