@@ -4,6 +4,7 @@
 import json
 import urllib
 import urllib2
+import re
 import sys
 import math
 import datetime
@@ -17,6 +18,7 @@ from optparse import OptionParser
 parser = OptionParser(usage="%prog [input_file]")
 parser.add_option("-o", "--old", dest="serverOld")
 parser.add_option("-n", "--new", dest="serverNew")
+parser.add_option("-c", "--countMode", action="store_true", default=False, dest="inCountMode")
 (options, args) = parser.parse_args()
 
 if not options.serverOld:
@@ -36,7 +38,9 @@ if len(args) != 1:
 
 inputFile = args[0]
 
-outputFile = open('eval-%s.html' % datetime.datetime.now(), 'w')
+outputFilename = ('eval-%s.html' % datetime.datetime.now()).replace(' ', '_')
+outputFile = open(outputFilename, 'w')
+outputFile.write('<meta charset="utf-8">')
 
 def getUrl(server, param):
   if not server.startswith('http'):
@@ -82,6 +86,16 @@ class GeocodeFetch(threading.Thread):
     global count
     while True:
       line = self.queue.get()
+      lineCount = 1
+
+      if options.inCountMode:
+        m = re.match(r' *(\d+) (.*)', line)
+        if not m:
+          print('line did not conform to count mode: %s' % line)
+          sys.exit(1)
+        else:
+          line = m.group(2)
+          lineCount = int(m.group(1))
 
       if count % 100 == 0:
         print 'processed %d queries' % count
@@ -110,7 +124,7 @@ class GeocodeFetch(threading.Thread):
         else:
           return ''
 
-      def evallog(message):
+      def evallog(message, old = None, new = None):
         responseKey = '%s:%s' % (getId(responseOld), getId(responseNew))
         if responseKey not in evalLogDict:
           evalLogDict[responseKey] = []
@@ -123,16 +137,26 @@ class GeocodeFetch(threading.Thread):
         elif 'json' in params:
           query = params['json'][0]
 
-        if 'json' in params:
-          message = ('%s: %s<br>' % (query, message) +
-                   ' -- <a href="%s">OLD</a>' % (options.serverOld + param) +
-                   ' - <a href="%s">NEW</a><p>' % (options.serverNew + param))
-        else:
-          message = ('%s: <b>%s</b><br>' % (query, message) +
-                   ' -- <a href="%s">OLD</a>' % (options.serverOld + '/static/geocoder.html#' + param_str) +
-                   ' - <a href="%s">NEW</a><p>' % (options.serverNew + '/static/geocoder.html#' + param_str))
+        oldMessage = ''
+        newMessage = ''
+        if old:
+          oldMessage = ': '  + old.encode('utf-8')
+        if new:
+          newMessage = ': ' + new.encode('utf-8')
 
-        evalLogDict[responseKey].append(message)
+        if 'json' in params:
+          message = ('%s: %s<ul>' % (query, message) +
+                   '<li><a href="%s">OLD</a>%s ' % (options.serverOld + param, oldMessage) +
+                   '<li><a href="%s">NEW</a>%s' % (options.serverNew + param, newMessage) +
+                   '</ul>')
+        else:
+          message = ('%s: <b>%s</b><ul>' % (query, message) +
+                   '<li><a href="%s">OLD</a>%s' % (options.serverOld + '/static/geocoder.html#' + param_str, oldMessage) +
+                   '<li><a href="%s">NEW</a>%s' % (options.serverNew + '/static/geocoder.html#' + param_str, newMessage) +
+                    '</ul>')
+
+        for i in xrange(0, lineCount):
+          evalLogDict[responseKey].append(message)
 
       if (responseOld == None and responseNew == None):
         pass
@@ -151,9 +175,9 @@ class GeocodeFetch(threading.Thread):
       elif (len(responseOld['interpretations']) and len(responseNew['interpretations'])):
         interpA = responseOld['interpretations'][0]
         interpB = responseNew['interpretations'][0]
-        
+
         oldIds = [str(interp['feature']['ids'][0]) for interp in responseOld['interpretations']]
-        newIds = [str(interp['feature']['ids'][0]) for interp in responseNew['interpretations']] 
+        newIds = [str(interp['feature']['ids'][0]) for interp in responseNew['interpretations']]
 
         if interpA['feature']['ids'] != interpB['feature']['ids'] and \
             interpA['feature']['woeType'] != 11 and \
@@ -184,7 +208,7 @@ class GeocodeFetch(threading.Thread):
           elif (len(responseOld['interpretations']) != len(responseNew['interpretations'])):
             evallog('# of interpretations differ')
           elif interpA['feature']['displayName'] != interpB['feature']['displayName']:
-            evallog('displayName changed')
+            evallog('displayName changed', interpA['feature']['displayName'], interpB['feature']['displayName'])
 
       self.queue.task_done()
 
