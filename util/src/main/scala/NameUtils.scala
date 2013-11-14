@@ -190,7 +190,7 @@ trait NameUtils {
             case FeatureNameFlags.ALIAS => -1
             case FeatureNameFlags.DEACCENT => -1
             case FeatureNameFlags.ABBREVIATION => {
-              if (preferAbbrev && !name.name.matches("\\d+") ) { 4 } else { 0 }
+              if (preferAbbrev && !name.name.matches("\\d+") ) { 40 } else { 0 }
             }
             case FeatureNameFlags.ALT_NAME => 0
             case FeatureNameFlags.LOCAL_LANG => 5
