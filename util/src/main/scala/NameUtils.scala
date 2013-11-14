@@ -174,7 +174,7 @@ trait NameUtils {
 
       lang match {
         case Some(l) if name.lang == l =>
-          score += 2
+          score += 20
         case _ =>
           ()
       }
@@ -185,14 +185,15 @@ trait NameUtils {
           val flag = it.next
           score += (flag match {
             case FeatureNameFlags.COLLOQUIAL => 10
-            case FeatureNameFlags.PREFERRED => 1
+            case FeatureNameFlags.SHORT_NAME => 11
+            case FeatureNameFlags.PREFERRED => 5
             case FeatureNameFlags.ALIAS => -1
             case FeatureNameFlags.DEACCENT => -1
             case FeatureNameFlags.ABBREVIATION => {
               if (preferAbbrev && !name.name.matches("\\d+") ) { 4 } else { 0 }
             }
             case FeatureNameFlags.ALT_NAME => 0
-            case FeatureNameFlags.LOCAL_LANG => 0
+            case FeatureNameFlags.LOCAL_LANG => 5
           })
         }
       }

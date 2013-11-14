@@ -347,10 +347,15 @@ class GeonamesParser(
 
     // the admincode is the internal geonames admin code, but is very often the
     // same short name for the admin area that is actually used in the country
+    def isAllDigits(x: String) = x forall Character.isDigit
 
     if (feature.featureClass.isAdmin1 || feature.featureClass.isAdmin2) {
-      displayNames ++= feature.adminCode.toList.map(code => {
-        DisplayName("abbr", code, FeatureNameFlags.ABBREVIATION.getValue)
+      displayNames ++= feature.adminCode.toList.flatMap(code => {
+        if (!isAllDigits(code)) {
+          Some(DisplayName("abbr", code, FeatureNameFlags.ABBREVIATION.getValue))
+        } else {
+          None
+        }
       })
     }
 
@@ -565,9 +570,21 @@ class GeonamesParser(
         })
       }
 
-      val originalFlags = if (isPrefName) {
-        FeatureNameFlags.PREFERRED.getValue
-      } else { 0 }
+      val originalFlags = {
+         val prefFlag = if (isPrefName) {
+           FeatureNameFlags.PREFERRED.getValue
+         } else { 
+           0
+         }
+
+         val shortFlag = if (isShortName) {
+           FeatureNameFlags.SHORT_NAME.getValue
+         } else { 
+           0
+         }
+ 
+         shortFlag | prefFlag
+      }
 
       processNameList(originalNames, originalFlags) ++
       processNameList(deaccentedNames, originalFlags | FeatureNameFlags.DEACCENT.getValue) ++
