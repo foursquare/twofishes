@@ -92,7 +92,8 @@ class GeocodeFetch(threading.Thread):
         m = re.match(r' *(\d+) (.*)', line)
         if not m:
           print('line did not conform to count mode: %s' % line)
-          sys.exit(1)
+          self.queue.task_done()
+          continue
         else:
           line = m.group(2)
           lineCount = int(m.group(1))

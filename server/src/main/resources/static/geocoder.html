@@ -10,7 +10,7 @@
   <script src="/static/Wicket/wicket.js"></script>
   <script src="/static/Wicket/wicket-leaflet.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-  <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.3.1/underscore-min.js"></script>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.5.2/underscore-min.js"></script>
   <style>
     .highlightedName {
       font-size:200%;
@@ -255,8 +255,12 @@
               inputsForThisInterp.push("(Index " + inputIndex + ", Input '" + bulkInputs[inputIndex] + "')")
             }
           });
-
+          
+          var geonameid = _.findWhere(feature.ids, {'source': 'geonameid'})
           var name = feature.highlightedName || feature.displayName || feature.name;
+          if (geonameid) {
+            name = '<a href="http://geonames.org/' + geonameid.id + '">' + name + '</a>';
+          }
           if (interp.what) {
             name = interp.what + ' near ' + name;
           }
