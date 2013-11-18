@@ -7,10 +7,12 @@ import urllib2
 import re
 import sys
 import math
+import os
 import datetime
 import Queue
 import threading
 import traceback
+from collections import defaultdict
 from optparse import OptionParser
 
 # TODO: move this to thrift
@@ -39,6 +41,11 @@ if len(args) != 1:
 inputFile = args[0]
 
 outputFilename = ('eval-%s.html' % datetime.datetime.now()).replace(' ', '_')
+
+if os.path.exists("eval-latest.html"):
+  os.unlink("eval-latest.html")
+os.symlink(outputFilename, "eval-latest.html")
+
 outputFile = open(outputFilename, 'w')
 outputFile.write('<meta charset="utf-8">')
 
@@ -72,7 +79,7 @@ def earthDistance(lat_1, long_1, lat_2, long_2):
   dist = 3956 * c
   return dist
 
-evalLogDict = {}
+evalLogDict = defaultdict(lambda : defaultdict(list))
 queue = Queue.Queue()
 
 count = 0
@@ -125,10 +132,16 @@ class GeocodeFetch(threading.Thread):
         else:
           return ''
 
-      def evallog(message, old = None, new = None):
+      def mkString(o):
+        if isinstance(o, basestring):
+          return o
+        # elif isinstance(o, list):
+        #   return ', '.join(o)
+        else:
+          return str(o)
+
+      def evallog(title, old = None, new = None):
         responseKey = '%s:%s' % (getId(responseOld), getId(responseNew))
-        if responseKey not in evalLogDict:
-          evalLogDict[responseKey] = []
 
         query = ''
         if 'query' in params:
@@ -138,26 +151,32 @@ class GeocodeFetch(threading.Thread):
         elif 'json' in params:
           query = params['json'][0]
 
+        extraTitle = ''
+        # if we only got one extra argument, assume it's more info for the title
+        if old and not new:
+          extraTitle = old
+          old = ''
+
         oldMessage = ''
         newMessage = ''
         if old:
-          oldMessage = ': '  + old.encode('utf-8')
+          oldMessage = ': '  + mkString(old).encode('utf-8')
         if new:
-          newMessage = ': ' + new.encode('utf-8')
+          newMessage = ': ' + mkString(new).encode('utf-8')
 
         if 'json' in params:
-          message = ('%s: %s<ul>' % (query, message) +
+          message = ('%s: %s %s<ul>' % (query, title, extraTitle) +
                    '<li><a href="%s">OLD</a>%s ' % (options.serverOld + param, oldMessage) +
                    '<li><a href="%s">NEW</a>%s' % (options.serverNew + param, newMessage) +
                    '</ul>')
         else:
-          message = ('%s: <b>%s</b><ul>' % (query, message) +
+          message = ('%s: <b>%s</b><ul>' % (query, title) +
                    '<li><a href="%s">OLD</a>%s' % (options.serverOld + '/static/geocoder.html#' + param_str, oldMessage) +
                    '<li><a href="%s">NEW</a>%s' % (options.serverNew + '/static/geocoder.html#' + param_str, newMessage) +
                     '</ul>')
 
         for i in xrange(0, lineCount):
-          evalLogDict[responseKey].append(message)
+          evalLogDict[title][responseKey].append(message)
 
       if (responseOld == None and responseNew == None):
         pass
@@ -185,9 +204,9 @@ class GeocodeFetch(threading.Thread):
             interpB['feature']['woeType'] != 11 and \
             interpA['feature']['ids'] != filter(lambda x: x['source'] != 'woeid', interpB['feature']['ids']):
        	  if set(oldIds) == set(newIds):
-            evallog('interp order changed %s -> %s' % (oldIds, newIds))
+            evallog('interp order changed', ', '.join(oldIds), ', '.join(newIds))
           else:
-            evallog('ids changed %s -> %s' % (interpA['feature']['ids'], interpB['feature']['ids']))
+            evallog('ids changed', interpA['feature']['ids'], interpB['feature']['ids'])
         else:
           geomA = interpA['feature']['geometry']
           geomB = interpB['feature']['geometry']
@@ -199,7 +218,7 @@ class GeocodeFetch(threading.Thread):
             centerB['lat'],
             centerB['lng'])
           if distance > 0.1:
-            evallog('moved by %s miles' % distance)
+            evallog('center moved', '%s miles' % distance)
           if 'bounds' in geomA and 'bounds' not in geomB:
             evallog('bounds in OLD, but not NEW')
           elif 'bounds' not in geomA and 'bounds' in geomB:
@@ -225,7 +244,12 @@ if __name__ == '__main__':
 
   queue.join()
 
-  for k in sorted(evalLogDict, key=lambda x: -1*len(evalLogDict[x])):
-    outputFile.write("%d changes\n<br/>" % len(evalLogDict[k]))
-    outputFile.write(evalLogDict[k][0])
+  for (sectionName, sectionDict) in evalLogDict.iteritems():
+    outputFile.write('<li><a href="#%s">%s</a>: %s changes' % (sectionName, sectionName, len(sectionDict)))
+
+  for (sectionName, sectionDict) in evalLogDict.iteritems():
+    outputFile.write('<a name="%s"><h2>%s</h2></a>' % (sectionName, sectionName))
+    for k in sorted(sectionDict, key=lambda x: -1*len(sectionDict[x])):
+      outputFile.write('%d changes\n<br/>' % len(sectionDict[k]))
+      outputFile.write(sectionDict[k][0])
 

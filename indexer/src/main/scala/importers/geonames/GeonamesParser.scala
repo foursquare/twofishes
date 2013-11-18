@@ -185,7 +185,7 @@ class GeonamesParser(
   lazy val nameDemoteTable = new GeoIdTsvHelperFileParser(GeonamesNamespace, "data/custom/name-demotes.txt")
   // list of geoids (geonameid:XXX) to skip indexing
   lazy val ignoreList: List[StoredFeatureId] = scala.io.Source.fromFile(new File("data/custom/ignores.txt"))
-    .getLines.toList.map(l => GeonamesId(l.toLong))
+    .getLines.toList.filterNot(_.startsWith("#")).map(l => GeonamesId(l.toLong))
 
   lazy val concordanceMap = new GeoIdTsvHelperFileParser(GeonamesNamespace, "data/computed/concordances.txt")
 
