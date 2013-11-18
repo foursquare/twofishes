@@ -96,6 +96,12 @@ class ResponseProcessor(
           else { return -11 }
         }
 
+        val namespaceQualityA = a._1.featureId.getOrdering
+        val namespaceQualityB = b._1.featureId.getOrdering
+        if (namespaceQualityA != namespaceQualityB) {
+          return namespaceQualityA - namespaceQualityB
+        }
+
         // if a came before b, it was better
         // a = 2, b = 3 ... b - a ... 3 - 2 ... 1
         return b._2 - a._2
@@ -136,7 +142,8 @@ class ResponseProcessor(
       val geoBuckets = parsePairs.groupBy({case (parse, index) => findBucket(parse) })
       (geoKey, parses) <- geoBuckets
     } yield {
-      logger.ifDebug("for %s, have %d parses in bucket %s".format(textKey, parses.size, geoKey))
+      logger.ifDebug("for %s, have %d parses in bucket %s: %s".format(textKey, parses.size, geoKey,
+        parses.map(_._1.featureId).mkString(", ")))
       parses.sorted(DuplicateGeocodeParseOrdering).lastOption.get
     }
     // We have a map of [name -> List[Parse, Int]] ... extract out the parse-int pairs

@@ -186,6 +186,8 @@ trait NameUtils {
           score += (flag match {
             case FeatureNameFlags.COLLOQUIAL => 10
             case FeatureNameFlags.SHORT_NAME => 11
+            case FeatureNameFlags.NEVER_DISPLAY => -10000
+            case FeatureNameFlags.LOW_QUALITY => -20
             case FeatureNameFlags.PREFERRED => 5
             case FeatureNameFlags.ALIAS => -1
             case FeatureNameFlags.DEACCENT => -1

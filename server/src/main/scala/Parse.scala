@@ -1,7 +1,7 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
-import com.foursquare.twofishes.util.GeoTools
+import com.foursquare.twofishes.util.{GeoTools, StoredFeatureId}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import java.util.concurrent.ConcurrentHashMap
 import scalaj.collection.Implicits._
@@ -66,6 +66,8 @@ case class Parse[T <: MaybeSorted](
   def addFeature(f: FeatureMatch) = Parse[Unsorted](fmatches ++ List(f))
 
   def countryCode = fmatches.headOption.map(_.fmatch.feature.cc).getOrElse("XX")
+
+  lazy val featureId = StoredFeatureId.fromLong(fmatches(0).fmatch.longId).get
 
   def hasDupeFeature: Boolean = {
     this.headOption.exists(primaryFeature => {

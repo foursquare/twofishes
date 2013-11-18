@@ -2,3 +2,6 @@
 2147714|Syd
 1273294|New Delhi
 5106834|Albania
+1566083|HCMC
+2511174|Tenerife
+2511174|Teneriffa

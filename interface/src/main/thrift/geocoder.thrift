@@ -86,8 +86,12 @@ enum FeatureNameFlags {
   ALT_NAME = 32
 
   COLLOQUIAL = 64
-  
+
   SHORT_NAME = 128
+
+  NEVER_DISPLAY = 256
+
+  LOW_QUALITY = 512
 }
 
 struct FeatureName {

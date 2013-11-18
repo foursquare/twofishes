@@ -180,6 +180,8 @@ class GeonamesParser(
 
   // geonameid -> name to be deleted
   lazy val nameDeleteTable = new GeoIdTsvHelperFileParser(GeonamesNamespace, "data/custom/name-deletes.txt")
+  // geonameid -> name to be demoted
+  lazy val nameDemoteTable = new GeoIdTsvHelperFileParser(GeonamesNamespace, "data/custom/name-demotes.txt")
   // list of geoids (geonameid:XXX) to skip indexing
   lazy val ignoreList: List[StoredFeatureId] = scala.io.Source.fromFile(new File("data/custom/ignores.txt"))
     .getLines.toList.map(l => GeonamesId(l.toLong))
@@ -252,6 +254,11 @@ class GeonamesParser(
 
     if (nameDeleteTable.get(fid).exists(_ == dn.name)) {
       return
+    }
+
+    var flags = dn.flags
+    if (nameDemoteTable.get(fid).exists(_ == dn.name)) {
+      flags | FeatureNameFlags.LOW_QUALITY.getValue
     }
 
     val pop: Int =
@@ -354,7 +361,7 @@ class GeonamesParser(
         if (!isAllDigits(code)) {
           Some(DisplayName("abbr", code, FeatureNameFlags.ABBREVIATION.getValue))
         } else {
-          None
+          Some(DisplayName("", code, FeatureNameFlags.NEVER_DISPLAY.getValue))
         }
       })
     }
@@ -573,16 +580,16 @@ class GeonamesParser(
       val originalFlags = {
          val prefFlag = if (isPrefName) {
            FeatureNameFlags.PREFERRED.getValue
-         } else { 
+         } else {
            0
          }
 
          val shortFlag = if (isShortName) {
            FeatureNameFlags.SHORT_NAME.getValue
-         } else { 
+         } else {
            0
          }
- 
+
          shortFlag | prefFlag
       }
 
