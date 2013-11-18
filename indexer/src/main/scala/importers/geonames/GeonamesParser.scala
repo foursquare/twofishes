@@ -166,7 +166,8 @@ class GeonamesParser(
   lazy val rewriteTable = new TsvHelperFileParser("data/custom/rewrites.txt",
     "data/private/rewrites.txt")
   // tokenlist
-  lazy val deletesList: List[String] = scala.io.Source.fromFile(new File("data/custom/deletes.txt")).getLines.toList
+  lazy val deletesList: List[String] = scala.io.Source.fromFile(new File("data/custom/deletes.txt"))
+    .getLines.toList.filterNot(_.startsWith("#"))
   // geonameid -> boost value
   lazy val boostTable = new GeoIdTsvHelperFileParser(GeonamesNamespace, "data/custom/boosts.txt",
     "data/private/boosts.txt")
