@@ -280,6 +280,10 @@ class ResponseProcessor(
       n.lang == "en" ||
       namesToUse.contains(n) ||
       includeAllNames
+    ).map(dn =>
+      dn.copy(
+        flags = dn.flags.filterNot(f => f != FeatureNameFlags.NEVER_DISPLAY && f != FeatureNameFlags.LOW_QUALITY)
+      )
     ))
 
     // now pull in extra parents
