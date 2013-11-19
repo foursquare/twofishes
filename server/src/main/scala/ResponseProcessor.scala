@@ -273,8 +273,10 @@ class ResponseProcessor(
     }
 
     // possibly clear names
-    val names = f.names
-    mutableFeature.names_=(names.filter(n =>
+    // Two production hacks here to be deleted asap
+    // 1) put the 'best name' first
+    // 2) clear flags that client can't take yet
+    val names = f.names.filter(n =>
       Option(n.flags).exists(_.contains(FeatureNameFlags.ABBREVIATION)) ||
       n.lang == req.lang ||
       n.lang == "en" ||
@@ -284,7 +286,15 @@ class ResponseProcessor(
       dn.copy(
         flags = dn.flags.filterNot(f => f != FeatureNameFlags.NEVER_DISPLAY && f != FeatureNameFlags.LOW_QUALITY)
       )
-    ))
+    )
+
+    val bestName = NameUtils.bestNameFromList(
+      mutableFeature,
+      names,
+      Some(req.lang),
+      preferAbbrev = false
+    )
+    mutableFeature.names_=(bestName.toList ++ names.filterNot(_ == bestName).toList)
 
     // now pull in extra parents
     parentsToUse.appendAll(
