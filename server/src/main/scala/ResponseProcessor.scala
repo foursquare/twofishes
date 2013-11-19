@@ -284,7 +284,7 @@ class ResponseProcessor(
       includeAllNames
     ).map(dn =>
       dn.copy(
-        flags = dn.flags.filterNot(f => f != FeatureNameFlags.NEVER_DISPLAY && f != FeatureNameFlags.LOW_QUALITY)
+        flags = dn.flags.filterNot(f => f =? FeatureNameFlags.NEVER_DISPLAY && f =? FeatureNameFlags.LOW_QUALITY)
       )
     )
 
