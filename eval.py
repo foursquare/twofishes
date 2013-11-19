@@ -199,7 +199,12 @@ class GeocodeFetch(threading.Thread):
         oldIds = [str(interp['feature']['ids'][0]) for interp in responseOld['interpretations']]
         newIds = [str(interp['feature']['ids'][0]) for interp in responseNew['interpretations']]
 
-        if interpA['feature']['ids'] != interpB['feature']['ids'] and \
+
+        if len(interpA['what']) < len(interpB['what']):
+          evallog('geocoded LESS', interpA['where'], interpB['where'])
+        elif len(interpA['what']) > len(interpB['what']):
+          evallog('geocoded MORE', interpA['where'], interpB['where'])
+        elif interpA['feature']['ids'] != interpB['feature']['ids'] and \
             interpA['feature']['woeType'] != 11 and \
             interpB['feature']['woeType'] != 11 and \
             interpA['feature']['ids'] != filter(lambda x: x['source'] != 'woeid', interpB['feature']['ids']):
