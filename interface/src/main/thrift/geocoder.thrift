@@ -183,6 +183,7 @@ struct GeocodeFeature {
   15: optional GeocodeFeatureAttributes attributes
 
   16: optional i64 longId
+  17: optional list<i64> longIds
 }
 
 struct GeocodeServingFeature {

@@ -96,11 +96,11 @@ class ResponseProcessor(
           else { return -11 }
         }
 
-        val namespaceQualityA = a._1.featureId.getOrdering
-        val namespaceQualityB = b._1.featureId.getOrdering
-        if (namespaceQualityA != namespaceQualityB) {
-          return namespaceQualityA - namespaceQualityB
-        }
+        // val namespaceQualityA = a._1.featureId.getOrdering
+        // val namespaceQualityB = b._1.featureId.getOrdering
+        // if (namespaceQualityA != namespaceQualityB) {
+        //   return namespaceQualityA - namespaceQualityB
+        // }
 
         // if a came before b, it was better
         // a = 2, b = 3 ... b - a ... 3 - 2 ... 1
@@ -144,7 +144,9 @@ class ResponseProcessor(
     } yield {
       logger.ifDebug("for %s, have %d parses in bucket %s: %s".format(textKey, parses.size, geoKey,
         parses.map(_._1.featureId).mkString(", ")))
-      parses.sorted(DuplicateGeocodeParseOrdering).lastOption.get
+      val bestParse = parses.sorted(DuplicateGeocodeParseOrdering).lastOption.get
+      bestParse._1.allLongIds = parses.map(_._1.featureId.longId)
+      bestParse
     }
     // We have a map of [name -> List[Parse, Int]] ... extract out the parse-int pairs
     // join them, and re-sort by the int, which was their original ordering
@@ -183,6 +185,13 @@ class ResponseProcessor(
     val f = mutableFeature
     val name = NameUtils.bestName(f, Some(req.lang), false).map(_.name).getOrElse("")
     mutableFeature.name_=(name)
+
+    for {
+      p <- parse
+      if p.extraLongIds.size > 0
+    } {
+      mutableFeature.longIds_=(p.extraLongIds)
+    }
 
     // rules
     // if you have a city parent, use it

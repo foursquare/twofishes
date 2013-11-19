@@ -1,6 +1,7 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
+import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.{GeoTools, StoredFeatureId}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import java.util.concurrent.ConcurrentHashMap
@@ -39,6 +40,8 @@ case class Parse[T <: MaybeSorted](
 
   val debugLines = new ListBuffer[DebugScoreComponent]
   var finalScore = 0.0
+  var allLongIds: Seq[Long] = Nil
+  lazy val extraLongIds: Seq[Long] = allLongIds.filterNot(_ =? featureId.longId)
 
   def addDebugLine(component: DebugScoreComponent) {
     debugLines.append(component)
