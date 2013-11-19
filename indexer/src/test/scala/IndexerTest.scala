@@ -3,7 +3,7 @@ package com.foursquare.twofishes
 
 import collection.JavaConverters._
 import com.foursquare.twofishes.importers.geonames._
-import com.foursquare.twofishes.util.{GeonamesId, StoredFeatureId}
+import com.foursquare.twofishes.util.{GeonamesNamespace, GeonamesId, StoredFeatureId}
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTReader, WKTWriter}
 import org.bson.types.ObjectId
@@ -36,8 +36,25 @@ class IndexerSpec extends Specification {
   val parser = new GeonamesParser(store, slugIndexer, Map.empty)
 
   "processFeatureName" in {
-    val names = parser.processFeatureName("US", "en", "New York", false, false)
+    val names = parser.processFeatureName(
+      StoredFeatureId(GeonamesNamespace, "11111"),
+      "US", "en", "New York", false, false)
     names.size mustEqual 1
+  }
+
+  "processFeatureName deletes" in {
+    val names = parser.processFeatureName(
+      StoredFeatureId(GeonamesNamespace, "2511174"),
+      "US", "en", "Tenerife", false, false)
+    names.size mustEqual 0
+  }
+
+  "processFeatureName demotes" in {
+    val names = parser.processFeatureName(
+      StoredFeatureId(GeonamesNamespace, "1566083"),
+      "US", "en", "HCMC", false, false)
+    names.size mustEqual 1
+    names(0).flags & FeatureNameFlags.LOW_QUALITY.getValue must be_>(0)
   }
 
   "name deduping works" in {

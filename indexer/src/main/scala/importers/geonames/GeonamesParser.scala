@@ -550,6 +550,7 @@ class GeonamesParser(
     isPrefName: Boolean,
     isShortName: Boolean): List[DisplayName] = {
     if (lang != "post" && !nameDeleteTable.get(fid).exists(_ =? name)) {
+      println("adding")
       val originalNames = List(name)
       val (deaccentedNames, allModifiedNames) = rewriteNames(originalNames)
 
@@ -583,7 +584,8 @@ class GeonamesParser(
           0
         }
 
-        val lowQualityFlag = if (nameDemoteTable.get(fid).exists(_ =? name)) {
+        val hasDemotedName = nameDemoteTable.get(fid).exists(_ =? name)
+        val lowQualityFlag = if (hasDemotedName) {
           FeatureNameFlags.LOW_QUALITY.getValue
         } else {
           0
@@ -591,6 +593,7 @@ class GeonamesParser(
 
         shortFlag | prefFlag | lowQualityFlag
       }
+      println(originalFlags)
 
       processNameList(originalNames, originalFlags) ++
       processNameList(deaccentedNames, originalFlags | FeatureNameFlags.DEACCENT.getValue) ++
