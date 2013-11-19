@@ -253,15 +253,6 @@ class GeonamesParser(
   def addDisplayNameToNameIndex(dn: DisplayName, fid: StoredFeatureId, record: Option[GeocodeRecord]) {
     val name = NameNormalizer.normalize(dn.name)
 
-    if (nameDeleteTable.get(fid).exists(_ == dn.name)) {
-      return
-    }
-
-    var flags = dn.flags
-    if (nameDemoteTable.get(fid).exists(_ == dn.name)) {
-      flags | FeatureNameFlags.LOW_QUALITY.getValue
-    }
-
     val pop: Int =
       record.flatMap(_.population).getOrElse(0) + record.flatMap(_.boost).getOrElse(0)
     val woeType: Int =
@@ -306,7 +297,7 @@ class GeonamesParser(
     var displayNames: List[DisplayName] = Nil
 
     if (!preferredEnglishAltName.exists(_.name =? feature.name)) {
-      displayNames ++= processFeatureName(
+      displayNames ++= processFeatureName(geonameId,
         feature.countryCode, "en", feature.name,
         isPrefName = !hasPreferredEnglishAltName,
         isShortName = false
@@ -349,7 +340,7 @@ class GeonamesParser(
       (n.name == englishName) && (n.lang != "en")
     )
     displayNames ++= alternateNames.flatMap(altName => {
-      processFeatureName(
+      processFeatureName(geonameId,
         feature.countryCode, altName.lang, altName.name, altName.isPrefName, altName.isShortName)
     })
 
@@ -552,12 +543,13 @@ class GeonamesParser(
   }
 
   def processFeatureName(
+    fid: StoredFeatureId,
     cc: String,
     lang: String,
     name: String,
     isPrefName: Boolean,
     isShortName: Boolean): List[DisplayName] = {
-    if (lang != "post") {
+    if (lang != "post" && !nameDeleteTable.get(fid).exists(_ =? name)) {
       val originalNames = List(name)
       val (deaccentedNames, allModifiedNames) = rewriteNames(originalNames)
 
@@ -579,19 +571,25 @@ class GeonamesParser(
       }
 
       val originalFlags = {
-         val prefFlag = if (isPrefName) {
-           FeatureNameFlags.PREFERRED.getValue
-         } else {
-           0
-         }
+        val prefFlag = if (isPrefName) {
+          FeatureNameFlags.PREFERRED.getValue
+        } else {
+          0
+        }
 
-         val shortFlag = if (isShortName) {
-           FeatureNameFlags.SHORT_NAME.getValue
-         } else {
-           0
-         }
+        val shortFlag = if (isShortName) {
+          FeatureNameFlags.SHORT_NAME.getValue
+        } else {
+          0
+        }
 
-         shortFlag | prefFlag
+        val lowQualityFlag = if (nameDemoteTable.get(fid).exists(_ =? name)) {
+          FeatureNameFlags.LOW_QUALITY.getValue
+        } else {
+          0
+        }
+
+        shortFlag | prefFlag | lowQualityFlag
       }
 
       processNameList(originalNames, originalFlags) ++
