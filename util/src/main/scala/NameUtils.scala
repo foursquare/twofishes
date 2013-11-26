@@ -184,6 +184,7 @@ trait NameUtils {
         while (it.hasNext) {
           val flag = it.next
           score += (flag match {
+            case FeatureNameFlags.HISTORIC => -100
             case FeatureNameFlags.COLLOQUIAL => 10
             case FeatureNameFlags.SHORT_NAME => 11
             case FeatureNameFlags.NEVER_DISPLAY => -10000

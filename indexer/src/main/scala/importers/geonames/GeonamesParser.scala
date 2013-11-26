@@ -341,7 +341,11 @@ class GeonamesParser(
     )
     displayNames ++= alternateNames.flatMap(altName => {
       processFeatureName(geonameId,
-        feature.countryCode, altName.lang, altName.name, altName.isPrefName, altName.isShortName)
+        feature.countryCode, altName.lang, altName.name, 
+        isPrefName=altName.isPrefName,
+        isShortName=altName.isShortName,
+        isColloquial=altName.isColloquial,
+        isHistoric=altName.isHistoric)
     })
 
     // the admincode is the internal geonames admin code, but is very often the
@@ -547,8 +551,10 @@ class GeonamesParser(
     cc: String,
     lang: String,
     name: String,
-    isPrefName: Boolean,
-    isShortName: Boolean): List[DisplayName] = {
+    isPrefName: Boolean = false,
+    isShortName: Boolean = false,
+    isColloquial: Boolean = false,
+    isHistoric: Boolean = false): List[DisplayName] = {
     if (lang != "post" && !nameDeleteTable.get(fid).exists(_ =? name)) {
       val originalNames = List(name)
       val (deaccentedNames, allModifiedNames) = rewriteNames(originalNames)
@@ -566,6 +572,13 @@ class GeonamesParser(
           if (isLocalLang(lang)) {
             finalFlags |= FeatureNameFlags.LOCAL_LANG.getValue
           }
+          if (isHistoric) {
+            finalFlags |= FeatureNameFlags.HISTORIC.getValue
+          }
+          if (isColloquial) {
+            finalFlags |= FeatureNameFlags.COLLOQUIAL.getValue
+          }
+
           buildDisplayName(n, finalFlags)
         })
       }

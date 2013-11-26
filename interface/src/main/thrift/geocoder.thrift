@@ -92,6 +92,8 @@ enum FeatureNameFlags {
   NEVER_DISPLAY = 256
 
   LOW_QUALITY = 512
+
+  HISTORIC = 1024
 }
 
 struct FeatureName {
