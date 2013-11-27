@@ -35,5 +35,14 @@
 4929023|Amherst
 4930396|The Berkshires
 4930396|Berkshires
+# this first one is the city and probably wrong
 1642903|DKI Jakarta
+1642907|DKI Jakarta
 1642903|Jakarta Capital Region
+498817|город Санкт-Петербург
+5202009|город Москва
+1733046|WP Kuala Lumpur
+# tokyo metropolitan region -- aliasing to tokyo for now
+1850147|東京都
+# minato
+1857091|港区
