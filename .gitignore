@@ -38,3 +38,4 @@ id-mapping.txt
 .idea
 latest
 *.iml
+eval*html
