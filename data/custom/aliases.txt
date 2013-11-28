@@ -44,5 +44,5 @@
 1733046|WP Kuala Lumpur
 # tokyo metropolitan region -- aliasing to tokyo for now
 1850147|東京都
-# minato
-1857091|港区
+# kiev short name
+703447|м. Київ
