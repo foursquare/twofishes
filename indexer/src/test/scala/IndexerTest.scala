@@ -71,7 +71,7 @@ class IndexerSpec extends Specification {
       Nil, None)
 
     val feature = record.toGeocodeServingFeature.feature
-    feature.names.size aka feature.names.toString mustEqual 3
+    feature.names.size aka feature.names.toString mustEqual 2
   }
 
   "rewrites work" in {
