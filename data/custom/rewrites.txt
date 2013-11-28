@@ -18,3 +18,4 @@ Boulevard|Blvd
 3eme|3nd ARRONDISSEMENT
 eme|E ARRONDISSEMENT
 eme|th ARRONDISSEMENT
+область|обл
