@@ -40,3 +40,6 @@ latest
 *.iml
 eval*html
 *.txt
+indexes/*
+*.swp
+*.swo

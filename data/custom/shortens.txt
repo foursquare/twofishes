@@ -1,0 +1,5 @@
+ID|Provinsi
+*|Province
+*|Megye
+*|Estado de
+*|Област

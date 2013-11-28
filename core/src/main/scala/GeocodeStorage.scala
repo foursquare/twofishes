@@ -2,6 +2,7 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.util.StoredFeatureId
+import com.foursquare.twofishes.Identity._
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory}
 import com.vividsolutions.jts.io.WKBReader
 import java.nio.ByteBuffer
@@ -189,8 +190,15 @@ case class GeocodeRecord(
     })
 
     val finalNames = nameCandidates
-      .groupBy(n => "%s%s%s".format(n.lang, n.name, n.flags))
-      .flatMap({case (k,v) => v.headOption})
+      .groupBy(n => "%s%s".format(n.lang, n.name))
+      .flatMap({case (k,values) => {
+        var allFlags = values.flatMap(_.flags).distinct
+        if (allFlags.count(_ =? FeatureNameFlags.ALIAS) != values.size) {
+          allFlags = allFlags.filterNot(_ =? FeatureNameFlags.ALIAS)
+        }
+
+        values.headOption.map(_.copy(flags = allFlags))
+      }})
 
     val feature = GeocodeFeature.newBuilder
       .cc(cc)

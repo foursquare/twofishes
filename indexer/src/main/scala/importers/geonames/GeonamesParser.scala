@@ -168,6 +168,12 @@ class GeonamesParser(
   // tokenlist
   lazy val deletesList: List[String] = scala.io.Source.fromFile(new File("data/custom/deletes.txt"))
     .getLines.toList.filterNot(_.startsWith("#"))
+  // (country -> tokenlist)
+  lazy val shortensList: List[(List[String], String)] = scala.io.Source.fromFile(new File("data/custom/shortens.txt"))
+    .getLines.toList.filterNot(_.startsWith("#")).map(l => {
+      val parts = l.split("[\\|\t]").toList
+      (parts(0).split(",").toList, parts(1))
+    })
   // geonameid -> boost value
   lazy val boostTable = new GeoIdTsvHelperFileParser(GeonamesNamespace, "data/custom/boosts.txt",
     "data/private/boosts.txt")
@@ -237,17 +243,6 @@ class GeonamesParser(
         None
       }
     })
-  }
-
-  def doDeletes(names: List[String]) = {
-    val nameSet = new scala.collection.mutable.HashSet() ++ names.toSet
-    // val newNameSet = new scala.collection.mutable.HashSet() ++ names.toSet
-    deletesList.foreach(delete => {
-      nameSet.foreach(name => {
-        nameSet += name.replace(delete, "").split(" ").filterNot(_.isEmpty).mkString(" ")
-      })
-    })
-    nameSet.toList.filterNot(_.isEmpty)
   }
 
   def addDisplayNameToNameIndex(dn: DisplayName, fid: StoredFeatureId, record: Option[GeocodeRecord]) {
@@ -325,11 +320,6 @@ class GeonamesParser(
 
     // Build names
     val aliasedNames: List[String] = aliasTable.get(geonameId)
-
-    // val allNames = feature.allNames ++ aliasedNames
-    // val allModifiedNames = rewriteNames(allNames)
-    // val normalizedNames = (allNames ++ allModifiedNames).map(n => NameNormalizer.normalize(n))
-    // normalizedNames.toSet.toList.filterNot(_.isEmpty)
 
     aliasedNames.foreach(n =>
       displayNames ::= DisplayName("en", n, FeatureNameFlags.ALT_NAME.getValue)
@@ -546,6 +536,21 @@ class GeonamesParser(
     alternateNamesMap = AlternateNamesReader.readAlternateNamesFiles(files)
   }
 
+  def doShorten(cc: String, name: String): List[String] = {
+    shortensList.flatMap({case (countryRestricts, shorten) => {
+      if (countryRestricts.has(cc) || countryRestricts =? List("*")) {
+        val newName = name.replaceAll(shorten + "\\b", "").split(" ").filterNot(_.isEmpty).mkString(" ")
+        if (newName != name) {
+          Some(newName)
+        } else {
+          None
+        }
+      } else {
+        None
+      }
+    }})
+  }
+
   def processFeatureName(
     fid: StoredFeatureId,
     cc: String,
@@ -558,6 +563,7 @@ class GeonamesParser(
     if (lang != "post" && !nameDeleteTable.get(fid).exists(_ =? name)) {
       val originalNames = List(name)
       val (deaccentedNames, allModifiedNames) = rewriteNames(originalNames)
+      val shortenedNames = doShorten(cc, name)
 
       def buildDisplayName(name: String, flags: Int) = {
         DisplayName(lang, name, flags)
@@ -607,6 +613,7 @@ class GeonamesParser(
       }
 
       processNameList(originalNames, originalFlags) ++
+      processNameList(shortenedNames, originalFlags | FeatureNameFlags.SHORT_NAME.getValue) ++
       processNameList(deaccentedNames, originalFlags | FeatureNameFlags.DEACCENT.getValue) ++
       processNameList(allModifiedNames, originalFlags | FeatureNameFlags.ALIAS.getValue)
     } else {
