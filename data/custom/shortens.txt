@@ -1,4 +1,7 @@
 ID|Provinsi
+*|Province du
+*|Province of
+*|Province of the
 *|Province
 *|Megye
 *|Estado de
