@@ -46,3 +46,6 @@
 1850147|東京都
 # kiev short name
 703447|м. Київ
+# Gyeonggi-do SK
+1841610|경기도|ko
+8581443|Tangerang Selatan
