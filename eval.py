@@ -33,7 +33,7 @@ if not options.serverNew:
   parser.print_usage()
   sys.exit(1)
 
-if len(args) != 1:
+if len(args) == 0:
   print 'weird number of remaining args'
   parser.print_usage()
   sys.exit(1)

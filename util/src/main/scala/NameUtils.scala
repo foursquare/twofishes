@@ -185,7 +185,14 @@ trait NameUtils {
           val flag = it.next
           score += (flag match {
             case FeatureNameFlags.HISTORIC => -100
-            case FeatureNameFlags.COLLOQUIAL => 10
+            case FeatureNameFlags.COLLOQUIAL => {
+              // by itself, colloquial tends to be stupid things like "Frisco" for SF
+              if (name.flags.size == 1) {
+                -1
+              } else {
+                0
+              }
+            }
             case FeatureNameFlags.SHORT_NAME => 11
             case FeatureNameFlags.NEVER_DISPLAY => -10000
             case FeatureNameFlags.LOW_QUALITY => -20
@@ -193,7 +200,7 @@ trait NameUtils {
             case FeatureNameFlags.ALIAS => -1
             case FeatureNameFlags.DEACCENT => -1
             case FeatureNameFlags.ABBREVIATION => {
-              if (preferAbbrev && !name.name.matches("\\d+") ) { 40 } else { 0 }
+              if (preferAbbrev) { 40 } else { 0 }
             }
             case FeatureNameFlags.ALT_NAME => 0
             case FeatureNameFlags.LOCAL_LANG => 5
