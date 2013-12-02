@@ -93,6 +93,28 @@ case class GeocodeRecord(
     YahooWoeTypes.getOrdering(this.woeType) - YahooWoeTypes.getOrdering(that.woeType)
   }
 
+  def fixRomanianName(s: String) = {
+    val romanianTranslationTable = List(
+      // cedilla -> comma
+      "Ţ" -> "Ț",
+      "Ş" -> "Ș",
+      // tilde and caron to breve
+      "Ã" -> "Ă",
+      "Ǎ" -> "Ă"
+    ).flatMap({case (from, to) => {
+      List(
+        from.toLowerCase -> to.toLowerCase,
+        from.toUpperCase -> to.toUpperCase
+      )
+    }})
+
+    var newS = s
+    romanianTranslationTable.foreach({case (from, to) => {
+      newS = newS.replace(from, to)
+    }})
+    newS
+  }
+
   def toGeocodeServingFeature(): GeocodeServingFeature = {
     // geom
     val geometryBuilder = FeatureGeometry.newBuilder
@@ -199,6 +221,15 @@ case class GeocodeRecord(
 
         values.headOption.map(_.copy(flags = allFlags))
       }})
+      .map(n => {
+        if (n.lang == "ro") {
+          n.copy(
+            name = fixRomanianName(n.name)
+          )
+        } else {
+          n
+        }
+      })
 
     val feature = GeocodeFeature.newBuilder
       .cc(cc)
