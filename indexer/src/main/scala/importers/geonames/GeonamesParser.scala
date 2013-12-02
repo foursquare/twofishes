@@ -329,14 +329,20 @@ class GeonamesParser(
     val alternateNames = alternateNamesMap.getOrElse(geonameId, Nil).filterNot(n =>
       (n.name == englishName) && (n.lang != "en")
     )
-    displayNames ++= alternateNames.flatMap(altName => {
+
+    val altNames = alternateNames.flatMap(altName => {
       processFeatureName(geonameId,
-        feature.countryCode, altName.lang, altName.name, 
+        feature.countryCode, altName.lang, altName.name,
         isPrefName=altName.isPrefName,
         isShortName=altName.isShortName,
         isColloquial=altName.isColloquial,
         isHistoric=altName.isHistoric)
     })
+    val (deaccentedFeatureNames, nonDeaccentedFeatureNames) = altNames.partition(n => (n.flags & FeatureNameFlags.DEACCENT.getValue) > 0)
+    val nonDeaccentedNames: Set[String] = nonDeaccentedFeatureNames.map(_.name).toSet
+    displayNames ++= nonDeaccentedFeatureNames
+    displayNames ++= deaccentedFeatureNames.filterNot(n => nonDeaccentedNames.has(n.name))
+
 
     // the admincode is the internal geonames admin code, but is very often the
     // same short name for the admin area that is actually used in the country
