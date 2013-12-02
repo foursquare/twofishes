@@ -190,7 +190,8 @@ trait NameUtils {
               if (name.flags.size == 1) {
                 -1
               } else {
-                0
+              // With other things, it helps, especially countries
+                1
               }
             }
             case FeatureNameFlags.SHORT_NAME => 11
