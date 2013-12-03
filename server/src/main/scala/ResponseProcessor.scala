@@ -165,12 +165,13 @@ class ResponseProcessor(
       polygonMap: Map[StoredFeatureId, Geometry],
       numExtraParentsRequired: Int = 0,
       fillHighlightedName: Boolean = false,
-      includeAllNames: Boolean
+      includeAllNames: Boolean,
+      parentIds: Seq[Long] = Nil
     ): GeocodeFeature.Mutable = {
     // set name
     val mutableFeature = f.mutableCopy
     fixFeatureMutable(mutableFeature, parents, parse, polygonMap, numExtraParentsRequired,
-      fillHighlightedName, includeAllNames)
+      fillHighlightedName, includeAllNames, parentIds)
   }
 
   def fixFeatureMutable(
@@ -180,11 +181,14 @@ class ResponseProcessor(
     polygonMap: Map[StoredFeatureId, Geometry],
     numExtraParentsRequired: Int = 0,
     fillHighlightedName: Boolean = false,
-    includeAllNames: Boolean = false
+    includeAllNames: Boolean = false,
+    parentIds: Seq[Long] = Nil
   ): GeocodeFeature.Mutable = {
     val f = mutableFeature
     val name = NameUtils.bestName(f, Some(req.lang), false).map(_.name).getOrElse("")
     mutableFeature.name_=(name)
+
+    mutableFeature.parentIds_=(parentIds)
 
     for {
       p <- parse
@@ -192,7 +196,6 @@ class ResponseProcessor(
     } {
       mutableFeature.longIds_=(p.extraLongIds)
     }
-
     // rules
     // if you have a city parent, use it
     // if you're in the US or CA, use state parent
@@ -419,7 +422,8 @@ class ResponseProcessor(
 
       val fixedFeature = fixFeature(feature, sortedParents, Some(p), polygonMap,
         fillHighlightedName=parseParams.tokens.size > 0,
-        includeAllNames=responseIncludes(ResponseIncludes.ALL_NAMES))
+        includeAllNames=responseIncludes(ResponseIncludes.ALL_NAMES),
+        parentIds=p(0).fmatch.scoringFeatures.parentIds)
 
       val interpBuilder = GeocodeInterpretation.newBuilder
         .what(what)

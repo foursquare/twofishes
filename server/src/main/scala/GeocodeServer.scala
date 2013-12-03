@@ -140,6 +140,7 @@ class GeocodeServerImpl(store: GeocodeStorageReadService, doWarmup: Boolean) ext
       new ReverseGeocoderImpl(store, GeocodeRequest.newBuilder.ll(GeocodePoint(parts(0).toDouble, parts(1).toDouble)).result).reverseGeocode()
     }})
     logger.info("done")
+    Stats.clearAll()
   }
 
   val queryFuturePool = FuturePool(StatsWrappedExecutors.create(24, 100, "geocoder"))

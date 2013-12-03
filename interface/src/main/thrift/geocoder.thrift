@@ -186,6 +186,8 @@ struct GeocodeFeature {
 
   16: optional i64 longId
   17: optional list<i64> longIds
+
+  18: optional list<i64> parentIds
 }
 
 struct GeocodeServingFeature {
