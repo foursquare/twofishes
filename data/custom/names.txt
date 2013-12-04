@@ -7,3 +7,4 @@
 5139568	en|Staten Island
 5110266	en|Bronx
 1279685 en|Tibet
+3688689 es|Bogotá
