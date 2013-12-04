@@ -49,3 +49,7 @@
 # Gyeonggi-do SK
 1841610|경기도|ko
 8581443|Tangerang Selatan
+# Bogota DC
+3688685|D C
+# Washington DC
+4138106|D C
