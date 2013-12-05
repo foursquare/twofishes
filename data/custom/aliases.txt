@@ -53,3 +53,7 @@
 3688685|D C
 # Washington DC
 4138106|D C
+# Orange Free State, ZA
+967573|Free State
+5009004|Sault Sainte Marie
+2800867|Brussels Capital Region
