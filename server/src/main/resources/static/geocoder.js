@@ -17,6 +17,23 @@ var searchButton = $('#search');
 var searchForm = $('#searchForm');
 var debugInfo = $('#debugInfo');
 
+function initPage() {
+  var ll = getParameterByName('ll');
+  var query = getParameterByName('query');
+  var slug = getParameterByName('slug');
+  var urlQuery = decodeURIComponent(getQuery());
+  if (!!ll) { setQuery(ll); }
+  else if (!!query) { setQuery(query); }
+  else if (!!slug) { lookupInput.val(slug); }
+  else if (!!urlQuery) { setQuery(urlQuery); }
+
+  geocode();
+}
+
+function setQuery(q) {
+  queryInput.val(q);
+}
+
 function getQuery() {
   query = window.location.hash.substr(1);
 
