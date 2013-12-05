@@ -68,7 +68,8 @@ class IndexerSpec extends Specification {
         DisplayName("en", "San Francisco County", 0),
         DisplayName("en", "San Francisco", 0)
       ),
-      Nil, None)
+      Nil, None,
+      extraRelations = Nil)
 
     val feature = record.toGeocodeServingFeature.feature
     feature.names.size aka feature.names.toString mustEqual 2
@@ -156,7 +157,8 @@ class IndexerSpec extends Specification {
       parents = Nil,
       population = None,
       polygon = Some(geomBytes),
-      hasPoly = Some(true))
+      hasPoly = Some(true),
+      extraRelations = Nil)
 
     indexer.calculateCoverForRecord(record, out, new HashMap[Long, Geometry])
 
