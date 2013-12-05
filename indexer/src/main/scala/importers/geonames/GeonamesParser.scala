@@ -193,6 +193,9 @@ class GeonamesParser(
   lazy val ignoreList: List[StoredFeatureId] = scala.io.Source.fromFile(new File("data/custom/ignores.txt"))
     .getLines.toList.filterNot(_.startsWith("#")).map(l => GeonamesId(l.toLong))
 
+  // extra parents
+  lazy val extraRelationsList = new GeoIdTsvHelperFileParser(GeonamesNamespace, "data/custom/extra-relations.txt")
+
   lazy val concordanceMap = new GeoIdTsvHelperFileParser(GeonamesNamespace, "data/computed/concordances.txt")
 
   val bboxDirs = List(
@@ -455,6 +458,8 @@ class GeonamesParser(
       attributesBuilder.neighborhoodType(NeighborhoodType.findByNameOrNull(v))
     )
 
+    val extraRelations = extraRelationsList.get(geonameId).map(_.split(",").toList.map(_.toLong)).flatten
+
     val record = GeocodeRecord(
       _id = geonameId.longId,
       ids = ids.map(_.longId),
@@ -472,7 +477,8 @@ class GeonamesParser(
       canGeocode = canGeocode,
       slug = slug,
       polygon = polygonExtraEntry.map(wkbWriter.write),
-      hasPoly = polygonExtraEntry.map(e => true)
+      hasPoly = polygonExtraEntry.map(e => true),
+      extraRelations = extraRelations
     )
 
     if (attributesSet) {

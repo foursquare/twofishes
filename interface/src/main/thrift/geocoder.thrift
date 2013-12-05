@@ -158,6 +158,7 @@ struct ScoringFeatures {
   6: optional list<i64> parentIds = [],
   5: optional bool canGeocode = 1
   7: optional bool hasPoly = 0
+  8: optional list<i64> extraRelationIds = [],
 
   3: optional list<string> DEPRECATED_parents = [],
 }

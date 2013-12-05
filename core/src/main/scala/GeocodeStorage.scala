@@ -57,7 +57,8 @@ case class GeocodeRecord(
   slug: Option[String] = None,
   polygon: Option[Array[Byte]] = None,
   hasPoly: Option[Boolean] = None,
-  var attributes: Option[Array[Byte]] = None
+  var attributes: Option[Array[Byte]] = None,
+  extraRelations: List[Long]
 ) extends Ordered[GeocodeRecord] {
   val factory = new TCompactProtocol.Factory()
   val serializer = new TSerializer(factory)
@@ -181,7 +182,8 @@ case class GeocodeRecord(
     val filteredNames: List[DisplayName] = displayNames.filterNot(n => List("post", "link").contains(n.lang))
     var hackedNames: List[DisplayName] = Nil
 
-    // HACK(blackmad)
+
+    // HACK(blackmad): TODO(blackmad): move these to data files
     if (this.woeType == YahooWoeType.ADMIN1 && cc == "JP") {
       hackedNames ++=
         filteredNames.filter(n => n.lang == "en" || n.lang == "" || n.lang == "alias")
@@ -192,6 +194,14 @@ case class GeocodeRecord(
       hackedNames ++=
         filteredNames.filter(n => n.lang == "en" || n.lang == "" || n.lang == "alias")
           .map(n => DisplayName(n.lang, n.name + " County", FeatureNameFlags.ALIAS.getValue))
+    }
+
+    // Region Lima -> Lima Region
+    if (this.woeType == YahooWoeType.TOWN && cc == "PE") {
+      hackedNames ++=
+        filteredNames.filter(_.name.startsWith("Region")).map(n => {
+          DisplayName(n.lang, n.name.replace("Region", "").trim + " Region", FeatureNameFlags.ALIAS.getValue)
+        })
     }
 
     val allNames = filteredNames ++ hackedNames
@@ -208,7 +218,9 @@ case class GeocodeRecord(
         }
       })
 
-      FeatureName.newBuilder.name(name.name).lang(name.lang).flags(flags).result
+      FeatureName.newBuilder.name(name.name).lang(name.lang)
+        .applyIf(flags.nonEmpty, _.flags(flags))
+        .result
     })
 
     val finalNames = nameCandidates
@@ -247,6 +259,7 @@ case class GeocodeRecord(
       .boost(boost)
       .population(population)
       .parentIds(parents)
+      .applyIf(extraRelations.nonEmpty, _.extraRelationIds(extraRelations))
       .hasPoly(hasPoly)
 
     if (!canGeocode) {

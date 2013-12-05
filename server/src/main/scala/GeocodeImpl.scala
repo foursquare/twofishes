@@ -174,7 +174,8 @@ class GeocoderImpl(
       rest.forall(f => {
         //logger.ifDebug("checking if %s in parents".format(f.fmatch.id))
         f.fmatch.longId == most_specific.fmatch.longId ||
-        most_specific.fmatch.scoringFeatures.parentIds.has(f.fmatch.longId)
+        most_specific.fmatch.scoringFeatures.parentIds.has(f.fmatch.longId) ||
+        most_specific.fmatch.scoringFeatures.extraRelationIds.has(f.fmatch.longId)
       })
     }
   }
