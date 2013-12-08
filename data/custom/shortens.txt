@@ -5,4 +5,14 @@ ID|Provinsi
 *|Province
 *|Megye
 *|Estado de
+*|Estado do
+*|State of
+*|State of the
+*|Gemeente
+*|Provincia de
+*|Región de la 
+*|Región
+*|Provincie
 *|Област
+*|kraj
+*|Departamento del

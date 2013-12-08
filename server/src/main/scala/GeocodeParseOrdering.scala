@@ -86,7 +86,7 @@ class GeocodeParseOrdering(
         }
         val distancePenalty = (distance.toInt / 100)
         if (distance < 5000) {
-          modifySignal(200000, "5km distance BONUS for being %s meters away".format(distance))
+          modifySignal(2000000, "5km distance BONUS for being %s meters away".format(distance))
 
           if (primaryFeature.feature.woeType =? YahooWoeType.SUBURB) {
               modifySignal(3000000, "5km distance neightborhood intersection BONUS")

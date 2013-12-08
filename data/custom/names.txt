@@ -8,3 +8,11 @@
 5110266	en|Bronx
 1279685 en|Tibet
 3688689 es|Bogotá
+2177478 en|Australian Capital Territory
+2155400 en|New South Wales
+2064513 en|Northern Territory
+2152274 en|Queensland
+2061327 en|South Australia
+2147291 en|Tasmania
+2145234 en|Victoria
+2058645 en|Western Australia
