@@ -39,7 +39,7 @@
 1642903|DKI Jakarta
 1642907|DKI Jakarta
 1642903|Jakarta Capital Region
-498817|город Санкт-Петербург
+498817|город Санкт-Петербург,ru
 5202009|город Москва
 1733046|WP Kuala Lumpur
 # tokyo metropolitan region -- aliasing to tokyo for now
@@ -47,7 +47,7 @@
 # kiev short name
 703447|м. Київ
 # Gyeonggi-do SK
-1841610|경기도|ko
+1841610|경기도,ko
 8581443|Tangerang Selatan
 # Bogota DC
 3688685|D C
