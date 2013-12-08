@@ -197,7 +197,7 @@ case class GeocodeRecord(
     }
 
     // Region Lima -> Lima Region
-    if (this.woeType == YahooWoeType.TOWN && cc == "PE") {
+    if (this.woeType == YahooWoeType.ADMIN1 && cc == "PE") {
       hackedNames ++=
         filteredNames.filter(_.name.startsWith("Region")).map(n => {
           DisplayName(n.lang, n.name.replace("Region", "").trim + " Region", FeatureNameFlags.ALIAS.getValue)
@@ -223,7 +223,7 @@ case class GeocodeRecord(
         .result
     })
 
-    val finalNames = nameCandidates
+    var finalNames = nameCandidates
       .groupBy(n => "%s%s".format(n.lang, n.name))
       .flatMap({case (k,values) => {
         var allFlags = values.flatMap(_.flags).distinct
@@ -242,6 +242,27 @@ case class GeocodeRecord(
           n
         }
       })
+
+    // Lately geonames has these stupid JP aliases, like "Katsuura Gun" for "Katsuura-gun"
+    if (cc =? "JP") {
+      def isPossiblyBad(s: String): Boolean = {
+        s.contains(" ") && s.split(" ").forall(_.headOption.exists(Character.isUpperCase))
+      }
+
+      def makeBetterName(s: String): String = {
+        val parts = s.split(" ")
+        val head = parts.headOption
+        val rest = parts.drop(1)
+        (head.toList ++ rest.map(_.toLowerCase)).mkString("-")
+      }
+
+      val enNames = finalNames.filter(_.lang == "en")
+      enNames.foreach(n => {
+        if (isPossiblyBad(n.name)) {
+          finalNames = finalNames.filterNot(_.name =? makeBetterName(n.name))
+        }
+      })
+    }
 
     val feature = GeocodeFeature.newBuilder
       .cc(cc)
