@@ -1,6 +1,8 @@
 ID|Provinsi
 *|Province du
 *|Province of
+*|Province de
+*|Province del
 *|Province of the
 *|Province
 *|Megye
@@ -11,8 +13,12 @@ ID|Provinsi
 *|Gemeente
 *|Provincia de
 *|Región de la 
+*|Región de
+*|Región del
 *|Región
 *|Provincie
 *|Област
 *|kraj
 *|Departamento del
+GR|Νομος
+GR|Nomós

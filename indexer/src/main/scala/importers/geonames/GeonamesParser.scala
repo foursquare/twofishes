@@ -18,10 +18,6 @@ import scala.io.Source
 import scalaj.collection.Implicits._
 import com.weiglewilczek.slf4s.Logging
 
-// TODO
-// stop using string representations of "a:b" featureids everywhere, PLEASE
-// please, I'm begging you, be more disciplined about featureids in the parser
-
 object GeonamesParser {
   var config: GeonamesImporterConfig = null
 
@@ -285,7 +281,7 @@ class GeonamesParser(
       )
 
     val preferredEnglishAltName = alternateNamesMap.getOrElse(geonameId, Nil).find(altName =>
-      altName.lang == "en" && altName.isPrefName
+      altName.lang == "en" // && altName.isPrefName
     )
 
     val hasPreferredEnglishAltName = preferredEnglishAltName.isDefined
@@ -324,9 +320,12 @@ class GeonamesParser(
     // Build names
     val aliasedNames: List[String] = aliasTable.get(geonameId)
 
-    aliasedNames.foreach(n =>
-      displayNames ::= DisplayName("en", n, FeatureNameFlags.ALT_NAME.getValue)
-    )
+    aliasedNames.foreach(n => {
+      val parts = n.split(",")
+      val name: String = parts(0)
+      val lang: String = parts.lift(1).getOrElse("en")
+      displayNames ::= DisplayName(lang, name, FeatureNameFlags.ALT_NAME.getValue)
+    })
 
     val englishName = preferredEnglishAltName.getOrElse(feature.name)
     val alternateNames = alternateNamesMap.getOrElse(geonameId, Nil).filterNot(n =>
@@ -549,7 +548,7 @@ class GeonamesParser(
   }
 
   def doShorten(cc: String, name: String): List[String] = {
-    shortensList.flatMap({case (countryRestricts, shorten) => {
+    val candidates = shortensList.flatMap({case (countryRestricts, shorten) => {
       if (countryRestricts.has(cc) || countryRestricts =? List("*")) {
         val newName = name.replaceAll(shorten + "\\b", "").split(" ").filterNot(_.isEmpty).mkString(" ")
         if (newName != name) {
@@ -561,6 +560,8 @@ class GeonamesParser(
         None
       }
     }})
+
+    candidates.sortBy(_.size).lastOption.toList
   }
 
   def processFeatureName(
