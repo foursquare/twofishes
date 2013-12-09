@@ -227,7 +227,11 @@ case class GeocodeRecord(
       .groupBy(n => "%s%s".format(n.lang, n.name))
       .flatMap({case (k,values) => {
         var allFlags = values.flatMap(_.flags).distinct
-        if (allFlags.count(_ =? FeatureNameFlags.ALIAS) != values.size) {
+
+        // If we collapsed multiple names, and not all of them had ALIAS,
+        // then we should strip off that flag because some other entry told
+        // us it didn't deserve to be ranked down
+        if (values.size > 1 && allFlags.count(_ =? FeatureNameFlags.ALIAS) != values.size) {
           allFlags = allFlags.filterNot(_ =? FeatureNameFlags.ALIAS)
         }
 
