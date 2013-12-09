@@ -561,7 +561,7 @@ class GeonamesParser(
       }
     }})
 
-    candidates.sortBy(_.size).lastOption.toList
+    candidates.sortBy(_.size).headOption.toList
   }
 
   def processFeatureName(

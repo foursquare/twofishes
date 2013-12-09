@@ -57,6 +57,13 @@ class IndexerSpec extends Specification {
     names(0).flags & FeatureNameFlags.LOW_QUALITY.getValue must be_>(0)
   }
 
+  "processFeatureName demotes" in {
+    val names = parser.doShorten("PH", "Province of Leyte")
+    names.size mustEqual 1
+    names(0) mustEqual "Leyte"
+  }
+
+
   "name deduping works" in {
     val fid = GeonamesId(1)
     val record = GeocodeRecord(fid.longId,
