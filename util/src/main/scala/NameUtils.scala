@@ -228,7 +228,7 @@ trait NameUtils {
         f.woeTypeOption.exists(_ =? YahooWoeType.ADMIN1) &&
         (f.cc == "US" || f.cc == "CA")
       val scorer = new FeatureNameScorer(lang, modifiedPreferAbbrev)
-      var bestScore = 0
+      var bestScore = 0.0
       var bestName = names.headOption
       for {
         name <- names
