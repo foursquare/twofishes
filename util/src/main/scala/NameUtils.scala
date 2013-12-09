@@ -169,7 +169,7 @@ trait NameUtils {
   // Given an optional language and an abbreviation preference, find the best name
   // for a feature in the current context.
   class FeatureNameScorer(lang: Option[String], preferAbbrev: Boolean) {
-    def scoreName(name: FeatureName): Int = {
+    def scoreName(name: FeatureName): Double = {
       var score = 0.0
 
       lang match {
