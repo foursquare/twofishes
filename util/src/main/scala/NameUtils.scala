@@ -170,7 +170,7 @@ trait NameUtils {
   // for a feature in the current context.
   class FeatureNameScorer(lang: Option[String], preferAbbrev: Boolean) {
     def scoreName(name: FeatureName): Int = {
-      var score = 0
+      var score = 0.0
 
       lang match {
         case Some(l) if name.lang == l =>
@@ -208,6 +208,8 @@ trait NameUtils {
           })
         }
       }
+
+      score -= name.name.size * 0.0001
 
       score
     }
