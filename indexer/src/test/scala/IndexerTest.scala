@@ -96,15 +96,18 @@ class IndexerSpec extends Specification {
       List(
         DisplayName("en", "South Carolina", FeatureNameFlags.PREFERRED.getValue),
         DisplayName("en", "South Carolina", FeatureNameFlags.ALIAS.getValue),
-        DisplayName("en", "S Carolina", FeatureNameFlags.ALIAS.getValue)
+        DisplayName("en", "S Carolina", FeatureNameFlags.ALIAS.getValue),
+        DisplayName("en", "S Carolina", FeatureNameFlags.ALIAS.getValue),
+        DisplayName("en", "Stupid Carolina", FeatureNameFlags.ALIAS.getValue)
       ),
       Nil, None,
       extraRelations = Nil)
 
     val feature = record.toGeocodeServingFeature.feature
-    feature.names.size aka feature.names.toString mustEqual 2
+    feature.names.size aka feature.names.toString mustEqual 3
     nameFlagsMustEqual(feature.names, "South Carolina", FeatureNameFlags.PREFERRED)
     nameFlagsMustEqual(feature.names, "S Carolina", FeatureNameFlags.ALIAS)
+    nameFlagsMustEqual(feature.names, "Stupid Carolina", FeatureNameFlags.ALIAS)
   }
 
   "rewrites work" in {

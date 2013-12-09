@@ -3,6 +3,7 @@ package com.foursquare.twofishes
 
 import com.foursquare.twofishes.util.StoredFeatureId
 import com.foursquare.twofishes.Identity._
+import com.foursquare.twofishes.util.Lists.Implicits._
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory}
 import com.vividsolutions.jts.io.WKBReader
 import java.nio.ByteBuffer
@@ -226,16 +227,16 @@ case class GeocodeRecord(
     var finalNames = nameCandidates
       .groupBy(n => "%s%s".format(n.lang, n.name))
       .flatMap({case (k,values) => {
-        var allFlags = values.flatMap(_.flags).distinct
+        var allFlags = values.flatMap(_.flags)
 
         // If we collapsed multiple names, and not all of them had ALIAS,
         // then we should strip off that flag because some other entry told
         // us it didn't deserve to be ranked down
-        if (values.size > 1 && allFlags.count(_ =? FeatureNameFlags.ALIAS) != values.size) {
+        if (values.size > 1 && values.exists(n => !n.flags.has(FeatureNameFlags.ALIAS))) {
           allFlags = allFlags.filterNot(_ =? FeatureNameFlags.ALIAS)
         }
 
-        values.headOption.map(_.copy(flags = allFlags))
+        values.headOption.map(_.copy(flags = allFlags.distinct))
       }})
       .map(n => {
         if (n.lang == "ro") {
