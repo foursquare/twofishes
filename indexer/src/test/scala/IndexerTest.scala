@@ -82,6 +82,31 @@ class IndexerSpec extends Specification {
     feature.names.size aka feature.names.toString mustEqual 2
   }
 
+  def nameFlagsMustEqual(names: Seq[FeatureName], name: String, flags: FeatureNameFlags*) {
+    val foundName = names.filter(_.name == name)
+    foundName.size aka foundName.toString mustEqual 1
+    foundName(0).flags.toSet mustEqual flags.toSet
+  }
+
+  "alias flag removal works" in {
+    val fid = GeonamesId(1)
+    val record = GeocodeRecord(fid.longId,
+      List(fid.longId),
+      Nil, "", 0, 0.0, 0.0,
+      List(
+        DisplayName("en", "South Carolina", FeatureNameFlags.PREFERRED.getValue),
+        DisplayName("en", "South Carolina", FeatureNameFlags.ALIAS.getValue),
+        DisplayName("en", "S Carolina", FeatureNameFlags.ALIAS.getValue)
+      ),
+      Nil, None,
+      extraRelations = Nil)
+
+    val feature = record.toGeocodeServingFeature.feature
+    feature.names.size aka feature.names.toString mustEqual 2
+    nameFlagsMustEqual(feature.names, "South Carolina", FeatureNameFlags.PREFERRED)
+    nameFlagsMustEqual(feature.names, "S Carolina", FeatureNameFlags.ALIAS)
+  }
+
   "rewrites work" in {
     val (deaccentedNames, otherModifiedNames) = parser.rewriteNames(
       List("Mount Laurel", "North Bergen"))
