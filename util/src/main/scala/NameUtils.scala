@@ -174,7 +174,7 @@ trait NameUtils {
 
       lang match {
         case Some(l) if name.lang == l =>
-          score += 20
+          score += 40
         case _ =>
           ()
       }
@@ -203,7 +203,7 @@ trait NameUtils {
             case FeatureNameFlags.ABBREVIATION => {
               if (preferAbbrev) { 1000 } else { 0 }
             }
-            case FeatureNameFlags.ALT_NAME => 0
+            case FeatureNameFlags.ALT_NAME => -1
             case FeatureNameFlags.LOCAL_LANG => 5
           })
         }

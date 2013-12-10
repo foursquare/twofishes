@@ -249,7 +249,7 @@ case class GeocodeRecord(
       })
 
     // Lately geonames has these stupid JP aliases, like "Katsuura Gun" for "Katsuura-gun"
-    if (cc =? "JP") {
+    if (cc =? "JP" || cc =? "TH") {
       def isPossiblyBad(s: String): Boolean = {
         s.contains(" ") && s.split(" ").forall(_.headOption.exists(Character.isUpperCase))
       }
