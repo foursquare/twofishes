@@ -19,10 +19,13 @@ import org.apache.thrift.protocol.TCompactProtocol
 import org.bson.types.ObjectId
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.WKBReader
-import scalaj.collection.Implicits._
 import com.weiglewilczek.slf4s.Logging
+import scalaj.collection.Implicits._
 
-class HFileStorageService(basepath: String, shouldPreload: Boolean) extends GeocodeStorageReadService with Logging {
+class HFileStorageService(originalBasepath: String, shouldPreload: Boolean) extends GeocodeStorageReadService with Logging {
+  // Do this to ensure that our data doesn't get rewritten out from under us if we're pointing at a symlink
+  val basepath = new File(originalBasepath).getCanonicalPath()
+
   val nameMap = new NameIndexHFileInput(basepath, shouldPreload)
   val oidMap = new GeocodeRecordMapFileInput(basepath, shouldPreload)
   val geomMapOpt = GeometryMapFileInput.readInput(basepath, shouldPreload)
