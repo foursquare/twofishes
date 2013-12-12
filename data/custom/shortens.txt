@@ -26,3 +26,4 @@ ID|Provinsi
 *|Departamento del
 GR|Νομος
 GR|Nomós
+ID|Kota
