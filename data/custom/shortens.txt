@@ -27,3 +27,5 @@ ID|Provinsi
 GR|Νομος
 GR|Nomós
 ID|Kota
+*|Obshtina
+*|Община
