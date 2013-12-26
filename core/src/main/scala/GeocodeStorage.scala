@@ -180,32 +180,7 @@ case class GeocodeRecord(
       }
     })
 
-    val filteredNames: List[DisplayName] = displayNames.filterNot(n => List("post", "link").contains(n.lang))
-    var hackedNames: List[DisplayName] = Nil
-
-
-    // HACK(blackmad): TODO(blackmad): move these to data files
-    if (this.woeType == YahooWoeType.ADMIN1 && cc == "JP") {
-      hackedNames ++=
-        filteredNames.filter(n => n.lang == "en" || n.lang == "" || n.lang == "alias")
-          .map(n => DisplayName(n.lang, n.name + " Prefecture", FeatureNameFlags.ALIAS.getValue))
-    }
-
-    if (this.woeType == YahooWoeType.TOWN && cc == "TW") {
-      hackedNames ++=
-        filteredNames.filter(n => n.lang == "en" || n.lang == "" || n.lang == "alias")
-          .map(n => DisplayName(n.lang, n.name + " County", FeatureNameFlags.ALIAS.getValue))
-    }
-
-    // Region Lima -> Lima Region
-    if (this.woeType == YahooWoeType.ADMIN1 && cc == "PE") {
-      hackedNames ++=
-        filteredNames.filter(_.name.startsWith("Region")).map(n => {
-          DisplayName(n.lang, n.name.replace("Region", "").trim + " Region", FeatureNameFlags.ALIAS.getValue)
-        })
-    }
-
-    val allNames = filteredNames ++ hackedNames
+    val allNames: List[DisplayName] = displayNames.filterNot(n => List("post", "link").contains(n.lang))
 
     val nameCandidates = allNames.map(name => {
       var flags: List[FeatureNameFlags] = Nil
