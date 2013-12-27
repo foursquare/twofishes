@@ -227,12 +227,16 @@ class NameIndexHFileInput(basepath: String, shouldPreload: Boolean) {
   }
 
   def getPrefix(name: String): Seq[StoredFeatureId] = {
-    prefixMapOpt match {
+    val seq = prefixMapOpt match {
       case Some(prefixMap) if (name.length <= prefixMap.maxPrefixLength) =>
         prefixMap.get(name)
       case _  =>
         nameIndex.lookupPrefix(name).flatten
     }
+    if (seq.size > 2000) {
+      throw new Exception("too many matches")
+    }
+    seq
   }
 }
 
