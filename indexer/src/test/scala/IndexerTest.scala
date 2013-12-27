@@ -38,21 +38,21 @@ class IndexerSpec extends Specification {
   "processFeatureName" in {
     val names = parser.processFeatureName(
       StoredFeatureId(GeonamesNamespace, "11111"),
-      "US", "en", "New York", false, false)
+      "US", "en", "New York", false, false, woeType = YahooWoeType.TOWN)
     names.size mustEqual 1
   }
 
   "processFeatureName deletes" in {
     val names = parser.processFeatureName(
-      StoredFeatureId(GeonamesNamespace, "2511174"),
-      "US", "en", "Tenerife", false, false)
+    StoredFeatureId(GeonamesNamespace, "2511174"),
+      "US", "en", "Tenerife", false, false, woeType = YahooWoeType.TOWN)
     names.size mustEqual 0
   }
 
   "processFeatureName demotes" in {
     val names = parser.processFeatureName(
       StoredFeatureId(GeonamesNamespace, "1566083"),
-      "US", "en", "HCMC", false, false)
+      "US", "en", "HCMC", false, false, woeType = YahooWoeType.TOWN)
     names.size mustEqual 1
     names(0).flags & FeatureNameFlags.LOW_QUALITY.getValue must be_>(0)
   }
