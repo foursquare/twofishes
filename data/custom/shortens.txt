@@ -25,7 +25,10 @@ ID|Provinsi
 *|kraj
 *|Departamento del
 GR|Νομος
+GR|Νομός
 GR|Nomós
 ID|Kota
 *|Obshtina
 *|Община
+*|область|обл
+*|Область|Обл

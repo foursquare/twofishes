@@ -552,7 +552,10 @@ class GeonamesParser(
   def doShorten(cc: String, name: String): List[String] = {
     val candidates = shortensList.flatMap({case (countryRestricts, shorten) => {
       if (countryRestricts.has(cc) || countryRestricts =? List("*")) {
-        val newName = name.replaceAll(shorten + "\\b", "").split(" ").filterNot(_.isEmpty).mkString(" ")
+        val parts = shorten.split("\\|")
+        val toShortenFrom = parts(0)
+        val toShortenTo = parts.lift(1).getOrElse("")
+        val newName = name.replaceAll(toShortenFrom + "\\b", toShortenTo).split(" ").filterNot(_.isEmpty).mkString(" ")
         if (newName != name) {
           Some(newName)
         } else {

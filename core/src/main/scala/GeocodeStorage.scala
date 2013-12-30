@@ -122,26 +122,28 @@ case class GeocodeRecord(
     val geometryBuilder = FeatureGeometry.newBuilder
       .center(GeocodePoint(lat, lng))
 
-    boundingbox.foreach(bounds => {
-      val currentBounds = (bounds.ne.lat, bounds.ne.lng, bounds.sw.lat, bounds.sw.lng)
+    if (polygon.isEmpty) {
+      boundingbox.foreach(bounds => {
+        val currentBounds = (bounds.ne.lat, bounds.ne.lng, bounds.sw.lat, bounds.sw.lng)
 
-      // This breaks at 180, I get that, to fix.
-      val finalBounds = (
-        List(bounds.ne.lat, bounds.sw.lat).max,
-        List(bounds.ne.lng, bounds.sw.lng).max,
-        List(bounds.ne.lat, bounds.sw.lat).min,
-        List(bounds.ne.lng, bounds.sw.lng).min
-      )
+        // This breaks at 180, I get that, to fix.
+        val finalBounds = (
+          List(bounds.ne.lat, bounds.sw.lat).max,
+          List(bounds.ne.lng, bounds.sw.lng).max,
+          List(bounds.ne.lat, bounds.sw.lat).min,
+          List(bounds.ne.lng, bounds.sw.lng).min
+        )
 
-      if (finalBounds != currentBounds) {
-        println("incorrect bounds %s -> %s".format(currentBounds, finalBounds))
-      }
+        if (finalBounds != currentBounds) {
+          println("incorrect bounds %s -> %s".format(currentBounds, finalBounds))
+        }
 
-      geometryBuilder.bounds(GeocodeBoundingBox(
-        GeocodePoint(finalBounds._1, finalBounds._2),
-        GeocodePoint(finalBounds._3, finalBounds._4)
-      ))
-    })
+        geometryBuilder.bounds(GeocodeBoundingBox(
+          GeocodePoint(finalBounds._1, finalBounds._2),
+          GeocodePoint(finalBounds._3, finalBounds._4)
+        ))
+      })
+    }
 
     displayBounds.foreach(bounds => {
       val currentBounds = (bounds.ne.lat, bounds.ne.lng, bounds.sw.lat, bounds.sw.lng)
