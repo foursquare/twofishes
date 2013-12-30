@@ -18,10 +18,6 @@ import scala.io.Source
 import scalaj.collection.Implicits._
 import com.weiglewilczek.slf4s.Logging
 
-// TODO
-// stop using string representations of "a:b" featureids everywhere, PLEASE
-// please, I'm begging you, be more disciplined about featureids in the parser
-
 object GeonamesParser {
   var config: GeonamesImporterConfig = null
 
@@ -166,7 +162,14 @@ class GeonamesParser(
   lazy val rewriteTable = new TsvHelperFileParser("data/custom/rewrites.txt",
     "data/private/rewrites.txt")
   // tokenlist
-  lazy val deletesList: List[String] = scala.io.Source.fromFile(new File("data/custom/deletes.txt")).getLines.toList
+  lazy val deletesList: List[String] = scala.io.Source.fromFile(new File("data/custom/deletes.txt"))
+    .getLines.toList.filterNot(_.startsWith("#"))
+  // (country -> tokenlist)
+  lazy val shortensList: List[(List[String], String)] = scala.io.Source.fromFile(new File("data/custom/shortens.txt"))
+    .getLines.toList.filterNot(_.startsWith("#")).map(l => {
+      val parts = l.split("[\\|\t]").toList
+      (parts(0).split(",").toList, parts(1))
+    })
   // geonameid -> boost value
   lazy val boostTable = new GeoIdTsvHelperFileParser(GeonamesNamespace, "data/custom/boosts.txt",
     "data/private/boosts.txt")
@@ -180,9 +183,14 @@ class GeonamesParser(
 
   // geonameid -> name to be deleted
   lazy val nameDeleteTable = new GeoIdTsvHelperFileParser(GeonamesNamespace, "data/custom/name-deletes.txt")
+  // geonameid -> name to be demoted
+  lazy val nameDemoteTable = new GeoIdTsvHelperFileParser(GeonamesNamespace, "data/custom/name-demotes.txt")
   // list of geoids (geonameid:XXX) to skip indexing
   lazy val ignoreList: List[StoredFeatureId] = scala.io.Source.fromFile(new File("data/custom/ignores.txt"))
-    .getLines.toList.map(l => GeonamesId(l.toLong))
+    .getLines.toList.filterNot(_.startsWith("#")).map(l => GeonamesId(l.toLong))
+
+  // extra parents
+  lazy val extraRelationsList = new GeoIdTsvHelperFileParser(GeonamesNamespace, "data/custom/extra-relations.txt")
 
   lazy val concordanceMap = new GeoIdTsvHelperFileParser(GeonamesNamespace, "data/computed/concordances.txt")
 
@@ -236,23 +244,8 @@ class GeonamesParser(
     })
   }
 
-  def doDeletes(names: List[String]) = {
-    val nameSet = new scala.collection.mutable.HashSet() ++ names.toSet
-    // val newNameSet = new scala.collection.mutable.HashSet() ++ names.toSet
-    deletesList.foreach(delete => {
-      nameSet.foreach(name => {
-        nameSet += name.replace(delete, "").split(" ").filterNot(_.isEmpty).mkString(" ")
-      })
-    })
-    nameSet.toList.filterNot(_.isEmpty)
-  }
-
   def addDisplayNameToNameIndex(dn: DisplayName, fid: StoredFeatureId, record: Option[GeocodeRecord]) {
     val name = NameNormalizer.normalize(dn.name)
-
-    if (nameDeleteTable.get(fid).exists(_ == dn.name)) {
-      return
-    }
 
     val pop: Int =
       record.flatMap(_.population).getOrElse(0) + record.flatMap(_.boost).getOrElse(0)
@@ -288,7 +281,7 @@ class GeonamesParser(
       )
 
     val preferredEnglishAltName = alternateNamesMap.getOrElse(geonameId, Nil).find(altName =>
-      altName.lang == "en" && altName.isPrefName
+      altName.lang == "en" // && altName.isPrefName
     )
 
     val hasPreferredEnglishAltName = preferredEnglishAltName.isDefined
@@ -298,10 +291,11 @@ class GeonamesParser(
     var displayNames: List[DisplayName] = Nil
 
     if (!preferredEnglishAltName.exists(_.name =? feature.name)) {
-      displayNames ++= processFeatureName(
+      displayNames ++= processFeatureName(geonameId,
         feature.countryCode, "en", feature.name,
         isPrefName = !hasPreferredEnglishAltName,
-        isShortName = false
+        isShortName = false,
+        woeType = feature.featureClass.woeType
       )
     }
 
@@ -327,30 +321,44 @@ class GeonamesParser(
     // Build names
     val aliasedNames: List[String] = aliasTable.get(geonameId)
 
-    // val allNames = feature.allNames ++ aliasedNames
-    // val allModifiedNames = rewriteNames(allNames)
-    // val normalizedNames = (allNames ++ allModifiedNames).map(n => NameNormalizer.normalize(n))
-    // normalizedNames.toSet.toList.filterNot(_.isEmpty)
-
-    aliasedNames.foreach(n =>
-      displayNames ::= DisplayName("en", n, FeatureNameFlags.ALT_NAME.getValue)
-    )
+    aliasedNames.foreach(n => {
+      val parts = n.split(",")
+      val name: String = parts(0)
+      val lang: String = parts.lift(1).getOrElse("en")
+      displayNames ::= DisplayName(lang, name, FeatureNameFlags.ALT_NAME.getValue)
+    })
 
     val englishName = preferredEnglishAltName.getOrElse(feature.name)
     val alternateNames = alternateNamesMap.getOrElse(geonameId, Nil).filterNot(n =>
       (n.name == englishName) && (n.lang != "en")
     )
-    displayNames ++= alternateNames.flatMap(altName => {
-      processFeatureName(
-        feature.countryCode, altName.lang, altName.name, altName.isPrefName, altName.isShortName)
+
+    val altNames = alternateNames.flatMap(altName => {
+      processFeatureName(geonameId,
+        feature.countryCode, altName.lang, altName.name,
+        isPrefName=altName.isPrefName,
+        isShortName=altName.isShortName,
+        isColloquial=altName.isColloquial,
+        isHistoric=altName.isHistoric,
+        woeType = feature.featureClass.woeType)
     })
+    val (deaccentedFeatureNames, nonDeaccentedFeatureNames) = altNames.partition(n => (n.flags & FeatureNameFlags.DEACCENT.getValue) > 0)
+    val nonDeaccentedNames: Set[String] = nonDeaccentedFeatureNames.map(_.name).toSet
+    displayNames ++= nonDeaccentedFeatureNames
+    displayNames ++= deaccentedFeatureNames.filterNot(n => nonDeaccentedNames.has(n.name))
+
 
     // the admincode is the internal geonames admin code, but is very often the
     // same short name for the admin area that is actually used in the country
+    def isAllDigits(x: String) = x forall Character.isDigit
 
     if (feature.featureClass.isAdmin1 || feature.featureClass.isAdmin2) {
-      displayNames ++= feature.adminCode.toList.map(code => {
-        DisplayName("abbr", code, FeatureNameFlags.ABBREVIATION.getValue)
+      displayNames ++= feature.adminCode.toList.flatMap(code => {
+        if (!isAllDigits(code)) {
+          Some(DisplayName("abbr", code, FeatureNameFlags.ABBREVIATION.getValue))
+        } else {
+          Some(DisplayName("", code, FeatureNameFlags.NEVER_DISPLAY.getValue))
+        }
       })
     }
 
@@ -451,6 +459,8 @@ class GeonamesParser(
       attributesBuilder.neighborhoodType(NeighborhoodType.findByNameOrNull(v))
     )
 
+    val extraRelations = extraRelationsList.get(geonameId).map(_.split(",").toList.map(_.toLong)).flatten
+
     val record = GeocodeRecord(
       _id = geonameId.longId,
       ids = ids.map(_.longId),
@@ -468,7 +478,8 @@ class GeonamesParser(
       canGeocode = canGeocode,
       slug = slug,
       polygon = polygonExtraEntry.map(wkbWriter.write),
-      hasPoly = polygonExtraEntry.map(e => true)
+      hasPoly = polygonExtraEntry.map(e => true),
+      extraRelations = extraRelations
     )
 
     if (attributesSet) {
@@ -538,15 +549,57 @@ class GeonamesParser(
     alternateNamesMap = AlternateNamesReader.readAlternateNamesFiles(files)
   }
 
+  def doShorten(cc: String, name: String): List[String] = {
+    val candidates = shortensList.flatMap({case (countryRestricts, shorten) => {
+      if (countryRestricts.has(cc) || countryRestricts =? List("*")) {
+        val newName = name.replaceAll(shorten + "\\b", "").split(" ").filterNot(_.isEmpty).mkString(" ")
+        if (newName != name) {
+          Some(newName)
+        } else {
+          None
+        }
+      } else {
+        None
+      }
+    }})
+
+    candidates.sortBy(_.size).headOption.toList
+  }
+
+  def hackName(
+    lang: String,
+    name: String,
+    cc: String,
+    woeType: YahooWoeType
+  ): List[String] = {
+    // HACK(blackmad): TODO(blackmad): move these to data files
+    if (woeType == YahooWoeType.ADMIN1 && cc == "JP" && (lang == "en" || lang == "")) {
+      List(name + " Prefecture")
+    } else if (woeType == YahooWoeType.TOWN && cc == "TW" && (lang == "en" || lang == "")) {
+      List(name + " County")
+    // Region Lima -> Lima Region
+    } else if (woeType == YahooWoeType.ADMIN1 && cc == "PE" && name.startsWith("Region")) {
+      List(name.replace("Region", "").trim + " Region")
+    } else {
+      Nil
+    }
+  }
+
   def processFeatureName(
+    fid: StoredFeatureId,
     cc: String,
     lang: String,
     name: String,
-    isPrefName: Boolean,
-    isShortName: Boolean): List[DisplayName] = {
-    if (lang != "post") {
+    isPrefName: Boolean = false,
+    isShortName: Boolean = false,
+    isColloquial: Boolean = false,
+    isHistoric: Boolean = false,
+    woeType: YahooWoeType): List[DisplayName] = {
+    if (lang != "post" && !nameDeleteTable.get(fid).exists(_ =? name)) {
       val originalNames = List(name)
+      val hackedNames = hackName(lang, name, cc, woeType)
       val (deaccentedNames, allModifiedNames) = rewriteNames(originalNames)
+      val shortenedNames = doShorten(cc, name)
 
       def buildDisplayName(name: String, flags: Int) = {
         DisplayName(lang, name, flags)
@@ -561,17 +614,45 @@ class GeonamesParser(
           if (isLocalLang(lang)) {
             finalFlags |= FeatureNameFlags.LOCAL_LANG.getValue
           }
+          if (isHistoric) {
+            finalFlags |= FeatureNameFlags.HISTORIC.getValue
+          }
+          if (isColloquial) {
+            finalFlags |= FeatureNameFlags.COLLOQUIAL.getValue
+          }
+
           buildDisplayName(n, finalFlags)
         })
       }
 
-      val originalFlags = if (isPrefName) {
-        FeatureNameFlags.PREFERRED.getValue
-      } else { 0 }
+      val originalFlags = {
+        val prefFlag = if (isPrefName) {
+          FeatureNameFlags.PREFERRED.getValue
+        } else {
+          0
+        }
+
+        val shortFlag = if (isShortName) {
+          FeatureNameFlags.SHORT_NAME.getValue
+        } else {
+          0
+        }
+
+        val hasDemotedName = nameDemoteTable.get(fid).exists(_ =? name)
+        val lowQualityFlag = if (hasDemotedName) {
+          FeatureNameFlags.LOW_QUALITY.getValue
+        } else {
+          0
+        }
+
+        shortFlag | prefFlag | lowQualityFlag
+      }
 
       processNameList(originalNames, originalFlags) ++
+      processNameList(shortenedNames, originalFlags | FeatureNameFlags.SHORT_NAME.getValue) ++
       processNameList(deaccentedNames, originalFlags | FeatureNameFlags.DEACCENT.getValue) ++
-      processNameList(allModifiedNames, originalFlags | FeatureNameFlags.ALIAS.getValue)
+      processNameList(allModifiedNames, originalFlags | FeatureNameFlags.ALIAS.getValue) ++
+      processNameList(hackedNames, originalFlags | FeatureNameFlags.ALIAS.getValue)
     } else {
       Nil
     }

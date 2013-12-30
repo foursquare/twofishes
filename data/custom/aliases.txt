@@ -35,5 +35,25 @@
 4929023|Amherst
 4930396|The Berkshires
 4930396|Berkshires
+# this first one is the city and probably wrong
 1642903|DKI Jakarta
+1642907|DKI Jakarta
 1642903|Jakarta Capital Region
+498817|город Санкт-Петербург,ru
+5202009|город Москва
+1733046|WP Kuala Lumpur
+# tokyo metropolitan region -- aliasing to tokyo for now
+1850147|東京都
+# kiev short name
+703447|м. Київ
+# Gyeonggi-do SK
+1841610|경기도,ko
+8581443|Tangerang Selatan
+# Bogota DC
+3688685|D C
+# Washington DC
+4138106|D C
+# Orange Free State, ZA
+967573|Free State
+5009004|Sault Sainte Marie
+2800867|Brussels Capital Region

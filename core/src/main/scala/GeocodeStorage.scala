@@ -2,6 +2,8 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.util.StoredFeatureId
+import com.foursquare.twofishes.Identity._
+import com.foursquare.twofishes.util.Lists.Implicits._
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory}
 import com.vividsolutions.jts.io.WKBReader
 import java.nio.ByteBuffer
@@ -56,7 +58,8 @@ case class GeocodeRecord(
   slug: Option[String] = None,
   polygon: Option[Array[Byte]] = None,
   hasPoly: Option[Boolean] = None,
-  var attributes: Option[Array[Byte]] = None
+  var attributes: Option[Array[Byte]] = None,
+  extraRelations: List[Long]
 ) extends Ordered[GeocodeRecord] {
   val factory = new TCompactProtocol.Factory()
   val serializer = new TSerializer(factory)
@@ -90,6 +93,28 @@ case class GeocodeRecord(
 
   def compare(that: GeocodeRecord): Int = {
     YahooWoeTypes.getOrdering(this.woeType) - YahooWoeTypes.getOrdering(that.woeType)
+  }
+
+  def fixRomanianName(s: String) = {
+    val romanianTranslationTable = List(
+      // cedilla -> comma
+      "Ţ" -> "Ț",
+      "Ş" -> "Ș",
+      // tilde and caron to breve
+      "Ã" -> "Ă",
+      "Ǎ" -> "Ă"
+    ).flatMap({case (from, to) => {
+      List(
+        from.toLowerCase -> to.toLowerCase,
+        from.toUpperCase -> to.toUpperCase
+      )
+    }})
+
+    var newS = s
+    romanianTranslationTable.foreach({case (from, to) => {
+      newS = newS.replace(from, to)
+    }})
+    newS
   }
 
   def toGeocodeServingFeature(): GeocodeServingFeature = {
@@ -155,23 +180,7 @@ case class GeocodeRecord(
       }
     })
 
-    val filteredNames: List[DisplayName] = displayNames.filterNot(n => List("post", "link").contains(n.lang))
-    var hackedNames: List[DisplayName] = Nil
-
-    // HACK(blackmad)
-    if (this.woeType == YahooWoeType.ADMIN1 && cc == "JP") {
-      hackedNames ++=
-        filteredNames.filter(n => n.lang == "en" || n.lang == "" || n.lang == "alias")
-          .map(n => DisplayName(n.lang, n.name + " Prefecture", FeatureNameFlags.ALIAS.getValue))
-    }
-
-    if (this.woeType == YahooWoeType.TOWN && cc == "TW") {
-      hackedNames ++=
-        filteredNames.filter(n => n.lang == "en" || n.lang == "" || n.lang == "alias")
-          .map(n => DisplayName(n.lang, n.name + " County", FeatureNameFlags.ALIAS.getValue))
-    }
-
-    val allNames = filteredNames ++ hackedNames
+    val allNames: List[DisplayName] = displayNames.filterNot(n => List("post", "link").contains(n.lang))
 
     val nameCandidates = allNames.map(name => {
       var flags: List[FeatureNameFlags] = Nil
@@ -185,12 +194,55 @@ case class GeocodeRecord(
         }
       })
 
-      FeatureName.newBuilder.name(name.name).lang(name.lang).flags(flags).result
+      FeatureName.newBuilder.name(name.name).lang(name.lang)
+        .applyIf(flags.nonEmpty, _.flags(flags))
+        .result
     })
 
-    val finalNames = nameCandidates
-      .groupBy(n => "%s%s%s".format(n.lang, n.name, n.flags))
-      .flatMap({case (k,v) => v.headOption})
+    var finalNames = nameCandidates
+      .groupBy(n => "%s%s".format(n.lang, n.name))
+      .flatMap({case (k,values) => {
+        var allFlags = values.flatMap(_.flags)
+
+        // If we collapsed multiple names, and not all of them had ALIAS,
+        // then we should strip off that flag because some other entry told
+        // us it didn't deserve to be ranked down
+        if (values.size > 1 && values.exists(n => !n.flags.has(FeatureNameFlags.ALIAS))) {
+          allFlags = allFlags.filterNot(_ =? FeatureNameFlags.ALIAS)
+        }
+
+        values.headOption.map(_.copy(flags = allFlags.distinct))
+      }})
+      .map(n => {
+        if (n.lang == "ro") {
+          n.copy(
+            name = fixRomanianName(n.name)
+          )
+        } else {
+          n
+        }
+      })
+
+    // Lately geonames has these stupid JP aliases, like "Katsuura Gun" for "Katsuura-gun"
+    if (cc =? "JP" || cc =? "TH") {
+      def isPossiblyBad(s: String): Boolean = {
+        s.contains(" ") && s.split(" ").forall(_.headOption.exists(Character.isUpperCase))
+      }
+
+      def makeBetterName(s: String): String = {
+        val parts = s.split(" ")
+        val head = parts.headOption
+        val rest = parts.drop(1)
+        (head.toList ++ rest.map(_.toLowerCase)).mkString("-")
+      }
+
+      val enNames = finalNames.filter(_.lang == "en")
+      enNames.foreach(n => {
+        if (isPossiblyBad(n.name)) {
+          finalNames = finalNames.filterNot(_.name =? makeBetterName(n.name))
+        }
+      })
+    }
 
     val feature = GeocodeFeature.newBuilder
       .cc(cc)
@@ -208,6 +260,7 @@ case class GeocodeRecord(
       .boost(boost)
       .population(population)
       .parentIds(parents)
+      .applyIf(extraRelations.nonEmpty, _.extraRelationIds(extraRelations))
       .hasPoly(hasPoly)
 
     if (!canGeocode) {

@@ -19,10 +19,13 @@ import org.apache.thrift.protocol.TCompactProtocol
 import org.bson.types.ObjectId
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.WKBReader
-import scalaj.collection.Implicits._
 import com.weiglewilczek.slf4s.Logging
+import scalaj.collection.Implicits._
 
-class HFileStorageService(basepath: String, shouldPreload: Boolean) extends GeocodeStorageReadService with Logging {
+class HFileStorageService(originalBasepath: String, shouldPreload: Boolean) extends GeocodeStorageReadService with Logging {
+  // Do this to ensure that our data doesn't get rewritten out from under us if we're pointing at a symlink
+  val basepath = new File(originalBasepath).getCanonicalPath()
+
   val nameMap = new NameIndexHFileInput(basepath, shouldPreload)
   val oidMap = new GeocodeRecordMapFileInput(basepath, shouldPreload)
   val geomMapOpt = GeometryMapFileInput.readInput(basepath, shouldPreload)
@@ -224,12 +227,16 @@ class NameIndexHFileInput(basepath: String, shouldPreload: Boolean) {
   }
 
   def getPrefix(name: String): Seq[StoredFeatureId] = {
-    prefixMapOpt match {
+    val seq = prefixMapOpt match {
       case Some(prefixMap) if (name.length <= prefixMap.maxPrefixLength) =>
         prefixMap.get(name)
       case _  =>
         nameIndex.lookupPrefix(name).flatten
     }
+    if (seq.size > 2000) {
+      throw new Exception("too many matches")
+    }
+    seq
   }
 }
 

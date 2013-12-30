@@ -119,27 +119,34 @@ class QueryLoggingGeocodeServerImpl(service: Geocoder.ServiceIface) extends Geoc
 
 class GeocodeServerImpl(store: GeocodeStorageReadService, doWarmup: Boolean) extends Geocoder.ServiceIface with Logging {
   if (doWarmup) {
-    var lines = new BufferedSource(getClass.getResourceAsStream("/warmup/geocodes.txt")).getLines.take(10000).toList
+    for {
+      time <- 0.to(5)
+    } {
+      var lines = new BufferedSource(getClass.getResourceAsStream("/warmup/geocodes.txt")).getLines.take(10000).toList
 
-    logger.info("Warming up by geocoding %d queries".format(lines.size))
-    lines.zipWithIndex.foreach({ case (line, index) => {
-      if (index % 1000 == 0) {
-        logger.info("finished %d queries".format(index))
-      }
-      new GeocodeRequestDispatcher(store).geocode(GeocodeRequest.newBuilder.query(line).result)
-    }})
-    logger.info("done")
+      logger.info("Warming up by geocoding %d queries".format(lines.size))
+      lines.zipWithIndex.foreach({ case (line, index) => {
+        if (index % 1000 == 0) {
+          logger.info("finished %d queries".format(index))
+        }
+        new GeocodeRequestDispatcher(store).geocode(GeocodeRequest.newBuilder.query(line).result)
+      }})
+      logger.info("done")
 
-    val revgeoLines = new BufferedSource(getClass.getResourceAsStream("/warmup/revgeo.txt")).getLines.take(10000).toList
-    logger.info("Warming up by reverse geocoding %d queries".format(lines.size))
-    revgeoLines.zipWithIndex.foreach({ case (line, index) => {
-      if (index % 1000 == 0) {
-        logger.info("finished %d queries".format(index))
-      }
-      val parts = line.split(",")
-      new ReverseGeocoderImpl(store, GeocodeRequest.newBuilder.ll(GeocodePoint(parts(0).toDouble, parts(1).toDouble)).result).reverseGeocode()
-    }})
+      val revgeoLines = new BufferedSource(getClass.getResourceAsStream("/warmup/revgeo.txt")).getLines.take(10000).toList
+      logger.info("Warming up by reverse geocoding %d queries".format(lines.size))
+      revgeoLines.zipWithIndex.foreach({ case (line, index) => {
+        if (index % 1000 == 0) {
+          logger.info("finished %d queries".format(index))
+        }
+        val parts = line.split(",")
+        new ReverseGeocoderImpl(store, GeocodeRequest.newBuilder.ll(GeocodePoint(parts(0).toDouble, parts(1).toDouble)).result).reverseGeocode()
+      }})
+    }
     logger.info("done")
+    val labels = Stats.getLabels()
+    Stats.clearAll()
+    labels.foreach({case (k, v) => Stats.setLabel(k, v)})
   }
 
   val queryFuturePool = FuturePool(StatsWrappedExecutors.create(24, 100, "geocoder"))

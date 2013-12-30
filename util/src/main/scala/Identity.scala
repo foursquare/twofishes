@@ -3,6 +3,7 @@ package com.foursquare.twofishes
 sealed class Identity[A](protected val _value: A) {
   def =?(other: A) = _value == other
   def !=?(other: A) = _value != other
+  def applyIf[B >: A](pred: Boolean, f: A => B): B = if (pred) f(_value) else _value
 }
 
 object Identity {

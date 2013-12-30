@@ -24,16 +24,18 @@ parser.add_option("--reload", dest="reload_data",  action="store_true", default=
 parser.add_option("--noreload", dest="reload_data",  action="store_false", help="don't reload data into mongo")
 
 
-
 (options, args) = parser.parse_args()
 
-basepath = '.'
+basepath = ''
 if len(args) != 0:
   if not args[0].startswith("-"):
     basepath = args[0]
     args = args[1:]
 now_str = str(datetime.datetime.now()).replace(' ', '-').replace(':', '-')
-basepath = os.path.join(basepath, now_str)
+
+if not os.path.exists('indexes'):
+  os.mkdir('indexes')
+basepath = os.path.join('indexes', basepath, now_str)
 print "outputting index to %s" % basepath
 os.mkdir(basepath)
 

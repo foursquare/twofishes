@@ -47,6 +47,9 @@ class QueryParser(logger: TwofishesLogger) {
       Stats.incr("too_many_tokens", 1)
       throw new Exception("too many tokens")
     }
+    if (originalTokens.exists(_ == "http")) {
+      throw new Exception("don't support url queries")
+    }
 
     ParseParams(
       tokens = tokens,

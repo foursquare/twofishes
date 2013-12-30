@@ -1,16 +1,98 @@
 <html>
-  Welcome to twofishes!
-  <br/>
-  <img src="/static/twofishes2.png" height="100"/>
-  </P>
-  To start exploring the server, you might want to check out the interactive interfaces
-  <a href="/static/autocomplete.html">autocomplete</a> and
-  <a href="/static/geocoder.html">forward & reverse geocoding</a>
-  </P>
-  You can also treat this server as a json interface, either by hitting the "/" endpoint with get parameters,
-  such as <a href="/?query=nyc">/?query=nyc</a> or <a href="/?ll=40.74,-74.0">/?ll=40.74,-74.0</a>.
-  <br>
-  Or by hitting endpoints at /geocode, /reverseGeocode, /bulkReverseGeocode and /bulkSlugLookup that take pretty printed json requests as input
-  <a href="/search/geocode?json={%22query%22 : %22London, UK%22}">like so</a>
+<head>
+<style>
+  body {
+    background: #3B332F;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+ 
+  .container {
+    background: #ecdac7;
+    width: 600px;
+    margin: 20px auto;
+    line-height: 21px;
+    color: #3B332F;
+    border-radius: 12px;
+    padding: 20px;
+  }
+ 
+  .header {
+    text-align: center;
+  }
+
+  div.logo {
+    text-align: center;
+  }
+
+  .logo img {
+    height: 120px;
+  }
+
+  .footer {
+    padding-top: 10px;
+  }
+
+  .foursquarelogo {
+    height: 21px;
+  }
+  
+  ul {
+    list-style-type: none;
+  }
+
+  ul.gettingStarted {
+  }
+  
+  .gettingStarted li {
+    padding: 3px;
+  }
+
+  a {
+    text-decoration: none;
+  }
+
+</style>
+</head>
+<body>
+  <div class="container">
+	  <h1 class="header">
+	     Welcome to Twofishes!
+	  </h1>
+	 
+          <div class="logo"> 
+		  <img src="/static/twofishes2.png"/>
+          </div>
+
+          <h2>HTTP Interfaces</h2>
+   
+          <ul class="gettingStarted">
+	    <li> Debug interfaces for <a href="/static/autocomplete.html">autocomplete</a> and
+	  <a href="/static/geocoder.html">forward & reverse geocoding</a>
+	  
+            <li>REST-y GET interface at "/" like <a href="/?query=nyc">/?query=nyc</a> or <a href="/?ll=40.74,-74.0">/?ll=40.74,-74.0</a>.
+	  <li>Thrift-json GET/POST interfaces at /geocode, /reverseGeocode, /bulkReverseGeocode and /bulkSlugLookup that take
+          <a href="/search/geocode?json={%22query%22 : %22London, UK%22}">
+            pretty printed json requests as input
+          </a>
+          </ul>
+
+          <h2>Documentation</h2>
+             <ul>
+               <a href="https://github.com/foursquare/twofishes/blob/master/docs/twofishes_requests.md">Twofish request documentation</a>
+             </ul>
+
+          <h2>Acknowledgements</h2>
+             <ul>
+	       <li>Source code on <a href="https://github.com/foursquare/twofishes">github</a>
+               <li>Prebuilt indexes at <a href="http://twofishes.net">twofishes.net</a>
+	       <li>Based on data from <a href="http://geonames.org">geonames</a> and <a href="http://quattroshapes.com">quattroshapes</a>
+               <li>Polygon data copyright <a href="https://github.com/foursquare/quattroshapes/blob/master/LICENSE.md">numerous agencies</a>
+             </ul>
+	  
+          <div class="footer">
+	     Developed and maintained by <a href="http://foursquare.com"><img class="foursquarelogo" src="https://playfoursquare.s3.amazonaws.com/press/logo/foursquare-logo.png"/></a>.
+	  </div>
+  </div>
+</body>
 </html>
 

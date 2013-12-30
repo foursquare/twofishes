@@ -3,7 +3,7 @@ package com.foursquare.twofishes
 
 import collection.JavaConverters._
 import com.foursquare.twofishes.importers.geonames._
-import com.foursquare.twofishes.util.{GeonamesId, StoredFeatureId}
+import com.foursquare.twofishes.util.{GeonamesNamespace, GeonamesId, StoredFeatureId}
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTReader, WKTWriter}
 import org.bson.types.ObjectId
@@ -36,9 +36,33 @@ class IndexerSpec extends Specification {
   val parser = new GeonamesParser(store, slugIndexer, Map.empty)
 
   "processFeatureName" in {
-    val names = parser.processFeatureName("US", "en", "New York", false, false)
+    val names = parser.processFeatureName(
+      StoredFeatureId(GeonamesNamespace, "11111"),
+      "US", "en", "New York", false, false, woeType = YahooWoeType.TOWN)
     names.size mustEqual 1
   }
+
+  "processFeatureName deletes" in {
+    val names = parser.processFeatureName(
+    StoredFeatureId(GeonamesNamespace, "2511174"),
+      "US", "en", "Tenerife", false, false, woeType = YahooWoeType.TOWN)
+    names.size mustEqual 0
+  }
+
+  "processFeatureName demotes" in {
+    val names = parser.processFeatureName(
+      StoredFeatureId(GeonamesNamespace, "1566083"),
+      "US", "en", "HCMC", false, false, woeType = YahooWoeType.TOWN)
+    names.size mustEqual 1
+    names(0).flags & FeatureNameFlags.LOW_QUALITY.getValue must be_>(0)
+  }
+
+  "processFeatureName demotes" in {
+    val names = parser.doShorten("PH", "Province of Leyte")
+    names.size mustEqual 1
+    names(0) mustEqual "Leyte"
+  }
+
 
   "name deduping works" in {
     val fid = GeonamesId(1)
@@ -51,10 +75,39 @@ class IndexerSpec extends Specification {
         DisplayName("en", "San Francisco County", 0),
         DisplayName("en", "San Francisco", 0)
       ),
-      Nil, None)
+      Nil, None,
+      extraRelations = Nil)
+
+    val feature = record.toGeocodeServingFeature.feature
+    feature.names.size aka feature.names.toString mustEqual 2
+  }
+
+  def nameFlagsMustEqual(names: Seq[FeatureName], name: String, flags: FeatureNameFlags*) {
+    val foundName = names.filter(_.name == name)
+    foundName.size aka foundName.toString mustEqual 1
+    foundName(0).flags.toSet mustEqual flags.toSet
+  }
+
+  "alias flag removal works" in {
+    val fid = GeonamesId(1)
+    val record = GeocodeRecord(fid.longId,
+      List(fid.longId),
+      Nil, "", 0, 0.0, 0.0,
+      List(
+        DisplayName("en", "South Carolina", FeatureNameFlags.PREFERRED.getValue),
+        DisplayName("en", "South Carolina", FeatureNameFlags.ALIAS.getValue),
+        DisplayName("en", "S Carolina", FeatureNameFlags.ALIAS.getValue),
+        DisplayName("en", "S Carolina", FeatureNameFlags.ALIAS.getValue),
+        DisplayName("en", "Stupid Carolina", FeatureNameFlags.ALIAS.getValue)
+      ),
+      Nil, None,
+      extraRelations = Nil)
 
     val feature = record.toGeocodeServingFeature.feature
     feature.names.size aka feature.names.toString mustEqual 3
+    nameFlagsMustEqual(feature.names, "South Carolina", FeatureNameFlags.PREFERRED)
+    nameFlagsMustEqual(feature.names, "S Carolina", FeatureNameFlags.ALIAS)
+    nameFlagsMustEqual(feature.names, "Stupid Carolina", FeatureNameFlags.ALIAS)
   }
 
   "rewrites work" in {
@@ -139,7 +192,8 @@ class IndexerSpec extends Specification {
       parents = Nil,
       population = None,
       polygon = Some(geomBytes),
-      hasPoly = Some(true))
+      hasPoly = Some(true),
+      extraRelations = Nil)
 
     indexer.calculateCoverForRecord(record, out, new HashMap[Long, Geometry])
 

@@ -11,7 +11,9 @@ case class AlternateNameEntry(
   lang: String,
   name: String,
   isPrefName: Boolean,
-  isShortName: Boolean
+  isShortName: Boolean,
+  isHistoric: Boolean,
+  isColloquial: Boolean
 )
 
 object AlternateNamesReader extends SimplePrintLogger {
@@ -36,6 +38,8 @@ object AlternateNamesReader extends SimplePrintLogger {
               val name = parts(3)
               val isPrefName = parts.lift(4).exists(_ == "1")
               val isShortName = parts.lift(5).exists(_ == "1")
+              val isColloquial = parts.lift(6).exists(_ == "1")
+              val isHistoric = parts.lift(7).exists(_ == "1")
 
               StoredFeatureId.fromHumanReadableString(geonameid, Some(GeonamesNamespace)).foreach(fid => {
                 val names = alternateNamesMap.getOrElseUpdate(fid, Nil)
@@ -44,7 +48,9 @@ object AlternateNamesReader extends SimplePrintLogger {
                   name = name,
                   lang = lang,
                   isPrefName = isPrefName,
-                  isShortName = isShortName
+                  isShortName = isShortName,
+                  isColloquial = isColloquial,
+                  isHistoric = isHistoric
                 ) :: names
               })
             }

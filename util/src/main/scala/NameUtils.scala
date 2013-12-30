@@ -169,12 +169,12 @@ trait NameUtils {
   // Given an optional language and an abbreviation preference, find the best name
   // for a feature in the current context.
   class FeatureNameScorer(lang: Option[String], preferAbbrev: Boolean) {
-    def scoreName(name: FeatureName): Int = {
-      var score = 0
+    def scoreName(name: FeatureName): Double = {
+      var score = 0.0
 
       lang match {
         case Some(l) if name.lang == l =>
-          score += 2
+          score += 40
         case _ =>
           ()
       }
@@ -184,18 +184,32 @@ trait NameUtils {
         while (it.hasNext) {
           val flag = it.next
           score += (flag match {
-            case FeatureNameFlags.COLLOQUIAL => 10
-            case FeatureNameFlags.PREFERRED => 1
+            case FeatureNameFlags.HISTORIC => -100
+            case FeatureNameFlags.COLLOQUIAL => {
+              // by itself, colloquial tends to be stupid things like "Frisco" for SF
+              if (name.flags.size == 1) {
+                -1
+              } else {
+              // With other things, it helps, especially countries
+                1
+              }
+            }
+            case FeatureNameFlags.SHORT_NAME => 11
+            case FeatureNameFlags.NEVER_DISPLAY => -10000
+            case FeatureNameFlags.LOW_QUALITY => -20
+            case FeatureNameFlags.PREFERRED => 5
             case FeatureNameFlags.ALIAS => -1
             case FeatureNameFlags.DEACCENT => -1
             case FeatureNameFlags.ABBREVIATION => {
-              if (preferAbbrev && !name.name.matches("\\d+") ) { 4 } else { 0 }
+              if (preferAbbrev) { 1000 } else { 0 }
             }
-            case FeatureNameFlags.ALT_NAME => 0
-            case FeatureNameFlags.LOCAL_LANG => 0
+            case FeatureNameFlags.ALT_NAME => -1
+            case FeatureNameFlags.LOCAL_LANG => 5
           })
         }
       }
+
+      score -= name.name.size * 0.0001
 
       score
     }
@@ -214,7 +228,7 @@ trait NameUtils {
         f.woeTypeOption.exists(_ =? YahooWoeType.ADMIN1) &&
         (f.cc == "US" || f.cc == "CA")
       val scorer = new FeatureNameScorer(lang, modifiedPreferAbbrev)
-      var bestScore = 0
+      var bestScore = 0.0
       var bestName = names.headOption
       for {
         name <- names

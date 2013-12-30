@@ -10,6 +10,9 @@ case object GeonamesNamespace extends FeatureNamespace("geonameid", 1.toByte)
 case object GeonamesZipNamespace extends FeatureNamespace("geonamezip", 2.toByte)
 
 object FeatureNamespace {
+  // higher is better
+  val NamespaceOrdering = List(GeonamesNamespace, MaponicsNamespace)
+
   val values = List(GeonamesNamespace, MaponicsNamespace, GeonamesZipNamespace)
 
   def fromId(id: Byte): FeatureNamespace = fromIdOpt(id).getOrElse(
@@ -26,6 +29,9 @@ object FeatureNamespace {
 }
 
 sealed abstract class StoredFeatureId(val namespace: FeatureNamespace) {
+  // higher is better
+  def getOrdering(): Int = FeatureNamespace.NamespaceOrdering.indexOf(namespace)
+
   def namespaceSpecificId: Long
   def longId: Long = {
     val lower56 = ((namespaceSpecificId << 8) >> 8)

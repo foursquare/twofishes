@@ -10,6 +10,7 @@ object GeocoderBuild extends Build {
     organization := "com.foursquare.twofishes",
     name := "twofishes",
     version      := "0.80.4.1-cdh4.4",
+    version      := "0.80.5m-cdh4.4",
     crossScalaVersions := Seq("2.9.2", "2.10.2"),
     javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
     javacOptions in doc := Seq("-source", "1.6")

@@ -102,7 +102,8 @@ class AutocompleteGeocoderImpl(
               fid, parse.map(_.fmatch.longId))
           }
 
-          val isValid = parse.exists(_.fmatch.scoringFeatures.parentIds.has(fid)) &&
+          val isValid = (parse.exists(_.fmatch.scoringFeatures.parentIds.has(fid)) ||
+            parse.exists(_.fmatch.scoringFeatures.extraRelationIds.has(fid))) &&
             !parse.exists(_.fmatch.longId.toString == fid) &&
             featureMatch.possibleNameHits.exists(n => allowedLanguages.has(n.lang))
 

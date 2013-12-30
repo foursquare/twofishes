@@ -4,12 +4,15 @@
 import json
 import urllib
 import urllib2
+import re
 import sys
 import math
+import os
 import datetime
 import Queue
 import threading
 import traceback
+from collections import defaultdict
 from optparse import OptionParser
 
 # TODO: move this to thrift
@@ -17,6 +20,7 @@ from optparse import OptionParser
 parser = OptionParser(usage="%prog [input_file]")
 parser.add_option("-o", "--old", dest="serverOld")
 parser.add_option("-n", "--new", dest="serverNew")
+parser.add_option("-c", "--countMode", action="store_true", default=False, dest="inCountMode")
 (options, args) = parser.parse_args()
 
 if not options.serverOld:
@@ -29,14 +33,21 @@ if not options.serverNew:
   parser.print_usage()
   sys.exit(1)
 
-if len(args) != 1:
+if len(args) == 0:
   print 'weird number of remaining args'
   parser.print_usage()
   sys.exit(1)
 
 inputFile = args[0]
 
-outputFile = open('eval-%s.html' % datetime.datetime.now(), 'w')
+outputFilename = ('eval-%s.html' % datetime.datetime.now()).replace(' ', '_')
+
+if os.path.exists("eval-latest.html"):
+  os.unlink("eval-latest.html")
+os.symlink(outputFilename, "eval-latest.html")
+
+outputFile = open(outputFilename, 'w')
+outputFile.write('<meta charset="utf-8">')
 
 def getUrl(server, param):
   if not server.startswith('http'):
@@ -68,7 +79,7 @@ def earthDistance(lat_1, long_1, lat_2, long_2):
   dist = 3956 * c
   return dist
 
-evalLogDict = {}
+evalLogDict = defaultdict(lambda : defaultdict(list))
 queue = Queue.Queue()
 
 count = 0
@@ -82,6 +93,17 @@ class GeocodeFetch(threading.Thread):
     global count
     while True:
       line = self.queue.get()
+      lineCount = 1
+
+      if options.inCountMode:
+        m = re.match(r' *(\d+) (.*)', line)
+        if not m:
+          print('line did not conform to count mode: %s' % line)
+          self.queue.task_done()
+          continue
+        else:
+          line = m.group(2)
+          lineCount = int(m.group(1))
 
       if count % 100 == 0:
         print 'processed %d queries' % count
@@ -110,10 +132,16 @@ class GeocodeFetch(threading.Thread):
         else:
           return ''
 
-      def evallog(message):
+      def mkString(o):
+        if isinstance(o, basestring):
+          return o
+        # elif isinstance(o, list):
+        #   return ', '.join(o)
+        else:
+          return str(o)
+
+      def evallog(title, old = None, new = None):
         responseKey = '%s:%s' % (getId(responseOld), getId(responseNew))
-        if responseKey not in evalLogDict:
-          evalLogDict[responseKey] = []
 
         query = ''
         if 'query' in params:
@@ -123,16 +151,32 @@ class GeocodeFetch(threading.Thread):
         elif 'json' in params:
           query = params['json'][0]
 
-        if 'json' in params:
-          message = ('%s: %s<br>' % (query, message) +
-                   ' -- <a href="%s">OLD</a>' % (options.serverOld + param) +
-                   ' - <a href="%s">NEW</a><p>' % (options.serverNew + param))
-        else:
-          message = ('%s: <b>%s</b><br>' % (query, message) +
-                   ' -- <a href="%s">OLD</a>' % (options.serverOld + '/static/geocoder.html#' + param_str) +
-                   ' - <a href="%s">NEW</a><p>' % (options.serverNew + '/static/geocoder.html#' + param_str))
+        extraTitle = ''
+        # if we only got one extra argument, assume it's more info for the title
+        if old and not new:
+          extraTitle = old
+          old = ''
 
-        evalLogDict[responseKey].append(message)
+        oldMessage = ''
+        newMessage = ''
+        if old:
+          oldMessage = ': '  + mkString(old).encode('utf-8')
+        if new:
+          newMessage = ': ' + mkString(new).encode('utf-8')
+
+        if 'json' in params:
+          message = ('%s: %s %s<ul>' % (query, title, extraTitle) +
+                   '<li><a href="%s">OLD</a>%s ' % (options.serverOld + param, oldMessage) +
+                   '<li><a href="%s">NEW</a>%s' % (options.serverNew + param, newMessage) +
+                   '</ul>')
+        else:
+          message = ('%s: <b>%s</b><ul>' % (query, title) +
+                   '<li><a href="%s">OLD</a>%s' % (options.serverOld + '/static/geocoder.html#' + param_str, oldMessage) +
+                   '<li><a href="%s">NEW</a>%s' % (options.serverNew + '/static/geocoder.html#' + param_str, newMessage) +
+                    '</ul>')
+
+        for i in xrange(0, lineCount):
+          evalLogDict[title][responseKey].append(message)
 
       if (responseOld == None and responseNew == None):
         pass
@@ -151,18 +195,23 @@ class GeocodeFetch(threading.Thread):
       elif (len(responseOld['interpretations']) and len(responseNew['interpretations'])):
         interpA = responseOld['interpretations'][0]
         interpB = responseNew['interpretations'][0]
-        
-        oldIds = [str(interp['feature']['ids'][0]) for interp in responseOld['interpretations']]
-        newIds = [str(interp['feature']['ids'][0]) for interp in responseNew['interpretations']] 
 
-        if interpA['feature']['ids'] != interpB['feature']['ids'] and \
+        oldIds = [str(interp['feature']['ids'][0]) for interp in responseOld['interpretations']]
+        newIds = [str(interp['feature']['ids'][0]) for interp in responseNew['interpretations']]
+
+
+        if len(interpA['what']) < len(interpB['what']):
+          evallog('geocoded LESS', interpA['where'], interpB['where'])
+        elif len(interpA['what']) > len(interpB['what']):
+          evallog('geocoded MORE', interpA['where'], interpB['where'])
+        elif interpA['feature']['ids'] != interpB['feature']['ids'] and \
             interpA['feature']['woeType'] != 11 and \
             interpB['feature']['woeType'] != 11 and \
             interpA['feature']['ids'] != filter(lambda x: x['source'] != 'woeid', interpB['feature']['ids']):
        	  if set(oldIds) == set(newIds):
-            evallog('interp order changed %s -> %s' % (oldIds, newIds))
+            evallog('interp order changed', ', '.join(oldIds), ', '.join(newIds))
           else:
-            evallog('ids changed %s -> %s' % (interpA['feature']['ids'], interpB['feature']['ids']))
+            evallog('ids changed', interpA['feature']['ids'], interpB['feature']['ids'])
         else:
           geomA = interpA['feature']['geometry']
           geomB = interpB['feature']['geometry']
@@ -174,7 +223,7 @@ class GeocodeFetch(threading.Thread):
             centerB['lat'],
             centerB['lng'])
           if distance > 0.1:
-            evallog('moved by %s miles' % distance)
+            evallog('center moved', '%s miles' % distance)
           if 'bounds' in geomA and 'bounds' not in geomB:
             evallog('bounds in OLD, but not NEW')
           elif 'bounds' not in geomA and 'bounds' in geomB:
@@ -184,7 +233,7 @@ class GeocodeFetch(threading.Thread):
           elif (len(responseOld['interpretations']) != len(responseNew['interpretations'])):
             evallog('# of interpretations differ')
           elif interpA['feature']['displayName'] != interpB['feature']['displayName']:
-            evallog('displayName changed')
+            evallog('displayName changed', interpA['feature']['displayName'], interpB['feature']['displayName'])
 
       self.queue.task_done()
 
@@ -200,7 +249,12 @@ if __name__ == '__main__':
 
   queue.join()
 
-  for k in sorted(evalLogDict, key=lambda x: -1*len(evalLogDict[x])):
-    outputFile.write("%d changes\n<br/>" % len(evalLogDict[k]))
-    outputFile.write(evalLogDict[k][0])
+  for (sectionName, sectionDict) in evalLogDict.iteritems():
+    outputFile.write('<li><a href="#%s">%s</a>: %s changes' % (sectionName, sectionName, len(sectionDict)))
+
+  for (sectionName, sectionDict) in evalLogDict.iteritems():
+    outputFile.write('<a name="%s"><h2>%s</h2></a>' % (sectionName, sectionName))
+    for k in sorted(sectionDict, key=lambda x: -1*len(sectionDict[x])):
+      outputFile.write('%d changes\n<br/>' % len(sectionDict[k]))
+      outputFile.write(sectionDict[k][0])
 

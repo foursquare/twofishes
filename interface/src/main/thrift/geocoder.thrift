@@ -86,6 +86,14 @@ enum FeatureNameFlags {
   ALT_NAME = 32
 
   COLLOQUIAL = 64
+
+  SHORT_NAME = 128
+
+  NEVER_DISPLAY = 256
+
+  LOW_QUALITY = 512
+
+  HISTORIC = 1024
 }
 
 struct FeatureName {
@@ -150,6 +158,7 @@ struct ScoringFeatures {
   6: optional list<i64> parentIds = [],
   5: optional bool canGeocode = 1
   7: optional bool hasPoly = 0
+  8: optional list<i64> extraRelationIds = [],
 
   3: optional list<string> DEPRECATED_parents = [],
 }
@@ -177,6 +186,9 @@ struct GeocodeFeature {
   15: optional GeocodeFeatureAttributes attributes
 
   16: optional i64 longId
+  17: optional list<i64> longIds
+
+  18: optional list<i64> parentIds
 }
 
 struct GeocodeServingFeature {

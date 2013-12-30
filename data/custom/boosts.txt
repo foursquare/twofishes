@@ -18,3 +18,5 @@
 1650352|-4000000
 # boost amherst center (cdp) over amherst
 4929023|1000000
+# boost washington dc over bogota dc
+4138106|10000000

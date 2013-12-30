@@ -1,0 +1,31 @@
+ID|Provinsi
+*|Province du
+*|Province of
+*|Province de
+*|Province del
+*|Province of the
+*|Province
+*|Megye
+*|Estado de
+*|Estado del
+*|Estado de la
+*|Estado do
+*|Estado du
+*|State of
+*|State of the
+*|Gemeente
+*|Provincia de
+*|Región de la 
+*|Región de
+*|Región du
+*|Región del
+*|Región
+*|Provincie
+*|Област
+*|kraj
+*|Departamento del
+GR|Νομος
+GR|Nomós
+ID|Kota
+*|Obshtina
+*|Община
