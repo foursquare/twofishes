@@ -219,3 +219,10 @@
 8519952 unk|Chabany
 675809 en|Iași
 463835 ru|Зеленодольск
+# has a terrible name in geonames
+443093 en|Katzrin|PREFERRED
+443093 en|Qatzrin
+443093 en|Katsrin
+443093 en|Qatsrin
+443093 he|קַצְרִין
+
