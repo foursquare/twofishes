@@ -294,7 +294,8 @@ class GeonamesParser(
       displayNames ++= processFeatureName(geonameId,
         feature.countryCode, "en", feature.name,
         isPrefName = !hasPreferredEnglishAltName,
-        isShortName = false
+        isShortName = false,
+        woeType = feature.featureClass.woeType
       )
     }
 
@@ -338,7 +339,8 @@ class GeonamesParser(
         isPrefName=altName.isPrefName,
         isShortName=altName.isShortName,
         isColloquial=altName.isColloquial,
-        isHistoric=altName.isHistoric)
+        isHistoric=altName.isHistoric,
+        woeType = feature.featureClass.woeType)
     })
     val (deaccentedFeatureNames, nonDeaccentedFeatureNames) = altNames.partition(n => (n.flags & FeatureNameFlags.DEACCENT.getValue) > 0)
     val nonDeaccentedNames: Set[String] = nonDeaccentedFeatureNames.map(_.name).toSet
@@ -550,7 +552,10 @@ class GeonamesParser(
   def doShorten(cc: String, name: String): List[String] = {
     val candidates = shortensList.flatMap({case (countryRestricts, shorten) => {
       if (countryRestricts.has(cc) || countryRestricts =? List("*")) {
-        val newName = name.replaceAll(shorten + "\\b", "").split(" ").filterNot(_.isEmpty).mkString(" ")
+        val parts = shorten.split("\\|")
+        val toShortenFrom = parts(0)
+        val toShortenTo = parts.lift(1).getOrElse("")
+        val newName = name.replaceAll(toShortenFrom + "\\b", toShortenTo).split(" ").filterNot(_.isEmpty).mkString(" ")
         if (newName != name) {
           Some(newName)
         } else {
@@ -564,6 +569,25 @@ class GeonamesParser(
     candidates.sortBy(_.size).headOption.toList
   }
 
+  def hackName(
+    lang: String,
+    name: String,
+    cc: String,
+    woeType: YahooWoeType
+  ): List[String] = {
+    // HACK(blackmad): TODO(blackmad): move these to data files
+    if (woeType == YahooWoeType.ADMIN1 && cc == "JP" && (lang == "en" || lang == "")) {
+      List(name + " Prefecture")
+    } else if (woeType == YahooWoeType.TOWN && cc == "TW" && (lang == "en" || lang == "")) {
+      List(name + " County")
+    // Region Lima -> Lima Region
+    } else if (woeType == YahooWoeType.ADMIN1 && cc == "PE" && name.startsWith("Region")) {
+      List(name.replace("Region", "").trim + " Region")
+    } else {
+      Nil
+    }
+  }
+
   def processFeatureName(
     fid: StoredFeatureId,
     cc: String,
@@ -572,9 +596,11 @@ class GeonamesParser(
     isPrefName: Boolean = false,
     isShortName: Boolean = false,
     isColloquial: Boolean = false,
-    isHistoric: Boolean = false): List[DisplayName] = {
+    isHistoric: Boolean = false,
+    woeType: YahooWoeType): List[DisplayName] = {
     if (lang != "post" && !nameDeleteTable.get(fid).exists(_ =? name)) {
       val originalNames = List(name)
+      val hackedNames = hackName(lang, name, cc, woeType)
       val (deaccentedNames, allModifiedNames) = rewriteNames(originalNames)
       val shortenedNames = doShorten(cc, name)
 
@@ -628,7 +654,8 @@ class GeonamesParser(
       processNameList(originalNames, originalFlags) ++
       processNameList(shortenedNames, originalFlags | FeatureNameFlags.SHORT_NAME.getValue) ++
       processNameList(deaccentedNames, originalFlags | FeatureNameFlags.DEACCENT.getValue) ++
-      processNameList(allModifiedNames, originalFlags | FeatureNameFlags.ALIAS.getValue)
+      processNameList(allModifiedNames, originalFlags | FeatureNameFlags.ALIAS.getValue) ++
+      processNameList(hackedNames, originalFlags | FeatureNameFlags.ALIAS.getValue)
     } else {
       Nil
     }

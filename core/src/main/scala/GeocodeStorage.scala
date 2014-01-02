@@ -122,26 +122,28 @@ case class GeocodeRecord(
     val geometryBuilder = FeatureGeometry.newBuilder
       .center(GeocodePoint(lat, lng))
 
-    boundingbox.foreach(bounds => {
-      val currentBounds = (bounds.ne.lat, bounds.ne.lng, bounds.sw.lat, bounds.sw.lng)
+    if (polygon.isEmpty) {
+      boundingbox.foreach(bounds => {
+        val currentBounds = (bounds.ne.lat, bounds.ne.lng, bounds.sw.lat, bounds.sw.lng)
 
-      // This breaks at 180, I get that, to fix.
-      val finalBounds = (
-        List(bounds.ne.lat, bounds.sw.lat).max,
-        List(bounds.ne.lng, bounds.sw.lng).max,
-        List(bounds.ne.lat, bounds.sw.lat).min,
-        List(bounds.ne.lng, bounds.sw.lng).min
-      )
+        // This breaks at 180, I get that, to fix.
+        val finalBounds = (
+          List(bounds.ne.lat, bounds.sw.lat).max,
+          List(bounds.ne.lng, bounds.sw.lng).max,
+          List(bounds.ne.lat, bounds.sw.lat).min,
+          List(bounds.ne.lng, bounds.sw.lng).min
+        )
 
-      if (finalBounds != currentBounds) {
-        println("incorrect bounds %s -> %s".format(currentBounds, finalBounds))
-      }
+        if (finalBounds != currentBounds) {
+          println("incorrect bounds %s -> %s".format(currentBounds, finalBounds))
+        }
 
-      geometryBuilder.bounds(GeocodeBoundingBox(
-        GeocodePoint(finalBounds._1, finalBounds._2),
-        GeocodePoint(finalBounds._3, finalBounds._4)
-      ))
-    })
+        geometryBuilder.bounds(GeocodeBoundingBox(
+          GeocodePoint(finalBounds._1, finalBounds._2),
+          GeocodePoint(finalBounds._3, finalBounds._4)
+        ))
+      })
+    }
 
     displayBounds.foreach(bounds => {
       val currentBounds = (bounds.ne.lat, bounds.ne.lng, bounds.sw.lat, bounds.sw.lng)
@@ -180,32 +182,7 @@ case class GeocodeRecord(
       }
     })
 
-    val filteredNames: List[DisplayName] = displayNames.filterNot(n => List("post", "link").contains(n.lang))
-    var hackedNames: List[DisplayName] = Nil
-
-
-    // HACK(blackmad): TODO(blackmad): move these to data files
-    if (this.woeType == YahooWoeType.ADMIN1 && cc == "JP") {
-      hackedNames ++=
-        filteredNames.filter(n => n.lang == "en" || n.lang == "" || n.lang == "alias")
-          .map(n => DisplayName(n.lang, n.name + " Prefecture", FeatureNameFlags.ALIAS.getValue))
-    }
-
-    if (this.woeType == YahooWoeType.TOWN && cc == "TW") {
-      hackedNames ++=
-        filteredNames.filter(n => n.lang == "en" || n.lang == "" || n.lang == "alias")
-          .map(n => DisplayName(n.lang, n.name + " County", FeatureNameFlags.ALIAS.getValue))
-    }
-
-    // Region Lima -> Lima Region
-    if (this.woeType == YahooWoeType.ADMIN1 && cc == "PE") {
-      hackedNames ++=
-        filteredNames.filter(_.name.startsWith("Region")).map(n => {
-          DisplayName(n.lang, n.name.replace("Region", "").trim + " Region", FeatureNameFlags.ALIAS.getValue)
-        })
-    }
-
-    val allNames = filteredNames ++ hackedNames
+    val allNames: List[DisplayName] = displayNames.filterNot(n => List("post", "link").contains(n.lang))
 
     val nameCandidates = allNames.map(name => {
       var flags: List[FeatureNameFlags] = Nil

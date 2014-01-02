@@ -18,7 +18,7 @@
 2058645 en|Western Australia
 3337388 en|Flanders
 2638785 en|St Helens
-# from http://www.statoids.com/umx.html
+# MX states from http://www.statoids.com/umx.html
 4019231 en|Ags|SHORT_NAME
 4019231 abbr|AGU|ABBREVIATION,PREFERRED
 4019231 abbr|AG|ABBREVIATION

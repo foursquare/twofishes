@@ -166,6 +166,11 @@ object NameFormatter {
 }
 
 trait NameUtils {
+  def countryUsesStateAbbrev(cc: String) =
+    (cc == "US" || cc == "CA" || cc == "BR" || cc == "AU")
+  
+  def countryUsesState(cc: String) = countryUsesStateAbbrev(cc)
+
   // Given an optional language and an abbreviation preference, find the best name
   // for a feature in the current context.
   class FeatureNameScorer(lang: Option[String], preferAbbrev: Boolean) {
@@ -226,7 +231,7 @@ trait NameUtils {
     } else {
       val modifiedPreferAbbrev = preferAbbrev &&
         f.woeTypeOption.exists(_ =? YahooWoeType.ADMIN1) &&
-        (f.cc == "US" || f.cc == "CA")
+        countryUsesStateAbbrev(f.cc)
       val scorer = new FeatureNameScorer(lang, modifiedPreferAbbrev)
       var bestScore = 0.0
       var bestName = names.headOption
@@ -285,7 +290,7 @@ trait NameUtils {
 
       val modifiedPreferAbbrev = preferAbbrev &&
         f.woeTypeOption.exists(_ =? YahooWoeType.ADMIN1) &&
-        (f.cc == "US" || f.cc == "CA")
+        countryUsesStateAbbrev(f.cc)
 
       val bestNameMatch = bestNameFromList(f, nameCandidates, lang, modifiedPreferAbbrev)
 

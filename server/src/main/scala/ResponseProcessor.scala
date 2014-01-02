@@ -205,7 +205,7 @@ class ResponseProcessor(
     parentsToUse.appendAll(
       parents.filter(p => p.feature.woeType == YahooWoeType.TOWN))
 
-    if (f.cc == "US" || f.cc == "CA") {
+    if (NameUtils.countryUsesState(f.cc)) {
       parentsToUse.appendAll(
         parents.filter(p => p.feature.woeType == YahooWoeType.ADMIN1))
     }
@@ -243,9 +243,8 @@ class ResponseProcessor(
         namesToUse = partsToUse.flatMap({case(fmatchOpt, servingFeature) => {
           // awful hack because most states outside the US don't actually
           // use their abbrev names
-          val inUsOrCA = servingFeature.feature.cc == "US" ||  servingFeature.feature.cc == "CA"
           val name = bestNameWithMatch(servingFeature.feature, Some(req.lang),
-            preferAbbrev = (i != 0 && inUsOrCA),
+            preferAbbrev = (i != 0 && NameUtils.countryUsesStateAbbrev(servingFeature.feature.cc)),
             fmatchOpt.map(_.phrase))
           i += 1
           name

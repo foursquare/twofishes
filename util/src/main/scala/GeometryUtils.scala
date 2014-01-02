@@ -67,6 +67,10 @@ object GeometryUtils {
   }
 
   def s2Polygon(geomCollection: Geometry) = {
+    if (geomCollection.getCoordinates().toList.exists(c => c.y > 90 || c.y < -90)) {
+      throw new Exception("Geometry trying to cross a pole, can't handle: %s".format(geomCollection))
+    }
+
     val polygons: List[S2Polygon] = (for {
      i <- 0.until(geomCollection.getNumGeometries()).toList
      val geom = geomCollection.getGeometryN(i)
