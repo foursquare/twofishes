@@ -169,17 +169,15 @@ case class GeocodeRecord(
     polygon.foreach(poly => {
       geometryBuilder.wkbGeometry(ByteBuffer.wrap(poly))
 
-      if (boundingbox.isEmpty) {
-        val wkbReader = new WKBReader()
-        val g = wkbReader.read(poly)
+      val wkbReader = new WKBReader()
+      val g = wkbReader.read(poly)
 
-        val envelope = g.getEnvelopeInternal()
+      val envelope = g.getEnvelopeInternal()
 
-        geometryBuilder.bounds(GeocodeBoundingBox(
-          GeocodePoint(envelope.getMaxY(), envelope.getMaxX()),
-          GeocodePoint(envelope.getMinY(), envelope.getMinX())
-        ))
-      }
+      geometryBuilder.bounds(GeocodeBoundingBox(
+        GeocodePoint(envelope.getMaxY(), envelope.getMaxX()),
+        GeocodePoint(envelope.getMinY(), envelope.getMinX())
+      ))
     })
 
     val allNames: List[DisplayName] = displayNames.filterNot(n => List("post", "link").contains(n.lang))
