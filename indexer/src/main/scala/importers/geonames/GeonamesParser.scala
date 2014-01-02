@@ -662,55 +662,55 @@ class GeonamesParser(
   }
 
   def parsePreferredNames() {
-    // geonameid -> lang|prefName
+    // geonameid -> lang|prefName|[optional flags]
     val filename = "data/custom/names.txt"
     val lines = scala.io.Source.fromFile(new File(filename)).getLines
 
-    lines.foreach(line => {
+    for {
+      (line, lineIndex) <- lines.zipWithIndex
       val parts = line.split("[\t ]").toList
-
-      for {
-        gid <- parts.lift(0)
-        val rest = parts.drop(1).mkString(" ")
-        lang <- rest.split("\\|").lift(0)
-        name <- rest.split("\\|").lift(1)
-        originalFlags <- rest.split("\\|").lift(2)
-      } {
-        val flags: List[FeatureNameFlags] =
-          if (originalFlags.isEmpty) {
-            List(FeatureNameFlags.PREFERRED)
-          } else {
-            originalFlags.split(",").map(f => FeatureNameFlags.unapply(f).get).toList
-          }
-        var flagsMask = 0
-        flags.foreach(f => flagsMask = flagsMask | f.getValue())
-
-        val records = store.getById(GeonamesId(gid.toLong)).toList
-        records match {
-          case Nil => logger.error("no match for id %s".format(gid))
-          case record :: Nil => {
-            var foundName = record.displayNames.exists(dn =>
-              dn.lang =? lang && dn.name =? name
-            )
-            val modifiedNames: List[DisplayName] = record.displayNames.map(dn => {
-              // if we're trying to put in a new preferred name, kill all the other preferred names in the same language
-              if (dn.lang =? lang &&
-                  dn.name !=? name &&
-                  flags.has(FeatureNameFlags.PREFERRED)
-              ) {
-                DisplayName(dn.lang, dn.name, dn.flags & ~FeatureNameFlags.PREFERRED.getValue())
-              } else {
-                dn
-              }
-            })
-
-            // logic in GeocodeStorage will dedup this
-            val newNames = modifiedNames ++ List(DisplayName(lang, name, flagsMask))
-            store.setRecordNames(GeonamesId(gid.toLong), newNames)
-          }
-          case list => logger.error("multiple matches for id %s -- %s".format(gid, list))
+      gid <- parts.lift(0)
+      val rest = parts.drop(1).mkString(" ")
+      lang <- rest.split("\\|").lift(0)
+      name <- rest.split("\\|").lift(1)
+      originalFlags <- rest.split("\\|").lift(2)
+    } {
+      val flags: List[FeatureNameFlags] =
+        if (originalFlags.isEmpty) {
+          List(FeatureNameFlags.PREFERRED)
+        } else {
+          originalFlags.split(",").map(f => FeatureNameFlags.unapply(f).getOrElse(
+            throw new Exception("couldn't parse name flag: %s on line %s: %s".format(f, lineIndex, line))
+          )).toList
         }
+      var flagsMask = 0
+      flags.foreach(f => flagsMask = flagsMask | f.getValue())
+
+      val records = store.getById(GeonamesId(gid.toLong)).toList
+      records match {
+        case Nil => logger.error("no match for id %s".format(gid))
+        case record :: Nil => {
+          var foundName = record.displayNames.exists(dn =>
+            dn.lang =? lang && dn.name =? name
+          )
+          val modifiedNames: List[DisplayName] = record.displayNames.map(dn => {
+            // if we're trying to put in a new preferred name, kill all the other preferred names in the same language
+            if (dn.lang =? lang &&
+                dn.name !=? name &&
+                flags.has(FeatureNameFlags.PREFERRED)
+            ) {
+              DisplayName(dn.lang, dn.name, dn.flags & ~FeatureNameFlags.PREFERRED.getValue())
+            } else {
+              dn
+            }
+          })
+
+          // logic in GeocodeStorage will dedup this
+          val newNames = modifiedNames ++ List(DisplayName(lang, name, flagsMask))
+          store.setRecordNames(GeonamesId(gid.toLong), newNames)
+        }
+        case list => logger.error("multiple matches for id %s -- %s".format(gid, list))
       }
-    })
+    }
   }
 }

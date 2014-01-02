@@ -114,8 +114,9 @@
 3514211 abbr|YU|ABBREVIATION
 3979840 en|Zac|SHORT_NAME
 3979840 abbr|ZAC|ABBREVIATION,PREFERRED
-3979840 abbr|ZA|ABBREVIATIO498817 ru|Санкт-Петербург
+3979840 abbr|ZA|ABBREVIATION
 # From 4sq superusers
+498817 ru|Санкт-Петербург
 1605651 th|ประเทศไทย
 1609348 th|กรุงเทพมหานคร
 536203 en|Saint-Petersburg

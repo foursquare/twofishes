@@ -207,6 +207,10 @@ class IndexerSpec extends Specification {
     })
   }
 
+  "names.txt file is valid" in {
+    parser.parsePreferredNames()
+  }
+
 
   // "deletes work in practice" in {
   //   parser.parseAlternateNamesLine(
