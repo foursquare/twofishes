@@ -38,3 +38,5 @@ BG|Oblast
 *|Județul
 *|Provinco
 *|Provinsen
+BG|Община
+BG|Obshtina
