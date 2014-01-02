@@ -647,35 +647,38 @@ class GeonamesParser(
         val rest = parts.drop(1).mkString(" ")
         lang <- rest.split("\\|").lift(0)
         name <- rest.split("\\|").lift(1)
+        originalFlags <- rest.split("\\|").lift(2)
       } {
+        val flags: List[FeatureNameFlags] =
+          if (originalFlags.isEmpty) {
+            List(FeatureNameFlags.PREFERRED)
+          } else {
+            originalFlags.split(",").map(f => FeatureNameFlags.unapply(f).get).toList
+          }
+        var flagsMask = 0
+        flags.foreach(f => flagsMask = flagsMask | f.getValue())
+
         val records = store.getById(GeonamesId(gid.toLong)).toList
         records match {
           case Nil => logger.error("no match for id %s".format(gid))
           case record :: Nil => {
-            var foundName = false
+            var foundName = record.displayNames.exists(dn =>
+              dn.lang =? lang && dn.name =? name
+            )
             val modifiedNames: List[DisplayName] = record.displayNames.map(dn => {
-              if (dn.lang == lang) {
-                if (dn.name == name) {
-                  foundName = true
-                  val newName = DisplayName(dn.lang, dn.name,
-                    (dn.flags | FeatureNameFlags.PREFERRED.getValue()) &  ~FeatureNameFlags.ALIAS.getValue())
-
-                  newName
-                } else {
-                  val newName = DisplayName(dn.lang, dn.name, dn.flags & ~FeatureNameFlags.PREFERRED.getValue())
-                  newName
-                }
+              // if we're trying to put in a new preferred name, kill all the other preferred names in the same language
+              if (dn.lang =? lang &&
+                  dn.name !=? name &&
+                  flags.has(FeatureNameFlags.PREFERRED)
+              ) {
+                DisplayName(dn.lang, dn.name, dn.flags & ~FeatureNameFlags.PREFERRED.getValue())
               } else {
                 dn
               }
             })
 
-            val newNames = modifiedNames ++ (
-              if (foundName) { Nil } else {
-                List(DisplayName(lang, name, FeatureNameFlags.PREFERRED.getValue))
-              }
-            )
-
+            // logic in GeocodeStorage will dedup this
+            val newNames = modifiedNames ++ List(DisplayName(lang, name, flagsMask))
             store.setRecordNames(GeonamesId(gid.toLong), newNames)
           }
           case list => logger.error("multiple matches for id %s -- %s".format(gid, list))
