@@ -673,6 +673,7 @@ class GeonamesParser(
       (line, lineIndex) <- lines.zipWithIndex
       val parts = line.split("[\t ]").toList
       gid <- parts.lift(0)
+      val geonameId = GeonamesId(gid.toLong)
       val rest = parts.drop(1).mkString(" ")
       lang <- rest.split("\\|").lift(0)
       name <- rest.split("\\|").lift(1)
@@ -689,13 +690,17 @@ class GeonamesParser(
       var flagsMask = 0
       flags.foreach(f => flagsMask = flagsMask | f.getValue())
 
-      val records = store.getById(GeonamesId(gid.toLong)).toList
+      val records = store.getById(geonameId).toList
       records match {
         case Nil => logger.error("no match for id %s".format(gid))
         case record :: Nil => {
+          val newName = DisplayName(lang, name, flagsMask)
           var foundName = record.displayNames.exists(dn =>
             dn.lang =? lang && dn.name =? name
           )
+          if (!foundName) {
+            addDisplayNameToNameIndex(newName, geonameId, Some(record))
+          }
           val modifiedNames: List[DisplayName] = record.displayNames.map(dn => {
             // if we're trying to put in a new preferred name, kill all the other preferred names in the same language
             if (dn.lang =? lang &&
@@ -709,9 +714,8 @@ class GeonamesParser(
           })
 
           // logic in GeocodeStorage will dedup this
-          val newNames = modifiedNames ++ List(DisplayName(lang, name, flagsMask))
+          val newNames = modifiedNames ++ List(newName)
           store.setRecordNames(GeonamesId(gid.toLong), newNames)
-          println(newNames)
         }
         case list => logger.error("multiple matches for id %s -- %s".format(gid, list))
       }
