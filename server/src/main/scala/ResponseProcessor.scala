@@ -303,6 +303,7 @@ class ResponseProcessor(
       .map(p =>
         NameUtils.bestName(p.feature, Some(req.lang), true).map(_.name).getOrElse(""))
        .filterNot(parentName => name == parentName)
+      .distinct
 
     var displayNameParts = Vector(name) ++ parentNames
     if (f.woeType != YahooWoeType.COUNTRY && req.ccOrNull != f.cc) {
