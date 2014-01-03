@@ -661,11 +661,14 @@ class GeonamesParser(
     }
   }
 
-  def parsePreferredNames() {
+  def parsePreferredNames(): Unit = {
     // geonameid -> lang|prefName|[optional flags]
     val filename = "data/custom/names.txt"
     val lines = scala.io.Source.fromFile(new File(filename)).getLines
+    parsePreferredNames(lines)
+  }
 
+  def parsePreferredNames(lines: Iterator[String]): Unit =  {
     for {
       (line, lineIndex) <- lines.zipWithIndex
       val parts = line.split("[\t ]").toList
@@ -679,7 +682,7 @@ class GeonamesParser(
         if (originalFlags.isEmpty) {
           List(FeatureNameFlags.PREFERRED)
         } else {
-          originalFlags.split(",").map(f => FeatureNameFlags.unapply(f).getOrElse(
+          originalFlags.getOrElse("").split(",").map(f => FeatureNameFlags.unapply(f).getOrElse(
             throw new Exception("couldn't parse name flag: %s on line %s: %s".format(f, lineIndex, line))
           )).toList
         }
@@ -708,6 +711,7 @@ class GeonamesParser(
           // logic in GeocodeStorage will dedup this
           val newNames = modifiedNames ++ List(DisplayName(lang, name, flagsMask))
           store.setRecordNames(GeonamesId(gid.toLong), newNames)
+          println(newNames)
         }
         case list => logger.error("multiple matches for id %s -- %s".format(gid, list))
       }

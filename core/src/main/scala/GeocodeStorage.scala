@@ -48,9 +48,9 @@ case class GeocodeRecord(
   _woeType: Int,
   lat: Double,
   lng: Double,
-  displayNames: List[DisplayName],
-  parents: List[Long],
-  population: Option[Int],
+  displayNames: List[DisplayName] = Nil,
+  parents: List[Long] = Nil,
+  population: Option[Int] = None, 
   boost: Option[Int] = None,
   boundingbox: Option[BoundingBox] = None,
   displayBounds: Option[BoundingBox] = None,
@@ -59,7 +59,7 @@ case class GeocodeRecord(
   polygon: Option[Array[Byte]] = None,
   hasPoly: Option[Boolean] = None,
   var attributes: Option[Array[Byte]] = None,
-  extraRelations: List[Long]
+  extraRelations: List[Long] = Nil
 ) extends Ordered[GeocodeRecord] {
   val factory = new TCompactProtocol.Factory()
   val serializer = new TSerializer(factory)

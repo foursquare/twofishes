@@ -11,21 +11,45 @@ import org.specs2.mutable._
 import scala.collection.mutable.{HashMap, ListBuffer}
 
 class MockGeocodeStorageWriteService extends GeocodeStorageWriteService {
-  val nameMap = new HashMap[StoredFeatureId, List[DisplayName]]
+  val recordMap = new HashMap[StoredFeatureId, GeocodeRecord]
 
-  def insert(record: GeocodeRecord): Unit = {}
-  def setRecordNames(id: StoredFeatureId, names: List[DisplayName]) {}
-  def addNameToRecord(name: DisplayName, id: StoredFeatureId) {
-    if (!nameMap.contains(id)) {
-      nameMap(id) = Nil
-    }
-
-    nameMap(id) = name :: nameMap(id)
+  def makeEmptyRecord(id: StoredFeatureId): GeocodeRecord = {
+    GeocodeRecord(
+      id.namespaceSpecificId,
+      ids = Nil,
+      names = Nil,
+      cc = "XX",
+      _woeType = 0,
+      lat = 0,
+      lng = 0
+    )
   }
+
+  def insert(record: GeocodeRecord): Unit = recordMap(GeonamesId(record._id)) = record
+
+  def setRecordNames(id: StoredFeatureId, names: List[DisplayName]) {
+    recordMap(id) = getOrCreateEmpty(id).copy(displayNames = names)
+  }
+
+  def addNameToRecord(name: DisplayName, id: StoredFeatureId) {
+    setRecordNames(id, name :: getOrCreateEmpty(id).displayNames)
+  }
+
   def addPolygonToRecord(id: StoredFeatureId, wkbGeometry: Array[Byte]) {}
   def addBoundingBoxToRecord(id: StoredFeatureId, bbox: BoundingBox) {}
   def addSlugToRecord(id: StoredFeatureId, slug: String) {}
-  def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = Nil.iterator
+
+  def getOrCreateEmpty(id: StoredFeatureId): GeocodeRecord = {
+    if (!recordMap.contains(id)) {
+      recordMap(id) = makeEmptyRecord(id)
+    }
+    recordMap(id)
+  }
+
+  def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = {
+    List(getOrCreateEmpty(id)).toIterator
+  }
+
   def addNameIndex(name: NameIndex) {}
   def addBoundingBoxToRecord(bbox: BoundingBox, id: StoredFeatureId) {}
 }
@@ -34,6 +58,11 @@ class IndexerSpec extends Specification {
   var store = new MockGeocodeStorageWriteService()
   val slugIndexer = new SlugIndexer()
   val parser = new GeonamesParser(store, slugIndexer, Map.empty)
+
+  def cleanUp {
+    store.recordMap.clear()
+  }
+  implicit val myContext = new Before { def before = cleanUp }
 
   "processFeatureName" in {
     val names = parser.processFeatureName(
@@ -209,6 +238,29 @@ class IndexerSpec extends Specification {
 
   "names.txt file is valid" in {
     parser.parsePreferredNames()
+  }
+
+  "names.txt applies correctly" in {
+    store.getOrCreateEmpty(GeonamesId(5110266))
+    store.getOrCreateEmpty(GeonamesId(4017700))
+    parser.parsePreferredNames(List(
+      "5110266 en|Bronx",
+      "4017700 abbr|BCN|ABBREVIATION,PREFERRED"
+    ).toIterator)
+
+    val bcn = store.getOrCreateEmpty(GeonamesId(4017700L))
+    bcn.displayNames.size mustEqual 1
+    bcn.displayNames(0).lang mustEqual "abbr"
+    bcn.displayNames(0).name mustEqual "BCN"
+    bcn.displayNames(0).flags mustEqual FeatureNameFlags.PREFERRED.getValue() | FeatureNameFlags.ABBREVIATION.getValue()
+
+
+    val bronx = store.getOrCreateEmpty(GeonamesId(5110266L))
+    // testing buggy behavior, no idea why it's being added twice
+    bronx.displayNames.size aka bronx.displayNames.toString mustEqual 2
+    bronx.displayNames(0).lang mustEqual "en"
+    bronx.displayNames(0).name mustEqual "Bronx"
+    bronx.displayNames(0).flags mustEqual FeatureNameFlags.PREFERRED.getValue()
   }
 
 
