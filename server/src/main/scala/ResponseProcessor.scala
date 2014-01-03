@@ -208,11 +208,12 @@ class ResponseProcessor(
     if (NameUtils.countryUsesState(f.cc)) {
       parentsToUse.appendAll(
         parents.filter(p => {
-          if (NameUtils.countryUsesCountyAsState(f.cc)) {
-            p.feature.woeType == YahooWoeType.ADMIN1
-          } else {
-            p.feature.woeType == YahooWoeType.ADMIN2
-          }
+          NameUtils.isFeatureBlacklistedforParent(f.longId) &&
+            if (NameUtils.countryUsesCountyAsState(f.cc)) {
+              p.feature.woeType =? YahooWoeType.ADMIN2
+            } else {
+              p.feature.woeType =? YahooWoeType.ADMIN1
+            }
         }))
     }
 
