@@ -298,6 +298,7 @@ class ResponseProcessor(
     )
 
     val parentNames = parentsToUse
+      .distinct
       .sorted(GeocodeServingFeatureOrdering)
       .map(p =>
         NameUtils.bestName(p.feature, Some(req.lang), true).map(_.name).getOrElse(""))
