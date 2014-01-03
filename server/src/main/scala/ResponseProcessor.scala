@@ -443,7 +443,8 @@ class ResponseProcessor(
           // parents don't need polygons, what is wrong with me?
           fixFeature(parentFeature.feature, sortedParentParents, None, Map.empty,
             fillHighlightedName=parseParams.tokens.size > 0,
-            includeAllNames=responseIncludes(ResponseIncludes.PARENT_ALL_NAMES))
+            includeAllNames=responseIncludes(ResponseIncludes.PARENT_ALL_NAMES),
+            parentIds=parentFeature.scoringFeatures.parentIds)
         })
       }
 

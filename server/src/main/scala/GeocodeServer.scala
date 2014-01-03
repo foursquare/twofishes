@@ -216,6 +216,11 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
     handleQuery(request, geocoder.bulkSlugLookup, callback)
   }
 
+  def fixLongArray(key: String, input: String): String = {
+    val re = "\"%s\":\\[([^\\]]+)\\]".format(key).r
+    re.replaceAllIn(input, m => { "\"%s\":[%s]".format(key, m.group(1).split(",").map(l => "\"%s\"".format(l)).mkString(","))})
+  }
+
   def handleQuery[T, TType <: TBase[_ <: TBase[_ <: AnyRef, _ <: TFieldIdEnum], _ <: TFieldIdEnum]](
       request: T,
       queryProcessor: T => Future[TType],
@@ -230,8 +235,10 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
 
         //"longId":72057594044179937
         // javascript can't deal with longs, so we hack it to be a string
-        val fixedJson = """"longId":(\d+)""".r.replaceAllIn(json, m => "\"longId\":\"%s\"".format(m.group(1)))
-
+        var fixedJson = """"longId":(\d+)""".r.replaceAllIn(json, m => "\"longId\":\"%s\"".format(m.group(1)))
+        fixedJson = fixLongArray("parentIds", fixedJson)
+        fixedJson = fixLongArray("longIds", fixedJson)
+        
         callback.map(cb => {
           val sb = new StringBuilder(fixedJson.size + cb.size + 10)
           sb ++= cb
