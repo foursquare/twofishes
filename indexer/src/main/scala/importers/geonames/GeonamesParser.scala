@@ -673,7 +673,7 @@ class GeonamesParser(
       val rest = parts.drop(1).mkString(" ")
       lang <- rest.split("\\|").lift(0)
       name <- rest.split("\\|").lift(1)
-      originalFlags <- rest.split("\\|").lift(2)
+      val originalFlags = rest.split("\\|").lift(2)
     } {
       val flags: List[FeatureNameFlags] =
         if (originalFlags.isEmpty) {
