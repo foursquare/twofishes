@@ -208,7 +208,7 @@ class ResponseProcessor(
     if (NameUtils.countryUsesState(f.cc)) {
       parentsToUse.appendAll(
         parents.filter(p => {
-          NameUtils.isFeatureBlacklistedforParent(f.longId) &&
+          !NameUtils.isFeatureBlacklistedforParent(f.longId) &&
             (if (NameUtils.countryUsesCountyAsState(f.cc)) {
               p.feature.woeType =? YahooWoeType.ADMIN2
             } else {
