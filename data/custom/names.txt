@@ -226,3 +226,5 @@
 687869 en|Zakarpats'ka Oblast’
 498817 en|Saint Petersburg
 261745 el|Ηράκλειο
+1642911 en|DKI Jakarta
+1620919 en|Bang Bo District

@@ -41,3 +41,4 @@ BG|Oblast
 BG|Община
 BG|Obshtina
 IE|County|Co
+*|Departamento de

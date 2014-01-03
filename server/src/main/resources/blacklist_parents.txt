@@ -14,3 +14,7 @@ geonameid:1843561
 geonameid:1841808
 geonameid:1835224
 geonameid:1833742
+# National Captial Region
+geonameid:1692193
+# Buenos Aires FD
+geonameid:3433955
