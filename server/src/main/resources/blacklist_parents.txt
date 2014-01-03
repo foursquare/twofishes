@@ -1,0 +1,16 @@
+# These are valid places that should geocode, but not be used in displayName construction as parents
+#
+# dublin city (county), don't show
+geonameid:7778677
+# moscow state (like DC)
+geonameid:524894
+# st petersburg state, like DC
+geonameid:536203
+# korea "special cities"
+geonameid:1835847
+geonameid:1838519
+geonameid:1835327
+geonameid:1843561
+geonameid:1841808
+geonameid:1835224
+geonameid:1833742

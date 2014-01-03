@@ -5,6 +5,7 @@ import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.{FeatureName, FeatureNameFlags, GeocodeFeature, YahooWoeType, util}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import scalaj.collection.Implicits._
+import scala.io.BufferedSource
 import scala.util.Sorting
 
 object SlugBuilder {
@@ -182,6 +183,15 @@ trait NameUtils {
 
   def countryUsesCountyAsState(cc: String) =
     Set("TW", "IE", "BE", "GB").has(cc)
+
+  private val blacklistedParentIds =
+    new BufferedSource(getClass.getResourceAsStream("/blacklist_parents.txt"))
+      .getLines.filterNot(_.startsWith("#"))
+      .flatMap(l => StoredFeatureId.fromHumanReadableString(l, Some(GeonamesNamespace)))
+      .map(_.longId)
+      .toList
+  def isFeatureBlacklistedforParent(id: Long) = blacklistedParentIds.has(id)
+
 
   // Given an optional language and an abbreviation preference, find the best name
   // for a feature in the current context.
