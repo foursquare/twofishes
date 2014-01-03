@@ -167,9 +167,21 @@ object NameFormatter {
 
 trait NameUtils {
   def countryUsesStateAbbrev(cc: String) =
-    (cc == "US" || cc == "CA" || cc == "BR" || cc == "AU")
-  
-  def countryUsesState(cc: String) = countryUsesStateAbbrev(cc)
+    Set("US", "CA", "BR", "AU", "MX").has(cc)
+
+  def countryUsesState(cc: String) =
+    Set("GR", "CO", "MY", "TV", "IT", "MX", "PW",
+      "KI", "GU", "CA", "TH", "PH", "IE", "PA",
+      "AM", "BS", "MP", "AU", "CV", "KN", "VE",
+      "CN", "KZ", "JP", "EG", "PG", "NI", "NG",
+      "CC", "HN", "MH", "VN", "AS", "ES", "SO",
+      "HM", "ID", "FM", "KY", "PF", "MN", "KR",
+      "GB", "UY", "SC", "BR", "TW", "CX", "AR",
+      "NR", "CL", "IQ", "SV", "NF", "IN", "VI",
+      "US", "UM", "JM", "SR", "AD", "UZ", "HK").has(cc)
+
+  def countryUsesCountyAsState(cc: String) =
+    Set("TW", "IE", "BE", "GB").has(cc)
 
   // Given an optional language and an abbreviation preference, find the best name
   // for a feature in the current context.

@@ -207,7 +207,13 @@ class ResponseProcessor(
 
     if (NameUtils.countryUsesState(f.cc)) {
       parentsToUse.appendAll(
-        parents.filter(p => p.feature.woeType == YahooWoeType.ADMIN1))
+        parents.filter(p => {
+          if (NameUtils.countryUsesCountyAsState(f.cc)) {
+            p.feature.woeType == YahooWoeType.ADMIN1
+          } else {
+            p.feature.woeType == YahooWoeType.ADMIN2
+          }
+        }))
     }
 
     val countryName =

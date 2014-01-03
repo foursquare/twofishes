@@ -6,6 +6,9 @@ import scala.collection.generic.GenericTraversableTemplate
 object Lists {
   trait Implicits {
     implicit def seq2FSTraversable[CC[X] <: Traversable[X], T, Repr <: TraversableLike[T, Repr]](xs: TraversableLike[T, Repr] with GenericTraversableTemplate[T, CC]): FSTraversable[CC, T, Repr] = new FSTraversable[CC, T, Repr](xs)
+
+    implicit def opt2FSOpt[T](o: Option[T]) = new FSOption(o)
+    implicit def fsopt2Opt[T](fso: FSOption[T]) = fso.opt
   }
 
   object Implicits extends Implicits
@@ -54,5 +57,17 @@ class FSTraversable[CC[X] <: Traversable[X], T, Repr <: TraversableLike[T, Repr]
     }
 
     min
+  }
+}
+
+class FSOption[T](val opt: Option[T]) {
+  def has(e: T): Boolean = opt.exists(_ == e)
+  def isEmptyOr(pred: T => Boolean): Boolean = opt.forall(pred)
+  def unzipped[T1, T2](implicit asPair: (T) => (T1, T2)): (Option[T1], Option[T2]) = opt match {
+    case Some(x) => {
+      val pair = asPair(x)
+      (Some(pair._1), Some(pair._2))
+    }
+    case None => (None, None)
   }
 }
