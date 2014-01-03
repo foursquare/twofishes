@@ -671,7 +671,7 @@ class GeonamesParser(
   def parsePreferredNames(lines: Iterator[String]): Unit =  {
     for {
       (line, lineIndex) <- lines.zipWithIndex
-      if (!line.startsWith("#"))
+      if (!line.startsWith("#") && line.nonEmpty)
       val parts = line.split("[\t ]").toList
       gid <- parts.lift(0)
       val geonameId = GeonamesId(gid.toLong)
