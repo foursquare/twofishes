@@ -225,3 +225,4 @@
 698738 uk|Одеська обл.
 687869 en|Zakarpats'ka Oblast’
 498817 en|Saint Petersburg
+261745 el|Ηράκλειο
