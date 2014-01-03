@@ -129,9 +129,12 @@ import AdminLevel._
 // I added Z for zipcodes. It's missing from the geonames hierarchy.
 class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[String]) {
   def isBuilding = featureClass.exists(_ == "S")
+  def isPopulatedPlace = featureClass.exists(_ == "P")
   def isPostalCode = featureClass.exists(_ == "Z")
   def isSuburb = featureCode.exists(_.contains("PPLX"))
-  def isCity = featureCode.exists(_.contains("PPL"))
+  def isCity = featureCode.exists(_.contains("PPL")) || 
+    (isPopulatedPlace && !isSuburb)
+  def isIsraeliSettlement = featureCode.exists(_.contains("STLMT"))
   def isIsland = featureCode.exists(_.contains("ISL"))
   def isCountry = featureCode.exists(_.contains("PCL"))
   def isAdmin = adminLevel != OTHER
@@ -246,7 +249,11 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) {
   def population: Option[Int] = flatTryO {values.get(POPULATION).map(_.toInt)}
   def latitude: Double = values.get(LATITUDE).map(_.toDouble).get
   def longitude: Double = values.get(LONGITUDE).map(_.toDouble).get
-  def countryCode: String = values.get(COUNTRY_CODE).getOrElse("XX")
+  def countryCode: String = if (featureClass.isIsraeliSettlement) { 
+    "IL"
+  } else {
+    values.get(COUNTRY_CODE).getOrElse("XX")
+  }
   def name: String = values.getOrElse(NAME, "no name")
   def asciiname: Option[String] = values.get(ASCIINAME)
   def place: String = values.getOrElse(PLACE_NAME, "no name")
