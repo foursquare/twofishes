@@ -2,3 +2,5 @@
 3646738|3632191
 # tangerang -> west java
 1625084|1642672
+# york -> north yorkshire ("ceremonial county")
+2633352|6940582
