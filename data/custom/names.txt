@@ -18,6 +18,7 @@
 2058645 en|Western Australia
 3337388 en|Flanders
 2638785 en|St Helens
+2633351 en|North Yorkshire
 # MX states from http://www.statoids.com/umx.html
 4019231 abbr|AGS|ABBREVIATION,PREFERRED
 4019231 abbr|AGU|ABBREVIATION
@@ -230,4 +231,3 @@
 1620919 en|Bang Bo District
 1215638 en|Aceh|PREFERRED,SHORT_NAME
 1215638 id|Aceh|PREFERRED,SHORT_NAME
-
