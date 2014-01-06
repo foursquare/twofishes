@@ -254,10 +254,8 @@ class IndexerSpec extends Specification {
     bcn.displayNames(0).name mustEqual "BCN"
     bcn.displayNames(0).flags mustEqual FeatureNameFlags.PREFERRED.getValue() | FeatureNameFlags.ABBREVIATION.getValue()
 
-
     val bronx = store.getOrCreateEmpty(GeonamesId(5110266L))
-    // testing buggy behavior, no idea why it's being added twice
-    bronx.displayNames.size aka bronx.displayNames.toString mustEqual 2
+    bronx.displayNames.size aka bronx.displayNames.toString mustEqual 1
     bronx.displayNames(0).lang mustEqual "en"
     bronx.displayNames(0).name mustEqual "Bronx"
     bronx.displayNames(0).flags mustEqual FeatureNameFlags.PREFERRED.getValue()
