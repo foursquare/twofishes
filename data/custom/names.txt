@@ -18,7 +18,14 @@
 2058645 en|Western Australia
 3337388 en|Flanders
 2638785 en|St Helens
+# UK unitary authorities, renamed to their historical county
 2633351 en|North Yorkshire
+3333183 en|Hampshire
+3333196 en|Hampshire
+3333207 en|Swindon
+3333204 en|Staffordshire
+3333172 en|Middlesbrough
+3333127 en|Lancashire
 # MX states from http://www.statoids.com/umx.html
 4019231 abbr|AGS|ABBREVIATION,PREFERRED
 4019231 abbr|AGU|ABBREVIATION

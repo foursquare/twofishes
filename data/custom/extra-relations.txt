@@ -4,3 +4,13 @@
 1625084|1642672
 # york -> north yorkshire ("ceremonial county")
 2633352|6940582
+# croydon -> surrey (historical)
+2651817|2636512
+# edinburg -> Midlothian
+2650225|2642559
+# rochester -> kent
+2639268|3333158
+# Kingston upon Thames -> surrey
+6690829|2636512
+# brighton -> east sussex
+2654710|2650328
