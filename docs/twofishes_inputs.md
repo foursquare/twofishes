@@ -1,4 +1,4 @@
-docs/twofishes_inputs.md# Overview
+# Overview
 
 This document describes the various input files that are read in the process of creating a twofishes index.
 
