@@ -106,7 +106,7 @@ object PolygonLoader extends Logging {
     val extension = fparts.lastOption.getOrElse("")
     val shapeFileExtensions = List("shx", "dbf", "prj", "xml", "cpg")
 
-    if (extension == "json") {
+    if (extension == "json" || extension == "geojson") {
       val io = new FeatureJSON()
       val features = io.streamFeatureCollection(f)
       while (features.hasNext()) {

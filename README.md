@@ -13,6 +13,9 @@ This geocoder was designed around the geonames data, which is relatively small, 
 The Data
 ========
 
+- [Twofishes Input Data File Documentation](docs/twofishes_inputs.md)
+
+
 Geonames is great, but not perfect. Southeast Asia doesn't have the most comprehensive coverage. Geonames doesn't have bounding boxes, so we add some of those from http://code.flickr.com/blog/2011/01/08/flickr-shapefiles-public-dataset-2-0/ where possible. 
 
 Geonames is licensed under CC-BY http://www.geonames.org/. They take a pretty liberal interpretation of this and just ask for about page attribution if you make use of the data.

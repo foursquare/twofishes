@@ -1,0 +1,101 @@
+6941775 en|Brooklyn|ALT_NAME
+5363385 en|Brooklyn|ALT_NAME
+6941775 en|Bklyn|ALT_NAME
+5363385 en|Bklyn|ALT_NAME
+5128581 en|NYC|ALT_NAME
+5128581 en|New York|ALT_NAME
+3530597 en|DF|ALT_NAME
+5391959 en|SF|ALT_NAME
+1642911 en|Jakarta Capital Region|ALT_NAME
+4994358 en|Grand Rapids Charter Township|ALT_NAME
+4560349 en|Phila|ALT_NAME
+4544349 en|OKC|ALT_NAME
+2193733 en|Central Auckland|ALT_NAME
+1850144 en|新宿区|ALT_NAME
+2759879 en|Almere|ALT_NAME
+3012874 en|IDF|ALT_NAME
+3531732 en|San Francisco de Campeche|ALT_NAME
+5125125 en|LIC|ALT_NAME
+2648110 en|London|ALT_NAME
+2648109 en|London|ALT_NAME
+5391997 en|SF|ALT_NAME
+5391997 en|San Francisco|ALT_NAME
+5368381 en|LA|ALT_NAME
+5119418 en|West Village|ALT_NAME
+2755002 en|Harlem|ALT_NAME
+2755003 en|Harlem|ALT_NAME
+5142036 en|UWS|ALT_NAME
+6615322 en|UES|ALT_NAME
+5125409 en|LES|ALT_NAME
+571473 en|Bryansk Oblast|ALT_NAME
+571473 en|Bryansk|ALT_NAME
+5141915 en|Union Square|ALT_NAME
+5108554 en|Bed-Stuy|ALT_NAME
+7177540 en|Boerum Hill|ALT_NAME
+4929023 en|Amherst|ALT_NAME
+4930396 en|The Berkshires|ALT_NAME
+4930396 en|Berkshires|ALT_NAME
+# this first one is the city and probably wrong
+# 1642903|DKI Jakarta
+1642907 en|DKI Jakarta|ALT_NAME
+1642903 en|Jakarta Capital Region|ALT_NAME
+498817 en|город Санкт-Петербург,ru|ALT_NAME
+5202009 en|город Москва|ALT_NAME
+1733046 en|WP Kuala Lumpur|ALT_NAME
+# tokyo metropolitan region -- aliasing to tokyo for now
+1850147 en|東京都|ALT_NAME
+# kiev short name
+703447 en|м. Київ|ALT_NAME
+# Gyeonggi-do SK
+1841610 en|경기도,ko|ALT_NAME
+8581443 en|Tangerang Selatan|ALT_NAME
+# Bogota DC
+3688685 en|D C|ALT_NAME
+# Washington DC
+4138106 en|D C|ALT_NAME
+# Orange Free State, ZA
+967573 en|Free State|ALT_NAME
+5009004 en|Sault Sainte Marie|ALT_NAME
+2800867 en|Brussels Capital Region|ALT_NAME
+# ceremonial county
+3333178 en|Nottinghamshire|ALT_NAME
+3333176 en|Lincolnshire|ALT_NAME
+3333175 en|Lincolnshire|ALT_NAME
+3333133 en|East Sussex|ALT_NAME
+3333204 en|Staffordshire|ALT_NAME
+3333177 en|Somerset|ALT_NAME
+3333123 en|Somerset|ALT_NAME
+3333186 en|North Yorkshire|ALT_NAME
+3333203 en|North Yorkshire|ALT_NAME
+3333126 en|Lancashire|ALT_NAME
+3333170 en|Kent|ALT_NAME
+3333198 en|Gloucestershire|ALT_NAME
+3333159 en|East Riding of Yorkshire|ALT_NAME
+3333159 en|East Yorkshire|ALT_NAME
+# UK unitary authorities, renamed to their historical county
+2633351 en|North Yorkshire|ALT_NAME
+3333183 en|Hampshire|ALT_NAME
+3333196 en|Hampshire|ALT_NAME
+3333207 en|Swindon|ALT_NAME
+3333204 en|Staffordshire|ALT_NAME
+3333172 en|Middlesbrough|ALT_NAME
+3333127 en|Lancashire|ALT_NAME
+3333203 en|County Durham|ALT_NAME
+3333203 en|Durham|ALT_NAME
+3333203 en|Co Durham|ALT_NAME
+3333141 en|County Durham|ALT_NAME
+3333141 en|Durham|ALT_NAME
+3333141 en|Co Durham|ALT_NAME
+3333152 en|County Durham|ALT_NAME
+3333152 en|Durham|ALT_NAME
+3333152 en|Co Durham|ALT_NAME
+3333129 en|Dorset|ALT_NAME
+3333182 en|Dorset|ALT_NAME
+3333181 en|Devon|ALT_NAME
+3333210 en|Devon|ALT_NAME
+3333173 en|Buckinghamshire|ALT_NAME
+3333180 en|Cambridgeshire|ALT_NAME
+3333216 en|Cheshire|ALT_NAME
+2647601 en|Cheshire|ALT_NAME
+7290537 en|Cheshire|ALT_NAME
+7290536 en|Cheshire|ALT_NAME

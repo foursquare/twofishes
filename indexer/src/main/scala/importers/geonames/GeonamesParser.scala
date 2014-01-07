@@ -104,7 +104,7 @@ object GeonamesParser {
       val countries = config.parseCountry.split(",")
       countries.foreach(f => {
         parser.logger.info("Parsing %s".format(f))
-        parseAdminInfoFile("data/computed/adminCodes-%s.txt".format(f))
+        parseAdminInfoFile("data/downloaded/adminCodes-%s.txt".format(f))
         parser.parseAdminFile(
           "data/downloaded/%s.txt".format(f))
 
@@ -113,7 +113,7 @@ object GeonamesParser {
         }
       })
     } else {
-      parseAdminInfoFile("data/computed/adminCodes.txt")
+      parseAdminInfoFile("data/downloaded/adminCodes.txt")
       parser.parseAdminFile(
         "data/downloaded/allCountries.txt")
       if (config.importPostalCodes) {
@@ -122,7 +122,7 @@ object GeonamesParser {
     }
 
     val supplementalDirs = List(
-      new File("data/supplemental/"),
+      new File("data/computed/features"),
       new File("data/private/features")
     )
     supplementalDirs.foreach(supplementalDir =>
@@ -134,7 +134,7 @@ object GeonamesParser {
       }
     )
 
-    parser.parsePreferredNames()
+    parser.parseNameTransforms()
 
     if (config.buildMissingSlugs) {
       println("building missing slugs")
@@ -161,9 +161,7 @@ class GeonamesParser(
   // token -> alt tokens
   lazy val rewriteTable = new TsvHelperFileParser("data/custom/rewrites.txt",
     "data/private/rewrites.txt")
-  // tokenlist
-  lazy val deletesList: List[String] = scala.io.Source.fromFile(new File("data/custom/deletes.txt"))
-    .getLines.toList.filterNot(_.startsWith("#"))
+
   // (country -> tokenlist)
   lazy val shortensList: List[(List[String], String)] = scala.io.Source.fromFile(new File("data/custom/shortens.txt"))
     .getLines.toList.filterNot(_.startsWith("#")).map(l => {
@@ -171,20 +169,18 @@ class GeonamesParser(
       (parts(0).split(",").toList, parts(1))
     })
   // geonameid -> boost value
-  lazy val boostTable = new GeoIdTsvHelperFileParser(GeonamesNamespace, "data/custom/boosts.txt",
+  lazy val boostTable = new GeoIdTsvHelperFileParser(GeonamesNamespace,
+    "data/custom/boosts.txt",
     "data/private/boosts.txt")
 
-  // geonameid -> alias
-  val aliasFiles: List[String] = List("data/custom/aliases.txt", "data/private/aliases.txt")
-  lazy val aliasTable = new GeoIdTsvHelperFileParser(GeonamesNamespace, aliasFiles:_*)
+  lazy val deletesList: List[String] = scala.io.Source.fromFile(new File("data/custom/deletes.txt"))
+    .getLines.toList.filterNot(_.startsWith("#"))
 
   // geonameid --> new center
   lazy val moveTable = new GeoIdTsvHelperFileParser(GeonamesNamespace, "data/custom/moves.txt")
 
   // geonameid -> name to be deleted
   lazy val nameDeleteTable = new GeoIdTsvHelperFileParser(GeonamesNamespace, "data/custom/name-deletes.txt")
-  // geonameid -> name to be demoted
-  lazy val nameDemoteTable = new GeoIdTsvHelperFileParser(GeonamesNamespace, "data/custom/name-demotes.txt")
   // list of geoids (geonameid:XXX) to skip indexing
   lazy val ignoreList: List[StoredFeatureId] = scala.io.Source.fromFile(new File("data/custom/ignores.txt"))
     .getLines.toList.filterNot(_.startsWith("#")).map(l => GeonamesId(l.toLong))
@@ -212,7 +208,7 @@ class GeonamesParser(
   }).sorted
   lazy val displayBboxTable = BoundingBoxTsvImporter.parse(displayBboxFiles)
 
-  val helperTables = List(rewriteTable, boostTable, aliasTable)
+  val helperTables = List(rewriteTable, boostTable)
 
   def logUnusedHelperEntries {
     helperTables.flatMap(_.logUnused).foreach(line => logger.error(line))
@@ -261,7 +257,7 @@ class GeonamesParser(
     val deaccentedNames = names.map(NameNormalizer.deaccent).filterNot(n =>
       names.contains(n))
 
-    val rewrittenNames = doRewrites((names ++ deleteModifiedNames)).filterNot(n =>
+    val rewrittenNames = doRewrites(names ++ deleteModifiedNames).filterNot(n =>
       names.contains(n))
 
     (deaccentedNames, (deleteModifiedNames ++ rewrittenNames).distinct)
@@ -319,15 +315,6 @@ class GeonamesParser(
     }
 
     // Build names
-    val aliasedNames: List[String] = aliasTable.get(geonameId)
-
-    aliasedNames.foreach(n => {
-      val parts = n.split(",")
-      val name: String = parts(0)
-      val lang: String = parts.lift(1).getOrElse("en")
-      displayNames ::= DisplayName(lang, name, FeatureNameFlags.ALT_NAME.getValue)
-    })
-
     val englishName = preferredEnglishAltName.getOrElse(feature.name)
     val alternateNames = alternateNamesMap.getOrElse(geonameId, Nil).filterNot(n =>
       (n.name == englishName) && (n.lang != "en")
@@ -641,14 +628,7 @@ class GeonamesParser(
           0
         }
 
-        val hasDemotedName = nameDemoteTable.get(fid).exists(_ =? name)
-        val lowQualityFlag = if (hasDemotedName) {
-          FeatureNameFlags.LOW_QUALITY.getValue
-        } else {
-          0
-        }
-
-        shortFlag | prefFlag | lowQualityFlag
+        shortFlag | prefFlag
       }
 
       processNameList(originalNames, originalFlags) ++
@@ -661,20 +641,25 @@ class GeonamesParser(
     }
   }
 
-  def parsePreferredNames(): Unit = {
+  def parseNameTransforms(): Unit = {
     // geonameid -> lang|prefName|[optional flags]
-    val filename = "data/custom/names.txt"
-    val lines = scala.io.Source.fromFile(new File(filename)).getLines
-    parsePreferredNames(lines)
+    val filename = new File("data/custom/name-transforms").listFiles.foreach(file => {
+      val lines = scala.io.Source.fromFile(file).getLines
+      parseNameTransforms(lines, file.toString)
+    })
   }
 
-  def parsePreferredNames(lines: Iterator[String]): Unit =  {
+  def parseNameTransforms(lines: Iterator[String], filename: String = "n/a"): Unit =  {
     for {
       (line, lineIndex) <- lines.zipWithIndex
       if (!line.startsWith("#") && line.nonEmpty)
       val parts = line.split("[\t ]").toList
       gid <- parts.lift(0)
-      val geonameId = GeonamesId(gid.toLong)
+      val geonameId = (try {
+        GeonamesId(gid.toLong)
+      } catch {
+        case _ => throw new Exception("failed to parse %s -- line: %s".format(filename, line))
+      })
       val rest = parts.drop(1).mkString(" ")
       lang <- rest.split("\\|").lift(0)
       name <- rest.split("\\|").lift(1)
