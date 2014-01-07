@@ -5,10 +5,8 @@ import sys
 
 try:
   os.mkdir("data/downloaded")
-  os.mkdir("data/supplemental")
 except:
   pass
-
 
 alternateNames = open("data/downloaded/alternateNames.txt")
 if len(sys.argv) == 2:
@@ -18,9 +16,12 @@ else:
   print "building buildings for the whole world"
   input = open("data/downloaded/allCountries.txt")
 
-if not os.path.exists('data/supplemental'):
-  os.mkdir("data/supplemental")
-output = open("data/supplemental/buildings.txt", "w")
+if not os.path.exists('data/private'):
+  os.mkdir("data/private")
+if not os.path.exists('data/private/features'):
+  os.mkdir("data/private/features")
+
+output = open("data/private/features/buildings.txt", "w")
 
 gidList = set()
 

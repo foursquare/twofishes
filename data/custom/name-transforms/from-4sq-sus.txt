@@ -1,0 +1,126 @@
+# From 4sq superusers
+2673723 en|Stockholm Municipality
+255683 el|Πάτρα
+1621176 id|DI Yogyakarta
+1607982 th|ปทุมธานี
+2886242 en|Cologne
+255524 el|Περιστέρι
+3448433 pt|São Paulo
+2160746 en|Lake Macquarie City
+254505 el|Ψυχικό
+1636884 id|Magelang
+536203 ru|Санкт-Петербург
+3448439 pt|São Paulo
+1621177 id|Yogyakarta
+3463504 en|Federal District
+498817 ru|Санкт-Петербург
+3448439 pt|São Paulo
+6321162 pt|Belo Horizonte
+630336 ru|Беларусь
+1621176 id|DI Yogyakarta
+1607982 en|Pathum Thani
+255319 el|Πικέρμι
+1609350 th|พระนคร
+625142 ru|Минская область
+1621176 en|DI Yogyakarta
+725992 bg|Велико Търново
+1619278 th|บางรัก
+536203 ru|Санкт-Петербург
+1609348 th|กรุงเทพมหานคร
+536203 ru|Санкт-Петербург
+630336 ru|Беларусь
+1625822 id|Surabaya
+463835 ru|Зеленодольск
+620134 be|Віцебская вобласць
+727522 bg|Русе
+481964 ru|Тосно
+265502 en|Aegina
+3461786 pt|Guarulhos
+625142 be|Мiнская вобласць
+620134 en|Vitebskaya oblast’
+1607530 en|Phra Nakhon Si Ayutthaya
+265502 en|Aigina
+554668 ru|с. Кабардинка
+536203 ru|Санкт-Петербург
+2950157 en|Berlin
+2743698 en|South Holland
+254352 el|Ρέθυμνο
+498817 ru|Санкт-Петербург
+262036 el|Γλυφάδα
+262719 el|Ελληνικό
+1627896 id|Semarang
+3448439 pt|São Paulo
+703447 uk|м. Київ
+3448439 pt|São Paulo
+1621176 en|DI Yogyakarta
+1607530 th|พระนครศรีอยุธยา
+536199 ru|Ленинградская обл.
+1621176 id|DI Yogyakarta
+3448439 pt|São Paulo
+536199 ru|Ленинградская обл.
+698738 en|Odeska Oblast
+1625822 id|Surabaya
+1621176 en|DI Yogyakarta
+2886242 en|Cologne
+2864118 en|Neuss
+1496745 ru|Новосибирская обл.
+1607532 th|พระนครศรีอยุธยา
+536203 ru|Санкт-Петербург
+628281 ru|Гомельская обл.
+262036 el|Γλυφάδα
+264353 en|Attica
+498817 ru|Санкт-Петербург
+580969 ru|с. Архипо-Осиповка
+2886242 en|Cologne
+1627896 id|Semarang
+1621177 id|Yogyakarta
+620134 ru|Витебская обл.
+536203 ru|Санкт-Петербург
+625142 be|Мiнская вобласць
+1636884 id|Magelang
+1627896 id|Semarang
+1607532 en|Phra Nakhon Si Ayutthaya
+2686469 sv|Örnsköldsvik
+798549 ro|România
+1636884 id|Magelang
+536203 en|Saint-Petersburg
+536203 ru|Санкт-Петербург
+2686469 sv|Örnsköldsvik
+524925 ru|Московская обл.
+702549 uk|Львівська обл.
+498817 ru|Санкт-Петербург
+3333128 en|Lancashire
+702549 ru|Львовская обл.
+315807 tr|Elazığ
+536203 ru|Санкт-Петербург
+1606146 en|Songkhla
+1215638 en|Aceh
+1621176 en|DI Yogyakarta
+1606146 th|สงขลา
+3333125 en|West Midlands
+1605651 th|ประเทศไทย
+703447 ru|г. Киев
+1621176 id|DI Yogyakarta
+472454 ru|Вологодская обл.
+1636884 id|Magelang
+261779 el|Ιωάννινα
+255524 el|Περιστέρι
+703446 uk|Київська обл.
+1636884 id|Magelang
+703446 ru|Киевская обл.
+2747351 nl|'s-Hertogenbosch
+536203 ru|Санкт-Петербург
+2712414 sv|Gävle
+675809 en|Iași
+687869 uk|Закарпатська область
+2712414 sv|Gävle
+512566 ru|п. Парголово
+536203 ru|Санкт-Петербург
+698738 ru|Одесская обл.
+498817 ru|Санкт-Петербург
+698738 uk|Одеська обл.
+687869 en|Zakarpats'ka Oblast’
+498817 en|Saint Petersburg
+261745 el|Ηράκλειο
+1642911 en|DKI Jakarta
+1620919 en|Bang Bo District

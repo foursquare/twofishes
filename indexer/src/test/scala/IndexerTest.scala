@@ -78,20 +78,18 @@ class IndexerSpec extends Specification {
     names.size mustEqual 0
   }
 
-  "processFeatureName demotes" in {
-    val names = parser.processFeatureName(
-      StoredFeatureId(GeonamesNamespace, "1566083"),
-      "US", "en", "HCMC", false, false, woeType = YahooWoeType.TOWN)
-    names.size mustEqual 1
-    names(0).flags & FeatureNameFlags.LOW_QUALITY.getValue must be_>(0)
-  }
+  // "processFeatureName demotes" in {
+  //   store.getOrCreateEmpty(GeonamesId(1566083))
+  //   parser.parseNameTransforms()
+  //   names.size mustEqual 1
+  //   names(0).flags & FeatureNameFlags.LOW_QUALITY.getValue must be_>(0)
+  // }
 
-  "processFeatureName demotes" in {
+  "processFeatureName shortens" in {
     val names = parser.doShorten("PH", "Province of Leyte")
     names.size mustEqual 1
     names(0) mustEqual "Leyte"
   }
-
 
   "name deduping works" in {
     val fid = GeonamesId(1)
@@ -167,22 +165,21 @@ class IndexerSpec extends Specification {
     names must contain("Griffiss AFB")
   }
 
-  "deletes work" in {
-    val (deaccentedNames, otherModifiedNames) =
-      parser.rewriteNames(List("Cook County", "Township of Brick"))
-    val names = deaccentedNames ++ otherModifiedNames
-    names.size aka names.toString mustEqual 5
+  "deletes work 1" in {
+    val displayNames = parser.processFeatureName(
+      StoredFeatureId(GeonamesNamespace, "11111"),
+      "US", "en", "Cook County", false, false, woeType = YahooWoeType.TOWN)
+    val names = displayNames.map(_.name)
+    names.size aka names.toString mustEqual 2
     names must contain("Cook")
-    names must contain("Brick")
-    names must contain("of Brick")
-    names must contain("Charter Township of Brick")
-    names must contain("Twp of Brick")
+    names must contain("Cook County")
   }
 
   "deletes and rewrites work" in {
-    val (deaccentedNames, otherModifiedNames) =
-      parser.rewriteNames(List("Saint Ferdinand Township"))
-    val names = deaccentedNames ++ otherModifiedNames
+    val displayNames = parser.processFeatureName(
+      StoredFeatureId(GeonamesNamespace, "11111"),
+      "US", "en", "Saint Ferdinand Township", false, false, woeType = YahooWoeType.TOWN)
+    val names = displayNames.map(_.name)
     names must contain("St Ferdinand")
     names must contain("Saint Ferdinand")
   }
@@ -237,13 +234,13 @@ class IndexerSpec extends Specification {
   }
 
   "names.txt file is valid" in {
-    parser.parsePreferredNames()
+    parser.parseNameTransforms()
   }
 
   "names.txt applies correctly" in {
     store.getOrCreateEmpty(GeonamesId(5110266))
     store.getOrCreateEmpty(GeonamesId(4017700))
-    parser.parsePreferredNames(List(
+    parser.parseNameTransforms(List(
       "5110266 en|Bronx",
       "4017700 abbr|BCN|ABBREVIATION,PREFERRED"
     ).toIterator)
