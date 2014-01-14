@@ -345,7 +345,16 @@ struct BulkReverseGeocodeResponse {
   1: required map<i32, list<GeocodeInterpretation>> DEPRECATED_interpretationMap
 
   3: required list<GeocodeInterpretation> interpretations
+
+  // this list will be the same size as the input array of latlngs
+  // intepretationIndexes[0] is a list of indexes into interpretations that represent the
+  //   reverse geocodes of latlng[0]
+  // interpretationIndexes[1] are the interpretations that revgeo latlng[1] 
+  // latlngs that had no revgeo matches will have an empty array in the corresponding position
+  //   ... and so on
   4: list<list<i32>> interpretationIndexes
+
+  // currently unused
   5: optional list<GeocodeFeature> parentFeatures
 
   // only present if debug > 0 in request
@@ -359,7 +368,15 @@ struct BulkSlugLookupRequest {
 
 struct BulkSlugLookupResponse {
   1: required list<GeocodeInterpretation> interpretations
+
+  // this list will be the same size as the input array of slugs
+  // intepretationIndexes[0] is a list of indexes into interpretations that represent the
+  //   lookup of slugs[0]
+  // interpretationIndexes[1] are the interpretations that map to slugs[1] 
+  //   ... and so on
   2: list<list<i32>> interpretationIndexes
+
+  // currently unused
   4: optional list<GeocodeFeature> parentFeatures
 
   // only present if debug > 0 in request
