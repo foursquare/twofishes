@@ -4,7 +4,7 @@ then
    echo "File $FILE exists."
 else
    curl -o $FILE.zip http://download.geonames.org/export/dump/alternateNames.zip
-   unzip $FILE.zip
+   unzip -o $FILE.zip
    mv alternateNames.txt $FILE
    rm $FILE.zip
 fi

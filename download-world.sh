@@ -14,7 +14,7 @@ then
    echo "File $FILE exists."
 else
    curl -o $FILE.zip http://download.geonames.org/export/dump/allCountries.zip
-   unzip $FILE.zip
+   unzip -o $FILE.zip
    mv allCountries.txt $FILE
    rm $FILE.zip
 fi
@@ -25,7 +25,7 @@ then
    echo "File $FILE exists."
 else
    curl -o $FILE.zip http://download.geonames.org/export/zip/allCountries.zip
-   unzip $FILE.zip
+   unzip -o $FILE.zip
    mv allCountries.txt $FILE
    rm $FILE.zip
 fi
