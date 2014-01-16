@@ -192,6 +192,15 @@ trait NameUtils {
       .toList
   def isFeatureBlacklistedforParent(id: Long) = blacklistedParentIds.has(id)
 
+  private val dependentCountryRelationships =
+    new BufferedSource(getClass.getResourceAsStream("/dependent_countries.txt"))
+      .getLines.filterNot(_.startsWith("#"))
+      .map(line => {
+          var parts = line.split("\\|")
+          (parts(0),parts(1).split(",").toList)
+        })
+      .toMap
+  def getDependentCountriesForCountry(cc: String): List[String] = dependentCountryRelationships.getOrElse(cc, Nil)
 
   // Given an optional language and an abbreviation preference, find the best name
   // for a feature in the current context.

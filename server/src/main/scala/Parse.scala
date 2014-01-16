@@ -50,15 +50,14 @@ case class Parse[T <: MaybeSorted](
   def setFinalScore(score: Double) { finalScore = score }
 
   override def toString: String = {
-    val name = this.headOption.map(f => {
+    val namesandids = this.map(f => {
       val name = NameUtils.bestName(f.fmatch.feature, None, false).map(_.name).getOrElse("UNKNOWN")
       val cc = f.fmatch.feature.cc
-      "%s, %s".format(name, cc)
-    }).getOrElse("???")
-    // god forgive this line of code
-    val id = this.headOption.flatMap(_.fmatch.feature.ids.headOption.map(
-      fid => "%s:%s".format(fid.source, fid.id))).getOrElse("no:id")
-    "%s %s".format(id, name)
+      val id = f.fmatch.feature.ids.headOption.map(
+        fid => "%s:%s".format(fid.source, fid.id)).getOrElse("no:id")
+      "%s %s %s".format(id, name, cc)
+    })
+    "%d features: %s".format(this.size, namesandids.mkString(","))
   }
 
   def tokenLength = fmatches.map(pp => pp.tokenEnd - pp.tokenStart).sum

@@ -8,6 +8,7 @@ import com.foursquare.twofishes.util.Lists.Implicits._
 import org.bson.types.ObjectId
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._
+import com.foursquare.twofishes.util.NameUtils
 
 // TODO
 // --make autocomplete faster
@@ -108,10 +109,24 @@ class GeocoderImpl(
         val subParsesByCountry: Map[String, SortedParseSeq] = subParses.groupBy(_.countryCode)
         val featuresByCountry: Map[String, Seq[FeatureMatch]] = featureMatches.groupBy(_.fmatch.feature.cc)
 
+        /*
+         * augment with duplicate subparses for dependent countries
+         * only duplicate subparse for a dependent country code if there is a feature match but no
+         * existing subparse with the same country code
+         */
+        val augmentedSubParsesByCountry = new scala.collection.mutable.HashMap[String, SortedParseSeq]()
+        subParsesByCountry.keys.foreach(cc => {
+          NameUtils.getDependentCountriesForCountry(cc).foreach(dc => {
+            if (featuresByCountry.contains(dc) && !subParsesByCountry.contains(dc)) {
+              augmentedSubParsesByCountry += (dc -> subParsesByCountry.getOrElse(cc, Nil))
+            }
+          })
+        })
+
         (for {
-          cc <- subParsesByCountry.keys
+          cc <- augmentedSubParsesByCountry.keys
           f <- featuresByCountry.getOrElse(cc, Nil)
-          p <- subParsesByCountry.getOrElse(cc, Nil)
+          p <- augmentedSubParsesByCountry.getOrElse(cc, Nil)
         } yield {
           buildParse(f, p)
         }).flatten
@@ -175,7 +190,8 @@ class GeocoderImpl(
         //logger.ifDebug("checking if %s in parents".format(f.fmatch.id))
         f.fmatch.longId == most_specific.fmatch.longId ||
         most_specific.fmatch.scoringFeatures.parentIds.has(f.fmatch.longId) ||
-        most_specific.fmatch.scoringFeatures.extraRelationIds.has(f.fmatch.longId)
+        most_specific.fmatch.scoringFeatures.extraRelationIds.has(f.fmatch.longId) ||
+        NameUtils.getDependentCountriesForCountry(f.fmatch.feature.cc).has(most_specific.fmatch.feature.cc)
       })
     }
   }
