@@ -40,7 +40,7 @@ object GeocoderBuild extends Build {
     resolvers += "repo.novus snaps" at "http://repo.novus.com/snapshots/",
     resolvers += "Java.net Maven 2 Repo" at "http://download.java.net/maven/2",
     resolvers += "apache" at "http://repo2.maven.org/maven2/org/apache/hbase/hbase/",
-    // resolvers += "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos/",
+    resolvers += "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos/",
     resolvers += "springsource" at "http://repo.springsource.org/libs-release-remote",
     resolvers ++= Seq("snapshots" at "http://oss.sonatype.org/content/repositories/snapshots",
                       "releases"  at "http://oss.sonatype.org/content/repositories/releases"),
