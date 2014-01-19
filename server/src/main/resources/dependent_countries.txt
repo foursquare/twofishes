@@ -1,5 +1,5 @@
 # country => dependent countries
-NL|AN,AW,MF
+NL|AN,AW,SX
 US|AS,FM,GU,MH,MP,PR,UM,VI
 FI|AX
 FR|BL,GF,GP,MF,MQ,PF,PM,RE,TF,WF,YT

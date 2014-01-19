@@ -8,7 +8,7 @@ import com.foursquare.twofishes.util.Lists.Implicits._
 import org.bson.types.ObjectId
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._
-import com.foursquare.twofishes.util.NameUtils
+import com.foursquare.twofishes.util.CountryUtils
 
 // TODO
 // --make autocomplete faster
@@ -116,7 +116,10 @@ class GeocoderImpl(
          */
         val augmentedSubParsesByCountry = new scala.collection.mutable.HashMap[String, SortedParseSeq]()
         subParsesByCountry.keys.foreach(cc => {
-          NameUtils.getDependentCountriesForCountry(cc).foreach(dc => {
+          // first copy over each subparse unconditionally
+          augmentedSubParsesByCountry += (cc -> subParsesByCountry.getOrElse(cc, Nil))
+          // then add in necessary duplicate subparses for dependent countries, if any
+          CountryUtils.getDependentCountryCodesForCountry(cc).foreach(dc => {
             if (featuresByCountry.contains(dc) && !subParsesByCountry.contains(dc)) {
               augmentedSubParsesByCountry += (dc -> subParsesByCountry.getOrElse(cc, Nil))
             }
@@ -191,7 +194,7 @@ class GeocoderImpl(
         f.fmatch.longId == most_specific.fmatch.longId ||
         most_specific.fmatch.scoringFeatures.parentIds.has(f.fmatch.longId) ||
         most_specific.fmatch.scoringFeatures.extraRelationIds.has(f.fmatch.longId) ||
-        NameUtils.getDependentCountriesForCountry(f.fmatch.feature.cc).has(most_specific.fmatch.feature.cc)
+        (f.fmatch.feature.woeType == YahooWoeType.COUNTRY && CountryUtils.getDependentCountryCodesForCountry(f.fmatch.feature.cc).has(most_specific.fmatch.feature.cc))
       })
     }
   }

@@ -2,7 +2,7 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.Identity._
-import com.foursquare.twofishes.util.{NameNormalizer, NameUtils, StoredFeatureId}
+import com.foursquare.twofishes.util.{NameNormalizer, NameUtils, StoredFeatureId, CountryUtils, GeonamesId}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.foursquare.twofishes.util.NameUtils.BestNameMatch
 import org.bson.types.ObjectId
@@ -97,13 +97,15 @@ class AutocompleteGeocoderImpl(
 
         matches.flatMap(featureMatch => {
           val fid = featureMatch.fmatch.longId
+          val fcc = featureMatch.fmatch.feature.cc
           if (req.debug > 0) {
             logger.ifDebug("checking if %s is an unused parent of %s",
               fid, parse.map(_.fmatch.longId))
           }
 
           val isValid = (parse.exists(_.fmatch.scoringFeatures.parentIds.has(fid)) ||
-            parse.exists(_.fmatch.scoringFeatures.extraRelationIds.has(fid))) &&
+            parse.exists(_.fmatch.scoringFeatures.extraRelationIds.has(fid)) ||
+            (featureMatch.fmatch.feature.woeType == YahooWoeType.COUNTRY && parse.exists(p => CountryUtils.getDependentCountryCodesForCountry(fcc).has(p.fmatch.feature.cc)))) &&
             !parse.exists(_.fmatch.longId.toString == fid) &&
             featureMatch.possibleNameHits.exists(n => allowedLanguages.has(n.lang))
 
@@ -175,9 +177,16 @@ class AutocompleteGeocoderImpl(
             }}).toSeq
           } else {
             val parents = store.getByFeatureIds(possibleParents).toSeq
+            val countriesOnWhichParentsAreDependent = 
+              parents.map(_._2.feature.cc)
+              .toList
+              .distinct
+              .flatMap(dcc => CountryUtils.getCountryIdOnWhichCountryIsDependent(dcc).map(id => GeonamesId(id)))
+            
+            val augmentedParents = parents ++ store.getByFeatureIds(countriesOnWhichParentsAreDependent).toSeq
             logger.ifDebug("looking for %s in parents: %s", query, parents)
             for {
-              (oid, servingFeature) <- parents
+              (oid, servingFeature) <- augmentedParents
               names = servingFeature.feature.names.filter(n => matchName(n, query, isEnd))
               if names.nonEmpty
             } yield {
