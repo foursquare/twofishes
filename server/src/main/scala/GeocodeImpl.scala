@@ -114,17 +114,13 @@ class GeocoderImpl(
          * only duplicate subparse for a dependent country code if there is a feature match but no
          * existing subparse with the same country code
          */
-        val augmentedSubParsesByCountry = new scala.collection.mutable.HashMap[String, SortedParseSeq]()
-        subParsesByCountry.keys.foreach(cc => {
-          // first copy over each subparse unconditionally
-          augmentedSubParsesByCountry += (cc -> subParsesByCountry.getOrElse(cc, Nil))
-          // then add in necessary duplicate subparses for dependent countries, if any
-          CountryUtils.getDependentCountryCodesForCountry(cc).foreach(dc => {
-            if (featuresByCountry.contains(dc) && !subParsesByCountry.contains(dc)) {
-              augmentedSubParsesByCountry += (dc -> subParsesByCountry.getOrElse(cc, Nil))
-            }
-          })
-        })
+        val augmentedSubParsesByCountry = (for {
+            (cc, parses) <- subParsesByCountry
+            dcc <- CountryUtils.getDependentCountryCodesForCountry(cc)
+            if (featuresByCountry.contains(dcc) && !subParsesByCountry.contains(dcc))
+          } yield {
+            (dcc -> parses)
+          }).toMap ++ subParsesByCountry
 
         (for {
           cc <- augmentedSubParsesByCountry.keys
@@ -194,7 +190,8 @@ class GeocoderImpl(
         f.fmatch.longId == most_specific.fmatch.longId ||
         most_specific.fmatch.scoringFeatures.parentIds.has(f.fmatch.longId) ||
         most_specific.fmatch.scoringFeatures.extraRelationIds.has(f.fmatch.longId) ||
-        (f.fmatch.feature.woeType == YahooWoeType.COUNTRY && CountryUtils.getDependentCountryCodesForCountry(f.fmatch.feature.cc).has(most_specific.fmatch.feature.cc))
+        (f.fmatch.feature.woeType == YahooWoeType.COUNTRY && 
+          CountryUtils.isCountryDependentOnCountry(most_specific.fmatch.feature.cc, f.fmatch.feature.cc))
       })
     }
   }

@@ -105,9 +105,12 @@ class AutocompleteGeocoderImpl(
 
           val isValid = (parse.exists(_.fmatch.scoringFeatures.parentIds.has(fid)) ||
             parse.exists(_.fmatch.scoringFeatures.extraRelationIds.has(fid)) ||
-            (featureMatch.fmatch.feature.woeType == YahooWoeType.COUNTRY && parse.exists(p => CountryUtils.getDependentCountryCodesForCountry(fcc).has(p.fmatch.feature.cc)))) &&
+            (featureMatch.fmatch.feature.woeType == YahooWoeType.COUNTRY 
+              && parse.exists(p => 
+                CountryUtils.isCountryDependentOnCountry(p.fmatch.feature.cc, fcc))
+            ) &&
             !parse.exists(_.fmatch.longId.toString == fid) &&
-            featureMatch.possibleNameHits.exists(n => allowedLanguages.has(n.lang))
+            featureMatch.possibleNameHits.exists(n => allowedLanguages.has(n.lang)))
 
           if (isValid) {
             if (req.debug > 0) {
@@ -182,7 +185,7 @@ class AutocompleteGeocoderImpl(
               .toList
               .distinct
               .flatMap(dcc => CountryUtils.getCountryIdOnWhichCountryIsDependent(dcc).map(id => GeonamesId(id)))
-            
+
             val augmentedParents = parents ++ store.getByFeatureIds(countriesOnWhichParentsAreDependent).toSeq
             logger.ifDebug("looking for %s in parents: %s", query, parents)
             for {

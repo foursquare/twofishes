@@ -2,6 +2,7 @@
 package com.foursquare.twofishes.util
 
 import scala.io.BufferedSource
+import com.foursquare.twofishes.util.Lists.Implicits._
 
 object CountryInfoFields extends Enumeration {
   val ISO2,
@@ -52,7 +53,8 @@ object CountryUtils {
           (parts(0) -> parts(1).split(",").toList)
         })
       .toMap
-	def getDependentCountryCodesForCountry(cc: String): List[String] = dependentCountryRelationships.getOrElse(cc, Nil)
+	def getDependentCountryCodesForCountry(cc: String): List[String] = 
+    dependentCountryRelationships.getOrElse(cc, Nil)
 
 	private val inverseDependentCountryRelationships = (for {
   	  cc <- dependentCountryRelationships.keys
@@ -63,5 +65,9 @@ object CountryUtils {
   // dependent country -> parent country relationships are meant to be one to one
   // this means we cannot support queries of the form "X, Y" where X is in Antarctica
   // and Y is a country with territories in Antarctica, which is probably all right
-  def getCountryIdOnWhichCountryIsDependent(cc: String): Option[Long] = countryCodeToGeoIdMap.get(inverseDependentCountryRelationships.getOrElse(cc, ""))
+  def getCountryIdOnWhichCountryIsDependent(cc: String): Option[Long] = 
+    countryCodeToGeoIdMap.get(inverseDependentCountryRelationships.getOrElse(cc, ""))
+
+  def isCountryDependentOnCountry(dcc: String, cc: String) =
+    getDependentCountryCodesForCountry(cc).has(dcc)
 }
