@@ -30,6 +30,7 @@ GR|Nomós
 ID|Kota
 BG|Oblast
 *|Obshtina
+ID|Banjar
 *|Община
 *|область|обл
 *|Область|Обл
