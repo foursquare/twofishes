@@ -643,10 +643,16 @@ class GeonamesParser(
 
   def parseNameTransforms(): Unit = {
     // geonameid -> lang|prefName|[optional flags]
-      val files = (new File("data/custom/name-transforms").listFiles ++ new File("data/private/name-transforms").listFiles)
+      val nameTransformsDirs = List(
+        new File("data/custom/name-transforms"),
+        new File("data/private/name-transforms")
+      )
+      val files = nameTransformsDirs.flatMap(dir => {
+        if (dir.exists) { dir.listFiles } else { Nil }
+      })
       files.foreach(file => {
-      val lines = scala.io.Source.fromFile(file).getLines
-      parseNameTransforms(lines, file.toString)
+        val lines = scala.io.Source.fromFile(file).getLines
+        parseNameTransforms(lines, file.toString)
     })
   }
 
