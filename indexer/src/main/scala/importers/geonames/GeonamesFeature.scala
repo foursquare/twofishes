@@ -132,13 +132,13 @@ class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[Str
   def isPopulatedPlace = featureClass.exists(_ == "P")
   def isPostalCode = featureClass.exists(_ == "Z")
   def isSuburb = featureCode.exists(_.contains("PPLX"))
-  def isCity = featureCode.exists(_.contains("PPL")) || 
+  def isCity = featureCode.exists(_.contains("PPL")) ||
     (isPopulatedPlace && !isSuburb)
   def isIsraeliSettlement = featureCode.exists(_.contains("STLMT"))
   def isIsland = featureCode.exists(_.contains("ISL"))
   def isCountry = featureCode.exists(_.contains("PCL"))
   def isAdmin = adminLevel != OTHER
-  def isAirport = featureCode.exists(_ == "AIRP")
+  def isAirport = featureCode.exists(_.startsWith("AIR"))
   def isAdmin1Capital = featureCode.exists(_ == "PPLA")
   val stupidCodes = List(
     "RGNE", // economic region
@@ -249,7 +249,7 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) {
   def population: Option[Int] = flatTryO {values.get(POPULATION).map(_.toInt)}
   def latitude: Double = values.get(LATITUDE).map(_.toDouble).get
   def longitude: Double = values.get(LONGITUDE).map(_.toDouble).get
-  def countryCode: String = if (featureClass.isIsraeliSettlement) { 
+  def countryCode: String = if (featureClass.isIsraeliSettlement) {
     "IL"
   } else {
     values.get(COUNTRY_CODE).getOrElse("XX")
