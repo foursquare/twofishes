@@ -53,7 +53,6 @@ First time setup
 ================
 *   git clone https://github.com/foursquare/twofishes.git
 *   cd twofishes
-*   ./init.sh
 *   If you want to download country: ./download-country.sh [ISO 3166 country code] (For example US, GB, etc)
 *   If you want to download world: ./download-world.sh
 
