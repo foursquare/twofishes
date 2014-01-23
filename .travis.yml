@@ -1,0 +1,7 @@
+# see http://docs.travis-ci.com/user/languages/scala/ for the configuration
+# options we can use here.
+language: scala
+scala:
+   - 2.9.2
+   - 2.10.2
+sbt_args: -J-Xmx2G -J-XX:MaxPermSize=384M
