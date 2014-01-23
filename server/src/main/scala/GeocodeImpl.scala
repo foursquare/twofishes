@@ -8,6 +8,7 @@ import com.foursquare.twofishes.util.Lists.Implicits._
 import org.bson.types.ObjectId
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._
+import com.foursquare.twofishes.util.CountryUtils
 
 // TODO
 // --make autocomplete faster
@@ -108,10 +109,23 @@ class GeocoderImpl(
         val subParsesByCountry: Map[String, SortedParseSeq] = subParses.groupBy(_.countryCode)
         val featuresByCountry: Map[String, Seq[FeatureMatch]] = featureMatches.groupBy(_.fmatch.feature.cc)
 
+        /*
+         * augment with duplicate subparses for dependent countries
+         * only duplicate subparse for a dependent country code if there is a feature match but no
+         * existing subparse with the same country code
+         */
+        val augmentedSubParsesByCountry = (for {
+            (cc, parses) <- subParsesByCountry
+            dcc <- CountryUtils.getDependentCountryCodesForCountry(cc)
+            if (featuresByCountry.contains(dcc) && !subParsesByCountry.contains(dcc))
+          } yield {
+            (dcc -> parses)
+          }).toMap ++ subParsesByCountry
+
         (for {
-          cc <- subParsesByCountry.keys
+          cc <- augmentedSubParsesByCountry.keys
           f <- featuresByCountry.getOrElse(cc, Nil)
-          p <- subParsesByCountry.getOrElse(cc, Nil)
+          p <- augmentedSubParsesByCountry.getOrElse(cc, Nil)
         } yield {
           buildParse(f, p)
         }).flatten
@@ -175,7 +189,9 @@ class GeocoderImpl(
         //logger.ifDebug("checking if %s in parents".format(f.fmatch.id))
         f.fmatch.longId == most_specific.fmatch.longId ||
         most_specific.fmatch.scoringFeatures.parentIds.has(f.fmatch.longId) ||
-        most_specific.fmatch.scoringFeatures.extraRelationIds.has(f.fmatch.longId)
+        most_specific.fmatch.scoringFeatures.extraRelationIds.has(f.fmatch.longId) ||
+        (f.fmatch.feature.woeType == YahooWoeType.COUNTRY && 
+          CountryUtils.isCountryDependentOnCountry(most_specific.fmatch.feature.cc, f.fmatch.feature.cc))
       })
     }
   }

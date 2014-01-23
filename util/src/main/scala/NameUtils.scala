@@ -192,7 +192,6 @@ trait NameUtils {
       .toList
   def isFeatureBlacklistedforParent(id: Long) = blacklistedParentIds.has(id)
 
-
   // Given an optional language and an abbreviation preference, find the best name
   // for a feature in the current context.
   class FeatureNameScorer(lang: Option[String], preferAbbrev: Boolean) {
