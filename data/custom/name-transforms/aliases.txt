@@ -39,7 +39,7 @@
 # 1642903|DKI Jakarta
 1642907 en|DKI Jakarta|ALT_NAME
 1642903 en|Jakarta Capital Region|ALT_NAME
-498817 en|город Санкт-Петербург,ru|ALT_NAME
+498817 ru|город Санкт-Петербург|ALT_NAME
 5202009 en|город Москва|ALT_NAME
 1733046 en|WP Kuala Lumpur|ALT_NAME
 # tokyo metropolitan region -- aliasing to tokyo for now
@@ -99,3 +99,6 @@
 2647601 en|Cheshire|ALT_NAME
 7290537 en|Cheshire|ALT_NAME
 7290536 en|Cheshire|ALT_NAME
+1835847 en|Seoul-teukbyeolsi|ALT_NAME
+7626836 en|AN|ALT_NAME
+1843140 ko|강남|ALT_NAME

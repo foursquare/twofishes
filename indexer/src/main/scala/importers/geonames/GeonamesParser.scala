@@ -643,7 +643,8 @@ class GeonamesParser(
 
   def parseNameTransforms(): Unit = {
     // geonameid -> lang|prefName|[optional flags]
-    val filename = new File("data/custom/name-transforms").listFiles.foreach(file => {
+      val files = (new File("data/custom/name-transforms").listFiles ++ new File("data/private/name-transforms").listFiles)
+      files.foreach(file => {
       val lines = scala.io.Source.fromFile(file).getLines
       parseNameTransforms(lines, file.toString)
     })
