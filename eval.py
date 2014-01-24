@@ -217,6 +217,8 @@ class GeocodeFetch(threading.Thread):
           geomB = interpB['feature']['geometry']
           centerA = geomA['center']
           centerB = geomB['center']
+          scoresA = interpA.get('scores', defaultdict)
+          scoresB = interpB.get('scores', defaultdict)
           distance = earthDistance(
             centerA['lat'],
             centerA['lng'],
@@ -234,6 +236,12 @@ class GeocodeFetch(threading.Thread):
             evallog('# of interpretations differ')
           elif interpA['feature']['displayName'] != interpB['feature']['displayName']:
             evallog('displayName changed', interpA['feature']['displayName'], interpB['feature']['displayName'])
+          elif 'wktGeometry' in geomA and 'wktGeometry' in geomB and geomA['wktGeometry'] != geomB['wktGeometry']:
+            evallog('polygon geometries differ')
+          elif scoresA.get('percentOfRequestCovered', None) != scoresB.get('percentOfRequestCovered', None):
+            evallog('percentOfRequestCovered differ')
+          elif scoresA.get('percentOfFeatureCovered', None) != scoresB.get('percentOfFeatureCovered', None):
+            evallog('percentOfFeatureCovered differ')
 
       self.queue.task_done()
 

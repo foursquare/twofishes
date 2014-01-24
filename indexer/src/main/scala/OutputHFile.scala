@@ -340,14 +340,20 @@ class FeatureIndexer(override val basepath: String, override val fidMap: FidMap)
       )
     )
 
-    makeGeocodeServingFeature(partialFeature)
+    val geom =
+      if (fullFeature.feature.geometryOption.flatMap(_.wkbGeometryOption).isDefined) {
+        fullFeature.feature.geometryOption.map(_.wkbGeometryByteArray)
+      } else {
+        None
+      }
+    makeGeocodeServingFeature(partialFeature, geom)
   }
 
   def makeGeocodeRecord(g: GeocodeRecord) = {
     makeGeocodeServingFeature(g.toGeocodeServingFeature())
   }
 
-  def makeGeocodeServingFeature(f: GeocodeServingFeature) = {
+  def makeGeocodeServingFeature(f: GeocodeServingFeature, polygon: Option[Array[Byte]] = None) = {
     val parents = for {
       parentLongId <- f.scoringFeatures.parentIds
       parentFid <- StoredFeatureId.fromLong(parentLongId)
@@ -356,9 +362,20 @@ class FeatureIndexer(override val basepath: String, override val fidMap: FidMap)
       parentFid
     }
 
-    f.copy(
-      scoringFeatures = f.scoringFeatures.copy(parentIds = parents.map(_.longId))
-    )
+    val wkbReader = new WKBReader()
+
+    val featureGeom = if (f.feature.geometryOption.flatMap(_.wkbGeometryOption).isDefined) {
+      f.feature.geometryOption.map(_.wkbGeometryByteArray)
+    } else {
+      None
+    }
+
+    val area = polygon.orElse(featureGeom).map(p => wkbReader.read(p).getArea())
+
+    val scoringFeatures = f.scoringFeatures.mutableCopy
+    scoringFeatures.parentIds = parents.map(_.longId)
+    area.foreach(a => scoringFeatures.areaInDegrees = a)
+    f.copy(scoringFeatures = scoringFeatures)
   }
 
   def writeFeatures() {
@@ -433,9 +450,11 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
         )
       }
 
+      val totalArea = geom.getArea()
+
       logDuration("clipped and outputted cover for %d cells (%s)".format(cells.size, record.featureId)) {
         val recordShape = geom.buffer(0)
-	val preparedRecordShape = PreparedGeometryFactory.prepare(recordShape)
+      	val preparedRecordShape = PreparedGeometryFactory.prepare(recordShape)
         cells.foreach(
           (cellid: S2CellId) => {
             val bucket = s2map.getOrElseUpdate(cellid.id, new ListBuffer[CellGeometry]())
@@ -447,7 +466,6 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
               cellGeometryBuilder.wkbGeometry(ByteBuffer.wrap(wkbWriter.write(s2shape.intersection(recordShape))))
             }
             cellGeometryBuilder.woeType(record.woeType)
-            cellGeometryBuilder.oid(ByteBuffer.wrap(record.featureId.legacyObjectId.toByteArray()))
             cellGeometryBuilder.longId(record._id)
             bucket += cellGeometryBuilder.result
           }

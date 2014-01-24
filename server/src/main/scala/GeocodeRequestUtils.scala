@@ -14,7 +14,7 @@ object GeocodeRequestUtils {
   def shouldFetchPolygon(req: CommonGeocodeRequestParams) =
     responseIncludes(req, ResponseIncludes.WKB_GEOMETRY) ||
     responseIncludes(req, ResponseIncludes.WKT_GEOMETRY) ||
-    responseIncludes(req, ResponseIncludes.REVGEO_COVERAGE) ||
+    // responseIncludes(req, ResponseIncludes.REVGEO_COVERAGE) ||
     responseIncludes(req, ResponseIncludes.WKB_GEOMETRY_SIMPLIFIED) ||
     responseIncludes(req, ResponseIncludes.WKT_GEOMETRY_SIMPLIFIED)
 
