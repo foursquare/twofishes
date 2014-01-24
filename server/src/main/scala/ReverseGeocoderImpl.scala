@@ -9,6 +9,7 @@ import com.twitter.util.Duration
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory, Point => JTSPoint}
 import com.vividsolutions.jts.io.{WKBReader, WKTWriter}
 import com.vividsolutions.jts.util.GeometricShapeFactory
+import com.weiglewilczek.slf4s.Logging
 import org.apache.thrift.TBaseHelper
 import org.bson.types.ObjectId
 import scala.collection.mutable.ListBuffer
@@ -54,20 +55,34 @@ trait TimeResponseHelper {
 class ReverseGeocoderHelperImpl(
   store: GeocodeStorageReadService,
   req: CommonGeocodeRequestParams,
-  logger: MemoryLogger
-) extends GeocoderImplTypes with TimeResponseHelper with BulkImplHelpers {
+  queryLogger: MemoryLogger
+) extends GeocoderImplTypes with TimeResponseHelper with BulkImplHelpers with Logging {
   def featureGeometryIntersections(wkbGeometry: Array[Byte], otherGeom: Geometry) = {
     val wkbReader = new WKBReader()
     val geom = wkbReader.read(wkbGeometry)
-    (geom, geom.intersects(otherGeom))
+    try {
+      (geom, geom.intersects(otherGeom))
+    } catch {
+      case e =>
+        Stats.addMetric("intersects_exception", 1)
+        logger.error("failed to calculate intersection: %s".format(otherGeom), e)
+        (geom, false)
+    }
   }
 
   def computeCoverage(
     featureGeometry: Geometry,
     requestGeometry: Geometry
   ): Double = {
-    val intersection = featureGeometry.intersection(requestGeometry)
-    math.min(1, intersection.getArea() / requestGeometry.getArea())
+    try {
+      val intersection = featureGeometry.intersection(requestGeometry)
+      math.min(1, intersection.getArea() / requestGeometry.getArea())
+    } catch {
+      case e =>
+        Stats.addMetric("intersection_exception", 1)
+        logger.error("failed to calculate intersection: %s x %s".format(featureGeometry, requestGeometry), e)
+        0.0
+    }
   }
 
   def responseIncludes(include: ResponseIncludes): Boolean =
@@ -77,12 +92,12 @@ class ReverseGeocoderHelperImpl(
     geom match {
       case p: JTSPoint =>
         val levels = getAllLevels()
-        logger.ifDebug("doing point revgeo on %s at levels %s", p, levels)
+        queryLogger.ifDebug("doing point revgeo on %s at levels %s", p, levels)
         levels.map(level =>
           GeometryUtils.getS2CellIdForLevel(p.getCoordinate.y, p.getCoordinate.x, level).id()
         )
       case g =>
-        val cellids = logger.logDuration("s2_cover_time", "s2_cover_time") {
+        val cellids = queryLogger.logDuration("s2_cover_time", "s2_cover_time") {
           GeometryUtils.coverAtAllLevels(
             geom,
             store.getMinS2Level,
@@ -100,8 +115,8 @@ class ReverseGeocoderHelperImpl(
     cellGeometries: Seq[CellGeometry]
   ): Seq[StoredFeatureId] = {
     if (req.debug > 0) {
-      logger.ifDebug("had %d candidates", cellGeometries.size)
-      // logger.ifDebug("s2 cells: %s", cellids)
+      queryLogger.ifDebug("had %d candidates", cellGeometries.size)
+      // queryLogger.ifDebug("s2 cells: %s", cellids)
     }
 
     val matches = new ListBuffer[StoredFeatureId]()
@@ -114,18 +129,18 @@ class ReverseGeocoderHelperImpl(
     } yield {
       if (!matches.has(fid)) {
         if (cellGeometry.full) {
-          logger.ifDebug("was full: %s", fid)
+          queryLogger.ifDebug("was full: %s", fid)
           matches.append(fid)
         } else {
           cellGeometry.wkbGeometryOption match {
             case Some(wkbGeometry) =>
-              val (geom, intersects) = logger.logDuration("intersectionCheck", "intersectionCheck") {
+              val (geom, intersects) = queryLogger.logDuration("intersectionCheck", "intersectionCheck") {
                 featureGeometryIntersections(TBaseHelper.byteBufferToByteArray(wkbGeometry), otherGeom)
               }
               if (intersects) {
                 matches.append(fid)
               }
-            case None => logger.ifDebug("not full and no geometry for: %s", fid)
+            case None => queryLogger.ifDebug("not full and no geometry for: %s", fid)
           }
         }
       }
@@ -214,7 +229,7 @@ class ReverseGeocoderHelperImpl(
 
     val parseParams = ParseParams()
 
-    val responseProcessor = new ResponseProcessor(req, store, logger)
+    val responseProcessor = new ResponseProcessor(req, store, queryLogger)
     val interpretations = responseProcessor.hydrateParses(sortedParses, parseParams, polygonMap,
       fixAmbiguousNames = false)
 
@@ -232,15 +247,15 @@ class ReverseGeocoderHelperImpl(
 class ReverseGeocoderImpl(
   store: GeocodeStorageReadService,
   req: GeocodeRequest
-) extends GeocoderImplTypes with TimeResponseHelper {
-  val logger = new MemoryLogger(req)
+) extends GeocoderImplTypes with TimeResponseHelper with Logging {
+  val queryLogger = new MemoryLogger(req)
   val commonParams = GeocodeRequestUtils.geocodeRequestToCommonRequestParams(req)
   val reverseGeocoder =
-    new ReverseGeocoderHelperImpl(store, commonParams, logger)
+    new ReverseGeocoderHelperImpl(store, commonParams, queryLogger)
 
   def doSingleReverseGeocode(geom: Geometry): GeocodeResponse = {
     val (interpIdxes, interpretations, _) = reverseGeocoder.doBulkReverseGeocode(List(geom))
-    val response = ResponseProcessor.generateResponse(req.debug, logger,
+    val response = ResponseProcessor.generateResponse(req.debug, queryLogger,
       interpIdxes(0).flatMap(interpIdx => interpretations.lift(interpIdx)),
       requestGeom = if (req.debug > 0) { Some(geom) } else { None })
     response
@@ -309,8 +324,8 @@ class BulkReverseGeocoderImpl(
 ) extends GeocoderImplTypes with TimeResponseHelper {
   val params = req.paramsOption.getOrElse(CommonGeocodeRequestParams.newBuilder.result)
 
-  val logger = new MemoryLogger(params)
-  val reverseGeocoder = new ReverseGeocoderHelperImpl(store, params, logger)
+  val queryLogger = new MemoryLogger(params)
+  val reverseGeocoder = new ReverseGeocoderHelperImpl(store, params, queryLogger)
 
   def reverseGeocode(): BulkReverseGeocodeResponse = {
     Stats.incr("bulk-revgeo-requests", 1)
@@ -328,7 +343,7 @@ class BulkReverseGeocoderImpl(
       .parentFeatures(parents)
 
     if (params.debug > 0) {
-      responseBuilder.debugLines(logger.getLines)
+      responseBuilder.debugLines(queryLogger.getLines)
     }
     responseBuilder.result
   }
