@@ -124,8 +124,9 @@ class ReverseGeocoderHelperImpl(
     for {
       cellGeometry <- cellGeometries
       if (req.woeRestrict.isEmpty || cellGeometry.woeTypeOption.exists(req.woeRestrict.has))
-      oid <- cellGeometry.oidOption.map(bb => new ObjectId(TBaseHelper.byteBufferToByteArray(bb)))
-      fid <- StoredFeatureId.fromLegacyObjectId(oid)
+      // oid <- cellGeometry.oidOption.map(bb => new ObjectId(TBaseHelper.byteBufferToByteArray(bb)))
+      longId <- cellGeometry.longIdOption
+      fid <- StoredFeatureId.fromLong(longId)
     } yield {
       if (!matches.has(fid)) {
         if (cellGeometry.full) {
@@ -161,6 +162,8 @@ class ReverseGeocoderHelperImpl(
       } yield {
         cellid -> store.getByS2CellId(cellid)
       }).toMap
+
+
 
     val geomToMatches = (for {
       (otherGeom, index) <- otherGeoms.zipWithIndex

@@ -72,7 +72,6 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
           ByteBuffer.wrap(wkbWriter.write(s2shape.intersection(recordShape))))
       }
       cellGeometryBuilder.woeType(woeType)
-      cellGeometryBuilder.oid(ByteBuffer.wrap(id.legacyObjectId.toByteArray()))
       cellGeometryBuilder.longId(id.longId)
       bucket += cellGeometryBuilder.result
     })

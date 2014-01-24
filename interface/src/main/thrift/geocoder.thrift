@@ -159,7 +159,7 @@ struct ScoringFeatures {
   5: optional bool canGeocode = 1
   7: optional bool hasPoly = 0
   8: optional list<i64> extraRelationIds = [],
-
+  9: optional double areaInDegrees = 0.0
   3: optional list<string> DEPRECATED_parents = [],
 }
 
@@ -349,7 +349,7 @@ struct BulkReverseGeocodeResponse {
   // this list will be the same size as the input array of latlngs
   // intepretationIndexes[0] is a list of indexes into interpretations that represent the
   //   reverse geocodes of latlng[0]
-  // interpretationIndexes[1] are the interpretations that revgeo latlng[1] 
+  // interpretationIndexes[1] are the interpretations that revgeo latlng[1]
   // latlngs that had no revgeo matches will have an empty array in the corresponding position
   //   ... and so on
   4: list<list<i32>> interpretationIndexes
@@ -372,7 +372,7 @@ struct BulkSlugLookupResponse {
   // this list will be the same size as the input array of slugs
   // intepretationIndexes[0] is a list of indexes into interpretations that represent the
   //   lookup of slugs[0]
-  // interpretationIndexes[1] are the interpretations that map to slugs[1] 
+  // interpretationIndexes[1] are the interpretations that map to slugs[1]
   //   ... and so on
   2: list<list<i32>> interpretationIndexes
 
