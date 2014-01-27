@@ -6,7 +6,7 @@ struct CellGeometry {
   2: optional binary wkbGeometry
   3: optional geocoder.YahooWoeType woeType
   4: optional bool full
-  5: required i64 longId
+  5: optional i64 longId
 }
 
 struct CellGeometries {

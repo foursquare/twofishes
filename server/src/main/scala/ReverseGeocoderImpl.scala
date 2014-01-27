@@ -60,7 +60,7 @@ case class CellGeometryWrapper(cell: CellGeometry, cellid: Long) {
   def wkbGeometryOption = cell.wkbGeometryOption
   def woeTypeOption = cell.woeTypeOption
   def full = cell.full
-  def longId = cell.longId
+  def longIdOption = cell.longIdOption
   lazy val s2cellid = new S2CellId(cellid)
   lazy val geomOption: Option[Geometry] = {
     val wkbReader = new WKBReader()
@@ -138,7 +138,7 @@ class ReverseGeocoderHelperImpl(
     for {
       cellGeometry <- cellGeometries
       if (req.woeRestrict.isEmpty || cellGeometry.woeTypeOption.exists(req.woeRestrict.has))
-      longId = cellGeometry.longId
+      longId <- cellGeometry.longIdOption
       fid <- StoredFeatureId.fromLong(longId)
     } yield {
       if (!matches.has(fid)) {
@@ -188,7 +188,7 @@ class ReverseGeocoderHelperImpl(
     // map from FeatureId -> Seq[candidate cells+CellGeometry]
     val featureIdToCellGeometryMap: Map[StoredFeatureId, Seq[CellGeometryWrapper]] = {
       cellGeometryMap.toList.flatMap({case (cellid, geometries) => geometries })
-        .groupBy(cell => StoredFeatureId.fromLong(cell.longId).get)
+        .groupBy(cell => StoredFeatureId.fromLong(cell.longIdOption.getOrElse(0)).get)
     }
 
     val geomToMatches = (for {
