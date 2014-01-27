@@ -167,16 +167,19 @@ function geocode() {
   }
 
   var url = 'http://' + window.location.host + '/?debug=1'
-    + '&maxInterpretations=' + maxInterpretations
     + '&responseIncludes=EVERYTHING,WKT_GEOMETRY_SIMPLIFIED'
 
   if (query.match(/.*=.*/)) {
     url += '&' + query
   } else if (query.match(/^([-+]?\d{1,2}([.]\d+)?),\s*([-+]?\d{1,3}([.]\d+)?)$/)) {
+    maxInterpretations = 10
     url += '&ll=' + query
   } else {
     url += '&query=' + query
   }
+
+  url += '&maxInterpretations=' + maxInterpretations
+
 
   $.getJSON(url,
     function(data) { return success(data, bulkInputs) }
