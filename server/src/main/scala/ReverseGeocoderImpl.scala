@@ -1,9 +1,11 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
+import com.foursquare.geo.shapes.ShapefileS2Util
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.{GeoTools, GeometryUtils, StoredFeatureId, TwofishesLogger}
 import com.foursquare.twofishes.util.Lists.Implicits._
+import com.google.common.geometry.S2CellId
 import com.twitter.ostrich.stats.Stats
 import com.twitter.util.Duration
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory, Point => JTSPoint}
@@ -15,6 +17,7 @@ import org.bson.types.ObjectId
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._
+
 
 class ReverseGeocodeParseOrdering extends Ordering[Parse[Sorted]] {
   def compare(a: Parse[Sorted], b: Parse[Sorted]): Int = {
@@ -53,14 +56,19 @@ trait TimeResponseHelper {
   }
 }
 
-case class CellGeometryWrapper(cell: CellGeometry) {
+case class CellGeometryWrapper(cell: CellGeometry, cellid: Long) {
   def wkbGeometryOption = cell.wkbGeometryOption
   def woeTypeOption = cell.woeTypeOption
   def full = cell.full
   def longId = cell.longId
+  lazy val s2cellid = new S2CellId(cellid)
   lazy val geomOption: Option[Geometry] = {
     val wkbReader = new WKBReader()
-    wkbGeometryOption.map(wkbGeometry => wkbReader.read(TBaseHelper.byteBufferToByteArray(wkbGeometry)))
+    if (full) {
+      Some(ShapefileS2Util.fullGeometryForCell(s2cellid))
+    } else {
+      wkbGeometryOption.map(wkbGeometry => wkbReader.read(TBaseHelper.byteBufferToByteArray(wkbGeometry)))
+    }
   }
 }
 
@@ -174,7 +182,7 @@ class ReverseGeocoderHelperImpl(
       (for {
         cellid: Long <- geomIndexToCellIdMap.values.flatten.toSet
       } yield {
-        cellid -> store.getByS2CellId(cellid).map(CellGeometryWrapper)
+        cellid -> store.getByS2CellId(cellid).map(cell => CellGeometryWrapper(cell, cellid))
       }).toMap
 
     // map from FeatureId -> Seq[candidate cells+CellGeometry]
