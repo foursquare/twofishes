@@ -238,9 +238,9 @@ class GeocodeFetch(threading.Thread):
             evallog('displayName changed', interpA['feature']['displayName'], interpB['feature']['displayName'])
           elif 'wktGeometry' in geomA and 'wktGeometry' in geomB and geomA['wktGeometry'] != geomB['wktGeometry']:
             evallog('polygon geometries differ')
-          elif scoresA.get('percentOfRequestCovered', None) != scoresB.get('percentOfRequestCovered', None):
+          elif abs(scoresA.get('percentOfRequestCovered', 0.0) - scoresB.get('percentOfRequestCovered', 0.0)) > 0.000001:
             evallog('percentOfRequestCovered differ')
-          elif scoresA.get('percentOfFeatureCovered', None) != scoresB.get('percentOfFeatureCovered', None):
+          elif abs(scoresA.get('percentOfFeatureCovered', 0.0) - scoresB.get('percentOfFeatureCovered', 0.0)) > 0.000001:
             evallog('percentOfFeatureCovered differ')
 
       self.queue.task_done()
