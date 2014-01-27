@@ -239,8 +239,8 @@ class ReverseGeocoderHelperImpl(
               val overlapArea = computeOverlapArea(cellGeoms, geom)
               val requestArea = geom.getArea()
 
-              parse.scoringFeatures.percentOfRequestCovered(overlapArea / requestArea)
-              parse.scoringFeatures.percentOfFeatureCovered(overlapArea / totalArea)
+              parse.scoringFeatures.percentOfRequestCovered(math.min(1, overlapArea / requestArea))
+              parse.scoringFeatures.percentOfFeatureCovered(math.min(1, overlapArea / totalArea))
             }
           }
         }
