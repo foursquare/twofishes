@@ -166,20 +166,25 @@ function geocode() {
     query = rewrittenQuery;
   }
 
+  var url = 'http://' + window.location.host + '/?debug=1'
+    + '&maxInterpretations=' + maxInterpretations
+    + '&responseIncludes=EVERYTHING,WKT_GEOMETRY_SIMPLIFIED'
+
   if (query.match(/.*=.*/)) {
-  $.getJSON('http://' + window.location.host + '/?debug=1&maxInterpretations=' + maxInterpretations +
-    '&responseIncludes=EVERYTHING,WKT_GEOMETRY_SIMPLIFIED&' + query,
-      function(data) { return success(data, bulkInputs) }, failure);
+    url += '&' + query
   } else if (query.match(/^([-+]?\d{1,2}([.]\d+)?),\s*([-+]?\d{1,3}([.]\d+)?)$/)) {
-    $.getJSON('http://' + window.location.host + '/?debug=1' +
-        '&responseIncludes=EVERYTHING,WKT_GEOMETRY_SIMPLIFIED' +
-        '&maxInterpretations=' + maxInterpretations +
-        '&ll=' + query,
-      function(data) { return success(data, bulkInputs) }, failure);
+    url += '&ll=' + query
   } else {
-    $.getJSON('http://' + window.location.host + '/?debug=1&maxInterpretations=' + maxInterpretations + '&responseIncludes=EVERYTHING,WKT_GEOMETRY_SIMPLIFIED&query=' + query,
-      function(data) { return success(data, bulkInputs) }, failure);
+    url += '&query=' + query
   }
+
+  $.getJSON(url,
+    function(data) { return success(data, bulkInputs) }
+  ).error(function(jqXHR, textStatus, errorThrown) {
+    debugInfo.empty();
+    debugInfo.append($('<font color="red">ERROR: <br/> ' + textStatus + ' <br/> ' + errorThrown.toString() +
+        '<br/>' + 'probably want to debug @ <a href="' + url + '">' + url + '</a>'));
+  });
 }
 
 function fixFeature(feature) {
