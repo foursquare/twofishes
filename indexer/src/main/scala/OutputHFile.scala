@@ -467,7 +467,6 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
             }
             cellGeometryBuilder.woeType(record.woeType)
             cellGeometryBuilder.longId(record._id)
-            cellGeometryBuilder.percentageOfTotalAreaInDegrees(s2shape.getArea() / totalArea)
             bucket += cellGeometryBuilder.result
           }
         )
