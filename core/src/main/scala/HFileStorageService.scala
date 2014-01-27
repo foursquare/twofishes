@@ -117,7 +117,7 @@ class HFileStorageService(originalBasepath: String, shouldPreload: Boolean) exte
         try {
           (StoredFeatureId.fromLegacyObjectId(new ObjectId(parts(0))).get, parts(1).toInt)
         } catch {
-          case _: Throwable => throw new Exception("malformed boost line: %s --> %s".format(l, parts.toList))
+          case _: Exception => throw new Exception("malformed boost line: %s --> %s".format(l, parts.toList))
         }
       }).toMap
     } else {

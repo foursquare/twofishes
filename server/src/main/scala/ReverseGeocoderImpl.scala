@@ -90,7 +90,7 @@ class ReverseGeocoderHelperImpl(
       try {
         geom.intersection(requestGeometry).getArea()
       } catch {
-        case e: Throwable =>
+        case e: Exception =>
           Stats.addMetric("intersection_exception", 1)
           logger.error("failed to calculate intersection: %s x %s".format(geom, requestGeometry), e)
           0.0
@@ -152,7 +152,7 @@ class ReverseGeocoderHelperImpl(
                 try {
                   geom.intersects(otherGeom)
                 } catch {
-                  case e: Throwable =>
+                  case e: Exception =>
                     Stats.addMetric("intersects_exception", 1)
                     logger.error("failed to calculate intersection: %s".format(otherGeom), e)
                     false
@@ -172,7 +172,7 @@ class ReverseGeocoderHelperImpl(
 
   def doBulkReverseGeocode(otherGeoms: Seq[Geometry]):
       (Seq[Seq[Int]], Seq[GeocodeInterpretation], Seq[GeocodeFeature]) = {
-    // For each incoming geometry, get it's complete list of s2 cells
+    // For each incoming geometry, get its complete list of s2 cells
     val geomIndexToCellIdMap: Map[Int, Seq[Long]] = (for {
       (g, index) <- otherGeoms.zipWithIndex
     } yield { index -> s2CoverGeometry(g) }).toMap
