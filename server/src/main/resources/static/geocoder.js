@@ -171,7 +171,10 @@ function geocode() {
     '&responseIncludes=EVERYTHING,WKT_GEOMETRY_SIMPLIFIED&' + query,
       function(data) { return success(data, bulkInputs) }, failure);
   } else if (query.match(/^([-+]?\d{1,2}([.]\d+)?),\s*([-+]?\d{1,3}([.]\d+)?)$/)) {
-    $.getJSON('http://' + window.location.host + '/?debug=1&responseIncludes=EVERYTHING,WKT_GEOMETRY_SIMPLIFIED&ll=' + query,
+    $.getJSON('http://' + window.location.host + '/?debug=1' +
+        '&responseIncludes=EVERYTHING,WKT_GEOMETRY_SIMPLIFIED' +
+        '&maxInterpretations=' + maxInterpretations +
+        '&ll=' + query,
       function(data) { return success(data, bulkInputs) }, failure);
   } else {
     $.getJSON('http://' + window.location.host + '/?debug=1&maxInterpretations=' + maxInterpretations + '&responseIncludes=EVERYTHING,WKT_GEOMETRY_SIMPLIFIED&query=' + query,
@@ -317,4 +320,5 @@ function success(data, bulkInputs) {
 }
 
 function failure() {
+  window.alert('something failed');
 }
