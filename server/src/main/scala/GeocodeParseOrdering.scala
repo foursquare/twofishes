@@ -32,7 +32,7 @@ class GeocodeParseOrdering(
 
       def modifySignal(value: Int, debug: String) {
         if (req.debug > 0) {
-          logger.ifDebug("%s: %s + %s = %s", debug, signal, value, signal + value)
+          logger.ifDebug(" -- %s: %s + %s = %s", debug, signal, value, signal + value)
           parse.addDebugLine(
             DebugScoreComponent(debug, value)
           )
