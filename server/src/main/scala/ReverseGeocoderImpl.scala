@@ -9,7 +9,7 @@ import com.twitter.util.Duration
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory, Point => JTSPoint}
 import com.vividsolutions.jts.io.{WKBReader, WKTWriter}
 import com.vividsolutions.jts.util.GeometricShapeFactory
-import com.weiglewilczek.slf4s.Logging
+// import com.weiglewilczek.slf4s.Logging
 import org.apache.thrift.TBaseHelper
 import org.bson.types.ObjectId
 import scala.collection.mutable.ListBuffer
@@ -56,7 +56,7 @@ class ReverseGeocoderHelperImpl(
   store: GeocodeStorageReadService,
   req: CommonGeocodeRequestParams,
   queryLogger: MemoryLogger
-) extends GeocoderImplTypes with TimeResponseHelper with BulkImplHelpers with Logging {
+) extends GeocoderImplTypes with TimeResponseHelper with BulkImplHelpers {
   def featureGeometryIntersections(wkbGeometry: Array[Byte], otherGeom: Geometry) = {
     val wkbReader = new WKBReader()
     val geom = wkbReader.read(wkbGeometry)
@@ -65,7 +65,7 @@ class ReverseGeocoderHelperImpl(
     } catch {
       case e =>
         Stats.addMetric("intersects_exception", 1)
-        logger.error("failed to calculate intersection: %s".format(otherGeom), e)
+        println("failed to calculate intersection: %s".format(otherGeom), e)
         (geom, false)
     }
   }
@@ -79,7 +79,7 @@ class ReverseGeocoderHelperImpl(
     } catch {
       case e =>
         Stats.addMetric("intersection_exception", 1)
-        logger.error("failed to calculate intersection: %s x %s".format(featureGeometry, requestGeometry), e)
+        println("failed to calculate intersection: %s x %s".format(featureGeometry, requestGeometry), e)
         0.0
     }
   }
@@ -244,7 +244,7 @@ class ReverseGeocoderHelperImpl(
 class ReverseGeocoderImpl(
   store: GeocodeStorageReadService,
   req: GeocodeRequest
-) extends GeocoderImplTypes with TimeResponseHelper with Logging {
+) extends GeocoderImplTypes with TimeResponseHelper {
   val queryLogger = new MemoryLogger(req)
   val commonParams = GeocodeRequestUtils.geocodeRequestToCommonRequestParams(req)
   val reverseGeocoder =
