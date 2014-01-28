@@ -80,20 +80,34 @@ class ResponseProcessor(
     type ParsePair = (Parse[Sorted], Int)
     object DuplicateGeocodeParseOrdering extends Ordering[ParsePair] {
       def compare(a: ParsePair, b: ParsePair): Int = {
+        val A_BETTER = 1
+        val B_BETTER = -1
+        if (req.woeHint.size > 0) {
+          val woeTypeOptA = a._1.headOption.flatMap(_.fmatch.feature.woeTypeOption)
+          val woeTypeOptB = b._1.headOption.flatMap(_.fmatch.feature.woeTypeOption)
+          val matchesWoeHintA = woeTypeOptA.exists(req.woeHint.has)
+          val matchesWoeHintB = woeTypeOptB.exists(req.woeHint.has)
+          if (matchesWoeHintA != matchesWoeHintB) {
+            if (matchesWoeHintA) { return A_BETTER }
+            else { return B_BETTER }
+          }
+        }
+
+
         // negative if a < b
         val isAliasA = isAliasName(a._2)
         val isAliasB = isAliasName(b._2)
         if (isAliasA != isAliasB) {
-          if (isAliasA) { return -1 }
-          else { return 1 }
+          if (isAliasA) { return B_BETTER }
+          else { return A_BETTER }
         }
 
         val hasPolyA = a._1.headOption.exists(_.fmatch.scoringFeatures.hasPoly)
         val hasPolyB = b._1.headOption.exists(_.fmatch.scoringFeatures.hasPoly)
 
         if (hasPolyA != hasPolyB) {
-          if (hasPolyA) { return 1 }
-          else { return -11 }
+          if (hasPolyA) { return A_BETTER }
+          else { return B_BETTER }
         }
 
         // val namespaceQualityA = a._1.featureId.getOrdering
@@ -610,7 +624,7 @@ class ResponseProcessor(
       if (req.debug > 0) {
         logger.ifDebug("%d parses after deduping", dedupedParses.size)
         dedupedParses.zipWithIndex.foreach({case (parse, index) =>
-          logger.ifDebug("%d: deduped parse ids: %s (score: %s)", index, parse.map(f =>
+          logger.ifDebug("%d: deduped parse ids: %s (score: %f)", index, parse.map(f =>
             StoredFeatureId.fromLong(f.fmatch.longId).get), parse.finalScore)
         })
       }
