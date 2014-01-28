@@ -70,13 +70,12 @@ class ReverseGeocoderHelperImpl(
     }
   }
 
-  def computeCoverage(
+  def computeIntersectionArea(
     featureGeometry: Geometry,
     requestGeometry: Geometry
   ): Double = {
     try {
-      val intersection = featureGeometry.intersection(requestGeometry)
-      math.min(1, intersection.getArea() / requestGeometry.getArea())
+      featureGeometry.intersection(requestGeometry).getArea()
     } catch {
       case e =>
         Stats.addMetric("intersection_exception", 1)
@@ -191,8 +190,6 @@ class ReverseGeocoderHelperImpl(
     } yield {
       val cellGeometries = geomIndexToCellIdMap(index).flatMap(cellid => cellGeometryMap(cellid))
 
-      val featureIds = findMatches(otherGeom, cellGeometries)
-
       val servingFeaturesMap: Map[StoredFeatureId, GeocodeServingFeature] =
         store.getByFeatureIds(featureIds.toSet.toList)
 
@@ -206,8 +203,9 @@ class ReverseGeocoderHelperImpl(
             otherGeom.getNumPoints > 2) {
           polygonMap.get(fid).foreach(geom => {
             if (geom.getNumPoints > 2) {
-              parse.scoringFeatures.percentOfRequestCovered(computeCoverage(geom, otherGeom))
-              parse.scoringFeatures.percentOfFeatureCovered(computeCoverage(otherGeom, geom))
+              val overlapArea = computeIntersectionArea(geom, otherGeom)
+              parse.scoringFeatures.percentOfRequestCovered(overlapArea / otherGeom.getArea())
+              parse.scoringFeatures.percentOfFeatureCovered(overlapArea / geom.getArea())
             }
           })
         }
