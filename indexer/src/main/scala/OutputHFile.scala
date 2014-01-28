@@ -447,7 +447,6 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
               cellGeometryBuilder.wkbGeometry(ByteBuffer.wrap(wkbWriter.write(s2shape.intersection(recordShape))))
             }
             cellGeometryBuilder.woeType(record.woeType)
-            cellGeometryBuilder.oid(ByteBuffer.wrap(record.featureId.legacyObjectId.toByteArray()))
             cellGeometryBuilder.longId(record._id)
             bucket += cellGeometryBuilder.result
           }
@@ -530,13 +529,6 @@ class IdIndexer(override val basepath: String, override val fidMap: FidMap, slug
     } yield {
       slug -> canonicalFid
     }
-
-    // val oidEntries: List[(Array[Byte], Array[Byte])] = (for {
-    //   geocodeRecord <- MongoGeocodeDAO.find(MongoDBObject())
-    //   id <- geocodeRecord.ids
-    // } yield {
-    //   (id.getBytes("UTF-8"), geocodeRecord._id.toByteArray)
-    // }).toList
 
     val writer = buildMapFileWriter(Indexes.IdMappingIndex)
 

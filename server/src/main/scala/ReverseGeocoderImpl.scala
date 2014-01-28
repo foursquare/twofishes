@@ -123,8 +123,7 @@ class ReverseGeocoderHelperImpl(
     for {
       cellGeometry <- cellGeometries
       if (req.woeRestrict.isEmpty || cellGeometry.woeTypeOption.exists(req.woeRestrict.has))
-      oid <- cellGeometry.oidOption.map(bb => new ObjectId(TBaseHelper.byteBufferToByteArray(bb)))
-      fid <- StoredFeatureId.fromLegacyObjectId(oid)
+      fid <- StoredFeatureId.fromLong(cellGeometry.longIdOrThrow)
     } yield {
       if (!matches.has(fid)) {
         if (cellGeometry.full) {
