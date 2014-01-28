@@ -1,11 +1,9 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
-import com.foursquare.geo.shapes.ShapefileS2Util
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.{GeoTools, GeometryUtils, StoredFeatureId, TwofishesLogger}
 import com.foursquare.twofishes.util.Lists.Implicits._
-import com.google.common.geometry.S2CellId
 import com.twitter.ostrich.stats.Stats
 import com.twitter.util.Duration
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory, Point => JTSPoint}
@@ -14,10 +12,8 @@ import com.vividsolutions.jts.util.GeometricShapeFactory
 import com.weiglewilczek.slf4s.Logging
 import org.apache.thrift.TBaseHelper
 import org.bson.types.ObjectId
-import scala.collection.mutable.HashMap
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._
-
 
 class ReverseGeocodeParseOrdering extends Ordering[Parse[Sorted]] {
   def compare(a: Parse[Sorted], b: Parse[Sorted]): Int = {
@@ -56,47 +52,37 @@ trait TimeResponseHelper {
   }
 }
 
-case class CellGeometryWrapper(cell: CellGeometry, cellid: Long) {
-  def wkbGeometryOption = cell.wkbGeometryOption
-  def woeTypeOption = cell.woeTypeOption
-  def full = cell.full
-  def longIdOption = cell.longIdOption
-  lazy val s2cellid = new S2CellId(cellid)
-  lazy val geomOption: Option[Geometry] = {
-    val wkbReader = new WKBReader()
-    if (full) {
-      Some(ShapefileS2Util.fullGeometryForCell(s2cellid))
-    } else {
-      wkbGeometryOption.map(wkbGeometry => wkbReader.read(TBaseHelper.byteBufferToByteArray(wkbGeometry)))
-    }
-  }
-}
-
 class ReverseGeocoderHelperImpl(
   store: GeocodeStorageReadService,
   req: CommonGeocodeRequestParams,
   queryLogger: MemoryLogger
 ) extends GeocoderImplTypes with TimeResponseHelper with BulkImplHelpers with Logging {
-  def computeOverlapArea(
-    featureGeometries: Seq[CellGeometryWrapper],
+  def featureGeometryIntersections(wkbGeometry: Array[Byte], otherGeom: Geometry) = {
+    val wkbReader = new WKBReader()
+    val geom = wkbReader.read(wkbGeometry)
+    try {
+      (geom, geom.intersects(otherGeom))
+    } catch {
+      case e =>
+        Stats.addMetric("intersects_exception", 1)
+        logger.error("failed to calculate intersection: %s".format(otherGeom), e)
+        (geom, false)
+    }
+  }
+
+  def computeCoverage(
+    featureGeometry: Geometry,
     requestGeometry: Geometry
   ): Double = {
-    // there's still some redundant work here -- we've already determined if our request geom doesn't touch
-    // the geometry in some of the cells when we computed findMatches.
-    val areas = for {
-      cellGeometry <- featureGeometries
-      geom <- cellGeometry.geomOption
-    } yield {
-      try {
-        geom.intersection(requestGeometry).getArea()
-      } catch {
-        case e: Exception =>
-          Stats.addMetric("intersection_exception", 1)
-          logger.error("failed to calculate intersection: %s x %s".format(geom, requestGeometry), e)
-          0.0
-      }
+    try {
+      val intersection = featureGeometry.intersection(requestGeometry)
+      math.min(1, intersection.getArea() / requestGeometry.getArea())
+    } catch {
+      case e =>
+        Stats.addMetric("intersection_exception", 1)
+        logger.error("failed to calculate intersection: %s x %s".format(featureGeometry, requestGeometry), e)
+        0.0
     }
-    areas.sum
   }
 
   def responseIncludes(include: ResponseIncludes): Boolean =
@@ -126,7 +112,7 @@ class ReverseGeocoderHelperImpl(
 
   def findMatches(
     otherGeom: Geometry,
-    cellGeometries: Seq[CellGeometryWrapper]
+    cellGeometries: Seq[CellGeometry]
   ): Seq[StoredFeatureId] = {
     if (req.debug > 0) {
       queryLogger.ifDebug("had %d candidates", cellGeometries.size)
@@ -138,25 +124,18 @@ class ReverseGeocoderHelperImpl(
     for {
       cellGeometry <- cellGeometries
       if (req.woeRestrict.isEmpty || cellGeometry.woeTypeOption.exists(req.woeRestrict.has))
-      longId <- cellGeometry.longIdOption
-      fid <- StoredFeatureId.fromLong(longId)
+      oid <- cellGeometry.oidOption.map(bb => new ObjectId(TBaseHelper.byteBufferToByteArray(bb)))
+      fid <- StoredFeatureId.fromLegacyObjectId(oid)
     } yield {
       if (!matches.has(fid)) {
         if (cellGeometry.full) {
           queryLogger.ifDebug("was full: %s", fid)
           matches.append(fid)
         } else {
-          cellGeometry.geomOption match {
-            case Some(geom) =>
-              val intersects = queryLogger.logDuration("intersectionCheck", "intersectionCheck") {
-                try {
-                  geom.intersects(otherGeom)
-                } catch {
-                  case e: Exception =>
-                    Stats.addMetric("intersects_exception", 1)
-                    logger.error("failed to calculate intersection: %s".format(otherGeom), e)
-                    false
-                }
+          cellGeometry.wkbGeometryOption match {
+            case Some(wkbGeometry) =>
+              val (geom, intersects) = queryLogger.logDuration("intersectionCheck", "intersectionCheck") {
+                featureGeometryIntersections(TBaseHelper.byteBufferToByteArray(wkbGeometry), otherGeom)
               }
               if (intersects) {
                 matches.append(fid)
@@ -172,24 +151,16 @@ class ReverseGeocoderHelperImpl(
 
   def doBulkReverseGeocode(otherGeoms: Seq[Geometry]):
       (Seq[Seq[Int]], Seq[GeocodeInterpretation], Seq[GeocodeFeature]) = {
-    // For each incoming geometry, get its complete list of s2 cells
     val geomIndexToCellIdMap: Map[Int, Seq[Long]] = (for {
       (g, index) <- otherGeoms.zipWithIndex
     } yield { index -> s2CoverGeometry(g) }).toMap
 
-    // Map of cellid -> Seq[CellGeometry]
-    val cellGeometryMap: Map[Long, Seq[CellGeometryWrapper]] =
+    val cellGeometryMap: Map[Long, Seq[CellGeometry]] =
       (for {
         cellid: Long <- geomIndexToCellIdMap.values.flatten.toSet
       } yield {
-        cellid -> store.getByS2CellId(cellid).map(cell => CellGeometryWrapper(cell, cellid))
+        cellid -> store.getByS2CellId(cellid)
       }).toMap
-
-    // map from FeatureId -> Seq[candidate cells+CellGeometry]
-    val featureIdToCellGeometryMap: Map[StoredFeatureId, Seq[CellGeometryWrapper]] = {
-      cellGeometryMap.toList.flatMap({case (cellid, geometries) => geometries })
-        .groupBy(cell => StoredFeatureId.fromLong(cell.longIdOption.getOrElse(0)).get)
-    }
 
     val geomToMatches = (for {
       (otherGeom, index) <- otherGeoms.zipWithIndex
@@ -203,6 +174,7 @@ class ReverseGeocoderHelperImpl(
 
     val matchedIds = geomToMatches.flatMap(_._2).toSet.toList
 
+    // need to get polygons if we need to calculate coverage
     val polygonMap: Map[StoredFeatureId, Geometry] = (
       if (GeocodeRequestUtils.shouldFetchPolygon(req)) {
         store.getPolygonByFeatureIds(matchedIds)
@@ -217,6 +189,10 @@ class ReverseGeocoderHelperImpl(
     val parsesAndOtherGeomToFids: Seq[(SortedParseSeq, (Geometry, Seq[StoredFeatureId]))] = (for {
       ((otherGeom, featureIds), index) <- geomToMatches.zipWithIndex
     } yield {
+      val cellGeometries = geomIndexToCellIdMap(index).flatMap(cellid => cellGeometryMap(cellid))
+
+      val featureIds = findMatches(otherGeom, cellGeometries)
+
       val servingFeaturesMap: Map[StoredFeatureId, GeocodeServingFeature] =
         store.getByFeatureIds(featureIds.toSet.toList)
 
@@ -226,26 +202,14 @@ class ReverseGeocoderHelperImpl(
 	      f <- servingFeaturesMap.get(fid)
       } yield {
         val parse = Parse[Sorted](List(FeatureMatch(0, 0, "", f)))
-        if (responseIncludes(ResponseIncludes.REVGEO_COVERAGE)) {
-          for {
-            cellGeoms <- featureIdToCellGeometryMap.get(fid)
-            totalArea <- f.scoringFeaturesOption.flatMap(_.areaInDegreesOption)
-            // request overlap for now only makes sense for non-bulk lookups.
-            // otherwise, overlap of which request is it describing?
-            if otherGeoms.size == 1
-            geom <- otherGeoms.headOption
-          } {
-            queryLogger.logDuration("intersectionCheck", "intersectionCheck") {
-              val overlapArea = computeOverlapArea(cellGeoms, geom)
-              val requestArea = geom.getArea()
-
-              // coverage is undefined when the request is a point
-              if (requestArea > 0) {
-                parse.scoringFeatures.percentOfRequestCovered(math.min(1, overlapArea / requestArea))
-                parse.scoringFeatures.percentOfFeatureCovered(math.min(1, overlapArea / totalArea))
-              }
+        if (responseIncludes(ResponseIncludes.REVGEO_COVERAGE) &&
+            otherGeom.getNumPoints > 2) {
+          polygonMap.get(fid).foreach(geom => {
+            if (geom.getNumPoints > 2) {
+              parse.scoringFeatures.percentOfRequestCovered(computeCoverage(geom, otherGeom))
+              parse.scoringFeatures.percentOfFeatureCovered(computeCoverage(otherGeom, geom))
             }
-          }
+          })
         }
         parse
       }

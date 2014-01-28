@@ -217,8 +217,6 @@ class GeocodeFetch(threading.Thread):
           geomB = interpB['feature']['geometry']
           centerA = geomA['center']
           centerB = geomB['center']
-          scoresA = interpA.get('scores', defaultdict)
-          scoresB = interpB.get('scores', defaultdict)
           distance = earthDistance(
             centerA['lat'],
             centerA['lng'],
