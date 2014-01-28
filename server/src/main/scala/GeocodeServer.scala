@@ -120,7 +120,7 @@ class QueryLoggingGeocodeServerImpl(service: Geocoder.ServiceIface) extends Geoc
 class GeocodeServerImpl(store: GeocodeStorageReadService, doWarmup: Boolean) extends Geocoder.ServiceIface with Logging {
   if (doWarmup) {
     for {
-      time <- 0.to(5)
+      time <- 0.to(2)
     } {
       var lines = new BufferedSource(getClass.getResourceAsStream("/warmup/geocodes.txt")).getLines.take(10000).toList
 
@@ -130,6 +130,7 @@ class GeocodeServerImpl(store: GeocodeStorageReadService, doWarmup: Boolean) ext
           logger.info("finished %d queries".format(index))
         }
         new GeocodeRequestDispatcher(store).geocode(GeocodeRequest.newBuilder.query(line).result)
+        new GeocodeRequestDispatcher(store).geocode(GeocodeRequest.newBuilder.query(line).autocomplete(true).result)
       }})
       logger.info("done")
 
@@ -141,6 +142,7 @@ class GeocodeServerImpl(store: GeocodeStorageReadService, doWarmup: Boolean) ext
         }
         val parts = line.split(",")
         new ReverseGeocoderImpl(store, GeocodeRequest.newBuilder.ll(GeocodePoint(parts(0).toDouble, parts(1).toDouble)).result).reverseGeocode()
+        new ReverseGeocoderImpl(store, GeocodeRequest.newBuilder.ll(GeocodePoint(parts(0).toDouble, parts(1).toDouble)).radius(300).result).reverseGeocode()
       }})
     }
     logger.info("done")
