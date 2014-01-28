@@ -208,8 +208,15 @@ function success(data, bulkInputs) {
   statusArea.empty();
   debugInfo.empty();
 
+
+  function linkifySlugs(str, group1, group2) {
+    var id = group1 + ':' + group2;
+    return '<a href="/static/geocoder.html#slug=' + id + '">' + id + '</a>';
+  }
+
   _(data.debugLines).each(function(l) {
-    debugInfo.append(l);
+    l = l.replace(/(geonameid|maponics):(\d+)/g, linkifySlugs);
+    debugInfo.append($('<span>' + l + '</span>'));
     debugInfo.append($('<br>'));
   })
 
