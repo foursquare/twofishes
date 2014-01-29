@@ -184,6 +184,8 @@ class ReverseGeocoderHelperImpl(
     val servingFeaturesMap: Map[StoredFeatureId, GeocodeServingFeature] =
       store.getByFeatureIds(matchedIds)
 
+    val parseParams = ParseParams()
+    val responseProcessor = new ResponseProcessor(req, store, queryLogger)
     val parsesAndOtherGeomToFids: Seq[(SortedParseSeq, (Geometry, Seq[StoredFeatureId]))] = (for {
       ((otherGeom, featureIds), index) <- geomToMatches.zipWithIndex
     } yield {
@@ -219,14 +221,12 @@ class ReverseGeocoderHelperImpl(
 
       val sortedParses = parses.sorted(new ReverseGeocodeParseOrdering).take(maxInterpretations)
 
-      (sortedParses, (otherGeom -> sortedParses.flatMap(p => StoredFeatureId.fromLong(p.fmatches(0).fmatch.longId))))
+      val filteredParses = responseProcessor.filterParses(sortedParses, parseParams)
+      (filteredParses, (otherGeom -> filteredParses.flatMap(p => StoredFeatureId.fromLong(p.fmatches(0).fmatch.longId))))
     })
     val sortedParses = parsesAndOtherGeomToFids.flatMap(_._1)
     val otherGeomToFids = parsesAndOtherGeomToFids.map(_._2).toMap
 
-    val parseParams = ParseParams()
-
-    val responseProcessor = new ResponseProcessor(req, store, queryLogger)
     val interpretations = responseProcessor.hydrateParses(sortedParses, parseParams, polygonMap,
       fixAmbiguousNames = false)
 
