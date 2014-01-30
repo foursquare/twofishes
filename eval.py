@@ -213,6 +213,8 @@ class GeocodeFetch(threading.Thread):
           else:
             evallog('ids changed', interpA['feature']['ids'], interpB['feature']['ids'])
         else:
+          scoresA = interpA['scores']
+          scoresB = interpB['scores']
           geomA = interpA['feature']['geometry']
           geomB = interpB['feature']['geometry']
           centerA = geomA['center']
