@@ -145,13 +145,8 @@ class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[Str
     "PPLQ", // abandoned (historical) place
     "WLL", "WLLS", "WLLQ" // wells!
   )
-  val stupidCodesForSpecificCountries = List(
-    ("ADMD", "US")  // ADMIN3 in US
-  )
   def isContinent = featureCode.exists(_ == "CONT")
   def isStupid = featureCode.exists(fc => stupidCodes.contains(fc))
-  def isStupidInCountry(cc: String) = featureCode.exists(fc =>
-    stupidCodesForSpecificCountries.contains((fc, cc)))
   def isPark = featureCode.exists(_ == "PRK")
   def isAdmin1 = featureCode.exists(_ == "ADM1")
   def isAdmin2 = featureCode.exists(_ == "ADM2")

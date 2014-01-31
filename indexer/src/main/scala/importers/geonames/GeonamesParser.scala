@@ -512,7 +512,6 @@ class GeonamesParser(
           feature.foreach(f => {
             if (
               !f.featureClass.isStupid &&
-              !f.featureClass.isStupidInCountry(f.countryCode) &&
               !(f.name.contains(", Stadt") && f.countryCode == "DE") &&
               !f.geonameid.exists(ignoreList.contains) &&
               (!f.featureClass.isBuilding || config.shouldParseBuildings || allowBuildings)) {
