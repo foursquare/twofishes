@@ -512,6 +512,10 @@ class GeonamesParser(
           feature.foreach(f => {
             if (
               !f.featureClass.isStupid &&
+              !(f.featureClass.woeType == YahooWoeType.ADMIN3 &&
+                f.featureClass.adminLevel == AdminLevel.OTHER &&
+                f.name.startsWith("City of") &&
+                f.countryCode == "US") &&
               !(f.name.contains(", Stadt") && f.countryCode == "DE") &&
               !f.geonameid.exists(ignoreList.contains) &&
               (!f.featureClass.isBuilding || config.shouldParseBuildings || allowBuildings)) {
