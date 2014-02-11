@@ -11,7 +11,7 @@ import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 import java.util.concurrent.atomic.AtomicInteger
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{LocalFileSystem, Path}
-import org.apache.hadoop.hbase.io.hfile.{FoursquareCacheConfig, HFile, HFileScanner}
+import org.apache.hadoop.hbase.io.hfile.{TwofishesFoursquareCacheConfig, HFile, HFileScanner}
 import org.apache.hadoop.hbase.util.Bytes._
 import org.apache.hadoop.io.BytesWritable
 import org.apache.thrift.{TBase, TBaseHelper, TDeserializer, TFieldIdEnum, TSerializer}
@@ -132,7 +132,7 @@ class HFileInput[V](basepath: String, index: Index[String, V], shouldPreload: Bo
   fs.initialize(URI.create("file:///"), conf)
 
   val path = new Path(new File(basepath, index.filename).getAbsolutePath())
-  val cache = new FoursquareCacheConfig(conf)
+  val cache = new TwofishesFoursquareCacheConfig(conf)
 
   val reader = HFile.createReader(path.getFileSystem(conf), path, cache)
 

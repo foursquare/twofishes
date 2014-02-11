@@ -15,7 +15,7 @@ import scalaj.collection.Implicits._
 
 
 // The following is an in-memory BlockCache implementation where all blocks are stored in memory and never evicted.
-private class InMemoryBlockCache extends BlockCache {
+private class TwofishesInMemoryBlockCache extends BlockCache {
   private val cache = new ConcurrentHashMap[BlockCacheKey, Cacheable]
 
   private val stats = new CacheStats
@@ -53,8 +53,8 @@ private class InMemoryBlockCache extends BlockCache {
 }
 
 // The following is a simple wrapper around CacheConfig to force it to use the supplied BlockCache implementation.
-class FoursquareCacheConfig(config: Configuration, cacheLimit: Option[Int] = None) extends
-    CacheConfig(cacheLimit.map(new LruBlockCache(_, 4*1024, config)).getOrElse(new InMemoryBlockCache()),
+class TwofishesFoursquareCacheConfig(config: Configuration, cacheLimit: Option[Int] = None) extends
+    CacheConfig(cacheLimit.map(new LruBlockCache(_, 4*1024, config)).getOrElse(new TwofishesInMemoryBlockCache()),
                 true, cacheLimit.isEmpty, true, true, true, true, false) {
       // TODO (norberthu): Not sure if inMemory arg should use cacheLimit.isEmpty or hardcod to true. Still need to
       // investigate how LruBlockCache.cacheBlock treats this flag. The documentation for CacheConfig is not apparent
