@@ -60,7 +60,7 @@ class ResponseProcessor(
       }}).toMap
 
     val parseMap: Map[String, Seq[(Parse[Sorted], Int)]] = parses.zipWithIndex.groupBy({case (parse, index) => {
-      parseIndexToNameMatch(index).map(_._1.name).getOrElse("")
+      parseIndexToNameMatch(index).map(_._1.name).getOrElse("").toLowerCase()
     }})
 
     if (req.debug > 0) {

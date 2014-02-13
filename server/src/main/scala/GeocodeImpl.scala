@@ -199,7 +199,7 @@ class GeocoderImpl(
   def deleteCommonWords(tokens: List[String]): List[String] = {
     val commonWords = Set(
       "city", "gemeinde", "canton", "of", "county", "gmina", "stadtteil", "district", "kommune", "prefecture", "contrada",
-      "stazione", "di", "oblast", "Δήμος", "д", "м", "town", "neighborhood", "neighbourhood"
+      "stazione", "di", "oblast", "Δήμος", "д", "м", "town", "neighborhood", "neighbourhood", "the"
     ).map(_.toLowerCase)
 
     tokens.filterNot(t => commonWords.contains(t))
