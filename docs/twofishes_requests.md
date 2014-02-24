@@ -85,7 +85,7 @@ The only differences are that for BulkSlugLookup and BulkReverseGeocode, you hav
 
 For single reverse geocodes, you must use the reverseGeocode endpoint, even though it shares its request definition with the geocode endpoint.
 
-You can talk to the thrift interface via finagle-thrift or vanilla (apache) thrift. See (Finagle Docs)<https://github.com/twitter/finagle#Simple%20Client%20and%20Server%20for%20Thrift> for accessing the finagle-thrift implementation via scala. 
+You can talk to the thrift interface via finagle-thrift or vanilla (apache) thrift. See [Finagle Docs](https://github.com/twitter/finagle#Simple%20Client%20and%20Server%20for%20Thrift) for accessing the finagle-thrift implementation via scala. 
 
 See the [Apache Thrift Docs for Java](http://thrift.apache.org/tutorial/java/), or [tkang's python-thrift blogpost](http://tkang.blogspot.com/2010/07/thrift-server-client-in-python.html) or google around for how to write a thrift client in your langauge of choice.
 
