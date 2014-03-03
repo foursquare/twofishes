@@ -669,7 +669,7 @@ class GeonamesParser(
       val geonameId = (try {
         GeonamesId(gid.toLong)
       } catch {
-        case _ => throw new Exception("failed to parse %s -- line: %s".format(filename, line))
+        case e: Exception => throw new Exception("failed to parse %s -- line: %s".format(filename, line))
       })
       val rest = parts.drop(1).mkString(" ")
       lang <- rest.split("\\|").lift(0)

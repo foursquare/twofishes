@@ -24,6 +24,11 @@ case class NameIndex(
     throw new RuntimeException("can't convert %d to a feature id".format(fid)))
 }
 
+case class PolygonIndex(
+  @Key("_id") _id: Long,
+  polygon: Array[Byte]
+)
+
 trait GeocodeStorageWriteService {
   def insert(record: GeocodeRecord): Unit
   def setRecordNames(id: StoredFeatureId, names: List[DisplayName])
@@ -40,6 +45,9 @@ object MongoGeocodeDAO extends SalatDAO[GeocodeRecord, ObjectId](
 
 object NameIndexDAO extends SalatDAO[NameIndex, String](
   collection = MongoConnection()("geocoder")("name_index"))
+
+object PolygonIndexDAO extends SalatDAO[PolygonIndex, String](
+  collection = MongoConnection()("geocoder")("polygon_index"))
 
 class MongoGeocodeStorageService extends GeocodeStorageWriteService {
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = {
@@ -72,13 +80,14 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
     MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.longId))),
       MongoDBObject("$set" ->
         MongoDBObject(
-          "polygon" -> Some(wkbGeometry),
           "hasPoly" -> true
         )
       ),
       false, false)
+    PolygonIndexDAO.insert(
+      PolygonIndex(id.longId, wkbGeometry)
+    )
   }
-
 
   def addSlugToRecord(id: StoredFeatureId, slug: String) {
     MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.longId))),

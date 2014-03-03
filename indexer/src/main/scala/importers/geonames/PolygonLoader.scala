@@ -44,7 +44,7 @@ object PolygonLoader extends Logging {
         recordsUpdated += 1
         store.addPolygonToRecord(fid, wkbWriter.write(geom))
       } catch {
-        case e => {
+        case e: Exception => {
           throw new Exception("couldn't write poly to %s".format(fid), e)
         }
       }

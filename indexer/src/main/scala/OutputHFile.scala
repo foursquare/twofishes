@@ -383,7 +383,7 @@ class FeatureIndexer(override val basepath: String, override val fidMap: FidMap)
 class PolygonIndexer(override val basepath: String, override val fidMap: FidMap) extends Indexer {
   def buildPolygonIndex() {
     val polygonsCursor =
-      MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
+      PolygonIndexDAO.find(MongoDBObject())
         .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
     polygonsCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
 
@@ -392,13 +392,13 @@ class PolygonIndexer(override val basepath: String, override val fidMap: FidMap)
     val wkbReader = new WKBReader()
 
     for {
-      (featureRecord, index) <- polygonsCursor.zipWithIndex
-      polygon <- featureRecord.polygon
+      (polyRecord, index) <- polygonsCursor.zipWithIndex
+      polygon = polyRecord.polygon
     } {
       if (index % 1000 == 0) {
         logger.info("outputted %d polys so far".format(index))
       }
-      writer.append(featureRecord.featureId, wkbReader.read(polygon))
+      writer.append(StoredFeatureId.fromLong(polyRecord._id).get, wkbReader.read(polygon))
     }
     writer.close()
 
@@ -413,45 +413,44 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
   val levelMod = 2
 
   def calculateCoverForRecord(
-      record: GeocodeRecord, s2map: HashMap[Long, ListBuffer[CellGeometry]], s2shapes: HashMap[Long, Geometry]) = {
+      record: PolygonIndex,
+      featureRecord: GeocodeRecord,
+      s2map: HashMap[Long, ListBuffer[CellGeometry]], s2shapes: HashMap[Long, Geometry]) = {
     val wkbReader = new WKBReader()
     val wkbWriter = new WKBWriter()
 
-    for {
-      polygon <- record.polygon
-    } {
-      //println("reading poly %s".format(index))
-      val geom = wkbReader.read(polygon)
+    val polygon = record.polygon
+    //println("reading poly %s".format(index))
+    val geom = wkbReader.read(polygon)
 
-      val cells = logDuration("generated cover for %s".format(record.featureId)) {
-        GeometryUtils.s2PolygonCovering(
-          geom,
-          minS2Level,
-          maxS2Level,
-          levelMod = Some(levelMod),
-          maxCellsHintWhichMightBeIgnored = Some(1000)
-        )
-      }
+    val cells = logDuration("generated cover for %s".format(record._id)) {
+      GeometryUtils.s2PolygonCovering(
+        geom,
+        minS2Level,
+        maxS2Level,
+        levelMod = Some(levelMod),
+        maxCellsHintWhichMightBeIgnored = Some(1000)
+      )
+    }
 
-      logDuration("clipped and outputted cover for %d cells (%s)".format(cells.size, record.featureId)) {
-        val recordShape = geom.buffer(0)
-	val preparedRecordShape = PreparedGeometryFactory.prepare(recordShape)
-        cells.foreach(
-          (cellid: S2CellId) => {
-            val bucket = s2map.getOrElseUpdate(cellid.id, new ListBuffer[CellGeometry]())
-            val s2shape = s2shapes.getOrElseUpdate(cellid.id, ShapefileS2Util.fullGeometryForCell(cellid))
-            val cellGeometryBuilder = CellGeometry.newBuilder
-            if (preparedRecordShape.contains(s2shape)) {
-              cellGeometryBuilder.full(true)
-            } else {
-              cellGeometryBuilder.wkbGeometry(ByteBuffer.wrap(wkbWriter.write(s2shape.intersection(recordShape))))
-            }
-            cellGeometryBuilder.woeType(record.woeType)
-            cellGeometryBuilder.longId(record._id)
-            bucket += cellGeometryBuilder.result
+    logDuration("clipped and outputted cover for %d cells (%s)".format(cells.size, record._id)) {
+      val recordShape = geom.buffer(0)
+  	val preparedRecordShape = PreparedGeometryFactory.prepare(recordShape)
+      cells.foreach(
+        (cellid: S2CellId) => {
+          val bucket = s2map.getOrElseUpdate(cellid.id, new ListBuffer[CellGeometry]())
+          val s2shape = s2shapes.getOrElseUpdate(cellid.id, ShapefileS2Util.fullGeometryForCell(cellid))
+          val cellGeometryBuilder = CellGeometry.newBuilder
+          if (preparedRecordShape.contains(s2shape)) {
+            cellGeometryBuilder.full(true)
+          } else {
+            cellGeometryBuilder.wkbGeometry(ByteBuffer.wrap(wkbWriter.write(s2shape.intersection(recordShape))))
           }
-        )
-      }
+          cellGeometryBuilder.woeType(featureRecord.woeType)
+          cellGeometryBuilder.longId(record._id)
+          bucket += cellGeometryBuilder.result
+        }
+      )
     }
   }
 
@@ -465,7 +464,7 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
       )
     )
 
-    val ids = MongoGeocodeDAO.primitiveProjections[Long](MongoDBObject("hasPoly" -> true), "_id").toList
+    val ids = PolygonIndexDAO.primitiveProjections[Long](MongoDBObject(), "_id").toList
     var total = 0
     val numThreads = 20
     val subMaps = 0.until(numThreads).toList.map(offset => {
@@ -481,9 +480,12 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
           var doneCount = 0
 
           ids.zipWithIndex.filter(i => (i._2 % numThreads) == offset).grouped(200).foreach(chunk => {
-            val recordsCursor = MongoGeocodeDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> chunk.map(_._1))))
+            val featureRecords = MongoGeocodeDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> chunk.map(_._1))))
+              .toList
+              .groupBy(_._id).map({case (k, v) => (k, v(0))})
+            val recordsCursor = PolygonIndexDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> chunk.map(_._1))))
             recordsCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
-            recordsCursor.foreach(r => calculateCoverForRecord(r, s2map, s2shapes))
+            recordsCursor.foreach(r => calculateCoverForRecord(r, featureRecords(r._id), s2map, s2shapes))
 
             doneCount += chunk.size
             total += chunk.size
