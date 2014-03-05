@@ -485,10 +485,12 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
               .groupBy(_._id).map({case (k, v) => (k, v(0))})
             val recordsCursor = PolygonIndexDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> chunk.map(_._1))))
             recordsCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
-            featureRecords.get(r._id) match {
-              case Some(feature) => recordsCursor.foreach(r => calculateCoverForRecord(r, feature, s2map, s2shapes))
-              case None => println("had polygon, but no feature for %s".format(r._id))
-            }
+            recordsCursor.foreach(r =>
+              featureRecords.get(r._id) match {
+                case Some(feature) => calculateCoverForRecord(r, feature, s2map, s2shapes)
+                case None => println("had polygon, but no feature for %s".format(r._id))
+              }
+            )
 
             doneCount += chunk.size
             total += chunk.size
