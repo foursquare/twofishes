@@ -57,7 +57,7 @@ case class GeocodeRecord(
   canGeocode: Boolean = true,
   slug: Option[String] = None,
   polygon: Option[Array[Byte]] = None,
-  hasPoly: Option[Boolean] = None,
+  hasPoly: Option[Boolean] = Some(false),
   var attributes: Option[Array[Byte]] = None,
   extraRelations: List[Long] = Nil
 ) extends Ordered[GeocodeRecord] {
