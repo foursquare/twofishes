@@ -465,7 +465,7 @@ class GeonamesParser(
       canGeocode = canGeocode,
       slug = slug,
       polygon = polygonExtraEntry.map(wkbWriter.write),
-      hasPoly = polygonExtraEntry.map(e => true),
+      hasPoly = polygonExtraEntry.isDefined,
       extraRelations = extraRelations
     )
 

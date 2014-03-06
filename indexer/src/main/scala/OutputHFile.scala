@@ -331,8 +331,9 @@ class NameIndexer(override val basepath: String, override val fidMap: FidMap, ou
 class FeatureIndexer(override val basepath: String, override val fidMap: FidMap) extends Indexer {
   def canonicalizeParentId(fid: StoredFeatureId) = fidMap.get(fid)
 
-  def makeGeocodeRecordWithoutGeometry(g: GeocodeRecord): GeocodeServingFeature = {
-    val fullFeature = g.toGeocodeServingFeature()
+  def makeGeocodeRecordWithoutGeometry(g: GeocodeRecord, poly: Option[PolygonIndex]): GeocodeServingFeature = {
+    val fullFeature = poly.map(p => g.copy(polygon = Some(p.polygon)))
+      .getOrElse(g).toGeocodeServingFeature()
 
     val partialFeature = fullFeature.copy(
       feature = fullFeature.feature.copy(
@@ -368,37 +369,55 @@ class FeatureIndexer(override val basepath: String, override val fidMap: FidMap)
     val fidCursor = MongoGeocodeDAO.find(MongoDBObject())
       .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
     fidCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
-    fidCursor.foreach(f => {
+
+    for {
+      gCursor <- fidCursor.grouped(1000)
+      group = gCursor.toList
+      toFindPolys = group.filter(f => f.hasPoly && f.boundingbox.isEmpty)
+      polyMap = PolygonIndexDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> toFindPolys.map(_._id))))
+        .toList
+        .groupBy(_._id).map({case (k, v) => (k, v(0))})
+      f <- group
+      polyOpt = polyMap.get(f._id)
+    } {
       writer.append(
-        f.featureId, makeGeocodeRecordWithoutGeometry(f))
+        f.featureId, makeGeocodeRecordWithoutGeometry(f, polyOpt))
       fidCount += 1
       if (fidCount % 100000 == 0) {
         logger.info("processed %d of %d features".format(fidCount, fidSize))
       }
-    })
+    }
     writer.close()
   }
 }
 
 class PolygonIndexer(override val basepath: String, override val fidMap: FidMap) extends Indexer {
   def buildPolygonIndex() {
-    val polygonsCursor =
-      PolygonIndexDAO.find(MongoDBObject())
+    val hasPolyCursor = 
+      MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
         .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
-    polygonsCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
+    hasPolyCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
 
     val writer = buildMapFileWriter(Indexes.GeometryIndex)
 
     val wkbReader = new WKBReader()
 
+    var index = 0
     for {
-      (polyRecord, index) <- polygonsCursor.zipWithIndex
-      polygon = polyRecord.polygon
+      g <- hasPolyCursor.grouped(1000)
+      group = g.toList
+      polyMap = PolygonIndexDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> group.map(_._id))))
+        .toList
+        .groupBy(_._id).map({case (k, v) => (k, v(0))})
+      f <- group
+      polyOpt = polyMap.get(f._id).map(_.polygon)
+      polygon <- f.polygon.orElse(polyOpt)
     } {
       if (index % 1000 == 0) {
         logger.info("outputted %d polys so far".format(index))
       }
-      writer.append(StoredFeatureId.fromLong(polyRecord._id).get, wkbReader.read(polygon))
+      index += 1
+      writer.append(StoredFeatureId.fromLong(f._id).get, wkbReader.read(polygon))
     }
     writer.close()
 

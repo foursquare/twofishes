@@ -57,7 +57,7 @@ case class GeocodeRecord(
   canGeocode: Boolean = true,
   slug: Option[String] = None,
   polygon: Option[Array[Byte]] = None,
-  hasPoly: Option[Boolean] = Some(false),
+  hasPoly: Boolean = false,
   var attributes: Option[Array[Byte]] = None,
   extraRelations: List[Long] = Nil
 ) extends Ordered[GeocodeRecord] {
@@ -261,7 +261,7 @@ case class GeocodeRecord(
       .population(population)
       .parentIds(parents)
       .applyIf(extraRelations.nonEmpty, _.extraRelationIds(extraRelations))
-      .hasPoly(hasPoly)
+      .applyIf(hasPoly, _.hasPoly(hasPoly))
 
     if (!canGeocode) {
       scoringBuilder.canGeocode(false)
