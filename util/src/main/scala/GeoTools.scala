@@ -4,6 +4,7 @@ import com.foursquare.twofishes._
 import com.google.common.geometry.{S2LatLng, S2LatLngRect}
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory, Polygon}
 import com.vividsolutions.jts.operation.distance.DistanceOp
+import com.vividsolutions.jts.util.GeometricShapeFactory
 
 object GeoTools {
   val MetersPerMile: Double = 1609.344
@@ -26,6 +27,12 @@ object GeoTools {
     GeocodePoint(ll.latDegrees, ll.lngDegrees)
   }
 
+  def pointToGeometry(p: GeocodePoint): Geometry = {
+    val geometryFactory = new GeometryFactory()
+    val coord = new Coordinate(p.lng, p.lat)
+    geometryFactory.createPoint(coord);
+  }
+
   def boundsContains(bounds: GeocodeBoundingBox, ll: GeocodePoint): Boolean = {
     val rect =  boundingBoxToS2Rect(bounds)
     val point = pointToS2LatLng(ll)
@@ -36,24 +43,30 @@ object GeoTools {
     boundingBoxToS2Rect(b1).intersects(boundingBoxToS2Rect(b2))
   }
 
+  // This is incorrect for now
+  def makeCircle(ll: GeocodePoint, radiusInMeters: Int): Geometry = {
+    val sizeDegrees = radiusInMeters / 111319.9
+    val gsf = new GeometricShapeFactory()
+    gsf.setSize(sizeDegrees)
+    gsf.setNumPoints(100)
+    gsf.setCentre(new Coordinate(ll.lng, ll.lat))
+    gsf.createCircle()
+  }
+
   def boundsToGeometry(bounds: GeocodeBoundingBox): Geometry = {
-    val fact = new GeometryFactory()
-    val coordinates = Array(
-      new Coordinate(bounds.ne.lng, bounds.ne.lat),
-      new Coordinate(bounds.sw.lng, bounds.ne.lat),
-      new Coordinate(bounds.sw.lng, bounds.sw.lat),
-      new Coordinate(bounds.ne.lng, bounds.sw.lat),
-      new Coordinate(bounds.ne.lng, bounds.ne.lat)
-    )
-    val linear = new GeometryFactory().createLinearRing(coordinates);
-    val poly = new Polygon(linear, null, fact)
-    poly.getEnvelope()
+    val s2rect = GeoTools.boundingBoxToS2Rect(bounds)
+    val geomFactory = new GeometryFactory()
+    geomFactory.createLinearRing(Array(
+      new Coordinate(s2rect.lng.lo, s2rect.lat.lo),
+      new Coordinate(s2rect.lng.hi, s2rect.lat.lo),
+      new Coordinate(s2rect.lng.hi, s2rect.lat.hi),
+      new Coordinate(s2rect.lng.hi, s2rect.lat.lo),
+      new Coordinate(s2rect.lng.lo, s2rect.lat.lo)
+    ))
   }
 
   def distanceFromPointToBounds(p: GeocodePoint, bounds: GeocodeBoundingBox): Double = {
-    val geometryFactory = new GeometryFactory()
-    val coord = new Coordinate(p.lng, p.lat)
-    val point = geometryFactory.createPoint(coord);
+    val point = pointToGeometry(p)
     val geom = boundsToGeometry(bounds)
     DistanceOp.distance(point, geom) * MetersPerDegreeLatitude
   }

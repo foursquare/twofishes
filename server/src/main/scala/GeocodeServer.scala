@@ -312,6 +312,7 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
       .cc(getOpt("cc"))
       .debug(getOpt("debug").map(_.toInt))
       .radius(getOpt("radius").map(_.toInt))
+      .strict(getOpt("strict").map(_.toBoolean))
       .autocomplete(getOpt("autocomplete").map(_.toBoolean))
       .ll(ll)
       .maxInterpretations(getOpt("maxInterpretations").map(_.toInt))

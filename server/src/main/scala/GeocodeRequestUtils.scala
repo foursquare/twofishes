@@ -3,7 +3,9 @@ package com.foursquare.twofishes
 
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.Lists.Implicits._
+import com.foursquare.twofishes.util.GeoTools
 import scalaj.collection.Implicits._
+import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory, Polygon}
 
 object GeocodeRequestUtils {
   def responseIncludes(req: CommonGeocodeRequestParams, include: ResponseIncludes): Boolean = {
@@ -33,4 +35,14 @@ object GeocodeRequestUtils {
       .result
   }
 
+  def getRequestGeometry(req: GeocodeRequest): Option[Geometry] = {
+    val radius = req.radiusOption.getOrElse(0)
+    (req.llOption, req.boundsOption) match {
+      case (Some(ll), None) if (radius > 0) => Some(GeoTools.makeCircle(ll, radius))
+      case (Some(ll), None) => Some(GeoTools.pointToGeometry(ll))
+      case (None, Some(bounds)) => Some(GeoTools.boundsToGeometry(bounds))
+      case (None, None) => None
+      case (Some(ll), Some(bounds)) => throw new Exception("both bounds and ll, can't pick")
+    }
+  }
 }

@@ -63,7 +63,7 @@ class ReverseGeocoderHelperImpl(
     try {
       (geom, geom.intersects(otherGeom))
     } catch {
-      case e =>
+      case e: Exception =>
         Stats.addMetric("intersects_exception", 1)
         println("failed to calculate intersection: %s".format(otherGeom), e)
         (geom, false)
@@ -77,7 +77,7 @@ class ReverseGeocoderHelperImpl(
     try {
       featureGeometry.intersection(requestGeometry).getArea()
     } catch {
-      case e =>
+      case e: Exception =>
         Stats.addMetric("intersection_exception", 1)
         println("failed to calculate intersection: %s x %s".format(featureGeometry, requestGeometry), e)
         0.0
@@ -258,59 +258,26 @@ class ReverseGeocoderImpl(
     response
   }
 
-  def reverseGeocodePoint(ll: GeocodePoint): GeocodeResponse = {
-    val geomFactory = new GeometryFactory()
-    val point = geomFactory.createPoint(new Coordinate(ll.lng, ll.lat))
-    doSingleReverseGeocode(point)
-  }
-
-
-  def doGeometryReverseGeocode(geom: Geometry) = {
-    doSingleReverseGeocode(geom)
-  }
-
-  def doCircleRevgeo(ll: GeocodePoint, radius: Int): GeocodeResponse = {
-    if (req.radius > 50000) {
-      //throw new Exception("radius too big (%d > %d)".format(req.radius, maxRadius))
-      GeocodeResponse.newBuilder.interpretations(Nil).result
-    } else {
-      val sizeDegrees = req.radius / 111319.9
-      val gsf = new GeometricShapeFactory()
-      gsf.setSize(sizeDegrees)
-      gsf.setNumPoints(100)
-      gsf.setCentre(new Coordinate(ll.lng, ll.lat))
-      val geom = gsf.createCircle()
-      timeResponse("revgeo-geom") {
-        doGeometryReverseGeocode(geom)
-      }
-    }
-  }
-
-  def doBoundsRevgeo(bounds: GeocodeBoundingBox): GeocodeResponse = {
-    val s2rect = GeoTools.boundingBoxToS2Rect(bounds)
-    val geomFactory = new GeometryFactory()
-    val geom = geomFactory.createLinearRing(Array(
-      new Coordinate(s2rect.lng.lo, s2rect.lat.lo),
-      new Coordinate(s2rect.lng.hi, s2rect.lat.lo),
-      new Coordinate(s2rect.lng.hi, s2rect.lat.hi),
-      new Coordinate(s2rect.lng.hi, s2rect.lat.lo),
-      new Coordinate(s2rect.lng.lo, s2rect.lat.lo)
-    ))
-    Stats.time("revgeo-geom") {
-      doGeometryReverseGeocode(geom)
-    }
-  }
 
   def reverseGeocode(): GeocodeResponse = {
     Stats.incr("revgeo-requests", 1)
 
-    val radius = req.radiusOption.getOrElse(0)
-    (req.llOption, req.boundsOption) match {
-      case (Some(ll), None) if (radius > 0) => doCircleRevgeo(ll, radius)
-      case (Some(ll), None) => timeResponse("revgeo-point") { reverseGeocodePoint(ll) }
-      case (None, Some(bounds)) => doBoundsRevgeo(bounds)
-      case (None, None) => throw new Exception("no bounds or ll")
-      case (Some(ll), Some(bounds)) => throw new Exception("both bounds and ll, can't pick")
+    if (req.radius > 50000) {
+      //throw new Exception("radius too big (%d > %d)".format(req.radius, maxRadius))
+      GeocodeResponse.newBuilder.interpretations(Nil).result
+    }
+
+    val geom = GeocodeRequestUtils.getRequestGeometry(req)
+      .getOrElse(throw new Exception("no bounds or ll"))
+    Stats.incr("revgeo-requests", 1)
+
+    val statStr = if (geom.isInstanceOf[JTSPoint]) {
+      "revgeo-point"
+    } else {
+      "revgeo-geom"
+    }
+    Stats.time(statStr) {
+      doSingleReverseGeocode(geom)
     }
   }
 }

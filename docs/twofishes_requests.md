@@ -50,13 +50,12 @@ These queries also work as parameters to the debug interface either after the ? 
     - WKT_GEOMETRY - include polygon boundary geometry in WKT format if available
     - REVGEO_COVERAGE - for ll+radius revgeo queries, turns on computing the percentage overlap between the circle query and the feature polygon. slow-ish
     - DISPLAY_NAME -  controls if we should fetch parents to construct a string like "New York, New York, US" for legacy reasons, this is automatically turned on for geocode queries for now. It's mainly here because reverse geocode clients often don't need it
+- radius=[radius in meters as an integer] -- defaults to 0 (point reverse geocode). If specified along with ll, will return all polygons touched by the circle defined by ll+radius. In strict geocoding mode, used for determining containment.
     
 ### Geocoder Only Paramters
 - autocomplete=[true/false] -- Defaults to false, whether or not to return partial-  matches as if powering an autocompleter
+- strict=[true/false] -- Defaults to false, if true, only returns results within the cc, bounds and ll+radius specified
 
-
-### Reverse Geocoder Only Parameters
-- radius=[radius in meters as an integer] -- defaults to 0 (point reverse geocode). If specified along with ll, will return all polygons touched by the circle defined by ll+radius
 
 ### Bulk Revgeo Requests
 - method=bulkrevgeo - in this mode, ll is allowed to occur multiple times, each one is reverse geocoded. This method gains some efficiency in the response size if the points are closely clustered, but the server work happens in serial, so it is slower than executing a number of requests in parallel client-side. Working on it. ex <http://demo.twofishes.net/?ll=41.793252,12.48729&ll=40.74,-74&method=bulkrevgeo>

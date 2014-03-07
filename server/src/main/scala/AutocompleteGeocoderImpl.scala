@@ -2,18 +2,32 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.Identity._
-import com.foursquare.twofishes.util.{NameNormalizer, NameUtils, StoredFeatureId, CountryUtils, GeonamesId}
+import com.foursquare.twofishes.util.{GeoTools, NameNormalizer, NameUtils, StoredFeatureId, CountryUtils, GeonamesId}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.foursquare.twofishes.util.NameUtils.BestNameMatch
 import org.bson.types.ObjectId
 import scala.collection.mutable.HashMap
 import scalaj.collection.Implicits._
 
+class GeocoderUtils(req: GeocodeRequest) {
+  lazy val requestGeom = GeocodeRequestUtils.getRequestGeometry(req)
+
+  def isAcceptableFeature(req: GeocodeRequest, servingFeature: GeocodeServingFeature): Boolean = {
+    !req.strict ||
+      (
+      // bounds or ll+radius contains the center
+      requestGeom.isEmptyOr(g =>
+        g.contains(GeoTools.pointToGeometry(servingFeature.feature.geometry.center))) &&
+      req.ccOption.isEmptyOr(_ =? servingFeature.feature.cc)
+      )
+  }
+}
+
 class AutocompleteGeocoderImpl(
   store: GeocodeStorageReadService,
   req: GeocodeRequest,
   logger: MemoryLogger
-) extends GeocoderImplTypes {
+) extends GeocoderUtils(req) with GeocoderImplTypes {
   val commonParams = GeocodeRequestUtils.geocodeRequestToCommonRequestParams(req)
   val responseProcessor = new ResponseProcessor(
     commonParams,
@@ -105,8 +119,8 @@ class AutocompleteGeocoderImpl(
 
           val isValid = (parse.exists(_.fmatch.scoringFeatures.parentIds.has(fid)) ||
             parse.exists(_.fmatch.scoringFeatures.extraRelationIds.has(fid)) ||
-            (featureMatch.fmatch.feature.woeType == YahooWoeType.COUNTRY 
-              && parse.exists(p => 
+            (featureMatch.fmatch.feature.woeType == YahooWoeType.COUNTRY
+              && parse.exists(p =>
                 CountryUtils.isCountryDependentOnCountry(p.fmatch.feature.cc, fcc))
             ) &&
             !parse.exists(_.fmatch.longId.toString == fid) &&
@@ -174,13 +188,15 @@ class AutocompleteGeocoderImpl(
               store.getIdsByName(query)
             }
 
-            store.getByFeatureIds(featureIds).map({case (oid, servingFeature) => {
+            store.getByFeatureIds(featureIds)
+              .filter({case (oid, servingFeature) => isAcceptableFeature(req, servingFeature)})
+              .map({case (oid, servingFeature) => {
               FeatureMatch(offset, offset + i, query, servingFeature,
                 servingFeature.feature.names.filter(n => matchName(n, query, isEnd)))
             }}).toSeq
           } else {
             val parents = store.getByFeatureIds(possibleParents).toSeq
-            val countriesOnWhichParentsAreDependent = 
+            val countriesOnWhichParentsAreDependent =
               parents.map(_._2.feature.cc)
               .toList
               .distinct
