@@ -5,6 +5,8 @@ import com.google.common.geometry.{S2LatLng, S2LatLngRect}
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory, Polygon}
 import com.vividsolutions.jts.operation.distance.DistanceOp
 import com.vividsolutions.jts.util.GeometricShapeFactory
+import org.geotools.referencing.GeodeticCalculator
+import org.geotools.referencing.datum.DefaultEllipsoid
 
 object GeoTools {
   val MetersPerMile: Double = 1609.344
@@ -41,6 +43,29 @@ object GeoTools {
 
   def boundsIntersect(b1: GeocodeBoundingBox, b2: GeocodeBoundingBox): Boolean = {
     boundingBoxToS2Rect(b1).intersects(boundingBoxToS2Rect(b2))
+  }
+
+  def makeCircle(ll: GeocodePoint, radiusInMeters: Int): Geometry = {
+    val calc = new GeodeticCalculator(DefaultEllipsoid.WGS84)
+    calc.setStartingGeographicPoint(ll.lng, ll.lat)
+
+    // magic? I did not write this.
+    val SIDES = Math.min(100, 32 + 16 * (Math.ceil(radiusInMeters / 40).toInt / 5))
+
+    val baseAzimuth = 360.0 / SIDES
+    val coords = 0.until(SIDES).map(side => {
+      val azimuth = 180 - (side * baseAzimuth)
+      calc.setDirection(azimuth, radiusInMeters)
+      val point = calc.getDestinationGeographicPoint()
+      new Coordinate(point.getX(), point.getY())
+    })
+
+    // make it close
+    val finalCoords = coords ++ coords.take(1)
+
+    val geomFactory = new GeometryFactory()
+    val ring = geomFactory.createLinearRing(finalCoords.toArray)
+    geomFactory.createPolygon(ring, null)
   }
 
   // This is incorrect for now
