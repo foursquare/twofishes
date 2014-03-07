@@ -68,16 +68,6 @@ object GeoTools {
     geomFactory.createPolygon(ring, null)
   }
 
-  // This is incorrect for now
-  def makeCircle(ll: GeocodePoint, radiusInMeters: Int): Geometry = {
-    val sizeDegrees = radiusInMeters / 111319.9
-    val gsf = new GeometricShapeFactory()
-    gsf.setSize(sizeDegrees)
-    gsf.setNumPoints(100)
-    gsf.setCentre(new Coordinate(ll.lng, ll.lat))
-    gsf.createCircle()
-  }
-
   def boundsToGeometry(bounds: GeocodeBoundingBox): Geometry = {
     val s2rect = GeoTools.boundingBoxToS2Rect(bounds)
     val geomFactory = new GeometryFactory()
