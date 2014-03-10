@@ -15,7 +15,7 @@ object Helpers extends Logging {
     try {
       Some(f)
     } catch {
-      case _ => None
+      case _: Exception => None
     }
   }
 
@@ -23,7 +23,7 @@ object Helpers extends Logging {
     try {
       f
     } catch {
-      case _ => None
+      case _: Exception => None
     }
   }
 }

@@ -22,7 +22,7 @@ class GeocoderImpl(
   store: GeocodeStorageReadService,
   req: GeocodeRequest,
   logger: MemoryLogger
-) extends GeocoderImplTypes {
+) extends GeocoderUtils(req) with GeocoderImplTypes {
 
   // ACK!!! MUTABLE STATE!!!!
   var inRetry = false
@@ -89,9 +89,11 @@ class GeocoderImpl(
     1.to(tokens.size).flatMap(i => {
       val searchStr = tokens.take(i).mkString(" ")
       val featureMatches = logger.logDuration("get-by-name", "get-by-name for %s".format(searchStr)) {
-        store.getByName(searchStr).map((f: GeocodeServingFeature) =>
-          FeatureMatch(offset, offset + i, searchStr, f)
-        )
+        store.getByName(searchStr)
+          .filter(servingFeature => isAcceptableFeature(req, servingFeature))
+          .map((f: GeocodeServingFeature) =>
+            FeatureMatch(offset, offset + i, searchStr, f)
+          )
       }
       logger.ifDebug("got %d features for %s", featureMatches.size, searchStr)
 
@@ -190,7 +192,7 @@ class GeocoderImpl(
         f.fmatch.longId == most_specific.fmatch.longId ||
         most_specific.fmatch.scoringFeatures.parentIds.has(f.fmatch.longId) ||
         most_specific.fmatch.scoringFeatures.extraRelationIds.has(f.fmatch.longId) ||
-        (f.fmatch.feature.woeType == YahooWoeType.COUNTRY && 
+        (f.fmatch.feature.woeType == YahooWoeType.COUNTRY &&
           CountryUtils.isCountryDependentOnCountry(most_specific.fmatch.feature.cc, f.fmatch.feature.cc))
       })
     }

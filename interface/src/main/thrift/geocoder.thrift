@@ -305,6 +305,9 @@ struct GeocodeRequest {
 
   // replaces full, includePolygon, wktGeometry, calculateCoverage
   18: optional list<ResponseIncludes> responseIncludes = []
+
+  // in geocoding mode, requires all results to fall within the bounds/radius specified
+  19: optional bool strict = 0
 }
 
 // I'd like to replace most of the params in geocoderequest with one instance of this,
@@ -349,7 +352,7 @@ struct BulkReverseGeocodeResponse {
   // this list will be the same size as the input array of latlngs
   // intepretationIndexes[0] is a list of indexes into interpretations that represent the
   //   reverse geocodes of latlng[0]
-  // interpretationIndexes[1] are the interpretations that revgeo latlng[1] 
+  // interpretationIndexes[1] are the interpretations that revgeo latlng[1]
   // latlngs that had no revgeo matches will have an empty array in the corresponding position
   //   ... and so on
   4: list<list<i32>> interpretationIndexes
@@ -372,7 +375,7 @@ struct BulkSlugLookupResponse {
   // this list will be the same size as the input array of slugs
   // intepretationIndexes[0] is a list of indexes into interpretations that represent the
   //   lookup of slugs[0]
-  // interpretationIndexes[1] are the interpretations that map to slugs[1] 
+  // interpretationIndexes[1] are the interpretations that map to slugs[1]
   //   ... and so on
   2: list<list<i32>> interpretationIndexes
 
