@@ -50,7 +50,7 @@ case class GeocodeRecord(
   lng: Double,
   displayNames: List[DisplayName] = Nil,
   parents: List[Long] = Nil,
-  population: Option[Int] = None, 
+  population: Option[Int] = None,
   boost: Option[Int] = None,
   boundingbox: Option[BoundingBox] = None,
   displayBounds: Option[BoundingBox] = None,

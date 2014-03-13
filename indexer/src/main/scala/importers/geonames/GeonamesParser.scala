@@ -402,6 +402,11 @@ class GeonamesParser(
       wktReader.read(polygon)
     })
 
+    polygonExtraEntry.foreach(geom => {
+      store.addPolygonToRecord(geonameId, wkbWriter.write(geom))
+    })
+
+
     val slug: Option[String] = slugIndexer.getBestSlug(geonameId)
 
     if (slug.isEmpty &&
@@ -464,7 +469,6 @@ class GeonamesParser(
       displayBounds = displayBboxTable.get(geonameId),
       canGeocode = canGeocode,
       slug = slug,
-      polygon = polygonExtraEntry.map(wkbWriter.write),
       hasPoly = polygonExtraEntry.isDefined,
       extraRelations = extraRelations
     )
