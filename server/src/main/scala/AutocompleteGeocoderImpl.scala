@@ -105,6 +105,10 @@ class AutocompleteGeocoderImpl(
           logger.ifDebug("these are the fids of my parse: %s", matches.map(_.fmatch.longId))
         }
 
+        // prevent matching of feature names in random combinations of languages
+        // Always allow names in English and the user's language, and abbreviations
+        // If the parse so far has tokens that match names in multiple languages,
+        // keep only those languages which have PREFERRED names if possible
         val preferredNameLanguages = parse.headOption.toList.flatMap(
           _.possibleNameHits.filter(_.flags.contains(FeatureNameFlags.PREFERRED))
           .map(_.lang))
@@ -125,14 +129,19 @@ class AutocompleteGeocoderImpl(
               fid, parse.map(_.fmatch.longId))
           }
 
-          val isValid = ((parse.exists(_.fmatch.scoringFeatures.parentIds.has(fid)) ||
-            parse.exists(_.fmatch.scoringFeatures.extraRelationIds.has(fid)) ||
-            (featureMatch.fmatch.feature.woeType == YahooWoeType.COUNTRY
-              && parse.exists(p =>
+          val featureIsParent = parse.exists(_.fmatch.scoringFeatures.parentIds.has(fid))
+          val featureIsExtraRelation = parse.exists(_.fmatch.scoringFeatures.extraRelationIds.has(fid))
+          val featureHasDependentCountryRelation = 
+            featureMatch.fmatch.feature.woeType == YahooWoeType.COUNTRY &&
+            parse.exists(p =>
                 CountryUtils.isCountryDependentOnCountry(p.fmatch.feature.cc, fcc))
-            )) &&
-            !parse.exists(_.fmatch.longId.toString == fid) &&
-            featureMatch.possibleNameHits.exists(n => allowedLanguages.has(n.lang)))
+          
+          val featureIsNotRepeat = !parse.exists(_.fmatch.longId.toString == fid)
+          val featureNameHitsInAllowedLanguage =
+            featureMatch.possibleNameHits.exists(n => allowedLanguages.has(n.lang))
+          
+          val isValid = (featureIsParent || featureIsExtraRelation || featureHasDependentCountryRelation) &&
+             featureIsNotRepeat && featureNameHitsInAllowedLanguage
 
           if (isValid) {
             if (req.debug > 0) {
