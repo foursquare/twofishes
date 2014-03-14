@@ -105,9 +105,17 @@ class AutocompleteGeocoderImpl(
           logger.ifDebug("these are the fids of my parse: %s", matches.map(_.fmatch.longId))
         }
 
-        val allowedLanguages =
-          Set("en", "abbr") ++
-          parse.headOption.toList.flatMap(_.possibleNameHits.map(_.lang)).toSet
+        val preferredNameLanguages = parse.headOption.toList.flatMap(
+          _.possibleNameHits.filter(_.flags.contains(FeatureNameFlags.PREFERRED))
+          .map(_.lang))
+
+        val allowedLanguages = 
+          Set("en", "abbr") ++ Set(req.lang) ++
+          (if (preferredNameLanguages.nonEmpty) {
+            preferredNameLanguages
+          } else {
+            parse.headOption.toList.flatMap(_.possibleNameHits.map(_.lang))
+          }).toSet
 
         matches.flatMap(featureMatch => {
           val fid = featureMatch.fmatch.longId
@@ -117,12 +125,12 @@ class AutocompleteGeocoderImpl(
               fid, parse.map(_.fmatch.longId))
           }
 
-          val isValid = (parse.exists(_.fmatch.scoringFeatures.parentIds.has(fid)) ||
+          val isValid = ((parse.exists(_.fmatch.scoringFeatures.parentIds.has(fid)) ||
             parse.exists(_.fmatch.scoringFeatures.extraRelationIds.has(fid)) ||
             (featureMatch.fmatch.feature.woeType == YahooWoeType.COUNTRY
               && parse.exists(p =>
                 CountryUtils.isCountryDependentOnCountry(p.fmatch.feature.cc, fcc))
-            ) &&
+            )) &&
             !parse.exists(_.fmatch.longId.toString == fid) &&
             featureMatch.possibleNameHits.exists(n => allowedLanguages.has(n.lang)))
 
