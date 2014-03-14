@@ -76,7 +76,7 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
     NameIndexDAO.insert(name)
   }
 
-  def s(id: StoredFeatureId, wkbGeometry: Array[Byte]) {
+  def addPolygonToRecord(id: StoredFeatureId, wkbGeometry: Array[Byte]) {
     MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.longId))),
       MongoDBObject("$set" ->
         MongoDBObject(
