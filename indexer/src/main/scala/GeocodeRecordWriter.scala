@@ -76,7 +76,7 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
     NameIndexDAO.insert(name)
   }
 
-  def addPolygonToRecord(id: StoredFeatureId, wkbGeometry: Array[Byte]) {
+  def s(id: StoredFeatureId, wkbGeometry: Array[Byte]) {
     MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.longId))),
       MongoDBObject("$set" ->
         MongoDBObject(
@@ -84,7 +84,9 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
         )
       ),
       false, false)
-    PolygonIndexDAO.insert(
+
+    // apparently insert doesn't overwrite??
+    PolygonIndexDAO.save(
       PolygonIndex(id.longId, wkbGeometry)
     )
   }
