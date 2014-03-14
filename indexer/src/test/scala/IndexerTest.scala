@@ -218,10 +218,10 @@ class IndexerSpec extends Specification {
       parents = Nil,
       population = None,
       polygon = Some(geomBytes),
-      hasPoly = Some(true),
+      hasPoly = true,
       extraRelations = Nil)
 
-    indexer.calculateCoverForRecord(record, out, new HashMap[Long, Geometry])
+    indexer.calculateCoverForRecord(PolygonIndex(fid.longId, geomBytes), record, out, new HashMap[Long, Geometry])
 
     val wktWriter = new WKTWriter
     val wkbReader = new WKBReader
