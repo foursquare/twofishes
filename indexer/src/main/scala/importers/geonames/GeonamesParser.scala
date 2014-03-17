@@ -142,7 +142,7 @@ object GeonamesParser {
       slugIndexer.writeMissingSlugs(store)
     }
 
-    PolygonLoader.load(store, GeonamesNamespace)
+    new PolygonLoader(parser, store).load(GeonamesNamespace)
   }
 }
 

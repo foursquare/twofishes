@@ -1,10 +1,11 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.importers.geonames
 
+import org.opengis.feature.simple.SimpleFeature
 import com.foursquare.geo.shapes.FsqSimpleFeatureImplicits._
-import com.foursquare.geo.shapes.ShapefileIterator
+import com.foursquare.geo.shapes.{GeoJsonIterator, ShapefileIterator, ShapeIterator}
 import com.foursquare.twofishes._
-import com.foursquare.twofishes.util.{FeatureNamespace, StoredFeatureId}
+import com.foursquare.twofishes.util.{FeatureNamespace, StoredFeatureId, AdHocId}
 import com.foursquare.twofishes.util.Helpers
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
@@ -16,8 +17,10 @@ import com.weiglewilczek.slf4s.Logging
 import java.io.File
 import scalaj.collection.Implicits._
 
-
-object PolygonLoader extends Logging {
+class PolygonLoader(
+  parser: GeonamesParser,
+  store: GeocodeStorageWriteService
+) extends Logging {
   val wktReader = new WKTReader()
   val wkbWriter = new WKBWriter()
 
@@ -51,8 +54,7 @@ object PolygonLoader extends Logging {
     })
   }
 
-  def load(store: GeocodeStorageWriteService,
-           defaultNamespace: FeatureNamespace): Unit = {
+  def load(defaultNamespace: FeatureNamespace): Unit = {
     val polygonDirs = List(
       new File("data/computed/polygons"),
       new File("data/private/polygons")
@@ -65,7 +67,7 @@ object PolygonLoader extends Logging {
       if (index % 1000 == 0) {
         System.gc();
       }
-      load(store, defaultNamespace, f)
+      load(defaultNamespace, f)
     }
     logger.info("post processing, looking for bad poly matches")
     val polygons =
@@ -96,10 +98,64 @@ object PolygonLoader extends Logging {
       }
   }
 
-   def load(store: GeocodeStorageWriteService,
-            defaultNamespace: FeatureNamespace,
-            f: File
-   ): Unit = {
+  var adHocIdCounter = 1
+
+  def maybeMakeFeature(feature: SimpleFeature): Option[String] = {
+    (for {
+      adminCode1 <- feature.propMap.get("adminCode1")
+      countryCode <- feature.propMap.get("countryCode")
+      name <- feature.propMap.get("name")
+      lat <- feature.propMap.get("lat")
+      lng <- feature.propMap.get("lng")
+    } yield {
+      val id = AdHocId(adHocIdCounter)
+
+      val attribMap: Map[GeonamesFeatureColumns.Value, String] = Map(
+        (GeonamesFeatureColumns.GEONAMEID -> id.humanReadableString),
+        (GeonamesFeatureColumns.NAME -> name),
+        (GeonamesFeatureColumns.LATITUDE -> lat),
+        (GeonamesFeatureColumns.LONGITUDE -> lng),
+        (GeonamesFeatureColumns.COUNTRY_CODE -> countryCode),
+        (GeonamesFeatureColumns.ADMIN1_CODE -> adminCode1)
+      ) 
+
+      val supplementalAttrubs: Map[GeonamesFeatureColumns.Value, String]  = List(
+        feature.propMap.get("adminCode2").map(c => (GeonamesFeatureColumns.ADMIN2_CODE -> c)),
+        feature.propMap.get("adminCode3").map(c => (GeonamesFeatureColumns.ADMIN3_CODE -> c)),
+        feature.propMap.get("adminCode4").map(c => (GeonamesFeatureColumns.ADMIN4_CODE -> c)),
+        feature.propMap.get("fcode").map(c => (GeonamesFeatureColumns.FEATURE_CODE -> c)),
+        feature.propMap.get("fclass").map(c => (GeonamesFeatureColumns.FEATURE_CLASS -> c))
+      ).flatMap(x => x).toMap
+
+      adHocIdCounter += 1
+      val gnfeature = new GeonamesFeature(attribMap ++ supplementalAttrubs)
+      println("making adhoc feature: " + id + " " + id.longId)
+      parser.parseFeature(gnfeature)
+      id.humanReadableString
+    }).orElse({
+      logger.error("no id on %s".format(feature))
+      None
+    })
+  }
+
+  def processFeatureIterator(defaultNamespace: FeatureNamespace, features: ShapeIterator) {
+    val fparts = features.file.getName().split("\\.")
+    for {
+      feature <- features
+      geom <- feature.geometry
+    } {
+      val geoid: List[String] = fparts.lift(0).flatMap(p => Helpers.TryO(p.toInt.toString)).orElse(
+        feature.propMap.get("geonameid") orElse feature.propMap.get("qs_gn_id") orElse feature.propMap.get("gn_id") orElse {
+          maybeMakeFeature(feature)
+        }
+      ).toList.filterNot(_.isEmpty).flatMap(_.split(",")).map(_.replace(".0", ""))
+      geoid.foreach(id => {
+        updateRecord(store, defaultNamespace, id, geom)
+      })
+    }
+  }
+
+  def load(defaultNamespace: FeatureNamespace, f: File): Unit = {
     val previousRecordsUpdated = recordsUpdated
     logger.info("processing %s".format(f))
     val fparts = f.getName().split("\\.")
@@ -107,40 +163,10 @@ object PolygonLoader extends Logging {
     val shapeFileExtensions = List("shx", "dbf", "prj", "xml", "cpg")
 
     if (extension == "json" || extension == "geojson") {
-      val io = new FeatureJSON()
-      val features = io.streamFeatureCollection(f)
-      while (features.hasNext()) {
-        val feature = features.next()
-        val geom = feature.getDefaultGeometry().asInstanceOf[Geometry]
-        val geoid: List[String] = fparts.lift(0).flatMap(p => Helpers.TryO(p.toInt.toString)).orElse(
-          feature.propMap.get("geonameid") orElse feature.propMap.get("qs_gn_id") orElse feature.propMap.get("gn_id") orElse {
-            logger.error("no id on %s".format(f))
-            None
-          }
-        ).toList.filterNot(_.isEmpty).flatMap(_.split(","))
-        geoid.foreach(id => {
-          updateRecord(store, defaultNamespace, id, geom)
-        })
-      }
-      features.close()
+      processFeatureIterator(defaultNamespace, new GeoJsonIterator(f))
     } else if (extension == "shp") {
-      for {
-        shp <- new ShapefileIterator(f)
-        geoids <- shp.propMap.get("geonameid") orElse shp.propMap.get("qs_gn_id") orElse shp.propMap.get("gn_id") orElse {
-          logger.error("no id on %s".format(f))
-          None
-        }
-        geom <- shp.geometry
-        geoid <- geoids.split(',')
-        if !geoid.isEmpty
-      } {
-        try {
-          updateRecord(store, defaultNamespace, geoid.replace(".0", ""), geom)
-        } catch {
-          case e: Exception =>
-            throw new RuntimeException("error with geoids %s".format(geoids), e)
-        }
-      }
+      processFeatureIterator(defaultNamespace, new ShapefileIterator(f))
+
     } else if (shapeFileExtensions.has(extension)) {
       // do nothing, shapefile aux file
       Nil

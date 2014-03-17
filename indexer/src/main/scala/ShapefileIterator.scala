@@ -8,6 +8,8 @@ import java.nio.charset.Charset
 import org.geotools.data.shapefile.ShapefileDataStore
 import org.opengis.feature.simple.SimpleFeature
 import scalaj.collection.Imports._
+import org.geotools.geojson.feature.FeatureJSON
+import org.geotools.geojson.GeoJSONUtil
 
 object FsqSimpleFeatureImplicits {
   implicit def simpleFeatureToFsqSimpleFeature(f: SimpleFeature) =
@@ -40,9 +42,27 @@ class FsqSimpleFeature(val f: SimpleFeature) {
   }
 }
 
-class ShapefileIterator(file: File) extends Iterator[SimpleFeature] {
-  def this(path: String) = this(new File(path))
+trait ShapeIterator extends Iterator[SimpleFeature] {
+  def file: File
+}
 
+class GeoJsonIterator(val file: File) extends ShapeIterator {
+  def this(path: String) = this(new File(path))
+  val io = new FeatureJSON()
+   //urn:ogc:def:crs:OGC:1.3:CRS84
+   // epsg:4326
+  val source = scala.io.Source.fromFile(file)
+  val data = source.mkString
+  source.close()
+  val iter = io.streamFeatureCollection(GeoJSONUtil.toReader(data.replace("urn:ogc:def:crs:OGC:1.3:CRS84", "epsg:4326")))
+
+
+  def hasNext = iter.hasNext
+  def next = iter.next
+}
+
+class ShapefileIterator(val file: File) extends ShapeIterator {
+  def this(path: String) = this(new File(path))
   val shapeURL = file.toURI.toURL
   val store = new ShapefileDataStore(shapeURL)
   store.setStringCharset(Charset.forName("UTF-8"))

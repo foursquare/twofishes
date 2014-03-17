@@ -13,6 +13,6 @@ import com.novus.salat.global._
 object UpdatePolys {
   def main(args: Array[String]) {
     val store = new MongoGeocodeStorageService()
-    PolygonLoader.load(store, GeonamesNamespace)
+    // new PolygonLoader.load(store, GeonamesNamespace)
   }
 }

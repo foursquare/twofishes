@@ -190,6 +190,7 @@ object GeocoderBuild extends Build {
         val store = new MongoGeocodeStorageService()
         val slugIndexer = new SlugIndexer()
         val parser = new GeonamesParser(store, slugIndexer, Map.empty)
+        GeonamesParser.parseAdminInfoFile("data/downloaded/adminCodes.txt")
         """,
 
         publishArtifact := false,
@@ -208,6 +209,8 @@ object GeocoderBuild extends Build {
           "org.geotools" % "gt-shapefile" % "9.2",
           "org.geotools" % "gt-geojson" % "9.2",
           "org.geotools" % "gt-epsg-hsql" % "9.2",
+          "org.geotools" % "gt-epsg-extension" % "9.2",
+          "org.geotools" % "gt-referencing" % "9.2",
           "org.scalaj" %% "scalaj-collection" % "1.5",
           "org.mongodb" % "mongo-java-driver" % "2.9.3",
           "com.weiglewilczek.slf4s" % "slf4s_2.9.1" % "1.0.7",

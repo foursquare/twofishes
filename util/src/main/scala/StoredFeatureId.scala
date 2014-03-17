@@ -8,12 +8,13 @@ sealed abstract class FeatureNamespace(val name: String, val id: Byte)
 case object MaponicsNamespace extends FeatureNamespace("maponics", 0.toByte)
 case object GeonamesNamespace extends FeatureNamespace("geonameid", 1.toByte)
 case object GeonamesZipNamespace extends FeatureNamespace("geonamezip", 2.toByte)
+case object AdHocNamespace extends FeatureNamespace("adhoc", 3.toByte)
 
 object FeatureNamespace {
   // higher is better
-  val NamespaceOrdering = List(GeonamesNamespace, MaponicsNamespace)
+  val NamespaceOrdering = List(AdHocNamespace, GeonamesNamespace, MaponicsNamespace)
 
-  val values = List(GeonamesNamespace, MaponicsNamespace, GeonamesZipNamespace)
+  val values = List(AdHocNamespace, GeonamesNamespace, MaponicsNamespace, GeonamesZipNamespace)
 
   def fromId(id: Byte): FeatureNamespace = fromIdOpt(id).getOrElse(
     throw new RuntimeException("unrecognized feature namespace id '%d'".format(id))
@@ -52,6 +53,7 @@ sealed abstract class StoredFeatureId(val namespace: FeatureNamespace) {
   def thriftFeatureId: FeatureId = FeatureId(namespace.name, namespaceSpecificId.toString)
 }
 
+case class AdHocId(override val namespaceSpecificId: Long) extends StoredFeatureId(AdHocNamespace)
 case class GeonamesId(override val namespaceSpecificId: Long) extends StoredFeatureId(GeonamesNamespace)
 case class MaponicsId(override val namespaceSpecificId: Long) extends StoredFeatureId(MaponicsNamespace)
 case class GeonamesZip(override val namespaceSpecificId: Long) extends StoredFeatureId(GeonamesZipNamespace) {
@@ -178,6 +180,7 @@ object StoredFeatureId {
     case GeonamesNamespace => GeonamesId(id)
     case GeonamesZipNamespace => new GeonamesZip(id)
     case MaponicsNamespace => MaponicsId(id)
+    case AdHocNamespace => AdHocId(id)
   }
 
   private def fromNamespaceAndId(n: String, id: String): Option[StoredFeatureId] = {
