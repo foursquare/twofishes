@@ -17,6 +17,10 @@ import com.weiglewilczek.slf4s.Logging
 import java.io.File
 import scalaj.collection.Implicits._
 
+object PolygonLoader {
+  var adHocIdCounter = 1
+}
+
 class PolygonLoader(
   parser: GeonamesParser,
   store: GeocodeStorageWriteService
@@ -98,8 +102,6 @@ class PolygonLoader(
       }
   }
 
-  var adHocIdCounter = 1
-
   def maybeMakeFeature(feature: SimpleFeature): Option[String] = {
     (for {
       adminCode1 <- feature.propMap.get("adminCode1")
@@ -108,7 +110,7 @@ class PolygonLoader(
       lat <- feature.propMap.get("lat")
       lng <- feature.propMap.get("lng")
     } yield {
-      val id = AdHocId(adHocIdCounter)
+      val id = AdHocId(PolygonLoader.adHocIdCounter)
 
       val attribMap: Map[GeonamesFeatureColumns.Value, String] = Map(
         (GeonamesFeatureColumns.GEONAMEID -> id.humanReadableString),
@@ -127,7 +129,7 @@ class PolygonLoader(
         feature.propMap.get("fclass").map(c => (GeonamesFeatureColumns.FEATURE_CLASS -> c))
       ).flatMap(x => x).toMap
 
-      adHocIdCounter += 1
+      PolygonLoader.adHocIdCounter += 1
       val gnfeature = new GeonamesFeature(attribMap ++ supplementalAttrubs)
       println("making adhoc feature: " + id + " " + id.longId)
       parser.parseFeature(gnfeature)
