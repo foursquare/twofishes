@@ -44,3 +44,4 @@ BG|Obshtina
 IE|County|Co
 *|Departamento de
 *|Місто|м.
+JP|-ku
