@@ -42,6 +42,7 @@ object GeocoderBuild extends Build {
     resolvers += "Java.net Maven 2 Repo" at "http://download.java.net/maven/2",
     resolvers += "apache" at "http://repo2.maven.org/maven2/org/apache/hbase/hbase/",
     resolvers += "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos/",
+    resolvers += "codahale" at "http://repo.codahale.com",
     resolvers += "springsource" at "http://repo.springsource.org/libs-release-remote",
     resolvers ++= Seq("snapshots" at "http://oss.sonatype.org/content/repositories/snapshots",
                       "releases"  at "http://oss.sonatype.org/content/repositories/releases"),
@@ -116,7 +117,8 @@ object GeocoderBuild extends Build {
           "commons-cli" % "commons-cli" % "1.2",
           "commons-logging" % "commons-logging" % "1.1.1",
           "commons-daemon" % "commons-daemon" % "1.0.9",
-          "commons-configuration" % "commons-configuration" % "1.6"
+          "commons-configuration" % "commons-configuration" % "1.6",
+          "com.codahale" % "jerkson_2.9.1" % "0.5.0"
         ),
         ivyXML := (
           <dependencies>

@@ -16,6 +16,7 @@ import org.geotools.geojson.feature.FeatureJSON
 import com.weiglewilczek.slf4s.Logging
 import java.io.File
 import scalaj.collection.Implicits._
+import com.codahale.jerkson.Json
 
 object PolygonLoader {
   var adHocIdCounter = 1
@@ -27,6 +28,33 @@ class PolygonLoader(
 ) extends Logging {
   val wktReader = new WKTReader()
   val wkbWriter = new WKBWriter()
+
+  case class PolygonMappingConfig (
+    nameFields: List[String],
+    woeTypes: List[Any]
+  ) {
+    private val _woeTypes: List[YahooWoeType] = {
+      woeTypes.map(_ match {
+        case i: Int => Option(YahooWoeType.findByIdOrNull(i)).getOrElse(
+          throw new Exception("Unknown woetype: %s".format(i)))
+        case s: String => Option(YahooWoeType.findByNameOrNull(s)).getOrElse(
+          throw new Exception("Unknown woetype: %s".format(s)))
+        case t => throw new Exception("unknown woetype: %s".format(t))
+      })
+    }
+
+    def getWoeTypes() = _woeTypes
+  }
+
+  def getMappingForFile(f: File): Option[PolygonMappingConfig] = {
+    val parts = f.getPath().split("\\.")
+    val file = new File(parts(0) + ".mapping.json")
+    if (file.exists()) {
+      Some(Json.parse[PolygonMappingConfig](new java.io.FileInputStream(file)))
+    } else {
+      None
+    }
+  }
 
   def recursiveListFiles(f: File): Array[File] = {
     val these = f.listFiles
@@ -102,6 +130,15 @@ class PolygonLoader(
       }
   }
 
+  def maybeMatchFeature(
+    feature: SimpleFeature,
+    polygonMappingConfig: Option[PolygonMappingConfig]
+  ): Option[String] = {
+    polygonMappingConfig.flatMap(config => {
+      None
+    })
+  }
+
   def maybeMakeFeature(feature: SimpleFeature): Option[String] = {
     (for {
       adminCode1 <- feature.propMap.get("adminCode1")
@@ -140,16 +177,22 @@ class PolygonLoader(
     })
   }
 
-  def processFeatureIterator(defaultNamespace: FeatureNamespace, features: ShapeIterator) {
+  def processFeatureIterator(
+      defaultNamespace: FeatureNamespace,
+      features: ShapeIterator,
+      polygonMappingConfig: Option[PolygonMappingConfig]
+    ) {
     val fparts = features.file.getName().split("\\.")
     for {
       feature <- features
       geom <- feature.geometry
     } {
-      val geoid: List[String] = fparts.lift(0).flatMap(p => Helpers.TryO(p.toInt.toString)).orElse(
-        feature.propMap.get("geonameid") orElse feature.propMap.get("qs_gn_id") orElse feature.propMap.get("gn_id") orElse {
-          maybeMakeFeature(feature)
-        }
+      val geoid: List[String] = fparts.lift(0).flatMap(p => Helpers.TryO(p.toInt.toString))
+        .orElse(feature.propMap.get("geonameid")
+        .orElse(feature.propMap.get("qs_gn_id"))
+        .orElse(feature.propMap.get("gn_id"))
+        .orElse(maybeMatchFeature(feature, polygonMappingConfig))
+        .orElse(maybeMakeFeature(feature))
       ).toList.filterNot(_.isEmpty).flatMap(_.split(",")).map(_.replace(".0", ""))
       geoid.foreach(id => {
         updateRecord(store, defaultNamespace, id, geom)
@@ -165,10 +208,9 @@ class PolygonLoader(
     val shapeFileExtensions = List("shx", "dbf", "prj", "xml", "cpg")
 
     if (extension == "json" || extension == "geojson") {
-      processFeatureIterator(defaultNamespace, new GeoJsonIterator(f))
+      processFeatureIterator(defaultNamespace, new GeoJsonIterator(f), getMappingForFile(f))
     } else if (extension == "shp") {
-      processFeatureIterator(defaultNamespace, new ShapefileIterator(f))
-
+      processFeatureIterator(defaultNamespace, new ShapefileIterator(f), getMappingForFile(f))
     } else if (shapeFileExtensions.has(extension)) {
       // do nothing, shapefile aux file
       Nil

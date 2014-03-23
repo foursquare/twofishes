@@ -40,6 +40,16 @@ case class BoundingBox(
   sw: Point
 )
 
+object GeoJsonPoint {
+  def apply(lat: Double, lng: Double): GeoJsonPoint =
+    GeoJsonPoint(coordinates = List(lng, lat))
+}
+case class GeoJsonPoint(
+  `type`: String = "Point",
+  coordinates: List[Double]
+)
+object NilPoint extends GeoJsonPoint("Point", List(0, 0))
+
 case class GeocodeRecord(
   _id: Long,
   ids: List[Long],
@@ -59,8 +69,12 @@ case class GeocodeRecord(
   polygon: Option[Array[Byte]] = None,
   hasPoly: Boolean = false,
   var attributes: Option[Array[Byte]] = None,
-  extraRelations: List[Long] = Nil
+  extraRelations: List[Long] = Nil,
+  var loc: GeoJsonPoint = NilPoint
 ) extends Ordered[GeocodeRecord] {
+  // gross that we overwrite this
+  loc = GeoJsonPoint(lat, lng)
+
   val factory = new TCompactProtocol.Factory()
   val serializer = new TSerializer(factory)
   val deserializer = new TDeserializer(factory)
