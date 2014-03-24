@@ -117,8 +117,7 @@ object GeocoderBuild extends Build {
           "commons-cli" % "commons-cli" % "1.2",
           "commons-logging" % "commons-logging" % "1.1.1",
           "commons-daemon" % "commons-daemon" % "1.0.9",
-          "commons-configuration" % "commons-configuration" % "1.6",
-          "com.codahale" % "jerkson_2.9.1" % "0.5.0"
+          "commons-configuration" % "commons-configuration" % "1.6"
         ),
         ivyXML := (
           <dependencies>
@@ -197,7 +196,9 @@ object GeocoderBuild extends Build {
 
         publishArtifact := false,
         libraryDependencies ++= Seq(
-          "com.novus" %% "salat" % "1.9.2"
+          "com.novus" %% "salat" % "1.9.2",
+          "com.rockymadden.stringmetric" %% "stringmetric-core" % "0.27.2",
+          "com.codahale" % "jerkson_2.9.1" % "0.5.0"
         )
       )
   ) dependsOn(core, util)

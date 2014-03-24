@@ -13,10 +13,18 @@ import com.mongodb.casbah.Imports._
 import com.vividsolutions.jts.geom.{Geometry, GeometryFactory}
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTReader}
 import org.geotools.geojson.feature.FeatureJSON
+import org.geotools.geojson.geom.GeometryJSON
 import com.weiglewilczek.slf4s.Logging
 import java.io.File
 import scalaj.collection.Implicits._
 import com.codahale.jerkson.Json
+import com.mongodb.Bytes
+import java.text.Normalizer
+import java.text.Normalizer.Form
+import com.rockymadden.stringmetric.TransformModule
+import com.rockymadden.stringmetric.StringTransform
+import com.rockymadden.stringmetric.similarity.JaroWinklerMetric
+import com.rockymadden.stringmetric.phonetic.MetaphoneMetric
 
 object PolygonLoader {
   var adHocIdCounter = 1
@@ -130,13 +138,82 @@ class PolygonLoader(
       }
   }
 
+  def findMatchCandidates(geometry: Geometry, woeTypes: List[YahooWoeType]) = {
+    // sigh, can't use, not structured
+    // val geoJson = GeometryJSON.toString(geometry)
+    val envelope = geometry.getEnvelopeInternal()
+    envelope.expandBy(0.1)
+    val candidateCursor = MongoGeocodeDAO.find(
+      MongoDBObject(
+        "loc" ->
+        MongoDBObject("$geoWithin" ->
+          MongoDBObject("$geometry" ->
+            MongoDBObject(
+              "type" -> "Polygon",
+              "coordinates" -> List(List(
+                List(envelope.getMinX(), envelope.getMinY()),
+                List(envelope.getMaxX(), envelope.getMinY()),
+                List(envelope.getMaxX(), envelope.getMaxY()),
+                List(envelope.getMinX(), envelope.getMaxY()),
+                List(envelope.getMinX(), envelope.getMinY())
+              ))
+            )
+          )
+        ),
+        "_woeType" -> MongoDBObject("$in" -> woeTypes.map(_.getValue()))
+      )
+    )
+    candidateCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
+    candidateCursor
+  }
+
+  def removeDiacritics(text: String) =
+    Normalizer.normalize(text, Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
+
+  // really, we should apply all the normalizations to shape names that we do to 
+  // geonames
+  def applyHacks(text: String) = text
+
+  def isGoodEnoughNameMatch(namesFromFeature: List[String], namesFromShape: List[String]): Boolean = {
+    val namesFromShape_Modified = 
+      namesFromShape.map(removeDiacritics).map(applyHacks)
+    val namesFromFeature_Modified = 
+      namesFromFeature.map(removeDiacritics).map(applyHacks)
+
+    val composedTransform = (StringTransform.filterAlpha andThen StringTransform.ignoreAlphaCase)
+
+    namesFromShape_Modified.exists(ns => 
+      namesFromFeature_Modified.exists(ng => {
+        (MetaphoneMetric withTransform composedTransform).compare(ns, ng) ||
+        JaroWinklerMetric.compare(ns, ng) > 0.90
+      })
+    )
+  }
+
   def maybeMatchFeature(
     feature: SimpleFeature,
     polygonMappingConfig: Option[PolygonMappingConfig]
   ): Option[String] = {
-    polygonMappingConfig.flatMap(config => {
+    val matchingIds = for {
+      config <- polygonMappingConfig.toList
+      geometry <- feature.geometry
+      // Search for features within the geometry
+      candidate <- findMatchCandidates(geometry, config.getWoeTypes)
+      if (isGoodEnoughNameMatch(
+        candidate.displayNames.map(_.name),
+        config.nameFields.flatMap(nameField =>
+          feature.propMap.get(nameField)
+        )
+      ))
+    } yield {
+      candidate._id
+    }
+
+    if (matchingIds.isEmpty) {
       None
-    })
+    } else {
+      Some(matchingIds.map(_.toString).mkString(","))
+    }
   }
 
   def maybeMakeFeature(feature: SimpleFeature): Option[String] = {
