@@ -198,13 +198,13 @@ class GeocoderImpl(
     }
   }
 
-  def deleteCommonWords(tokens: List[String]): List[String] = {
+  def deleteCommonWords(tokens: List[String], parsedPhrases: Set[String]): List[String] = {
     val commonWords = Set(
       "city", "gemeinde", "canton", "of", "county", "gmina", "stadtteil", "district", "kommune", "prefecture", "contrada",
       "stazione", "di", "oblast", "Δήμος", "д", "м", "neighborhood", "neighbourhood", "the"
     ).map(_.toLowerCase)
 
-    tokens.filterNot(t => commonWords.contains(t))
+    tokens.filterNot(t => commonWords.contains(t) && !parsedPhrases.exists(_.contains(t)))
   }
 
   def getMaxInterpretations = {
@@ -220,7 +220,8 @@ class GeocoderImpl(
     parses: SortedParseSeq,
     parseParams: ParseParams
   ): GeocodeResponse = {
-    val modifiedTokens = deleteCommonWords(parseParams.originalTokens)
+    val parsedPhrases = parses.flatMap(p => p.map(_.phrase)).toSet
+    val modifiedTokens = deleteCommonWords(parseParams.originalTokens, parsedPhrases)
     logger.ifDebug("common words deleted: %s", modifiedTokens)
     if (modifiedTokens.size != parseParams.originalTokens.size && !inRetry) {
       inRetry = true
@@ -252,7 +253,7 @@ class GeocoderImpl(
     if (validParseCaches.size > 0) {
       val longest = validParseCaches.map(_._1).max
       if (hadConnector && longest != tokens.size) {
-      ResponseProcessor.generateResponse(req.debug, logger, Nil)
+        ResponseProcessor.generateResponse(req.debug, logger, Nil)
       } else {
         val parsesToConsider = new ListBuffer[Parse[Sorted]]
 

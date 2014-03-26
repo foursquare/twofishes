@@ -174,6 +174,19 @@ class GeocoderSpec extends Specification {
     store
   }
 
+  def addKansas(store: MockGeocodeStorageReadService) = {
+    val usRecord = store.addGeocode("US", Nil, 1, 2, YahooWoeType.COUNTRY)
+    val kansasRecord = store.addGeocode("Kansas", List(usRecord), 3, 4, YahooWoeType.ADMIN1, population=Some(2000000))
+    store
+  }
+
+  def addKansasCityMO(store: MockGeocodeStorageReadService) = {
+    val usRecord = store.addGeocode("US", Nil, 1, 2, YahooWoeType.COUNTRY)
+    val moRecord = store.addGeocode("Missouri", List(usRecord), 3, 4, YahooWoeType.ADMIN1)
+    val kansasCityRecord = store.addGeocode("Kansas City", List(moRecord, usRecord), 2, 6, YahooWoeType.TOWN, population=Some(20000))
+    store
+  }
+
   def addSohos(store: MockGeocodeStorageReadService) = {
     val usRecord = store.addGeocode("US", Nil, 1, 2, YahooWoeType.COUNTRY)
     val nyRecord = store.addGeocode("New York", List(usRecord), 3, 4, YahooWoeType.ADMIN1)
@@ -391,6 +404,19 @@ class GeocoderSpec extends Specification {
     val interp2 = r.interpretations(1)
     interp2.feature.displayNameOrNull must_== "Paris, Illinois, US"
     interp2.feature.highlightedNameOrNull must_== "<b>Paris</b>, Illinois, <b>US</b>"
+  }
+
+  "common words in parsed phrases not deleted" in {
+    val store = getStore
+    addKansas(store)
+    addKansasCityMO(store)
+
+    val req = GeocodeRequest.newBuilder.query("Pizza in Kansas City").result
+    val r = new GeocodeRequestDispatcher(store).geocode(req)
+    r.interpretations.size must_== 1
+    val interp = r.interpretations(0)
+    interp.what must_== "pizza"
+    interp.where must_== "kansas city"
   }
 
   "everything after connector geocodes" in {
