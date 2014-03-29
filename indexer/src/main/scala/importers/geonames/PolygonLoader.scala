@@ -17,16 +17,30 @@ import org.geotools.geojson.geom.GeometryJSON
 import com.weiglewilczek.slf4s.Logging
 import java.io.File
 import scalaj.collection.Implicits._
-import com.codahale.jerkson.Json
 import com.mongodb.Bytes
 import java.text.Normalizer
 import java.text.Normalizer.Form
 import com.rockymadden.stringmetric.transform._
 import com.rockymadden.stringmetric.similarity.JaroWinklerMetric
 import com.rockymadden.stringmetric.phonetic.MetaphoneMetric
+import org.json4s._
+import org.json4s.jackson.JsonMethods._
 
 object PolygonLoader {
   var adHocIdCounter = 1
+}
+
+case class PolygonMappingConfig (
+  nameFields: List[String],
+  woeTypes: List[String],
+  idField: Option[String]
+) {
+  private val _woeTypes: List[YahooWoeType] = {
+    woeTypes.map(s => Option(YahooWoeType.findByNameOrNull(s)).getOrElse(
+      throw new Exception("Unknown woetype: %s".format(s))))
+  }
+
+  def getWoeTypes() = _woeTypes
 }
 
 class PolygonLoader(
@@ -36,28 +50,14 @@ class PolygonLoader(
   val wktReader = new WKTReader()
   val wkbWriter = new WKBWriter()
 
-  case class PolygonMappingConfig (
-    nameFields: List[String],
-    woeTypes: List[Any],
-    idField: Option[String]
-  ) {
-    private val _woeTypes: List[YahooWoeType] = {
-      woeTypes.map(_ match {
-        case i: Int => Option(YahooWoeType.findByIdOrNull(i)).getOrElse(
-          throw new Exception("Unknown woetype: %s".format(i)))
-        case s: String => Option(YahooWoeType.findByNameOrNull(s)).getOrElse(
-          throw new Exception("Unknown woetype: %s".format(s)))
-        case t => throw new Exception("unknown woetype: %s".format(t))
-      })
-    }
-
-    def getWoeTypes() = _woeTypes
-  }
-
   def getMappingForFile(f: File): Option[PolygonMappingConfig] = {
+    implicit val formats = DefaultFormats
     val file = new File(f.getPath() + ".mapping.json")
     if (file.exists()) {
-      Some(Json.parse[PolygonMappingConfig](new java.io.FileInputStream(file)))
+      val json = scala.io.Source.fromFile(file).getLines.mkString("")
+      Some(
+         parse(json).extract[PolygonMappingConfig]
+      )
     } else {
       None
     }
@@ -190,7 +190,7 @@ class PolygonLoader(
   }
 
   def debugFeature(feature: SimpleFeature): String = {
-    feature.propMap.toString
+    feature.propMap.filterNot(_._1 == "the_geom").toString
   }
 
   def isAcceptableMatch(
@@ -204,7 +204,7 @@ class PolygonLoader(
     )
     val candidateNames = candidate.displayNames.map(_.name)
     val nameMatch = isGoodEnoughNameMatch(featureNames, candidateNames)
-    val typeMatch = config.woeTypes.has(candidate.woeType)
+    val typeMatch = config.getWoeTypes.has(candidate.woeType)
     if (withLogging) {
       if (!nameMatch) {
         logger.info(
@@ -235,12 +235,17 @@ class PolygonLoader(
     } yield {
       // Search for features within the geometry
       val candidates = findMatchCandidates(geometry, config.getWoeTypes)
-      if (candidates.size == 0) {
+
+      var candidatesSeen = 0
+
+      val acceptableCandidates: Iterator[GeocodeRecord] = candidates.filter(candidate => {
+        candidatesSeen += 1
+        isAcceptableMatch(feature, config, candidate)
+      })
+
+      if (candidatesSeen == 0) {
         logger.info("couldn't find any candidates for " + debugFeature(feature))
       }
-
-      val acceptableCandidates: Iterator[GeocodeRecord] = candidates.filter(candidate => 
-        isAcceptableMatch(feature, config, candidate))
 
       if (acceptableCandidates.isEmpty) {
         logger.info("failed to match: %s".format(debugFeature(feature)))
@@ -291,7 +296,7 @@ class PolygonLoader(
       parser.parseFeature(gnfeature)
       id.humanReadableString
     }).orElse({
-      logger.error("no id on %s".format(feature))
+      logger.error("no id on %s".format(debugFeature(feature)))
       None
     })
   }

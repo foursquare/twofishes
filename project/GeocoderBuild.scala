@@ -199,9 +199,10 @@ object GeocoderBuild extends Build {
 
         publishArtifact := false,
         libraryDependencies ++= Seq(
-          "com.novus" %% "salat" % "1.9.2",
+          "com.novus" %% "salat" % "1.9.6",
           "com.rockymadden.stringmetric" %% "stringmetric-core" % "0.27.3",
-          "com.codahale" % "jerkson_2.9.1" % "0.5.0"
+          "org.json4s" %% "json4s-native" % "3.2.8",
+          "org.json4s" %% "json4s-jackson" % "3.2.8"
         )
       )
   ) dependsOn(core, util)
