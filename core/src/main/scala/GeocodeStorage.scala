@@ -294,6 +294,16 @@ case class GeocodeRecord(
 
   def isCountry = woeType == YahooWoeType.COUNTRY
   def isPostalCode = woeType == YahooWoeType.POSTAL_CODE
+
+  def debugString(): String = {
+    "%s - %s %s - %s,%s".format(
+      featureId,
+      displayNames.headOption.map(_.name).getOrElse("????"),
+      cc,
+      lat,
+      lng
+    )
+  }
 }
 
 trait GeocodeStorageReadService {

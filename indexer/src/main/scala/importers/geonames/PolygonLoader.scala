@@ -2,12 +2,14 @@
 package com.foursquare.twofishes.importers.geonames
 
 import org.opengis.feature.simple.SimpleFeature
-import com.foursquare.geo.shapes.FsqSimpleFeatureImplicits._
+import com.foursquare.geo.shapes.FsqSimpleFeature
 import com.foursquare.geo.shapes.{GeoJsonIterator, ShapefileIterator, ShapeIterator}
 import com.foursquare.twofishes._
+import com.foursquare.twofishes.util.Lists.Implicits._
 import com.foursquare.twofishes.util.{FeatureNamespace, StoredFeatureId, AdHocId}
 import com.foursquare.twofishes.util.Helpers
 import com.foursquare.twofishes.util.Helpers._
+import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.mongodb.casbah.Imports._
 import com.vividsolutions.jts.geom.{Geometry, GeometryFactory}
@@ -32,15 +34,16 @@ object PolygonLoader {
 
 case class PolygonMappingConfig (
   nameFields: List[String],
-  woeTypes: List[String],
+  woeTypes: List[List[String]],
   idField: Option[String]
 ) {
-  private val _woeTypes: List[YahooWoeType] = {
-    woeTypes.map(s => Option(YahooWoeType.findByNameOrNull(s)).getOrElse(
-      throw new Exception("Unknown woetype: %s".format(s))))
+  private val _woeTypes: List[List[YahooWoeType]] = {
+    woeTypes.map(_.map(s => Option(YahooWoeType.findByNameOrNull(s)).getOrElse(
+      throw new Exception("Unknown woetype: %s".format(s)))))
   }
 
   def getWoeTypes() = _woeTypes
+  def getAllWoeTypes() = getWoeTypes.flatten
 }
 
 class PolygonLoader(
@@ -137,31 +140,35 @@ class PolygonLoader(
       }
   }
 
-  def findMatchCandidates(geometry: Geometry, woeTypes: List[YahooWoeType]) = {
-    // sigh, can't use, not structured
+  def buildQuery(geometry: Geometry, woeTypes: List[YahooWoeType]) = {
+    // we can't use the geojson this spits out because it's a string and 
+    // seeming MongoDBObject has no from-string parser
+    // The bounding box is easier to reason about anyway.
     // val geoJson = GeometryJSON.toString(geometry)
     val envelope = geometry.getEnvelopeInternal()
     envelope.expandBy(0.1)
-    val candidateCursor = MongoGeocodeDAO.find(
-      MongoDBObject(
-        "loc" ->
-        MongoDBObject("$geoWithin" ->
-          MongoDBObject("$geometry" ->
-            MongoDBObject(
-              "type" -> "Polygon",
-              "coordinates" -> List(List(
-                List(envelope.getMinX(), envelope.getMinY()),
-                List(envelope.getMaxX(), envelope.getMinY()),
-                List(envelope.getMaxX(), envelope.getMaxY()),
-                List(envelope.getMinX(), envelope.getMaxY()),
-                List(envelope.getMinX(), envelope.getMinY())
-              ))
-            )
+    MongoDBObject(
+      "loc" ->
+      MongoDBObject("$geoWithin" ->
+        MongoDBObject("$geometry" ->
+          MongoDBObject(
+            "type" -> "Polygon",
+            "coordinates" -> List(List(
+              List(envelope.getMinX(), envelope.getMinY()),
+              List(envelope.getMaxX(), envelope.getMinY()),
+              List(envelope.getMaxX(), envelope.getMaxY()),
+              List(envelope.getMinX(), envelope.getMaxY()),
+              List(envelope.getMinX(), envelope.getMinY())
+            ))
           )
-        ),
-        "_woeType" -> MongoDBObject("$in" -> woeTypes.map(_.getValue()))
-      )
+        )
+      ),
+      "_woeType" -> MongoDBObject("$in" -> woeTypes.map(_.getValue()))
     )
+  }
+
+  def findMatchCandidates(geometry: Geometry, woeTypes: List[YahooWoeType]) = {
+    val candidateCursor = MongoGeocodeDAO.find(buildQuery(geometry, woeTypes))
     candidateCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
     candidateCursor
   }
@@ -171,99 +178,146 @@ class PolygonLoader(
 
   // really, we should apply all the normalizations to shape names that we do to 
   // geonames
-  def applyHacks(text: String) = text
+  val spaceRegex = " +".r
+  def applyHacks(text: String): List[String] = {
+    val names = (List(text) ++ parser.doDelete(text)).toSet
+    (parser.doRewrites(names.toList) ++ names).toSet.toList
+  }
 
   def isGoodEnoughNameMatch(namesFromFeature: List[String], namesFromShape: List[String]): Boolean = {
     val namesFromShape_Modified = 
-      namesFromShape.map(removeDiacritics).map(applyHacks)
+      namesFromShape.map(removeDiacritics).flatMap(applyHacks)
     val namesFromFeature_Modified = 
-      namesFromFeature.map(removeDiacritics).map(applyHacks)
+      namesFromFeature.map(removeDiacritics).flatMap(applyHacks)
 
     val composedTransform = (filterAlpha andThen ignoreAlphaCase)
 
     namesFromShape_Modified.exists(ns => 
       namesFromFeature_Modified.exists(ng => {
-        (MetaphoneMetric withTransform composedTransform).compare(ns, ng).getOrElse(false) ||
-        JaroWinklerMetric.compare(ns, ng).getOrElse(0.0) > 0.90
+        ng.nonEmpty && ns.nonEmpty &&
+        (ng == ns ||
+          // MetaphoneMetric withTransform composedTransform).compare(ns, ng).getOrElse(false) ||
+          JaroWinklerMetric.compare(ns, ng).getOrElse(0.0) > 0.90
+        )
       })
     )
   }
 
-  def debugFeature(feature: SimpleFeature): String = {
+  def debugFeature(config: PolygonMappingConfig, feature: FsqSimpleFeature): String = {
+    val names = config.nameFields.view.flatMap(nameField =>
+      feature.propMap.get(nameField)
+    ).filterNot(_.isEmpty)
+
+    val firstName = names.headOption.getOrElse("????")
+
+    val id = getId(config, feature)
+
+    "%s: %s (%s)".format(id, firstName, names.toSet.filterNot(_ =? firstName).mkString(", "))
+  }
+
+
+  def debugFeature(feature: FsqSimpleFeature): String = {
     feature.propMap.filterNot(_._1 == "the_geom").toString
   }
 
+  val parenNameRegex = "$(.*) \\((.*)\\)^".r
   def isAcceptableMatch(
-    feature: SimpleFeature,
+    feature: FsqSimpleFeature,
     config: PolygonMappingConfig,
     candidate: GeocodeRecord,
     withLogging: Boolean = false
   ): Boolean = {
-    val featureNames = config.nameFields.flatMap(nameField =>
+    val originalFeatureNames = config.nameFields.flatMap(nameField =>
       feature.propMap.get(nameField)
-    )
-    val candidateNames = candidate.displayNames.map(_.name)
+    ).filterNot(_.isEmpty)
+    // some OSM feature names look like A (B), make that into two extra names
+    // This is a terrible way to execute this transform
+    val featureNames = originalFeatureNames ++ originalFeatureNames.flatMap(n => {
+      parenNameRegex.findFirstIn(n).toList.flatMap(_ => {
+        List(
+          parenNameRegex.replaceAllIn(n, "$1"),
+          parenNameRegex.replaceAllIn(n, "$2")
+        )
+      })
+    })
+
+    val candidateNames = candidate.displayNames.map(_.name).filterNot(_.isEmpty)
     val nameMatch = isGoodEnoughNameMatch(featureNames, candidateNames)
-    val typeMatch = config.getWoeTypes.has(candidate.woeType)
     if (withLogging) {
       if (!nameMatch) {
         logger.info(
-          "failed to match %s on names %s vs %s".format(
+          "%s vs %s -- %s vs %s".format(
+            candidate.featureId.humanReadableString,
             config.idField.flatMap(feature.propMap.get).getOrElse(0),
             featureNames, candidateNames
           )
         )
-      } else {
-          logger.info(
-          "failed to match %s on YahooWoeType %s vs %s".format(
-            config.idField.flatMap(feature.propMap.get).getOrElse(0),
-            candidate.woeType, config.woeTypes
-          )
-        )
       }
     }
-    nameMatch && typeMatch
+    nameMatch
+  }
+
+  def debugFeature(r: GeocodeRecord): String = r.debugString
+  def getId(polygonMappingConfig: PolygonMappingConfig, feature: FsqSimpleFeature) = {
+    polygonMappingConfig.idField.map(f => feature.propMap.get(f)).getOrElse("????")
   }
 
   def maybeMatchFeature(
-    feature: SimpleFeature,
-    polygonMappingConfig: Option[PolygonMappingConfig]
+    config: PolygonMappingConfig,
+    feature: FsqSimpleFeature,
+    geometry: Geometry
   ): Option[String] = {
-    val matchingFeatures: Seq[GeocodeRecord] = (for {
-      config <- polygonMappingConfig.toList
-      geometry <- feature.geometry
-    } yield {
-      // Search for features within the geometry
-      val candidates = findMatchCandidates(geometry, config.getWoeTypes)
+    var candidatesSeen = 0
 
-      var candidatesSeen = 0
+    def matchAtWoeType(woeTypes: List[YahooWoeType], withLogging: Boolean = false): List[GeocodeRecord] = {
+      val candidates = findMatchCandidates(geometry, woeTypes)
 
-      val acceptableCandidates: Iterator[GeocodeRecord] = candidates.filter(candidate => {
+      candidates.filter(candidate => {
         candidatesSeen += 1
-        isAcceptableMatch(feature, config, candidate)
-      })
+        // println(debugFeature(candidate))
+        isAcceptableMatch(feature, config, candidate, withLogging)
+      }).toList
+    }
+
+    val matchingFeatures: Seq[GeocodeRecord] = {
+      // woeTypes are a list of lists, in descening order of preference 
+      // each list is taken as equal prefence, but higher precedence than the
+      // next list. If woeTypes looks like [[ADMIN3], [ADMIN2]], and we find
+      // an admin3 match, we won't even bother looking for an admin2 match.
+      // If it was [[ADMIN3, ADMIN2]], we would look for both, and if we
+      // found two matches, take them both
+      val acceptableCandidates: List[GeocodeRecord] = 
+        config.getWoeTypes.view
+          .map(woeTypes => matchAtWoeType(woeTypes))
+          .find(_.nonEmpty).toList.flatten
 
       if (candidatesSeen == 0) {
-        logger.info("couldn't find any candidates for " + debugFeature(feature))
-      }
-
-      if (acceptableCandidates.isEmpty) {
-        logger.info("failed to match: %s".format(debugFeature(feature)))
-        candidates.filter(candidate => 
-          isAcceptableMatch(feature, config, candidate, withLogging = true))
+        logger.info("couldn't find any candidates for " + debugFeature(config, feature) + " - " + buildQuery(geometry, config.getAllWoeTypes))
+      } else if (acceptableCandidates.isEmpty) {
+        logger.info("failed to match: %s".format(debugFeature(config, feature)))
+        logger.info("%s".format(buildQuery(geometry, config.getAllWoeTypes)))
+        matchAtWoeType(config.getAllWoeTypes, withLogging = true)
+      } else {
+        logger.info("matched %s to %s".format(
+          getId(config, feature), acceptableCandidates.map(_.featureId)
+        ))
+         println("matched %s to %s".format(
+          getId(config, feature), acceptableCandidates.map(_.featureId)
+        ))
       }
 
       acceptableCandidates
-    }).flatten
+    }
 
     if (matchingFeatures.isEmpty) {
       None
     } else {
-      Some(matchingFeatures.map(_.featureId.longId.toString).mkString(","))
+      val r = Some(matchingFeatures.map(_.featureId.humanReadableString).mkString(","))
+      r
     }
   }
 
-  def maybeMakeFeature(feature: SimpleFeature): Option[String] = {
+  def maybeMakeFeature(feature: FsqSimpleFeature): Option[String] = {
     (for {
       adminCode1 <- feature.propMap.get("adminCode1")
       countryCode <- feature.propMap.get("countryCode")
@@ -308,16 +362,21 @@ class PolygonLoader(
     ) {
     val fparts = features.file.getName().split("\\.")
     for {
-      feature <- features
+      (rawFeature, index) <- features.zipWithIndex
+      feature = new FsqSimpleFeature(rawFeature)
       geom <- feature.geometry
     } {
+      if (index % 100 == 0) {
+        println("processing feature %d".format(index))
+      }
       val geoid: List[String] = fparts.lift(0).flatMap(p => Helpers.TryO(p.toInt.toString))
         .orElse(feature.propMap.get("geonameid")
         .orElse(feature.propMap.get("qs_gn_id"))
         .orElse(feature.propMap.get("gn_id"))
-        .orElse(maybeMatchFeature(feature, polygonMappingConfig))
+        .orElse(polygonMappingConfig.flatMap(config => maybeMatchFeature(config, feature, geom)))
         .orElse(maybeMakeFeature(feature))
       ).toList.filterNot(_.isEmpty).flatMap(_.split(",")).map(_.replace(".0", ""))
+      println(geoid)
       geoid.foreach(id => {
         updateRecord(store, defaultNamespace, id, geom)
       })

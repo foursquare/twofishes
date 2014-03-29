@@ -226,6 +226,7 @@ class GeonamesParser(
         })
       })
     }})
+    nameSet ++= names.map(_.replace("ß", "ss"))
     nameSet.toList
   }
 
