@@ -34,6 +34,7 @@ object NameNormalizer {
     // replace multiple spaces with one
     n = spaceRegexp.replaceAllIn(n, " ")
     n = n.replace("\t", " ")
+
     n
   }
 

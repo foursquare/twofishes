@@ -14,3 +14,14 @@ Gemeinde
 (rhld.)
 am main
 stadt
+# we really need to strip these on query parsing as well
+# japanese attached suffixes
+# city
+市
+# ward / ku / district
+区
+# prefecture
+県
+# chinese!
+# township
+鄉

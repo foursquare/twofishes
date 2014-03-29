@@ -22,3 +22,6 @@ eme\b|th ARRONDISSEMENT
 Область|Обл
 St|Saint
 Ste|Sainte
+# these should probably be italy-only
+d'|di 
+di |d'

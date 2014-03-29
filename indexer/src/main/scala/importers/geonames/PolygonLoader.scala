@@ -6,7 +6,7 @@ import com.foursquare.geo.shapes.FsqSimpleFeature
 import com.foursquare.geo.shapes.{GeoJsonIterator, ShapefileIterator, ShapeIterator}
 import com.foursquare.twofishes._
 import com.foursquare.twofishes.util.Lists.Implicits._
-import com.foursquare.twofishes.util.{FeatureNamespace, StoredFeatureId, AdHocId}
+import com.foursquare.twofishes.util.{FeatureNamespace, StoredFeatureId, AdHocId, NameNormalizer}
 import com.foursquare.twofishes.util.Helpers
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.Identity._
@@ -27,6 +27,7 @@ import com.rockymadden.stringmetric.similarity.JaroWinklerMetric
 import com.rockymadden.stringmetric.phonetic.MetaphoneMetric
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
+import com.ibm.icu.text.Transliterator
 
 object PolygonLoader {
   var adHocIdCounter = 1
@@ -173,22 +174,25 @@ class PolygonLoader(
     candidateCursor
   }
 
-  def removeDiacritics(text: String) =
-    Normalizer.normalize(text, Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
+  def removeDiacritics(text: String) = {
+    NameNormalizer.normalize(text)
+  }
 
   // really, we should apply all the normalizations to shape names that we do to 
   // geonames
   val spaceRegex = " +".r
-  def applyHacks(text: String): List[String] = {
-    val names = (List(text) ++ parser.doDelete(text)).toSet
-    (parser.doRewrites(names.toList) ++ names).toSet.toList
+  val transliterator = Transliterator.getInstance("Any-Latin; NFD;")
+  def applyHacks(originalText: String): List[String] = {
+    val text = originalText
+    val translit = transliterator.transform(text)
+
+    val names = (List(text, translit) ++ parser.doDelete(text)).toSet
+    (parser.doRewrites(names.toList) ++ names).toSet.toList.map(removeDiacritics)
   }
 
   def isGoodEnoughNameMatch(namesFromFeature: List[String], namesFromShape: List[String]): Boolean = {
-    val namesFromShape_Modified = 
-      namesFromShape.map(removeDiacritics).flatMap(applyHacks)
-    val namesFromFeature_Modified = 
-      namesFromFeature.map(removeDiacritics).flatMap(applyHacks)
+    val namesFromShape_Modified = namesFromShape.flatMap(applyHacks)
+    val namesFromFeature_Modified = namesFromFeature.flatMap(applyHacks)
 
     val composedTransform = (filterAlpha andThen ignoreAlphaCase)
 
@@ -197,7 +201,7 @@ class PolygonLoader(
         ng.nonEmpty && ns.nonEmpty &&
         (ng == ns ||
           // MetaphoneMetric withTransform composedTransform).compare(ns, ng).getOrElse(false) ||
-          JaroWinklerMetric.compare(ns, ng).getOrElse(0.0) > 0.90
+          (JaroWinklerMetric withTransform composedTransform).compare(ns, ng).getOrElse(0.0) > 0.95
         )
       })
     )
@@ -220,7 +224,7 @@ class PolygonLoader(
     feature.propMap.filterNot(_._1 == "the_geom").toString
   }
 
-  val parenNameRegex = "$(.*) \\((.*)\\)^".r
+  val parenNameRegex = "^(.*) \\((.*)\\)$".r
   def isAcceptableMatch(
     feature: FsqSimpleFeature,
     config: PolygonMappingConfig,
@@ -249,7 +253,7 @@ class PolygonLoader(
           "%s vs %s -- %s vs %s".format(
             candidate.featureId.humanReadableString,
             config.idField.flatMap(feature.propMap.get).getOrElse(0),
-            featureNames, candidateNames
+            featureNames.flatMap(applyHacks).toSet, candidateNames.flatMap(applyHacks).toSet
           )
         )
       }
@@ -292,17 +296,16 @@ class PolygonLoader(
           .find(_.nonEmpty).toList.flatten
 
       if (candidatesSeen == 0) {
-        logger.info("couldn't find any candidates for " + debugFeature(config, feature) + " - " + buildQuery(geometry, config.getAllWoeTypes))
+        logger.info("failed couldn't find any candidates for " + debugFeature(config, feature) + " - " + buildQuery(geometry, config.getAllWoeTypes))
       } else if (acceptableCandidates.isEmpty) {
         logger.info("failed to match: %s".format(debugFeature(config, feature)))
         logger.info("%s".format(buildQuery(geometry, config.getAllWoeTypes)))
         matchAtWoeType(config.getAllWoeTypes, withLogging = true)
       } else {
-        logger.info("matched %s to %s".format(
-          getId(config, feature), acceptableCandidates.map(_.featureId)
-        ))
-         println("matched %s to %s".format(
-          getId(config, feature), acceptableCandidates.map(_.featureId)
+        logger.info("matched %s %s to %s".format(
+          debugFeature(config, feature),
+          getId(config, feature),
+          acceptableCandidates.map(debugFeature).mkString(", ")
         ))
       }
 

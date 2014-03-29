@@ -221,7 +221,8 @@ object GeocoderBuild extends Build {
           "org.scalaj" %% "scalaj-collection" % "1.5",
           "org.mongodb" % "mongo-java-driver" % "2.9.3",
           "com.weiglewilczek.slf4s" % "slf4s_2.9.1" % "1.0.7",
-          "ch.qos.logback" % "logback-classic" % "1.0.9"
+          "ch.qos.logback" % "logback-classic" % "1.0.9",
+          "com.ibm.icu" % "icu4j" % "52.1"
         ),
         ivyXML := (
           <dependencies>
