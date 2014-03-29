@@ -6,6 +6,7 @@ import os.path
 import socket
 import sys
 from optparse import OptionParser
+import subprocess
 
 usage = "usage: %prog [options] output_directory"
 parser = OptionParser(usage = usage)
@@ -23,8 +24,15 @@ parser.add_option("-n", "--dry_run", dest="dry_run",  action="store_true", defau
 parser.add_option("--reload", dest="reload_data",  action="store_true", default=True, help="reload data into mongo")
 parser.add_option("--noreload", dest="reload_data",  action="store_false", help="don't reload data into mongo")
 
-
 (options, args) = parser.parse_args()
+
+mongo_version_str = subprocess.Popen('mongod --version', stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).stdout.readline().split(' v')[-1]
+mongo_version = mongo_version_str.split('.')
+if mongo_version[0] < 2 or mongo_version[1] < 4:
+  print 'need at least mongo 2.4, you have: %s' % mongo_version_str
+  sys.exit(1)
+
+
 
 basepath = ''
 if len(args) != 0:
