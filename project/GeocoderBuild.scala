@@ -197,7 +197,7 @@ object GeocoderBuild extends Build {
         publishArtifact := false,
         libraryDependencies ++= Seq(
           "com.novus" %% "salat" % "1.9.2",
-          "com.rockymadden.stringmetric" %% "stringmetric-core" % "0.27.2",
+          "com.rockymadden.stringmetric" %% "stringmetric-core" % "0.27.3",
           "com.codahale" % "jerkson_2.9.1" % "0.5.0"
         )
       )

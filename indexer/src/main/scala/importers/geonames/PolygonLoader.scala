@@ -21,8 +21,7 @@ import com.codahale.jerkson.Json
 import com.mongodb.Bytes
 import java.text.Normalizer
 import java.text.Normalizer.Form
-import com.rockymadden.stringmetric.TransformModule
-import com.rockymadden.stringmetric.StringTransform
+import com.rockymadden.stringmetric.transform._
 import com.rockymadden.stringmetric.similarity.JaroWinklerMetric
 import com.rockymadden.stringmetric.phonetic.MetaphoneMetric
 
@@ -39,7 +38,8 @@ class PolygonLoader(
 
   case class PolygonMappingConfig (
     nameFields: List[String],
-    woeTypes: List[Any]
+    woeTypes: List[Any],
+    idField: Option[String]
   ) {
     private val _woeTypes: List[YahooWoeType] = {
       woeTypes.map(_ match {
@@ -55,8 +55,7 @@ class PolygonLoader(
   }
 
   def getMappingForFile(f: File): Option[PolygonMappingConfig] = {
-    val parts = f.getPath().split("\\.")
-    val file = new File(parts(0) + ".mapping.json")
+    val file = new File(f.getPath() + ".mapping.json")
     if (file.exists()) {
       Some(Json.parse[PolygonMappingConfig](new java.io.FileInputStream(file)))
     } else {
@@ -180,39 +179,82 @@ class PolygonLoader(
     val namesFromFeature_Modified = 
       namesFromFeature.map(removeDiacritics).map(applyHacks)
 
-    val composedTransform = (StringTransform.filterAlpha andThen StringTransform.ignoreAlphaCase)
+    val composedTransform = (filterAlpha andThen ignoreAlphaCase)
 
     namesFromShape_Modified.exists(ns => 
       namesFromFeature_Modified.exists(ng => {
-        (MetaphoneMetric withTransform composedTransform).compare(ns, ng) ||
-        JaroWinklerMetric.compare(ns, ng) > 0.90
+        (MetaphoneMetric withTransform composedTransform).compare(ns, ng).getOrElse(false) ||
+        JaroWinklerMetric.compare(ns, ng).getOrElse(0.0) > 0.90
       })
     )
+  }
+
+  def debugFeature(feature: SimpleFeature): String = {
+    feature.propMap.toString
+  }
+
+  def isAcceptableMatch(
+    feature: SimpleFeature,
+    config: PolygonMappingConfig,
+    candidate: GeocodeRecord,
+    withLogging: Boolean = false
+  ): Boolean = {
+    val featureNames = config.nameFields.flatMap(nameField =>
+      feature.propMap.get(nameField)
+    )
+    val candidateNames = candidate.displayNames.map(_.name)
+    val nameMatch = isGoodEnoughNameMatch(featureNames, candidateNames)
+    val typeMatch = config.woeTypes.has(candidate.woeType)
+    if (withLogging) {
+      if (!nameMatch) {
+        logger.info(
+          "failed to match %s on names %s vs %s".format(
+            config.idField.flatMap(feature.propMap.get).getOrElse(0),
+            featureNames, candidateNames
+          )
+        )
+      } else {
+          logger.info(
+          "failed to match %s on YahooWoeType %s vs %s".format(
+            config.idField.flatMap(feature.propMap.get).getOrElse(0),
+            candidate.woeType, config.woeTypes
+          )
+        )
+      }
+    }
+    nameMatch && typeMatch
   }
 
   def maybeMatchFeature(
     feature: SimpleFeature,
     polygonMappingConfig: Option[PolygonMappingConfig]
   ): Option[String] = {
-    val matchingIds = for {
+    val matchingFeatures: Seq[GeocodeRecord] = (for {
       config <- polygonMappingConfig.toList
       geometry <- feature.geometry
-      // Search for features within the geometry
-      candidate <- findMatchCandidates(geometry, config.getWoeTypes)
-      if (isGoodEnoughNameMatch(
-        candidate.displayNames.map(_.name),
-        config.nameFields.flatMap(nameField =>
-          feature.propMap.get(nameField)
-        )
-      ))
     } yield {
-      candidate._id
-    }
+      // Search for features within the geometry
+      val candidates = findMatchCandidates(geometry, config.getWoeTypes)
+      if (candidates.size == 0) {
+        logger.info("couldn't find any candidates for " + debugFeature(feature))
+      }
 
-    if (matchingIds.isEmpty) {
+      val acceptableCandidates: Iterator[GeocodeRecord] = candidates.filter(candidate => 
+        isAcceptableMatch(feature, config, candidate))
+
+      if (acceptableCandidates.isEmpty) {
+        logger.info("failed to match: %s".format(debugFeature(feature)))
+        candidates.filter(candidate => 
+          isAcceptableMatch(feature, config, candidate, withLogging = true))
+      }
+
+      acceptableCandidates
+    }).flatten
+
+    if (matchingFeatures.isEmpty) {
       None
     } else {
-      Some(matchingIds.map(_.toString).mkString(","))
+      Some(matchingFeatures.map(_.featureId.longId.toString).mkString(","))
     }
   }
 
