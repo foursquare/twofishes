@@ -146,8 +146,9 @@ class PolygonLoader(
     // seeming MongoDBObject has no from-string parser
     // The bounding box is easier to reason about anyway.
     // val geoJson = GeometryJSON.toString(geometry)
-    val envelope = geometry.getEnvelopeInternal()
-    envelope.expandBy(0.1)
+    val envelope = geometry.getEnvelope().buffer(0.1).getEnvelope()
+    val coords = envelope.getCoordinates().toList
+
     MongoDBObject(
       "loc" ->
       MongoDBObject("$geoWithin" ->
@@ -155,11 +156,11 @@ class PolygonLoader(
           MongoDBObject(
             "type" -> "Polygon",
             "coordinates" -> List(List(
-              List(envelope.getMinX(), envelope.getMinY()),
-              List(envelope.getMaxX(), envelope.getMinY()),
-              List(envelope.getMaxX(), envelope.getMaxY()),
-              List(envelope.getMinX(), envelope.getMaxY()),
-              List(envelope.getMinX(), envelope.getMinY())
+              List(coords(0).x, coords(0).y),
+              List(coords(1).x, coords(1).y),
+              List(coords(2).x, coords(2).y),
+              List(coords(3).x, coords(3).y),
+              List(coords(0).x, coords(0).y)
             ))
           )
         )
@@ -276,7 +277,7 @@ class PolygonLoader(
     config: PolygonMappingConfig,
     feature: FsqSimpleFeature,
     geometry: Geometry
-  ): Option[String] = Helpers.TryO {
+  ): Option[String] = Helpers.flatTryO {
     var candidatesSeen = 0
 
     if (!hasName(config, feature)) {

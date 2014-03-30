@@ -14,6 +14,8 @@ Gemeinde
 (rhld.)
 am main
 stadt
+Province of
+Province
 # we really need to strip these on query parsing as well
 # japanese attached suffixes
 # city
