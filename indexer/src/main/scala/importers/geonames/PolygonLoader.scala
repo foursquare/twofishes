@@ -276,7 +276,7 @@ class PolygonLoader(
     config: PolygonMappingConfig,
     feature: FsqSimpleFeature,
     geometry: Geometry
-  ): Option[String] = {
+  ): Option[String] = Helpers.TryO {
     var candidatesSeen = 0
 
     if (!hasName(config, feature)) {

@@ -25,3 +25,6 @@ stadt
 # chinese!
 # township
 鄉
+# estonia
+Küla
+küla
