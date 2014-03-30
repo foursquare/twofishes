@@ -207,6 +207,12 @@ class PolygonLoader(
     )
   }
 
+  def hasName(config: PolygonMappingConfig, feature: FsqSimpleFeature): Boolean = {
+    config.nameFields.view.flatMap(nameField =>
+      feature.propMap.get(nameField)
+    ).filterNot(_.isEmpty).nonEmpty
+  }
+
   def debugFeature(config: PolygonMappingConfig, feature: FsqSimpleFeature): String = {
     val names = config.nameFields.view.flatMap(nameField =>
       feature.propMap.get(nameField)
@@ -243,7 +249,7 @@ class PolygonLoader(
           parenNameRegex.replaceAllIn(n, "$2")
         )
       })
-    })
+    }).flatMap(_.split(",").map(_.trim))
 
     val candidateNames = candidate.displayNames.map(_.name).filterNot(_.isEmpty)
     val nameMatch = isGoodEnoughNameMatch(featureNames, candidateNames)
@@ -272,6 +278,11 @@ class PolygonLoader(
     geometry: Geometry
   ): Option[String] = {
     var candidatesSeen = 0
+
+    if (!hasName(config, feature)) {
+      logger.info("no names on " + debugFeature(config, feature) + " - " + buildQuery(geometry, config.getAllWoeTypes))
+      return None
+    }
 
     def matchAtWoeType(woeTypes: List[YahooWoeType], withLogging: Boolean = false): List[GeocodeRecord] = {
       val candidates = findMatchCandidates(geometry, woeTypes)
