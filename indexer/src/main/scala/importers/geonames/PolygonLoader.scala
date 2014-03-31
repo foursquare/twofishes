@@ -75,14 +75,14 @@ class PolygonLoader(
     }
     logger.info("post processing, looking for bad poly matches")
     val polygons =
-      MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
+      PolygonIndexDAO.find(MongoDBObject())
         .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
 
     val wkbReader = new WKBReader()
-
     for {
-      (featureRecord, index) <- polygons.zipWithIndex
-      polyData <- featureRecord.polygon
+      (polyRecord, index) <- polygons.zipWithIndex
+      featureRecord <- MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> List(polyRecord._id))))
+      polyData = polyRecord.polygon
     } {
       val polygon = wkbReader.read(polyData)
       val point = featureRecord.center
@@ -98,8 +98,10 @@ class PolygonLoader(
               )
             ),
             false, false)
-        }
+
+          PolygonIndexDAO.remove(polyRecord)
       }
+    }
   }
 
   def maybeMakeFeature(feature: SimpleFeature): Option[String] = {

@@ -204,7 +204,10 @@ class GeocoderImpl(
       "stazione", "di", "oblast", "Δήμος", "д", "м", "neighborhood", "neighbourhood", "the"
     ).map(_.toLowerCase)
 
-    tokens.filterNot(t => commonWords.contains(t) && !parsedPhrases.exists(_.contains(t)))
+    // do not drop common word if it is already part of a parse
+    // however, do drop it if it is the entire parse as this must be a match to a bad name
+    // e.g. do not drop "city" from (kansas city) but drop it from (city)
+    tokens.filterNot(t => commonWords.contains(t) && !parsedPhrases.exists(p => p.contains(t) && p != t)) 
   }
 
   def getMaxInterpretations = {

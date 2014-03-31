@@ -373,7 +373,7 @@ class FeatureIndexer(override val basepath: String, override val fidMap: FidMap)
     for {
       gCursor <- fidCursor.grouped(1000)
       group = gCursor.toList
-      toFindPolys = group.filter(f => f.hasPoly && f.boundingbox.isEmpty)
+      toFindPolys = group.filter(f => f.hasPoly)
       polyMap = PolygonIndexDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> toFindPolys.map(_._id))))
         .toList
         .groupBy(_._id).map({case (k, v) => (k, v(0))})
