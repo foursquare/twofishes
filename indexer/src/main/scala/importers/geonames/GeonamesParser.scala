@@ -70,7 +70,7 @@ object GeonamesParser {
   def main(args: Array[String]) {
     config = GeonamesImporterConfigParser.parse(args)
 
-    if (config.reloadData) { 
+    if (config.reloadData) {
       MongoGeocodeDAO.collection.drop()
       NameIndexDAO.collection.drop()
       PolygonIndexDAO.collection.drop()
@@ -265,11 +265,11 @@ class GeonamesParser(
       }
     })
   }
-   
+
 
   def createNameIndexRecords(displayNames: List[DisplayName], fid: StoredFeatureId, record: Option[GeocodeRecord]) = {
     displayNames.map(name => {
-      createNameIndexRecord(name, fid, record)  
+      createNameIndexRecord(name, fid, record)
     })
   }
 
@@ -494,7 +494,6 @@ class GeonamesParser(
 
     val record = GeocodeRecord(
       _id = geonameId.longId,
-      ids = ids.map(_.longId),
       names = Nil,
       cc = feature.countryCode,
       _woeType = feature.featureClass.woeType.getValue,
@@ -561,14 +560,18 @@ class GeonamesParser(
         val realIndex = groupIndex * groupSize + index
         lineProcessor(realIndex, line).filter(f => shouldTakeFeature(f, allowBuildings)).map(parseFeature)
       }}).toList
-      
-      store.insert(recordsToInsert)
 
-      val displayNamesToInsert = recordsToInsert.flatMap(r =>
-        createNameIndexRecords(r.displayNames, r.featureId, Some(r))
-      )
-      store.addNameIndexes(displayNamesToInsert)
+      insertGeocodeRecords(recordsToInsert)
     }
+  }
+
+  def insertGeocodeRecords(recordsToInsert: List[GeocodeRecord]) {
+    store.insert(recordsToInsert)
+
+    val displayNamesToInsert = recordsToInsert.flatMap(r =>
+      createNameIndexRecords(r.displayNames, r.featureId, Some(r))
+    )
+    store.addNameIndexes(displayNamesToInsert)
   }
 
   var alternateNamesMap = new HashMap[StoredFeatureId, List[AlternateNameEntry]]

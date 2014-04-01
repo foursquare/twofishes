@@ -56,7 +56,6 @@ object GeocodeRecord {
 
 case class GeocodeRecord(
   _id: Long,
-  ids: List[Long],
   names: List[String],
   cc: String,
   _woeType: Int,
@@ -99,7 +98,7 @@ case class GeocodeRecord(
   def featureId: StoredFeatureId = StoredFeatureId.fromLong(_id).getOrElse(
     throw new RuntimeException("can't convert %s to a StoredFeatureId".format(_id)))
 
-  def featureIds: List[StoredFeatureId] = ids.flatMap(StoredFeatureId.fromLong _)
+  def featureIds: List[StoredFeatureId] = StoredFeatureId.fromLong(_id).toList
 
   def parentFeatureIds: List[StoredFeatureId] = parents.flatMap(StoredFeatureId.fromLong _)
 

@@ -144,6 +144,10 @@ class PolygonLoader(
             false, false)
         }
       }
+logger.info("done reading in polys")
+     logger.info("done reading in polys")
+      logger.info("done reading in polys")
+      logger.info("done reading in polys")
       logger.info("done reading in polys")
       parser.revGeoMaster ! Done
   }
@@ -157,7 +161,7 @@ class PolygonLoader(
   }
 
   def buildQuery(geometry: Geometry, woeTypes: List[YahooWoeType]) = {
-    // we can't use the geojson this spits out because it's a string and 
+    // we can't use the geojson this spits out because it's a string and
     // seeming MongoDBObject has no from-string parser
     // The bounding box is easier to reason about anyway.
     // val geoJson = GeometryJSON.toString(geometry)
@@ -194,7 +198,7 @@ class PolygonLoader(
     NameNormalizer.normalize(text)
   }
 
-  // really, we should apply all the normalizations to shape names that we do to 
+  // really, we should apply all the normalizations to shape names that we do to
   // geonames
   val spaceRegex = " +".r
   val transliterator = Transliterator.getInstance("Any-Latin; NFD;")
@@ -212,7 +216,7 @@ class PolygonLoader(
 
     val composedTransform = (filterAlpha andThen ignoreAlphaCase)
 
-    namesFromShape_Modified.exists(ns => 
+    namesFromShape_Modified.exists(ns =>
       namesFromFeature_Modified.exists(ng => {
         ng.nonEmpty && ns.nonEmpty &&
         (ng == ns ||
@@ -311,13 +315,13 @@ class PolygonLoader(
     }
 
     val matchingFeatures: Seq[GeocodeRecord] = {
-      // woeTypes are a list of lists, in descening order of preference 
+      // woeTypes are a list of lists, in descening order of preference
       // each list is taken as equal prefence, but higher precedence than the
       // next list. If woeTypes looks like [[ADMIN3], [ADMIN2]], and we find
       // an admin3 match, we won't even bother looking for an admin2 match.
       // If it was [[ADMIN3, ADMIN2]], we would look for both, and if we
       // found two matches, take them both
-      val acceptableCandidates: List[GeocodeRecord] = 
+      val acceptableCandidates: List[GeocodeRecord] =
         config.getWoeTypes.view
           .map(woeTypes => matchAtWoeType(woeTypes))
           .find(_.nonEmpty).toList.flatten
@@ -364,7 +368,7 @@ class PolygonLoader(
         (GeonamesFeatureColumns.LONGITUDE -> lng),
         (GeonamesFeatureColumns.COUNTRY_CODE -> countryCode),
         (GeonamesFeatureColumns.ADMIN1_CODE -> adminCode1)
-      ) 
+      )
 
       val supplementalAttrubs: Map[GeonamesFeatureColumns.Value, String]  = List(
         feature.propMap.get("adminCode2").map(c => (GeonamesFeatureColumns.ADMIN2_CODE -> c)),
@@ -377,7 +381,7 @@ class PolygonLoader(
       PolygonLoader.adHocIdCounter += 1
       val gnfeature = new GeonamesFeature(attribMap ++ supplementalAttrubs)
       println("making adhoc feature: " + id + " " + id.longId)
-      parser.parseFeature(gnfeature)
+      parser.insertGeocodeRecords(List(parser.parseFeature(gnfeature)))
       id.humanReadableString
     }).orElse({
       logger.error("no id on %s".format(debugFeature(feature)))
@@ -406,7 +410,6 @@ class PolygonLoader(
         .orElse(polygonMappingConfig.flatMap(config => maybeMatchFeature(config, feature, geom)))
         .orElse(maybeMakeFeature(feature))
       ).toList.filterNot(_.isEmpty).flatMap(_.split(",")).map(_.replace(".0", ""))
-      println(geoid)
       geoid.foreach(id => {
         updateRecord(store, defaultNamespace, id, geom)
       })

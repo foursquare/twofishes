@@ -25,11 +25,15 @@ import org.bson.types.ObjectId
 sealed trait CoverMessage
 case class Done extends CoverMessage
 case class CalculateCover(polyId: ObjectId, geom: Array[Byte]) extends CoverMessage
- 
+
 class NullActor extends Actor {
   def receive = {
     case x =>
   }
+}
+
+object TerribleCounter {
+  var count = 0
 }
 
 class RevGeoWorker extends Actor with DurationUtils {
@@ -42,8 +46,12 @@ class RevGeoWorker extends Actor with DurationUtils {
   val wkbWriter = new WKBWriter()
   def calculateCover(msg: CalculateCover) {
     val geom = wkbReader.read(msg.geom)
- 	
- 	println("generating cover for %s".format(msg.polyId))
+
+    TerribleCounter.count += 1
+    if (TerribleCounter.count % 1000 == 0) {
+      logger.info("processed about %s polygons for revgeo coverage".format(TerribleCounter.count))
+    }
+ 	  // println("generating cover for %s".format(msg.polyId))
     val cells = logDuration("generated cover for %s".format(msg.polyId)) {
       GeometryUtils.s2PolygonCovering(
         geom, minS2Level, maxS2Level,
@@ -58,7 +66,7 @@ class RevGeoWorker extends Actor with DurationUtils {
       val records = cells.asScala.map((cellid: S2CellId) => {
         val s2shape = ShapefileS2Util.fullGeometryForCell(cellid)
         val cellGeometryBuilder = CellGeometry.newBuilder
-        if (preparedRecordShape.contains(s2shape)) {    	
+        if (preparedRecordShape.contains(s2shape)) {
   	      RevGeoIndex(cellid.id(), msg.polyId, full = true, geom = None)
         } else {
 	      	RevGeoIndex(
@@ -93,7 +101,7 @@ class RevGeoMaster(latch: CountDownLatch) extends Actor {
   def receive = {
     case msg: CalculateCover =>
 	  router ! msg
-    case msg: Done => 
+    case msg: Done =>
       println("all done, sending poison pills")
       // send a PoisonPill to all workers telling them to shut down themselves
       router ! Broadcast(PoisonPill)

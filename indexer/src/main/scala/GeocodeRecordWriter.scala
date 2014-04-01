@@ -26,7 +26,6 @@ trait GeocodeStorageWriteService {
 object MongoGeocodeDAO extends SalatDAO[GeocodeRecord, ObjectId](
   collection = MongoConnection()("geocoder")("features")) {
   def makeIndexes() {
-    collection.ensureIndex(DBObject("ids" -> -1))
     collection.ensureIndex(DBObject("hasPoly" -> -1))
     collection.ensureIndex(DBObject("loc" -> "2dsphere", "_woeType" -> -1))
 
@@ -80,7 +79,7 @@ object RevGeoIndexDAO extends SalatDAO[RevGeoIndex, String](
 
 class MongoGeocodeStorageService extends GeocodeStorageWriteService {
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = {
-    val geocodeCursor = MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.longId))))
+    val geocodeCursor = MongoGeocodeDAO.find(MongoDBObject("id" -> id.longId))
     geocodeCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
     geocodeCursor
   }
@@ -94,13 +93,13 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
   }
 
   def addBoundingBoxToRecord(bbox: BoundingBox, id: StoredFeatureId) {
-    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.longId))),
+    MongoGeocodeDAO.update(MongoDBObject("_id" -> id.longId),
       MongoDBObject("$set" -> MongoDBObject("boundingbox" -> grater[BoundingBox].asDBObject(bbox))),
       false, false)
   }
 
   def addNameToRecord(name: DisplayName, id: StoredFeatureId) {
-    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.longId))),
+    MongoGeocodeDAO.update(MongoDBObject("_id" -> id.longId),
       MongoDBObject("$addToSet" -> MongoDBObject("displayNames" -> grater[DisplayName].asDBObject(name))),
       false, false)
   }
@@ -114,7 +113,7 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
   }
 
   def addPolygonToRecord(id: StoredFeatureId, polyId: ObjectId) {
-    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.longId))),
+    MongoGeocodeDAO.update(MongoDBObject("_id" -> id.longId),
       MongoDBObject("$set" ->
         MongoDBObject(
           "hasPoly" -> true,
@@ -125,13 +124,13 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
   }
 
   def addSlugToRecord(id: StoredFeatureId, slug: String) {
-    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.longId))),
+    MongoGeocodeDAO.update(MongoDBObject("_id" -> id.longId),
       MongoDBObject("$set" -> MongoDBObject("slug" -> slug)),
       false, false)
   }
 
   def setRecordNames(id: StoredFeatureId, names: List[DisplayName]) {
-    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.longId))),
+    MongoGeocodeDAO.update(MongoDBObject("_id" -> id.longId),
       MongoDBObject("$set" -> MongoDBObject(
         "displayNames" -> names.map(n => grater[DisplayName].asDBObject(n)))),
       false, false)
