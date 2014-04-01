@@ -529,47 +529,46 @@ class GeonamesParser(
       GeonamesFeature.parseFromPostalCodeLine(index, line), "postal codes")
   }
 
+  private def shouldTakeFeature(f: GeonamesFeature, allowBuildings: Boolean): Boolean = {
+    !f.featureClass.isStupid &&
+    !(f.featureClass.woeType == YahooWoeType.ADMIN3 &&
+    f.featureClass.adminLevel == AdminLevel.OTHER &&
+    f.name.startsWith("City of") &&
+    f.countryCode == "US") &&
+    !(f.name.contains(", Stadt") && f.countryCode == "DE") &&
+    !f.geonameid.exists(ignoreList.contains) &&
+    (!f.featureClass.isBuilding || config.shouldParseBuildings || allowBuildings)
+  }
+
   private def parseFromFile(filename: String,
     lineProcessor: (Int, String) => Option[GeonamesFeature],
     typeName: String,
     allowBuildings: Boolean = false) {
 
     var processed = 0
-    val numThreads = 5
-    val workers = 0.until(numThreads).toList.map(offset => {
-      val lines = scala.io.Source.fromFile(new File(filename), "UTF-8").getLines
+    val lines = scala.io.Source.fromFile(new File(filename), "UTF-8").getLines
 
-      lines.zipWithIndex.foreach({case (line, index) => {
-        if (index % numThreads == offset) {
-          if (processed % 10000 == 0) {
-            logger.info("imported %d %s so far".format(processed, typeName))
-          }
-          processed += 1
-          val feature = lineProcessor(index, line)
-          feature.grouped(500).map(group => {
-            val recordsToInsert = (for {
-              f <- group
-              if (
-                !f.featureClass.isStupid &&
-                !(f.featureClass.woeType == YahooWoeType.ADMIN3 &&
-                  f.featureClass.adminLevel == AdminLevel.OTHER &&
-                  f.name.startsWith("City of") &&
-                  f.countryCode == "US") &&
-                !(f.name.contains(", Stadt") && f.countryCode == "DE") &&
-                !f.geonameid.exists(ignoreList.contains) &&
-                (!f.featureClass.isBuilding || config.shouldParseBuildings || allowBuildings))
-            } yield { parseFeature(f) }).toList
+    val groupSize = 500
+    for {
+      (lineGroup, groupIndex) <- lines.grouped(groupSize).zipWithIndex
+    } {
+      val processed = groupIndex * groupSize
+      if (processed % 10000 == 0) {
+        logger.info("imported %d %s so far".format(processed, typeName))
+      }
 
-            store.insert(recordsToInsert)
+      val recordsToInsert = lineGroup.zipWithIndex.flatMap({case (line, index) => {
+        val realIndex = groupIndex * groupSize + index
+        lineProcessor(realIndex, line).filter(f => shouldTakeFeature(f, allowBuildings)).map(parseFeature)
+      }}).toList
+      
+      store.insert(recordsToInsert)
 
-            val displayNamesToInsert = recordsToInsert.flatMap(r =>
-              createNameIndexRecords(r.displayNames, r.featureId, Some(r))
-            )
-            store.addNameIndexes(displayNamesToInsert)
-          })
-        }
-      }})
-    })
+      val displayNamesToInsert = recordsToInsert.flatMap(r =>
+        createNameIndexRecords(r.displayNames, r.featureId, Some(r))
+      )
+      store.addNameIndexes(displayNamesToInsert)
+    }
   }
 
   var alternateNamesMap = new HashMap[StoredFeatureId, List[AlternateNameEntry]]
