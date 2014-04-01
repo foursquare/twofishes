@@ -196,6 +196,7 @@ object GeocoderBuild extends Build {
           Array("--hfile_basepath", ".")
         )
         val parser = new GeonamesParser(store, slugIndexer, Map.empty)
+
         GeonamesParser.parseAdminInfoFile("data/downloaded/adminCodes.txt")
         val polygonLoader = new PolygonLoader(parser, store)
         """,

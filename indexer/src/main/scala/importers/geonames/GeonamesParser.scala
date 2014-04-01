@@ -70,8 +70,16 @@ object GeonamesParser {
   def main(args: Array[String]) {
     config = GeonamesImporterConfigParser.parse(args)
 
-    if (config.reloadData) {
+    if (config.reloadData) { 
+      MongoGeocodeDAO.collection.drop()
+      NameIndexDAO.collection.drop()
+      PolygonIndexDAO.collection.drop()
+      RevGeoIndexDAO.collection.drop()
       loadIntoMongo()
+      MongoGeocodeDAO.makeIndexes()
+      NameIndexDAO.makeIndexes()
+      PolygonIndexDAO.makeIndexes()
+      RevGeoIndexDAO.makeIndexes()
     }
     writeIndexes()
   }
@@ -257,16 +265,26 @@ class GeonamesParser(
       }
     })
   }
+   
 
-  def addDisplayNameToNameIndex(dn: DisplayName, fid: StoredFeatureId, record: Option[GeocodeRecord]) {
+  def createNameIndexRecords(displayNames: List[DisplayName], fid: StoredFeatureId, record: Option[GeocodeRecord]) = {
+    displayNames.map(name => {
+      createNameIndexRecord(name, fid, record)  
+    })
+  }
+
+  def addDisplayNameToNameIndex(dn: DisplayName, fid: StoredFeatureId, record: Option[GeocodeRecord]) = {
+    store.addNameIndexes(List(createNameIndexRecord(dn, fid, record)))
+  }
+
+  def createNameIndexRecord(dn: DisplayName, fid: StoredFeatureId, record: Option[GeocodeRecord]) = {
     val name = NameNormalizer.normalize(dn.name)
 
     val pop: Int =
       record.flatMap(_.population).getOrElse(0) + record.flatMap(_.boost).getOrElse(0)
     val woeType: Int =
       record.map(_._woeType).getOrElse(0)
-    val nameIndex = NameIndex(name, fid.longId, pop, woeType, dn.flags, dn.lang, dn._id)
-    store.addNameIndex(nameIndex)
+    NameIndex(name, fid.longId, pop, woeType, dn.flags, dn.lang, dn._id)
   }
 
   def rewriteNames(names: List[String]): (List[String], List[String]) = {
@@ -498,12 +516,6 @@ class GeonamesParser(
       record.setAttributes(Some(attributesBuilder.result))
     }
 
-    store.insert(record)
-
-    displayNames.foreach(n =>
-      addDisplayNameToNameIndex(n, geonameId, Some(record))
-    )
-
     record
   }
 
@@ -534,18 +546,26 @@ class GeonamesParser(
           }
           processed += 1
           val feature = lineProcessor(index, line)
-          feature.foreach(f => {
-            if (
-              !f.featureClass.isStupid &&
-              !(f.featureClass.woeType == YahooWoeType.ADMIN3 &&
-                f.featureClass.adminLevel == AdminLevel.OTHER &&
-                f.name.startsWith("City of") &&
-                f.countryCode == "US") &&
-              !(f.name.contains(", Stadt") && f.countryCode == "DE") &&
-              !f.geonameid.exists(ignoreList.contains) &&
-              (!f.featureClass.isBuilding || config.shouldParseBuildings || allowBuildings)) {
-              parseFeature(f)
-            }
+          feature.grouped(500).map(group => {
+            val recordsToInsert = (for {
+              f <- group
+              if (
+                !f.featureClass.isStupid &&
+                !(f.featureClass.woeType == YahooWoeType.ADMIN3 &&
+                  f.featureClass.adminLevel == AdminLevel.OTHER &&
+                  f.name.startsWith("City of") &&
+                  f.countryCode == "US") &&
+                !(f.name.contains(", Stadt") && f.countryCode == "DE") &&
+                !f.geonameid.exists(ignoreList.contains) &&
+                (!f.featureClass.isBuilding || config.shouldParseBuildings || allowBuildings))
+            } yield { parseFeature(f) }).toList
+
+            store.insert(recordsToInsert)
+
+            val displayNamesToInsert = recordsToInsert.flatMap(r =>
+              createNameIndexRecords(r.displayNames, r.featureId, Some(r))
+            )
+            store.addNameIndexes(displayNamesToInsert)
           })
         }
       }})

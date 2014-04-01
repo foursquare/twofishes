@@ -7,7 +7,8 @@ case class GeocodeServerConfig(
   hfileBasePath: String = "",
   shouldPreload: Boolean = true,
   shouldWarmup: Boolean = false,
-  maxTokens: Int = 10
+  maxTokens: Int = 10,
+  reload: Boolean = false
 )
 
 object GeocodeServerConfigSingleton {

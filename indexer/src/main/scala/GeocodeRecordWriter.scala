@@ -26,20 +26,33 @@ case class NameIndex(
 
 trait GeocodeStorageWriteService {
   def insert(record: GeocodeRecord): Unit
+  def insert(record: List[GeocodeRecord]): Unit
   def setRecordNames(id: StoredFeatureId, names: List[DisplayName])
   def addBoundingBoxToRecord(bbox: BoundingBox, id: StoredFeatureId)
   def addNameToRecord(name: DisplayName, id: StoredFeatureId)
   def addNameIndex(name: NameIndex)
+  def addNameIndexes(names: List[NameIndex])
   def addPolygonToRecord(id: StoredFeatureId, polyId: ObjectId)
   def addSlugToRecord(id: StoredFeatureId, slug: String)
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord]
 }
 
 object MongoGeocodeDAO extends SalatDAO[GeocodeRecord, ObjectId](
-  collection = MongoConnection()("geocoder")("features"))
+  collection = MongoConnection()("geocoder")("features")) {
+  def makeIndexes() {
+    collection.ensureIndex(DBObject("ids" -> -1))
+    collection.ensureIndex(DBObject("hasPoly" -> -1))
+    collection.ensureIndex(DBObject("loc" -> "2dsphere", "_woeType" -> -1))
+
+  }
+}
 
 object NameIndexDAO extends SalatDAO[NameIndex, String](
-  collection = MongoConnection()("geocoder")("name_index"))
+  collection = MongoConnection()("geocoder")("name_index")) {
+  def makeIndexes() {
+    collection.ensureIndex(DBObject("name" -> -1, "pop" -> -1))
+  }
+}
 
 case class PolygonIndex(
   @Key("_id") _id: ObjectId,
@@ -47,7 +60,9 @@ case class PolygonIndex(
 )
 
 object PolygonIndexDAO extends SalatDAO[PolygonIndex, String](
-  collection = MongoConnection()("geocoder")("polygon_index"))
+  collection = MongoConnection()("geocoder")("polygon_index")) {
+  def makeIndexes() {}
+}
 
 case class RevGeoIndex(
   cellid: Long,
@@ -57,7 +72,11 @@ case class RevGeoIndex(
 )
 
 object RevGeoIndexDAO extends SalatDAO[RevGeoIndex, String](
-  collection = MongoConnection()("geocoder")("revgeo_index"))
+  collection = MongoConnection()("geocoder")("revgeo_index")) {
+  def makeIndexes() {
+    collection.ensureIndex(DBObject("cellid" -> -1))
+  }
+}
 
 class MongoGeocodeStorageService extends GeocodeStorageWriteService {
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = {
@@ -68,6 +87,10 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
 
   def insert(record: GeocodeRecord) {
     MongoGeocodeDAO.insert(record)
+  }
+
+  def insert(records: List[GeocodeRecord]) {
+    MongoGeocodeDAO.insert(records)
   }
 
   def addBoundingBoxToRecord(bbox: BoundingBox, id: StoredFeatureId) {
@@ -84,6 +107,10 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
 
   def addNameIndex(name: NameIndex) {
     NameIndexDAO.insert(name)
+  }
+
+  def addNameIndexes(names: List[NameIndex]) {
+    NameIndexDAO.insert(names)
   }
 
   def addPolygonToRecord(id: StoredFeatureId, polyId: ObjectId) {
