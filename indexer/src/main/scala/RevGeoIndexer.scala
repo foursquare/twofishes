@@ -102,7 +102,7 @@ class RevGeoMaster(latch: CountDownLatch) extends Actor {
       // send a PoisonPill to the router, telling him to shut himself down
       router ! PoisonPill
 
-      self.stop()
+      context.stop(self)
   }
 
   override def preStart() {

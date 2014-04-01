@@ -192,6 +192,9 @@ object GeocoderBuild extends Build {
 
         val store = new MongoGeocodeStorageService()
         val slugIndexer = new SlugIndexer()
+        GeonamesParser.config = GeonamesImporterConfigParser.parse(
+          Array("--hfile_basepath", ".")
+        )
         val parser = new GeonamesParser(store, slugIndexer, Map.empty)
         GeonamesParser.parseAdminInfoFile("data/downloaded/adminCodes.txt")
         val polygonLoader = new PolygonLoader(parser, store)

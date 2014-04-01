@@ -144,6 +144,7 @@ class PolygonLoader(
             false, false)
         }
       }
+      logger.info("done reading in polys")
       parser.revGeoMaster ! Done
   }
 
@@ -151,6 +152,7 @@ class PolygonLoader(
     PolygonIndexDAO.find(MongoDBObject()).foreach(p => {
       parser.revGeoMaster ! CalculateCover(p._id, p.polygon)
     })
+    logger.info("done reading in polys")
     parser.revGeoMaster ! Done
   }
 
