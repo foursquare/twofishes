@@ -10,20 +10,6 @@ import com.novus.salat.annotations._
 import com.novus.salat.dao._
 import com.novus.salat.global._
 
-case class NameIndex(
-  name: String,
-  fid: Long,
-  pop: Int,
-  woeType: Int,
-  flags: Int,
-  lang: String,
-  @Key("_id") _id: ObjectId
-) {
-
-  def fidAsFeatureId = StoredFeatureId.fromLong(fid).getOrElse(
-    throw new RuntimeException("can't convert %d to a feature id".format(fid)))
-}
-
 trait GeocodeStorageWriteService {
   def insert(record: GeocodeRecord): Unit
   def insert(record: List[GeocodeRecord]): Unit
@@ -45,6 +31,20 @@ object MongoGeocodeDAO extends SalatDAO[GeocodeRecord, ObjectId](
     collection.ensureIndex(DBObject("loc" -> "2dsphere", "_woeType" -> -1))
 
   }
+}
+
+case class NameIndex(
+  name: String,
+  fid: Long,
+  pop: Int,
+  woeType: Int,
+  flags: Int,
+  lang: String,
+  @Key("_id") _id: ObjectId
+) {
+
+  def fidAsFeatureId = StoredFeatureId.fromLong(fid).getOrElse(
+    throw new RuntimeException("can't convert %d to a feature id".format(fid)))
 }
 
 object NameIndexDAO extends SalatDAO[NameIndex, String](
