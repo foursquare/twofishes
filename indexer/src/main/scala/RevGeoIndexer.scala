@@ -100,7 +100,7 @@ class RevGeoMaster(latch: CountDownLatch) extends Actor {
   // message handler
   def receive = {
     case msg: CalculateCover =>
-	  router ! msg
+	    router ! msg
     case msg: Done =>
       println("all done, sending poison pills")
       // send a PoisonPill to all workers telling them to shut down themselves

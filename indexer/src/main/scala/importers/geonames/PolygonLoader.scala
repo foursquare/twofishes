@@ -275,7 +275,7 @@ logger.info("done reading in polys")
     val nameMatch = isGoodEnoughNameMatch(featureNames, candidateNames)
     if (withLogging) {
       if (!nameMatch) {
-        logger.info(
+        logger.debug(
           "%s vs %s -- %s vs %s".format(
             candidate.featureId.humanReadableString,
             config.idField.flatMap(feature.propMap.get).getOrElse(0),
@@ -327,13 +327,13 @@ logger.info("done reading in polys")
           .find(_.nonEmpty).toList.flatten
 
       if (candidatesSeen == 0) {
-        logger.info("failed couldn't find any candidates for " + debugFeature(config, feature) + " - " + buildQuery(geometry, config.getAllWoeTypes))
+        logger.debug("failed couldn't find any candidates for " + debugFeature(config, feature) + " - " + buildQuery(geometry, config.getAllWoeTypes))
       } else if (acceptableCandidates.isEmpty) {
-        logger.info("failed to match: %s".format(debugFeature(config, feature)))
-        logger.info("%s".format(buildQuery(geometry, config.getAllWoeTypes)))
+        logger.debug("failed to match: %s".format(debugFeature(config, feature)))
+        logger.debug("%s".format(buildQuery(geometry, config.getAllWoeTypes)))
         matchAtWoeType(config.getAllWoeTypes, withLogging = true)
       } else {
-        logger.info("matched %s %s to %s".format(
+        logger.debug("matched %s %s to %s".format(
           debugFeature(config, feature),
           getId(config, feature),
           acceptableCandidates.map(debugFeature).mkString(", ")
