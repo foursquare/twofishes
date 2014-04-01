@@ -202,7 +202,8 @@ object GeocoderBuild extends Build {
           "com.novus" %% "salat" % "1.9.6",
           "com.rockymadden.stringmetric" %% "stringmetric-core" % "0.27.3",
           "org.json4s" %% "json4s-native" % "3.2.8",
-          "org.json4s" %% "json4s-jackson" % "3.2.8"
+          "org.json4s" %% "json4s-jackson" % "3.2.8",
+          "com.typesafe.akka" %% "akka-actor" % "2.3.1"
         )
       )
   ) dependsOn(core, util)

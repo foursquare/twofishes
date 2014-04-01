@@ -10,12 +10,12 @@ import com.novus.salat._
 import com.novus.salat.annotations._
 import com.novus.salat.dao._
 import com.novus.salat.global._
+import java.util.concurrent.CountDownLatch
 import com.twitter.util.Duration
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter}
 import java.io._
 import java.net.URI
-import java.nio.ByteBuffer
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{LocalFileSystem, Path}
 import org.apache.hadoop.hbase.io.hfile.{TwofishesFoursquareCacheConfig, Compression, HFile}
@@ -26,16 +26,8 @@ import org.apache.thrift.protocol.TCompactProtocol
 import scala.collection.mutable.{HashMap, HashSet, ListBuffer}
 import scalaj.collection.Implicits._
 import com.weiglewilczek.slf4s.Logging
-
-trait DurationUtils extends Logging {
-  def logDuration[T](what: String)(f: => T): T = {
-    val (rv, duration) = Duration.inNanoseconds(f)
-    if (duration.inMilliseconds > 200) {
-      logger.debug(what + " in %s µs / %s ms".format(duration.inMicroseconds, duration.inMilliseconds))
-    }
-    rv
-  }
-}
+import akka.actor.ActorSystem
+import akka.actor.Props
 
 class WrappedByteMapWriter[K, V](writer: MapFile.Writer, index: Index[K, V]) {
   def append(k: K, v: V) {
@@ -431,48 +423,6 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
   val maxCells = 10000
   val levelMod = 2
 
-  def calculateCoverForRecord(
-      record: PolygonIndex,
-      featureRecord: GeocodeRecord,
-      s2map: HashMap[Long, ListBuffer[CellGeometry]], s2shapes: HashMap[Long, Geometry]) = {
-    val wkbReader = new WKBReader()
-    val wkbWriter = new WKBWriter()
-
-    val polygon = record.polygon
-    //println("reading poly %s".format(index))
-    val geom = wkbReader.read(polygon)
-
-    val cells = logDuration("generated cover for %s".format(record._id)) {
-      GeometryUtils.s2PolygonCovering(
-        geom,
-        minS2Level,
-        maxS2Level,
-        levelMod = Some(levelMod),
-        maxCellsHintWhichMightBeIgnored = Some(1000)
-      )
-    }
-
-    logDuration("clipped and outputted cover for %d cells (%s)".format(cells.size, record._id)) {
-      val recordShape = geom.buffer(0)
-  	val preparedRecordShape = PreparedGeometryFactory.prepare(recordShape)
-      cells.foreach(
-        (cellid: S2CellId) => {
-          val bucket = s2map.getOrElseUpdate(cellid.id, new ListBuffer[CellGeometry]())
-          val s2shape = s2shapes.getOrElseUpdate(cellid.id, ShapefileS2Util.fullGeometryForCell(cellid))
-          val cellGeometryBuilder = CellGeometry.newBuilder
-          if (preparedRecordShape.contains(s2shape)) {
-            cellGeometryBuilder.full(true)
-          } else {
-            cellGeometryBuilder.wkbGeometry(ByteBuffer.wrap(wkbWriter.write(s2shape.intersection(recordShape))))
-          }
-          cellGeometryBuilder.woeType(featureRecord.woeType)
-          cellGeometryBuilder.longId(record._id)
-          bucket += cellGeometryBuilder.result
-        }
-      )
-    }
-  }
-
   def buildRevGeoIndex() {
     val writer = buildMapFileWriter(
       Indexes.S2Index,
@@ -485,62 +435,54 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
 
     val ids = PolygonIndexDAO.primitiveProjections[Long](MongoDBObject(), "_id").toList
     var total = 0
-    val numThreads = 20
-    val subMaps = 0.until(numThreads).toList.map(offset => {
-      val s2map = new HashMap[Long, ListBuffer[CellGeometry]]
-      val s2shapes = new HashMap[Long, Geometry]
-      val thread = new Thread(new Runnable {
+    val latch = new CountDownLatch(1)
 
-        def run() {
-          logger.info("thread: %d".format(offset))
-          logger.info("seeing %d ids".format(ids.size))
-          logger.info("filtering to %d ids on %d".format(ids.zipWithIndex.filter(i => (i._2 % numThreads) == offset).size, offset))
+    val system = ActorSystem("RevGeoSystem")
+    val revGeoMaster = system.actorOf(Props(new RevGeoMaster(latch)), name = "master")
 
-          var doneCount = 0
-
-          ids.zipWithIndex.filter(i => (i._2 % numThreads) == offset).grouped(200).foreach(chunk => {
-            val featureRecords = MongoGeocodeDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> chunk.map(_._1))))
-              .toList
-              .groupBy(_._id).map({case (k, v) => (k, v(0))})
-            val recordsCursor = PolygonIndexDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> chunk.map(_._1))))
-            recordsCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
-            recordsCursor.foreach(r =>
-              featureRecords.get(r._id) match {
-                case Some(feature) => calculateCoverForRecord(r, feature, s2map, s2shapes)
-                case None => println("had polygon, but no feature for %s".format(r._id))
-              }
-            )
-
-            doneCount += chunk.size
-            total += chunk.size
-            if (doneCount % 1000 == 0) {
-              logger.info("Thread %d finished %d of %d %.2f (total: %d of %d %.2f)".format(offset,
-               doneCount, ids.size, doneCount * 100.0 / ids.size,
-               total, ids.size, total * 100.0 / ids.size))
-            }
-          })
+    ids.zipWithIndex.grouped(200).foreach(chunk => {
+      val featureRecords = MongoGeocodeDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> chunk.map(_._1))))
+        .toList
+        .groupBy(_._id).map({case (k, v) => (k, v(0))})
+      val recordsCursor = PolygonIndexDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> chunk.map(_._1))))
+      recordsCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
+      recordsCursor.foreach(r =>
+        featureRecords.get(r._id) match {
+          case Some(feature) => {
+          // calculateCoverForRecord(r, feature, s2map, s2shapes)
+            revGeoMaster ! CalculateCover(r.polygon, feature._id, feature._woeType)
+          }
+          case None => println("had polygon, but no feature for %s".format(r._id))
         }
-      })
-      thread.start
-      (s2map, thread)
+      )
+
+      total += chunk.size
+      if (total % 1000 == 0) {
+        logger.info("Sent off %d of %d %.2f)".format(
+          total, ids.size, total * 100.0 / ids.size))
+      }
     })
 
-    // wait until everything finishes
-    subMaps.foreach(_._2.join)
+    latch.await()
+    println("did all the s2 indexing")
 
-    val sortedMapKeys =
-      subMaps.flatMap(_._1.keys)
-             .toList.distinct.map(longCellId => GeometryUtils.getBytes(longCellId))
-             .sorted(Ordering.comparatorToOrdering(comp))
+    val revGeoCursor = RevGeoIndexDAO.find(MongoDBObject()).sort(orderBy = MongoDBObject("cellid" -> -1))
+    revGeoCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
 
-    sortedMapKeys.foreach(k => {
-      val longKey = GeometryUtils.getLongFromBytes(k)
-      val cells: List[CellGeometry] = subMaps.flatMap(_._1.get(longKey)).flatMap(_.toList)
-      val cellGeometries = CellGeometries(cells)
-      writer.append(longKey, cellGeometries)
+    var currentKey = 0L
+    var currentCells = new ListBuffer[CellGeometry]
+    revGeoCursor.foreach(revgeoIndexRecord => {
+      if (currentKey != revgeoIndexRecord.cellid) {
+        if (currentKey != 0L) {
+          writer.append(currentKey, CellGeometries(currentCells))
+        }
+        currentKey = revgeoIndexRecord.cellid
+        currentCells.clear
+      }
+      currentCells.append(revgeoIndexRecord.data)
     })
 
-    // scala.util.Random.shuffle(ids).take(100).foreach(id => println("%sL".format(id)))
+    writer.append(currentKey, CellGeometries(currentCells))
 
     writer.close()
   }

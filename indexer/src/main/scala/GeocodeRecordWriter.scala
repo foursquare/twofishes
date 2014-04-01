@@ -46,8 +46,16 @@ object MongoGeocodeDAO extends SalatDAO[GeocodeRecord, ObjectId](
 object NameIndexDAO extends SalatDAO[NameIndex, String](
   collection = MongoConnection()("geocoder")("name_index"))
 
+case class RevGeoIndex(
+  cellid: Long,
+  data: CellGeometry
+)
+
 object PolygonIndexDAO extends SalatDAO[PolygonIndex, String](
   collection = MongoConnection()("geocoder")("polygon_index"))
+
+object RevGeoIndexDAO extends SalatDAO[RevGeoIndex, String](
+  collection = MongoConnection()("geocoder")("revgeo_index"))
 
 class MongoGeocodeStorageService extends GeocodeStorageWriteService {
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = {
