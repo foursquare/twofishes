@@ -144,6 +144,14 @@ class PolygonLoader(
             false, false)
         }
       }
+      parser.revGeoMaster ! Done
+  }
+
+  def rebuildRevGeoIndex {
+    PolygonIndexDAO.find(MongoDBObject()).foreach(p => {
+      parser.revGeoMaster ! CalculateCover(p._id, p.polygon)
+    })
+    parser.revGeoMaster ! Done
   }
 
   def buildQuery(geometry: Geometry, woeTypes: List[YahooWoeType]) = {

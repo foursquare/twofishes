@@ -221,7 +221,12 @@ class GeonamesParser(
 
   val revGeoLatch = new CountDownLatch(1)
   val system = ActorSystem("RevGeoSystem")
-  val revGeoMaster = system.actorOf(Props(new RevGeoMaster(revGeoLatch)), name = "master")
+
+  val revGeoMaster = if (config.outputRevgeo) {
+    system.actorOf(Props(new RevGeoMaster(revGeoLatch)), name = "master")
+  } else {
+    system.actorOf(Props(new NullActor()), name = "master")
+  }
   def logUnusedHelperEntries {
     helperTables.flatMap(_.logUnused).foreach(line => logger.error(line))
   }

@@ -25,7 +25,13 @@ import org.bson.types.ObjectId
 sealed trait CoverMessage
 case class Done extends CoverMessage
 case class CalculateCover(polyId: ObjectId, geom: Array[Byte]) extends CoverMessage
-  
+ 
+class NullActor extends Actor {
+  def receive = {
+    case x =>
+  }
+}
+
 class RevGeoWorker extends Actor with DurationUtils {
   val minS2Level = 8
   val maxS2Level = 12
