@@ -95,11 +95,14 @@ class RevGeoMaster(latch: CountDownLatch) extends Actor {
     case msg: CalculateCover =>
 	  router ! msg
     case msg: Done => 
-    // send a PoisonPill to all workers telling them to shut down themselves
-    router ! Broadcast(PoisonPill)
+      println("all done, sending poison pills")
+      // send a PoisonPill to all workers telling them to shut down themselves
+      router ! Broadcast(PoisonPill)
 
-    // send a PoisonPill to the router, telling him to shut himself down
-    router ! PoisonPill
+      // send a PoisonPill to the router, telling him to shut himself down
+      router ! PoisonPill
+
+      self.stop()
   }
 
   override def preStart() {
