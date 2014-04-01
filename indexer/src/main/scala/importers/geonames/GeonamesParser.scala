@@ -76,7 +76,6 @@ object GeonamesParser {
       PolygonIndexDAO.collection.drop()
       RevGeoIndexDAO.collection.drop()
       loadIntoMongo()
-      MongoGeocodeDAO.makeIndexes()
       NameIndexDAO.makeIndexes()
       PolygonIndexDAO.makeIndexes()
       RevGeoIndexDAO.makeIndexes()
@@ -159,6 +158,7 @@ object GeonamesParser {
       slugIndexer.writeMissingSlugs(store)
     }
 
+    MongoGeocodeDAO.makeIndexes()
     new PolygonLoader(parser, store).load(GeonamesNamespace)
   }
 }
@@ -232,9 +232,10 @@ class GeonamesParser(
 
   val revGeoMaster = if (config.outputRevgeo) {
     system.actorOf(Props(new RevGeoMaster(revGeoLatch)), name = "master")
-  } else {
+   } else {
     system.actorOf(Props(new NullActor()), name = "master")
-  }
+  } 
+  
   def logUnusedHelperEntries {
     helperTables.flatMap(_.logUnused).foreach(line => logger.error(line))
   }

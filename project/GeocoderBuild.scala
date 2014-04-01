@@ -193,7 +193,7 @@ object GeocoderBuild extends Build {
         val store = new MongoGeocodeStorageService()
         val slugIndexer = new SlugIndexer()
         GeonamesParser.config = GeonamesImporterConfigParser.parse(
-          Array("--hfile_basepath", ".")
+          Array("--hfile_basepath", ".", "--output_revgeo_index", "true")
         )
         val parser = new GeonamesParser(store, slugIndexer, Map.empty)
 
