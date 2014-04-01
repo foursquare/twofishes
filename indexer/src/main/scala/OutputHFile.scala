@@ -28,6 +28,8 @@ import scalaj.collection.Implicits._
 import com.weiglewilczek.slf4s.Logging
 import akka.actor.ActorSystem
 import akka.actor.Props
+import java.nio.ByteBuffer
+import java.util.concurrent.CountDownLatch
 
 class WrappedByteMapWriter[K, V](writer: MapFile.Writer, index: Index[K, V]) {
   def append(k: K, v: V) {
@@ -365,12 +367,12 @@ class FeatureIndexer(override val basepath: String, override val fidMap: FidMap)
     for {
       gCursor <- fidCursor.grouped(1000)
       group = gCursor.toList
-      toFindPolys = group.filter(f => f.hasPoly && f.boundingbox.isEmpty)
-      polyMap = PolygonIndexDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> toFindPolys.map(_._id))))
+      toFindPolys: Map[Long, ObjectId] = group.filter(f => f.hasPoly).map(r => (r._id, r.polyId)).toMap
+      polyMap: Map[ObjectId, PolygonIndex] = PolygonIndexDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> toFindPolys.values)))
         .toList
         .groupBy(_._id).map({case (k, v) => (k, v(0))})
       f <- group
-      polyOpt = polyMap.get(f._id)
+      polyOpt = polyMap.get(f.polyId)
     } {
       writer.append(
         f.featureId, makeGeocodeRecordWithoutGeometry(f, polyOpt))
@@ -395,21 +397,22 @@ class PolygonIndexer(override val basepath: String, override val fidMap: FidMap)
     val wkbReader = new WKBReader()
 
     var index = 0
+    // would be great to unify this with featuresIndex
     for {
       g <- hasPolyCursor.grouped(1000)
       group = g.toList
-      polyMap = PolygonIndexDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> group.map(_._id))))
+      toFindPolys: Map[Long, ObjectId] = group.filter(f => f.hasPoly).map(r => (r._id, r.polyId)).toMap
+      polyMap: Map[ObjectId, PolygonIndex] = PolygonIndexDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> toFindPolys.values)))
         .toList
         .groupBy(_._id).map({case (k, v) => (k, v(0))})
       f <- group
-      polyOpt = polyMap.get(f._id).map(_.polygon)
-      polygon <- f.polygon.orElse(polyOpt)
+      poly <- polyMap.get(f.polyId)
     } {
       if (index % 1000 == 0) {
         logger.info("outputted %d polys so far".format(index))
       }
       index += 1
-      writer.append(StoredFeatureId.fromLong(f._id).get, wkbReader.read(polygon))
+      writer.append(StoredFeatureId.fromLong(f._id).get, wkbReader.read(poly.polygon))
     }
     writer.close()
 
@@ -433,37 +436,13 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
       )
     )
 
-    val ids = PolygonIndexDAO.primitiveProjections[Long](MongoDBObject(), "_id").toList
-    var total = 0
-    val latch = new CountDownLatch(1)
+    val hasPolyCursor = 
+      MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
+    hasPolyCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
+    val idMap: Map[ObjectId, (Long, YahooWoeType)] = hasPolyCursor.map(r => {
+      (r.polyId, (r._id, r.woeType))
+    }).toMap
 
-    val system = ActorSystem("RevGeoSystem")
-    val revGeoMaster = system.actorOf(Props(new RevGeoMaster(latch)), name = "master")
-
-    ids.zipWithIndex.grouped(200).foreach(chunk => {
-      val featureRecords = MongoGeocodeDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> chunk.map(_._1))))
-        .toList
-        .groupBy(_._id).map({case (k, v) => (k, v(0))})
-      val recordsCursor = PolygonIndexDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> chunk.map(_._1))))
-      recordsCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
-      recordsCursor.foreach(r =>
-        featureRecords.get(r._id) match {
-          case Some(feature) => {
-          // calculateCoverForRecord(r, feature, s2map, s2shapes)
-            revGeoMaster ! CalculateCover(r.polygon, feature._id, feature._woeType)
-          }
-          case None => println("had polygon, but no feature for %s".format(r._id))
-        }
-      )
-
-      total += chunk.size
-      if (total % 1000 == 0) {
-        logger.info("Sent off %d of %d %.2f)".format(
-          total, ids.size, total * 100.0 / ids.size))
-      }
-    })
-
-    latch.await()
     println("did all the s2 indexing")
 
     val revGeoCursor = RevGeoIndexDAO.find(MongoDBObject()).sort(orderBy = MongoDBObject("cellid" -> -1))
@@ -471,7 +450,10 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
 
     var currentKey = 0L
     var currentCells = new ListBuffer[CellGeometry]
-    revGeoCursor.foreach(revgeoIndexRecord => {
+    for {
+      revgeoIndexRecord <- revGeoCursor
+      (geoid, woeType) <- idMap.get(revgeoIndexRecord.polyId)
+    } {
       if (currentKey != revgeoIndexRecord.cellid) {
         if (currentKey != 0L) {
           writer.append(currentKey, CellGeometries(currentCells))
@@ -479,8 +461,17 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
         currentKey = revgeoIndexRecord.cellid
         currentCells.clear
       }
-      currentCells.append(revgeoIndexRecord.data)
-    })
+      val builder = CellGeometry.newBuilder
+        .woeType(woeType)
+        .longId(geoid)
+
+      if (revgeoIndexRecord.full) {
+        builder.full(true)
+      } else {
+        builder.wkbGeometry(revgeoIndexRecord.geom.map(ByteBuffer.wrap))
+      }
+      currentCells.append(builder.result)
+    }
 
     writer.append(currentKey, CellGeometries(currentCells))
 
@@ -509,7 +500,7 @@ class IdIndexer(override val basepath: String, override val fidMap: FidMap, slug
 }
 
 class OutputIndexes(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: SlugEntryMap, outputRevgeo: Boolean) {
-  def buildIndexes() {
+  def buildIndexes(revgeoLatch: CountDownLatch) {
     val fidMap = new FidMap(preload = false)
 
     (new NameIndexer(basepath, fidMap, outputPrefixIndex)).writeNames()
@@ -517,6 +508,7 @@ class OutputIndexes(basepath: String, outputPrefixIndex: Boolean, slugEntryMap: 
     (new FeatureIndexer(basepath, fidMap)).writeFeatures()
     (new PolygonIndexer(basepath, fidMap)).buildPolygonIndex()
     if (outputRevgeo) {
+      revgeoLatch.await()
       (new RevGeoIndexer(basepath, fidMap)).buildRevGeoIndex()
     }
   }

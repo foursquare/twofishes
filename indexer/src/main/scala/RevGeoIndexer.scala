@@ -17,16 +17,15 @@ import java.util.concurrent.CountDownLatch
 import scalaj.collection.Implicits._
 import akka.routing.Broadcast
 import java.nio.ByteBuffer
+import org.bson.types.ObjectId
 
 // ====================
 // ===== Messages =====
 // ====================
 sealed trait CoverMessage
 case class Done extends CoverMessage
-case class CalculateCover(geom: Array[Byte], geoid: Long, woeTypeInt: Int) extends CoverMessage {
-  def woeType = YahooWoeType.findByIdOrNull(woeTypeInt)
-}
-
+case class CalculateCover(polyId: ObjectId, geom: Array[Byte]) extends CoverMessage
+  
 class RevGeoWorker extends Actor with DurationUtils {
   val minS2Level = 8
   val maxS2Level = 12
@@ -38,8 +37,8 @@ class RevGeoWorker extends Actor with DurationUtils {
   def calculateCover(msg: CalculateCover) {
     val geom = wkbReader.read(msg.geom)
  	
- 	println("generating cover for %s".format(msg.geoid))
-    val cells = logDuration("generated cover for %s".format(msg.geoid)) {
+ 	println("generating cover for %s".format(msg.polyId))
+    val cells = logDuration("generated cover for %s".format(msg.polyId)) {
       GeometryUtils.s2PolygonCovering(
         geom, minS2Level, maxS2Level,
         levelMod = Some(levelMod),
@@ -47,20 +46,23 @@ class RevGeoWorker extends Actor with DurationUtils {
       )
     }
 
-    logDuration("clipped and outputted cover for %d cells (%s)".format(cells.size, msg.geoid)) {
+    logDuration("clipped and outputted cover for %d cells (%s)".format(cells.size, msg.polyId)) {
       val recordShape = geom.buffer(0)
 	  val preparedRecordShape = PreparedGeometryFactory.prepare(recordShape)
       cells.asScala.foreach((cellid: S2CellId) => {
         val s2shape = ShapefileS2Util.fullGeometryForCell(cellid)
         val cellGeometryBuilder = CellGeometry.newBuilder
-        if (preparedRecordShape.contains(s2shape)) {
-          cellGeometryBuilder.full(true)
+        if (preparedRecordShape.contains(s2shape)) {    	
+	      RevGeoIndexDAO.save(RevGeoIndex(cellid.id(), msg.polyId, full = true, geom = None))
         } else {
-           cellGeometryBuilder.wkbGeometry(ByteBuffer.wrap(wkbWriter.write(s2shape.intersection(recordShape))))
+	      RevGeoIndexDAO.save(
+	      	RevGeoIndex(
+	      		cellid.id(), msg.polyId,
+	      		full = false,
+	      		geom = Some(wkbWriter.write(s2shape.intersection(recordShape)))
+	      	)
+	      )
         }
-        cellGeometryBuilder.woeType(msg.woeType)
-        cellGeometryBuilder.longId(msg.geoid)
-        RevGeoIndexDAO.save(RevGeoIndex(cellid.id(), cellGeometryBuilder.result))
       })
     }
   }
@@ -106,4 +108,3 @@ class RevGeoMaster(latch: CountDownLatch) extends Actor {
     latch.countDown()
   }
 }
-

@@ -50,6 +50,10 @@ case class GeoJsonPoint(
 )
 object NilPoint extends GeoJsonPoint("Point", List(0, 0))
 
+object GeocodeRecord {
+  val dummyOid = new ObjectId()
+}
+
 case class GeocodeRecord(
   _id: Long,
   ids: List[Long],
@@ -70,7 +74,8 @@ case class GeocodeRecord(
   hasPoly: Boolean = false,
   var attributes: Option[Array[Byte]] = None,
   extraRelations: List[Long] = Nil,
-  var loc: GeoJsonPoint = NilPoint
+  var loc: GeoJsonPoint = NilPoint,
+  polyId: ObjectId = GeocodeRecord.dummyOid
 ) extends Ordered[GeocodeRecord] {
   // gross that we overwrite this
   loc = GeoJsonPoint(lat, lng)

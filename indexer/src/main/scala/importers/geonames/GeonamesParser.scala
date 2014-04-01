@@ -17,6 +17,9 @@ import scala.collection.mutable.{HashMap, HashSet}
 import scala.io.Source
 import scalaj.collection.Implicits._
 import com.weiglewilczek.slf4s.Logging
+import akka.actor.ActorSystem
+import akka.actor.Props
+import java.util.concurrent.CountDownLatch
 
 object GeonamesParser {
   var config: GeonamesImporterConfig = null
@@ -78,6 +81,11 @@ object GeonamesParser {
     writeIndexes()
   }
 
+  var revGeoLatch = new CountDownLatch(0)
+
+  // TODO(blackmad): if we aren't redoing mongo indexing
+  // then add some code to see if the s2 index is 'done'
+  // We should also add an option to skip reloading polys
   def writeIndexes() {
     val writer = new FileWriter(new File(config.hfileBasePath, "provider_mapping.txt"))
     config.providerMapping.foreach({case (k, v) => {
@@ -86,11 +94,12 @@ object GeonamesParser {
     writer.close()
 
     val outputter = new OutputIndexes(config.hfileBasePath, config.outputPrefixIndex, GeonamesParser.slugIndexer.slugEntryMap, config.outputRevgeo)
-    outputter.buildIndexes()
+    outputter.buildIndexes(revGeoLatch)
   }
 
   def loadIntoMongo() {
     val parser = new GeonamesParser(store, slugIndexer, config.providerMapping.toMap)
+    revGeoLatch = parser.revGeoLatch
 
     parseCountryInfo()
 
@@ -210,6 +219,9 @@ class GeonamesParser(
 
   val helperTables = List(rewriteTable, boostTable)
 
+  val revGeoLatch = new CountDownLatch(1)
+  val system = ActorSystem("RevGeoSystem")
+  val revGeoMaster = system.actorOf(Props(new RevGeoMaster(revGeoLatch)), name = "master")
   def logUnusedHelperEntries {
     helperTables.flatMap(_.logUnused).foreach(line => logger.error(line))
   }
@@ -399,14 +411,17 @@ class GeonamesParser(
 
     val canGeocode = feature.extraColumns.get("canGeocode").map(_.toInt).getOrElse(1) > 0
 
-    val polygonExtraEntry: Option[Geometry] = feature.extraColumns.get("geometry").map(polygon => {
-      wktReader.read(polygon)
-    })
-
-    polygonExtraEntry.foreach(geom => {
-      store.addPolygonToRecord(geonameId, wkbWriter.write(geom))
-    })
-
+    // I hate this code, let's deprecate this codepath
+    //     val polygonExtraEntry: Option[Geometry] = feature.extraColumns.get("geometry").map(polygon => {
+    //   wktReader.read(polygon)
+    // })
+    // val polyId =
+    //   polygonExtraEntry.map(geom => {
+    //     val id = new ObjectId()
+    //     store.addPolygonToRecord(geonameId, id)
+    //     wkbWriter.write(geom)
+    //     id
+    //   })
 
     val slug: Option[String] = slugIndexer.getBestSlug(geonameId)
 
@@ -470,7 +485,7 @@ class GeonamesParser(
       displayBounds = displayBboxTable.get(geonameId),
       canGeocode = canGeocode,
       slug = slug,
-      hasPoly = polygonExtraEntry.isDefined,
+      // hasPoly = polygonExtraEntry.isDefined,
       extraRelations = extraRelations
     )
 

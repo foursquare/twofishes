@@ -28,6 +28,7 @@ import com.rockymadden.stringmetric.phonetic.MetaphoneMetric
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import com.ibm.icu.text.Transliterator
+import org.bson.types.ObjectId
 
 object PolygonLoader {
   var adHocIdCounter = 1
@@ -88,7 +89,11 @@ class PolygonLoader(
       try {
         logger.debug("adding poly to %s".format(fid))
         recordsUpdated += 1
-        store.addPolygonToRecord(fid, wkbWriter.write(geom))
+        val polyId = new ObjectId()
+        val geomBytes = wkbWriter.write(geom)
+        PolygonIndexDAO.save(PolygonIndex(polyId, geomBytes))
+        store.addPolygonToRecord(fid, polyId)
+        parser.revGeoMaster ! CalculateCover(polyId, geomBytes)
       } catch {
         case e: Exception => {
           throw new Exception("couldn't write poly to %s".format(fid), e)

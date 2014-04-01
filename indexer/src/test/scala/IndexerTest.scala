@@ -35,7 +35,7 @@ class MockGeocodeStorageWriteService extends GeocodeStorageWriteService {
     setRecordNames(id, name :: getOrCreateEmpty(id).displayNames)
   }
 
-  def addPolygonToRecord(id: StoredFeatureId, wkbGeometry: Array[Byte]) {}
+  def addPolygonToRecord(id: StoredFeatureId, polyId: ObjectId) {}
   def addBoundingBoxToRecord(id: StoredFeatureId, bbox: BoundingBox) {}
   def addSlugToRecord(id: StoredFeatureId, slug: String) {}
 

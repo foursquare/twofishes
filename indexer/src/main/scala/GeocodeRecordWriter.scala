@@ -24,18 +24,13 @@ case class NameIndex(
     throw new RuntimeException("can't convert %d to a feature id".format(fid)))
 }
 
-case class PolygonIndex(
-  @Key("_id") _id: Long,
-  polygon: Array[Byte]
-)
-
 trait GeocodeStorageWriteService {
   def insert(record: GeocodeRecord): Unit
   def setRecordNames(id: StoredFeatureId, names: List[DisplayName])
   def addBoundingBoxToRecord(bbox: BoundingBox, id: StoredFeatureId)
   def addNameToRecord(name: DisplayName, id: StoredFeatureId)
   def addNameIndex(name: NameIndex)
-  def addPolygonToRecord(id: StoredFeatureId, wkbGeometry: Array[Byte])
+  def addPolygonToRecord(id: StoredFeatureId, polyId: ObjectId)
   def addSlugToRecord(id: StoredFeatureId, slug: String)
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord]
 }
@@ -46,13 +41,20 @@ object MongoGeocodeDAO extends SalatDAO[GeocodeRecord, ObjectId](
 object NameIndexDAO extends SalatDAO[NameIndex, String](
   collection = MongoConnection()("geocoder")("name_index"))
 
-case class RevGeoIndex(
-  cellid: Long,
-  data: CellGeometry
+case class PolygonIndex(
+  @Key("_id") _id: ObjectId,
+  polygon: Array[Byte]
 )
 
 object PolygonIndexDAO extends SalatDAO[PolygonIndex, String](
   collection = MongoConnection()("geocoder")("polygon_index"))
+
+case class RevGeoIndex(
+  cellid: Long,
+  polyId: ObjectId,
+  full: Boolean,
+  geom: Option[Array[Byte]]
+)
 
 object RevGeoIndexDAO extends SalatDAO[RevGeoIndex, String](
   collection = MongoConnection()("geocoder")("revgeo_index"))
@@ -84,19 +86,15 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
     NameIndexDAO.insert(name)
   }
 
-  def addPolygonToRecord(id: StoredFeatureId, wkbGeometry: Array[Byte]) {
+  def addPolygonToRecord(id: StoredFeatureId, polyId: ObjectId) {
     MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.longId))),
       MongoDBObject("$set" ->
         MongoDBObject(
-          "hasPoly" -> true
+          "hasPoly" -> true,
+          "polyId" -> polyId
         )
       ),
       false, false)
-
-    // apparently insert doesn't overwrite??
-    PolygonIndexDAO.save(
-      PolygonIndex(id.longId, wkbGeometry)
-    )
   }
 
   def addSlugToRecord(id: StoredFeatureId, slug: String) {
