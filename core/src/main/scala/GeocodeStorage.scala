@@ -75,7 +75,7 @@ case class GeocodeRecord(
   extraRelations: List[Long] = Nil,
   var loc: GeoJsonPoint = NilPoint,
   polyId: ObjectId = GeocodeRecord.dummyOid,
-  ids: List[Long]
+  ids: List[Long] = Nil
 ) extends Ordered[GeocodeRecord] {
   // gross that we overwrite this
   loc = GeoJsonPoint(lat, lng)
@@ -99,7 +99,8 @@ case class GeocodeRecord(
   def featureId: StoredFeatureId = StoredFeatureId.fromLong(_id).getOrElse(
     throw new RuntimeException("can't convert %s to a StoredFeatureId".format(_id)))
 
-  def featureIds: List[StoredFeatureId] = StoredFeatureId.fromLong(_id).toList
+  def allIds = (List(_id) ++ ids).distinct
+  def featureIds: List[StoredFeatureId] = allIds.flatMap(StoredFeatureId.fromLong)
 
   def parentFeatureIds: List[StoredFeatureId] = parents.flatMap(StoredFeatureId.fromLong _)
 
@@ -267,7 +268,7 @@ case class GeocodeRecord(
       .cc(cc)
       .geometry(geometryBuilder.result)
       .woeType(this.woeType)
-      .ids(ids.flatMap(id => StoredFeatureId.fromLong(id)).map(_.thriftFeatureId))
+      .ids(featureIds.map(_.thriftFeatureId))
       .id(featureIds.headOption.map(_.humanReadableString))
       .longId(featureIds.headOption.map(_.longId))
       .slug(slug)

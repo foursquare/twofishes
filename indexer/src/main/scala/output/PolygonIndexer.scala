@@ -31,7 +31,7 @@ class PolygonIndexer(override val basepath: String, override val fidMap: FidMap)
       g <- hasPolyCursor.grouped(1000)
       group = g.toList
       toFindPolys: Map[Long, ObjectId] = group.filter(f => f.hasPoly).map(r => (r._id, r.polyId)).toMap
-      polyMap: Map[ObjectId, PolygonIndex] = PolygonIndexDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> toFindPolys.values)))
+      polyMap: Map[ObjectId, PolygonIndex] = PolygonIndexDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> toFindPolys.values.toList)))
         .toList
         .groupBy(_._id).map({case (k, v) => (k, v(0))})
       f <- group
