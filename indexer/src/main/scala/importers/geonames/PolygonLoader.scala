@@ -413,6 +413,7 @@ logger.info("done reading in polys")
         updateRecord(store, defaultNamespace, id, geom)
       })
     }
+    outputMatchWriter.close()
   }
 
   def load(defaultNamespace: FeatureNamespace, f: File): Unit = {
