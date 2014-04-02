@@ -29,6 +29,7 @@ import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import com.ibm.icu.text.Transliterator
 import org.bson.types.ObjectId
+import java.io.PrintWriter
 
 object PolygonLoader {
   var adHocIdCounter = 1
@@ -37,7 +38,7 @@ object PolygonLoader {
 case class PolygonMappingConfig (
   nameFields: List[String],
   woeTypes: List[List[String]],
-  idField: Option[String]
+  idField: String
 ) {
   private val _woeTypes: List[List[YahooWoeType]] = {
     woeTypes.map(_.map(s => Option(YahooWoeType.findByNameOrNull(s)).getOrElse(
@@ -153,7 +154,7 @@ logger.info("done reading in polys")
   }
 
   def rebuildRevGeoIndex {
-    PolygonIndexDAO.dropCollection()
+    RevGeoIndexDAO.collection.drop()
     PolygonIndexDAO.find(MongoDBObject()).foreach(p => {
       parser.revGeoMaster ! CalculateCover(p._id, p.polygon)
     })
@@ -279,7 +280,7 @@ logger.info("done reading in polys")
         logger.debug(
           "%s vs %s -- %s vs %s".format(
             candidate.featureId.humanReadableString,
-            config.idField.flatMap(feature.propMap.get).getOrElse(0),
+            feature.propMap.get(config.idField).getOrElse("0"),
             featureNames.flatMap(applyHacks).toSet, candidateNames.flatMap(applyHacks).toSet
           )
         )
@@ -290,13 +291,14 @@ logger.info("done reading in polys")
 
   def debugFeature(r: GeocodeRecord): String = r.debugString
   def getId(polygonMappingConfig: PolygonMappingConfig, feature: FsqSimpleFeature) = {
-    polygonMappingConfig.idField.map(f => feature.propMap.get(f)).getOrElse("????")
+    feature.propMap.get(polygonMappingConfig.idField).getOrElse("????")
   }
 
   def maybeMatchFeature(
     config: PolygonMappingConfig,
     feature: FsqSimpleFeature,
-    geometry: Geometry
+    geometry: Geometry,
+    outputMatchWriter: PrintWriter
   ): Option[String] = Helpers.flatTryO {
     var candidatesSeen = 0
 
@@ -348,6 +350,9 @@ logger.info("done reading in polys")
       None
     } else {
       val r = Some(matchingFeatures.map(_.featureId.humanReadableString).mkString(","))
+      outputMatchWriter.write("%s\t%s".format(
+        feature.propMap.get(config.idField).getOrElse(throw new Exception("missing id"))
+      ))
       r
     }
   }
@@ -396,6 +401,7 @@ logger.info("done reading in polys")
       polygonMappingConfig: Option[PolygonMappingConfig]
     ) {
     val fparts = features.file.getName().split("\\.")
+    lazy val outputMatchWriter = new PrintWriter(new File(features.file.getName() + ".match.tsv"))
     for {
       (rawFeature, index) <- features.zipWithIndex
       feature = new FsqSimpleFeature(rawFeature)
@@ -408,7 +414,7 @@ logger.info("done reading in polys")
         .orElse(feature.propMap.get("geonameid")
         .orElse(feature.propMap.get("qs_gn_id"))
         .orElse(feature.propMap.get("gn_id"))
-        .orElse(polygonMappingConfig.flatMap(config => maybeMatchFeature(config, feature, geom)))
+        .orElse(polygonMappingConfig.flatMap(config => maybeMatchFeature(config, feature, geom, outputMatchWriter)))
         .orElse(maybeMakeFeature(feature))
       ).toList.filterNot(_.isEmpty).flatMap(_.split(",")).map(_.replace(".0", ""))
       geoid.foreach(id => {

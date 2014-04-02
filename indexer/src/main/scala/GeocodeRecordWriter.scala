@@ -61,7 +61,6 @@ case class PolygonIndex(
 object PolygonIndexDAO extends SalatDAO[PolygonIndex, String](
   collection = MongoConnection()("geocoder")("polygon_index")) {
   def makeIndexes() {}
-  def dropCollection() { collection.drop() }
 }
 
 case class RevGeoIndex(

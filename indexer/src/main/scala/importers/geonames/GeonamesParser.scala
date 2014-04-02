@@ -267,7 +267,6 @@ class GeonamesParser(
     })
   }
 
-
   def createNameIndexRecords(displayNames: List[DisplayName], fid: StoredFeatureId, record: Option[GeocodeRecord]) = {
     displayNames.map(name => {
       createNameIndexRecord(name, fid, record)
