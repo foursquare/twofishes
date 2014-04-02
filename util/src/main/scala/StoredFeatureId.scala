@@ -54,6 +54,7 @@ sealed abstract class StoredFeatureId(val namespace: FeatureNamespace) {
   def thriftFeatureId: FeatureId = FeatureId(namespace.name, namespaceSpecificId.toString)
 }
 
+case class WoeId(override val namespaceSpecificId: Long) extends StoredFeatureId(WoeIdNamespace)
 case class AdHocId(override val namespaceSpecificId: Long) extends StoredFeatureId(AdHocNamespace)
 case class GeonamesId(override val namespaceSpecificId: Long) extends StoredFeatureId(GeonamesNamespace)
 case class MaponicsId(override val namespaceSpecificId: Long) extends StoredFeatureId(MaponicsNamespace)
@@ -182,6 +183,7 @@ object StoredFeatureId {
     case GeonamesZipNamespace => new GeonamesZip(id)
     case MaponicsNamespace => MaponicsId(id)
     case AdHocNamespace => AdHocId(id)
+    case WoeIdNamespace => WoeId(id)
   }
 
   private def fromNamespaceAndId(n: String, id: String): Option[StoredFeatureId] = {
