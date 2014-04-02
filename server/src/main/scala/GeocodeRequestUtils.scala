@@ -2,10 +2,10 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.Identity._
-import com.foursquare.twofishes.util.Lists.Implicits._
 import com.foursquare.twofishes.util.GeoTools
+import com.foursquare.twofishes.util.Lists.Implicits._
+import com.vividsolutions.jts.geom.Geometry
 import scalaj.collection.Implicits._
-import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory, Polygon}
 
 object GeocodeRequestUtils {
   def responseIncludes(req: CommonGeocodeRequestParams, include: ResponseIncludes): Boolean = {

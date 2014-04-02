@@ -1,24 +1,16 @@
 package com.foursquare.twofishes
 
-import com.vividsolutions.jts.geom.Geometry
-import com.vividsolutions.jts.io.{WKBReader, WKBWriter}
-import com.vividsolutions.jts.geom.prep.PreparedGeometryFactory
+import akka.actor.{Actor, ActorSystem, PoisonPill, Props}
+import akka.routing.{Broadcast, RoundRobinRouter}
 import com.foursquare.geo.shapes.ShapefileS2Util
-import com.foursquare.twofishes.util.{GeometryUtils, StoredFeatureId}
+import com.foursquare.twofishes.util.{DurationUtils, GeometryUtils}
 import com.google.common.geometry.S2CellId
-import scala.collection.mutable.{HashMap, HashSet, ListBuffer}
-import akka.actor.{Actor, PoisonPill}
-import akka.routing.RoundRobinRoutingLogic
-import akka.routing.Router
-import akka.actor.ActorSystem
-import akka.actor.Props
-import akka.routing.RoundRobinRouter
-import java.util.concurrent.CountDownLatch
-import scalaj.collection.Implicits._
-import akka.routing.Broadcast
-import java.nio.ByteBuffer
-import org.bson.types.ObjectId
 import com.mongodb.casbah.Imports._
+import com.vividsolutions.jts.geom.prep.PreparedGeometryFactory
+import com.vividsolutions.jts.io.{WKBReader, WKBWriter}
+import java.util.concurrent.CountDownLatch
+import org.bson.types.ObjectId
+import scalaj.collection.Implicits._
 
 // ====================
 // ===== Messages =====

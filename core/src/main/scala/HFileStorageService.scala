@@ -1,25 +1,20 @@
 package com.foursquare.twofishes
 
-import com.foursquare.twofishes.util.{ByteUtils, GeometryUtils, StoredFeatureId}
+import com.foursquare.twofishes.util.StoredFeatureId
 import com.twitter.ostrich.stats.Stats
 import com.twitter.util.Duration
+import com.vividsolutions.jts.geom.Geometry
+import com.weiglewilczek.slf4s.Logging
 import java.io._
 import java.net.URI
 import java.nio.ByteBuffer
-import java.util.Arrays
-import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
-import java.util.concurrent.atomic.AtomicInteger
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{LocalFileSystem, Path}
-import org.apache.hadoop.hbase.io.hfile.{TwofishesFoursquareCacheConfig, HFile, HFileScanner}
+import org.apache.hadoop.hbase.io.hfile.{HFile, HFileScanner, TwofishesFoursquareCacheConfig}
 import org.apache.hadoop.hbase.util.Bytes._
 import org.apache.hadoop.io.BytesWritable
-import org.apache.thrift.{TBase, TBaseHelper, TDeserializer, TFieldIdEnum, TSerializer}
-import org.apache.thrift.protocol.TCompactProtocol
+import org.apache.thrift.TBaseHelper
 import org.bson.types.ObjectId
-import com.vividsolutions.jts.geom.Geometry
-import com.vividsolutions.jts.io.WKBReader
-import com.weiglewilczek.slf4s.Logging
 import scalaj.collection.Implicits._
 
 class HFileStorageService(originalBasepath: String, shouldPreload: Boolean) extends GeocodeStorageReadService with Logging {

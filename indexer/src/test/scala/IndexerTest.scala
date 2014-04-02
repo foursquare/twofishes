@@ -3,7 +3,7 @@ package com.foursquare.twofishes
 
 import collection.JavaConverters._
 import com.foursquare.twofishes.importers.geonames._
-import com.foursquare.twofishes.util.{GeonamesNamespace, GeonamesId, StoredFeatureId}
+import com.foursquare.twofishes.util.{GeonamesId, GeonamesNamespace, StoredFeatureId}
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTReader, WKTWriter}
 import org.bson.types.ObjectId

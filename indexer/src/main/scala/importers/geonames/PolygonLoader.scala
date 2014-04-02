@@ -1,35 +1,27 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.importers.geonames
 
-import org.opengis.feature.simple.SimpleFeature
-import com.foursquare.geo.shapes.FsqSimpleFeature
-import com.foursquare.geo.shapes.{GeoJsonIterator, ShapefileIterator, ShapeIterator}
-import com.foursquare.twofishes._
-import com.foursquare.twofishes.util.Lists.Implicits._
-import com.foursquare.twofishes.util.{FeatureNamespace, StoredFeatureId, AdHocId, NameNormalizer}
-import com.foursquare.twofishes.util.Helpers
-import com.foursquare.twofishes.util.Helpers._
+import com.foursquare.geo.shapes.{FsqSimpleFeature, GeoJsonIterator, ShapeIterator, ShapefileIterator}
 import com.foursquare.twofishes.Identity._
+import com.foursquare.twofishes._
+import com.foursquare.twofishes.util.{AdHocId, FeatureNamespace, Helpers, NameNormalizer, StoredFeatureId}
+import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
-import com.mongodb.casbah.Imports._
-import com.vividsolutions.jts.geom.{Geometry, GeometryFactory}
-import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTReader}
-import org.geotools.geojson.feature.FeatureJSON
-import org.geotools.geojson.geom.GeometryJSON
-import com.weiglewilczek.slf4s.Logging
-import java.io.File
-import scalaj.collection.Implicits._
+import com.ibm.icu.text.Transliterator
 import com.mongodb.Bytes
-import java.text.Normalizer
-import java.text.Normalizer.Form
-import com.rockymadden.stringmetric.transform._
-import com.rockymadden.stringmetric.similarity.JaroWinklerMetric
+import com.mongodb.casbah.Imports._
 import com.rockymadden.stringmetric.phonetic.MetaphoneMetric
+import com.rockymadden.stringmetric.similarity.JaroWinklerMetric
+import com.rockymadden.stringmetric.transform._
+import com.vividsolutions.jts.geom.Geometry
+import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTReader}
+import com.weiglewilczek.slf4s.Logging
+import java.io.{File, PrintWriter}
+import org.bson.types.ObjectId
+import org.geotools.geojson.geom.GeometryJSON
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
-import com.ibm.icu.text.Transliterator
-import org.bson.types.ObjectId
-import java.io.PrintWriter
+import scalaj.collection.Implicits._
 
 object PolygonLoader {
   var adHocIdCounter = 1

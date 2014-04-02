@@ -1,12 +1,11 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.util
 
-import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.{FeatureName, FeatureNameFlags, GeocodeFeature, YahooWoeType, util}
+import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.Lists.Implicits._
-import scalaj.collection.Implicits._
 import scala.io.BufferedSource
-import scala.util.Sorting
+import scalaj.collection.Implicits._
 
 object SlugBuilder {
   import NameFormatter.FormatPattern

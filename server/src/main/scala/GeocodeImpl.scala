@@ -3,12 +3,10 @@ package com.foursquare.twofishes
 
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.YahooWoeType._
-import com.foursquare.twofishes.util.GeoTools
+import com.foursquare.twofishes.util.{CountryUtils, GeoTools}
 import com.foursquare.twofishes.util.Lists.Implicits._
-import org.bson.types.ObjectId
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._
-import com.foursquare.twofishes.util.CountryUtils
 
 // TODO
 // --make autocomplete faster

@@ -1,8 +1,8 @@
 // Copyright 2014 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.util
 
-import scala.io.BufferedSource
 import com.foursquare.twofishes.util.Lists.Implicits._
+import scala.io.BufferedSource
 
 object CountryInfoFields extends Enumeration {
   val ISO2,

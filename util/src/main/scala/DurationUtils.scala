@@ -1,5 +1,5 @@
 // should move to util
-package com.foursquare.twofishes
+package com.foursquare.twofishes.util
 
 import com.twitter.util.Duration
 import com.weiglewilczek.slf4s.Logging

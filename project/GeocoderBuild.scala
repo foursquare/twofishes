@@ -1,9 +1,9 @@
 import com.foursquare.spindle.codegen.plugin.ThriftCodegenPlugin.thriftSettings
-import sbt._
-import sbt.Keys._
-import sbtassembly.Plugin._
-import sbtassembly.Plugin.AssemblyKeys._
 import net.virtualvoid.sbt.graph.Plugin.graphSettings
+import sbt.Keys._
+import sbt._
+import sbtassembly.Plugin.AssemblyKeys._
+import sbtassembly.Plugin._
 
 object GeocoderBuild extends Build {
   lazy val buildSettings = Seq(
@@ -181,21 +181,20 @@ object GeocoderBuild extends Build {
         import com.foursquare.twofishes.importers.geonames._
         import com.foursquare.twofishes.util.Helpers._
         import com.foursquare.twofishes.util._
-        import java.io.File
-        import com.vividsolutions.jts.io._
-
         import com.mongodb.casbah.Imports._
         import com.novus.salat._
         import com.novus.salat.annotations._
         import com.novus.salat.dao._
         import com.novus.salat.global._
+        import com.vividsolutions.jts.io._
+        import java.io.File
 
         val store = new MongoGeocodeStorageService()
         val slugIndexer = new SlugIndexer()
         GeonamesParser.config = GeonamesImporterConfigParser.parse(
           Array("--hfile_basepath", ".", "--output_revgeo_index", "true")
         )
-        val parser = new GeonamesParser(store, slugIndexer, Map.empty)
+        val parser = new GeonamesParser(store, slugIndexer)
 
         GeonamesParser.parseAdminInfoFile("data/downloaded/adminCodes.txt")
         val polygonLoader = new PolygonLoader(parser, store)

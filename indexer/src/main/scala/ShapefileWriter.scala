@@ -12,7 +12,6 @@ import org.geotools.data.{DataUtilities, DefaultTransaction}
 import org.geotools.data.collection.ListFeatureCollection
 import org.geotools.data.shapefile.{ShapefileDataStore, ShapefileDataStoreFactory}
 import org.geotools.data.simple.{SimpleFeatureCollection, SimpleFeatureStore}
-import org.geotools.feature.FeatureCollections
 import org.geotools.feature.simple.SimpleFeatureBuilder
 import org.geotools.referencing.crs.DefaultGeographicCRS
 import org.opengis.feature.simple.SimpleFeatureType

@@ -1,11 +1,9 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.util
 
+import com.foursquare.twofishes.{GeocodeFeature, GeocodeInterpretation, YahooWoeType}
 import com.foursquare.twofishes.Identity._
-import com.foursquare.twofishes.{FeatureName, FeatureNameFlags,
-  GeocodeFeature, GeocodeInterpretation, YahooWoeType}
 import com.foursquare.twofishes.util.Lists.Implicits._
-import com.foursquare.twofishes.Identity._
 
 object GeoIdConstants {
   def makeGeonameIds(ids: Int*): Seq[GeonamesId] = {

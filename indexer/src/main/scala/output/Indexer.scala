@@ -1,5 +1,7 @@
 package com.foursquare.twofishes.output
 
+import com.foursquare.twofishes.{Index, MapFileUtils}
+import com.foursquare.twofishes.util.{DurationUtils, StoredFeatureId}
 import com.mongodb.casbah.Imports._
 import com.novus.salat._
 import com.novus.salat.annotations._
@@ -79,3 +81,37 @@ abstract class Indexer extends DurationUtils {
 
     new WrappedHFileWriter(writer, index)
   }
+
+  def buildMapFileWriter[K : Manifest, V : Manifest](
+      index: Index[K, V],
+      info: Map[String, String] = Map.empty,
+      indexInterval: Option[Int] = None) = {
+
+    val keyClassName = fixThriftClassName(manifest[K].erasure.getName)
+    val valueClassName = fixThriftClassName(manifest[V].erasure.getName)
+
+    val finalInfoMap = info ++ Map(
+      (ThriftClassKey, keyClassName),
+      (ThriftClassValue, valueClassName),
+      (ThriftEncodingKey, factory.getClass.getName)
+    )
+
+    val opts = indexInterval.map(i => MapFileUtils.DefaultByteKeyValueWriteOptions.copy(indexInterval = i))
+      .getOrElse(MapFileUtils.DefaultByteKeyValueWriteOptions)
+
+    new WrappedByteMapWriter(
+      MapFileUtils.writerToLocalPath((new File(basepath, index.filename)).toString, finalInfoMap, opts),
+      index
+    )
+  }
+
+  val comp = new ByteArrayComparator()
+
+  def lexicalSort(a: String, b: String) = {
+    comp.compare(a.getBytes(), b.getBytes()) < 0
+  }
+
+  def fidsToCanonicalFids(fids: List[StoredFeatureId]): Seq[StoredFeatureId] = {
+    fids.flatMap(fid => fidMap.get(fid)).toSet.toSeq
+  }  
+}

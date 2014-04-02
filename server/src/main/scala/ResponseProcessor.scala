@@ -2,15 +2,14 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.Identity._
-import com.foursquare.twofishes.util.Lists.Implicits._
 import com.foursquare.twofishes.util.{NameUtils, StoredFeatureId}
+import com.foursquare.twofishes.util.Lists.Implicits._
 import com.foursquare.twofishes.util.NameUtils.BestNameMatch
 import com.vividsolutions.jts.geom.Geometry
-import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTWriter}
+import com.vividsolutions.jts.io.{WKBWriter, WKTWriter}
 import com.vividsolutions.jts.simplify.DouglasPeuckerSimplifier
 import java.nio.ByteBuffer
-import org.bson.types.ObjectId
-import scala.collection.mutable.{ListBuffer, HashSet}
+import scala.collection.mutable.{HashSet, ListBuffer}
 import scalaj.collection.Implicits._
 
 // Sort a list of features, smallest to biggest

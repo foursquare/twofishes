@@ -1,25 +1,25 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.importers.geonames
 
+import akka.actor.{ActorSystem, Props}
 import com.foursquare.geo.shapes.FsqSimpleFeatureImplicits._
 import com.foursquare.geo.shapes.ShapefileIterator
-import com.foursquare.twofishes._
 import com.foursquare.twofishes.Identity._
+import com.foursquare.twofishes._
+import com.foursquare.twofishes.output._
 import com.foursquare.twofishes.util.{GeonamesId, GeonamesNamespace, Helpers, NameNormalizer, StoredFeatureId}
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
-import java.io.{File, FileWriter, PrintStream}
+import com.weiglewilczek.slf4s.Logging
+import java.io.File
+import java.util.concurrent.CountDownLatch
 import org.bson.types.ObjectId
 import org.opengis.feature.simple.SimpleFeature
 import scala.collection.mutable.{HashMap, HashSet}
 import scala.io.Source
 import scalaj.collection.Implicits._
-import com.weiglewilczek.slf4s.Logging
-import akka.actor.ActorSystem
-import akka.actor.Props
-import java.util.concurrent.CountDownLatch
 
 object GeonamesParser {
   var config: GeonamesImporterConfig = null
@@ -76,11 +76,14 @@ object GeonamesParser {
       PolygonIndexDAO.collection.drop()
       RevGeoIndexDAO.collection.drop()
       loadIntoMongo()
-      NameIndexDAO.makeIndexes()
-      PolygonIndexDAO.makeIndexes()
-      RevGeoIndexDAO.makeIndexes()
     }
     writeIndexes()
+  }
+
+  def makeFinalIndexes() {
+    NameIndexDAO.makeIndexes()
+    PolygonIndexDAO.makeIndexes()
+    RevGeoIndexDAO.makeIndexes()
   }
 
   def writeIndex(args: Array[String]) {
@@ -94,18 +97,13 @@ object GeonamesParser {
   // then add some code to see if the s2 index is 'done'
   // We should also add an option to skip reloading polys
   def writeIndexes() {
-    val writer = new FileWriter(new File(config.hfileBasePath, "provider_mapping.txt"))
-    config.providerMapping.foreach({case (k, v) => {
-      writer.write("%s\t%s\n".format(k, v))
-    }})
-    writer.close()
-
+    makeFinalIndexes()
     val outputter = new OutputIndexes(config.hfileBasePath, config.outputPrefixIndex, GeonamesParser.slugIndexer.slugEntryMap, config.outputRevgeo)
     outputter.buildIndexes(revGeoLatch)
   }
 
   def loadIntoMongo() {
-    val parser = new GeonamesParser(store, slugIndexer, config.providerMapping.toMap)
+    val parser = new GeonamesParser(store, slugIndexer)
     revGeoLatch = parser.revGeoLatch
 
     parseCountryInfo()
@@ -166,8 +164,7 @@ object GeonamesParser {
 import GeonamesParser._
 class GeonamesParser(
   store: GeocodeStorageWriteService,
-  slugIndexer: SlugIndexer,
-  providerMapping: Map[String, Int]
+  slugIndexer: SlugIndexer
 ) extends Logging {
   lazy val hierarchyTable = HierarchyParser.parseHierarchy(List(
     "data/downloaded/hierarchy.txt",
