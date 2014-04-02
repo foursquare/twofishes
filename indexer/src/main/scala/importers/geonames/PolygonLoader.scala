@@ -342,7 +342,7 @@ logger.info("done reading in polys")
       None
     } else {
       val r = Some(matchingFeatures.map(_.featureId.humanReadableString).mkString(","))
-      outputMatchWriter.write("%s\t%s".format(
+      outputMatchWriter.write("%s\t%s\n".format(
         feature.propMap.get(config.idField).getOrElse(throw new Exception("missing id"))
       ))
       r
