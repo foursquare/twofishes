@@ -30,7 +30,7 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
       )
     )
 
-    val hasPolyCursor = 
+    val hasPolyCursor =
       MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
     hasPolyCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
     val idMap: Map[ObjectId, (Long, YahooWoeType)] = hasPolyCursor.map(r => {
@@ -39,7 +39,8 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
 
     println("did all the s2 indexing")
 
-    val revGeoCursor = RevGeoIndexDAO.find(MongoDBObject()).sort(orderBy = MongoDBObject("cellid" -> -1))
+    val revGeoCursor = RevGeoIndexDAO.find(MongoDBObject())
+      .sort(orderBy = MongoDBObject("cellid" -> 1))
     revGeoCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
 
     var currentKey = 0L

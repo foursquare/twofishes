@@ -16,7 +16,7 @@ import scalaj.collection.Implicits._
 
 class PolygonIndexer(override val basepath: String, override val fidMap: FidMap) extends Indexer {
   def writeIndexImpl() {
-    val hasPolyCursor = 
+    val hasPolyCursor =
       MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
         .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
     hasPolyCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
