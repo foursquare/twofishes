@@ -123,11 +123,7 @@ class RevGeoMaster(latch: CountDownLatch) extends Actor {
       println("all done, sending poison pills")
       // send a PoisonPill to all workers telling them to shut down themselves
       router ! Broadcast(PoisonPill)
-
-      // send a PoisonPill to the router, telling him to shut himself down
-      router ! PoisonPill
-
-      context.stop(self)
+      // I believe that the router shuts down once all the children shutdown
   }
 
   override def preStart() {
