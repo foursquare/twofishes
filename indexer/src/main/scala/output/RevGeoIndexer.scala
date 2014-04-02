@@ -20,7 +20,7 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
   val maxCells = 10000
   val levelMod = 2
 
-  def buildRevGeoIndex() {
+  def writeIndexImpl() {
     val writer = buildMapFileWriter(
       Indexes.S2Index,
       Map(

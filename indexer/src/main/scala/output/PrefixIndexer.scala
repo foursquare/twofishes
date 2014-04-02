@@ -18,7 +18,11 @@ object PrefixIndexer {
   val MaxPrefixLength = 5
 }
 
-class PrefixIndexer(override val basepath: String, override val fidMap: FidMap) extends Indexer {
+class PrefixIndexer(
+  override val basepath: String, 
+  override val fidMap: FidMap,
+  prefixSet: HashSet[String]
+) extends Indexer {
   def hasFlag(record: NameIndex, flag: FeatureNameFlags) =
     (record.flags & flag.getValue) > 0
 
@@ -58,7 +62,7 @@ class PrefixIndexer(override val basepath: String, override val fidMap: FidMap) 
     nameCursor
   }
 
-  def doOutputPrefixIndex(prefixSet: HashSet[String]) {
+  def writeIndexImpl() {
     logger.info("sorting prefix set")
     val sortedPrefixes = prefixSet.toList.sortWith(lexicalSort)
     logger.info("done sorting")

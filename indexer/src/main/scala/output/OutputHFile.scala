@@ -22,13 +22,13 @@ class OutputIndexes(
   def buildIndexes(revgeoLatch: CountDownLatch) {
     val fidMap = new FidMap(preload = false)
 
-    (new NameIndexer(basepath, fidMap, outputPrefixIndex)).writeNames()
-    (new IdIndexer(basepath, fidMap, slugEntryMap)).writeSlugsAndIds()
-    (new FeatureIndexer(basepath, fidMap)).writeFeatures()
-    (new PolygonIndexer(basepath, fidMap)).buildPolygonIndex()
+    (new NameIndexer(basepath, fidMap, outputPrefixIndex)).writeIndex()
+    (new IdIndexer(basepath, fidMap, slugEntryMap)).writeIndex()
+    (new FeatureIndexer(basepath, fidMap)).writeIndex()
+    (new PolygonIndexer(basepath, fidMap)).writeIndex()
     if (outputRevgeo) {
       revgeoLatch.await()
-      (new RevGeoIndexer(basepath, fidMap)).buildRevGeoIndex()
+      (new RevGeoIndexer(basepath, fidMap)).writeIndex()
     }
   }
 }

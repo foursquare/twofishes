@@ -13,7 +13,7 @@ import scalaj.collection.Implicits._
 
 
 class IdIndexer(override val basepath: String, override val fidMap: FidMap, slugEntryMap: SlugEntryMap) extends Indexer {
-  def writeSlugsAndIds() {
+  def writeIndexImpl() {
     val slugEntries: List[(String, StoredFeatureId)] = for {
       (slug, entry) <- slugEntryMap.toList
       fid <- StoredFeatureId.fromHumanReadableString(entry.id)

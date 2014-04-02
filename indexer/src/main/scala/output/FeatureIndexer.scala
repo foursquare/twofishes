@@ -47,7 +47,7 @@ class FeatureIndexer(override val basepath: String, override val fidMap: FidMap)
     )
   }
 
-  def writeFeatures() {
+  def writeIndexImpl() {
     val writer = buildMapFileWriter(Indexes.FeatureIndex, indexInterval = Some(2))
     var fidCount = 0
     val fidSize = MongoGeocodeDAO.collection.count()

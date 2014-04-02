@@ -37,6 +37,15 @@ abstract class Indexer extends DurationUtils {
   def basepath: String
   def fidMap: FidMap
 
+  def writeIndexImpl(): Unit
+
+  def writeIndex() {
+    val name = this.getClass.getName
+    print("starting indexing for %s".format(name))
+    logDuration(name) { writeIndexImpl() }
+    print("done indexing for %s".format(name))
+  }
+
   val ThriftClassValue: String = "value.thrift.class"
   val ThriftClassKey: String = "key.thrift.class"
   val ThriftEncodingKey: String = "thrift.protocol.factory.class"

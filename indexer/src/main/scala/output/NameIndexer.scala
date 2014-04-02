@@ -14,10 +14,12 @@ import scala.collection.mutable.HashSet
 import scalaj.collection.Implicits._
 
 
-class NameIndexer(override val basepath: String, override val fidMap: FidMap, outputPrefixIndex: Boolean) extends Indexer {
-  val prefixIndexer = new PrefixIndexer(basepath, fidMap)
-
-  def writeNames() {
+class NameIndexer(
+  override val basepath: String, 
+  override val fidMap: FidMap, 
+  outputPrefixIndex: Boolean
+) extends Indexer {
+  def writeIndexImpl() {
     var nameCount = 0
     val nameSize = NameIndexDAO.collection.count()
     val nameCursor = NameIndexDAO.find(MongoDBObject())
@@ -60,7 +62,8 @@ class NameIndexer(override val basepath: String, override val fidMap: FidMap, ou
     writer.close()
 
     if (outputPrefixIndex) {
-      prefixIndexer.doOutputPrefixIndex(prefixSet)
+      val prefixIndexer = new PrefixIndexer(basepath, fidMap, prefixSet)
+      prefixIndexer.writeIndex()
     }
   }
 }
