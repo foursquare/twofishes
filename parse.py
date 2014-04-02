@@ -68,8 +68,9 @@ passBoolOpt('output_revgeo_index', options.output_revgeo_index)
 passBoolOpt('output_prefix_index', options.output_prefix_index)
 passBoolOpt('reload_data', options.reload_data)
 
+jvm_args = []
 if options.geonamesonly:
-  args.append("-DgeonameidNamespace=0")
+  jvm_args.append("-DgeonameidNamespace=0")
 
 if options.reload_data and not options.yes_i_am_sure:
   if raw_input('Are you suuuuuure you want to drop your mongo data? Type "yes" to continue: ') != 'yes':
@@ -78,7 +79,7 @@ if options.reload_data and not options.yes_i_am_sure:
     print "re-run with --noreload if you want to keep your mongo data around instead of rebuilding it"
     sys.exit(1)
 
-cmd = './sbt "indexer/run-main com.foursquare.twofishes.importers.geonames.GeonamesParser %s --hfile_basepath %s %s"' % (cmd_opts, basepath, ' '.join(args))
+cmd = './sbt %s "indexer/run-main com.foursquare.twofishes.importers.geonames.GeonamesParser %s --hfile_basepath %s %s"' % (' '.join(jvm_args), cmd_opts, basepath, ' '.join(args))
 print(cmd)
 
 version_file = open(os.path.join(basepath, 'index-gen-info-%s' % now_str), 'w')
