@@ -18,13 +18,15 @@ import scalaj.collection.Implicits._
 import akka.routing.Broadcast
 import java.nio.ByteBuffer
 import org.bson.types.ObjectId
+import com.mongodb.casbah.Imports._
 
 // ====================
 // ===== Messages =====
 // ====================
 sealed trait CoverMessage
 case class Done extends CoverMessage
-case class CalculateCover(polyId: ObjectId, geom: Array[Byte]) extends CoverMessage
+case class CalculateCover(polyId: ObjectId, geomBytes: Array[Byte]) extends CoverMessage
+case class CalculateCoverRange(polyIds: List[ObjectId]) extends CoverMessage
 
 class NullActor extends Actor {
   def receive = {
@@ -44,45 +46,61 @@ class RevGeoWorker extends Actor with DurationUtils {
 
   val wkbReader = new WKBReader()
   val wkbWriter = new WKBWriter()
+
+  def calculateCover(msg: CalculateCoverRange) {
+    val cursor = PolygonIndexDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> msg.polyIds)))
+    cursor.foreach(poly => {
+      calculateCover(poly._id, poly.polygon)
+    })
+  }
+
   def calculateCover(msg: CalculateCover) {
-    val geom = wkbReader.read(msg.geom)
+    calculateCover(msg.polyId, msg.geomBytes)
+  }
 
-    TerribleCounter.count += 1
-    if (TerribleCounter.count % 1000 == 0) {
-      logger.info("processed about %s polygons for revgeo coverage".format(TerribleCounter.count))
-    }
- 	  // println("generating cover for %s".format(msg.polyId))
-    val cells = logDuration("generated cover for %s".format(msg.polyId)) {
-      GeometryUtils.s2PolygonCovering(
-        geom, minS2Level, maxS2Level,
-        levelMod = Some(levelMod),
-        maxCellsHintWhichMightBeIgnored = Some(1000)
-      )
-    }
+  def calculateCover(polyId: ObjectId, geomBytes: Array[Byte]) {
+    logDuration("generated cover for %s".format(polyId)) {
+      TerribleCounter.count += 1
+      if (TerribleCounter.count % 1000 == 0) {
+        logger.info("processed about %s polygons for revgeo coverage".format(TerribleCounter.count))
+      }
 
-    logDuration("clipped and outputted cover for %d cells (%s)".format(cells.size, msg.polyId)) {
-      val recordShape = geom.buffer(0)
-	  val preparedRecordShape = PreparedGeometryFactory.prepare(recordShape)
-      val records = cells.asScala.map((cellid: S2CellId) => {
-        val s2shape = ShapefileS2Util.fullGeometryForCell(cellid)
-        val cellGeometryBuilder = CellGeometry.newBuilder
-        if (preparedRecordShape.contains(s2shape)) {
-  	      RevGeoIndex(cellid.id(), msg.polyId, full = true, geom = None)
-        } else {
-	      	RevGeoIndex(
-	      		cellid.id(), msg.polyId,
-	      		full = false,
-	      		geom = Some(wkbWriter.write(s2shape.intersection(recordShape)))
-	      	)
-	      }
-      })
-      RevGeoIndexDAO.insert(records)
+      val geom = wkbReader.read(geomBytes)
+   	
+     	println("generating cover for %s".format(polyId))
+      val cells = logDuration("generated cover for %s".format(polyId)) {
+        GeometryUtils.s2PolygonCovering(
+          geom, minS2Level, maxS2Level,
+          levelMod = Some(levelMod),
+          maxCellsHintWhichMightBeIgnored = Some(1000)
+        )
+      }
+
+      logDuration("clipped and outputted cover for %d cells (%s)".format(cells.size, polyId)) {
+        val recordShape = geom.buffer(0)
+  	  val preparedRecordShape = PreparedGeometryFactory.prepare(recordShape)
+        val records = cells.asScala.map((cellid: S2CellId) => {
+          val s2shape = ShapefileS2Util.fullGeometryForCell(cellid)
+          val cellGeometryBuilder = CellGeometry.newBuilder
+          if (preparedRecordShape.contains(s2shape)) {    	
+    	      RevGeoIndex(cellid.id(), polyId, full = true, geom = None)
+          } else {
+  	      	RevGeoIndex(
+  	      		cellid.id(), polyId,
+  	      		full = false,
+  	      		geom = Some(wkbWriter.write(s2shape.intersection(recordShape)))
+  	      	)
+  	      }
+        })
+        RevGeoIndexDAO.insert(records)
+      }
     }
   }
 
   def receive = {
     case msg: CalculateCover =>
-      // sender ! Result(calculatePiFor(start, nrOfElements)) // perform the work
+      calculateCover(msg)
+    case msg: CalculateCoverRange =>
       calculateCover(msg)
   }
 }

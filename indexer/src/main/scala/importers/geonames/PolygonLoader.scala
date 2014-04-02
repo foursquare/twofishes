@@ -153,6 +153,7 @@ logger.info("done reading in polys")
   }
 
   def rebuildRevGeoIndex {
+    PolygonIndexDAO.dropCollection()
     PolygonIndexDAO.find(MongoDBObject()).foreach(p => {
       parser.revGeoMaster ! CalculateCover(p._id, p.polygon)
     })
