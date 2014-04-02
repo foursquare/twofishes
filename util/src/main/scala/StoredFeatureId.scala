@@ -2,11 +2,11 @@ package com.foursquare.twofishes.util
 
 import com.foursquare.twofishes._
 import org.bson.types.ObjectId
-import scala.io.Source
 
 sealed abstract class FeatureNamespace(val name: String, val id: Byte)
 case object MaponicsNamespace extends FeatureNamespace("maponics", 0.toByte)
-case object GeonamesNamespace extends FeatureNamespace("geonameid", 1.toByte)
+case object GeonamesNamespace extends FeatureNamespace("geonameid", 
+  Option(System.getProperty("geonameidNamespace")).map(_.toInt).getOrElse(1).toByte)
 case object GeonamesZipNamespace extends FeatureNamespace("geonamezip", 2.toByte)
 case object AdHocNamespace extends FeatureNamespace("adhoc", 3.toByte)
 

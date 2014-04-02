@@ -24,6 +24,8 @@ parser.add_option("-n", "--dry_run", dest="dry_run",  action="store_true", defau
 parser.add_option("--reload", dest="reload_data",  action="store_true", default=True, help="reload data into mongo")
 parser.add_option("--noreload", dest="reload_data",  action="store_false", help="don't reload data into mongo")
 parser.add_option("--yes-i-am-sure", dest="yes_i_am_sure",  action="store_true", default=False, help="skip asking about reloading")
+parser.add_option("-g", "--geonamesonly", dest="geonamesonly", action="store_true",  default=False,
+  help="geonames is the canonical gazetteer and gets id namespace 0")
 
 (options, args) = parser.parse_args()
 
@@ -65,6 +67,9 @@ else:
 passBoolOpt('output_revgeo_index', options.output_revgeo_index)
 passBoolOpt('output_prefix_index', options.output_prefix_index)
 passBoolOpt('reload_data', options.reload_data)
+
+if geonamesonly:
+  args.append("-DgeonameidNamespace=0")
 
 if options.reload_data and not options.yes_i_am_sure:
   if raw_input('Are you suuuuuure you want to drop your mongo data? Type "yes" to continue: ') != 'yes':
