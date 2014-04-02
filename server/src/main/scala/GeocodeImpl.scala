@@ -204,8 +204,8 @@ class GeocoderImpl(
       "stazione", "di", "oblast", "Δήμος", "д", "м", "neighborhood", "neighbourhood", "the"
     ).map(_.toLowerCase)
 
-    // do not drop common word if it is already part of a parse
-    // however, do drop it if it is the entire parse as this must be a match to a bad name
+    // do not drop common word if it is *part of* an already matched parse phrase
+    // however, do drop it if it is the *entire* parse phrase as this must be a match to a bad name
     // e.g. do not drop "city" from (kansas city) but drop it from (city)
     tokens.filterNot(t => commonWords.contains(t) && !parsedPhrases.exists(p => p.contains(t) && p != t)) 
   }
