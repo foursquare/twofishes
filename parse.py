@@ -68,7 +68,7 @@ passBoolOpt('output_revgeo_index', options.output_revgeo_index)
 passBoolOpt('output_prefix_index', options.output_prefix_index)
 passBoolOpt('reload_data', options.reload_data)
 
-if geonamesonly:
+if options.geonamesonly:
   args.append("-DgeonameidNamespace=0")
 
 if options.reload_data and not options.yes_i_am_sure:
