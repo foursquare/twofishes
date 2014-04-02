@@ -20,26 +20,20 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
   val maxCells = 10000
   val levelMod = 2
 
-  def writeIndexImpl() {
-    val writer = buildMapFileWriter(
-      Indexes.S2Index,
-      Map(
-        "minS2Level" -> minS2Level.toString,
-        "maxS2Level" -> maxS2Level.toString,
-        "levelMod" -> levelMod.toString
-      )
+  lazy val writer = buildMapFileWriter(
+    Indexes.S2Index,
+    Map(
+      "minS2Level" -> minS2Level.toString,
+      "maxS2Level" -> maxS2Level.toString,
+      "levelMod" -> levelMod.toString
     )
+  )
 
-    val hasPolyCursor =
-      MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
-    hasPolyCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
-    val idMap: Map[ObjectId, (Long, YahooWoeType)] = hasPolyCursor.map(r => {
-      (r.polyId, (r._id, r.woeType))
-    }).toMap
-
-    println("did all the s2 indexing")
-
-    val revGeoCursor = RevGeoIndexDAO.find(MongoDBObject())
+  def writeRevGeoIndex(
+    idMap: Map[ObjectId, (Long, YahooWoeType)],
+    restrict: MongoDBObject
+  ) = {
+    val revGeoCursor = RevGeoIndexDAO.find(restrict)
       .sort(orderBy = MongoDBObject("cellid" -> 1))
     revGeoCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
 
@@ -69,6 +63,21 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
     }
 
     writer.append(currentKey, CellGeometries(currentCells))
+
+  }
+
+  def writeIndexImpl() {
+    val hasPolyCursor =
+      MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
+    hasPolyCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
+    val idMap: Map[ObjectId, (Long, YahooWoeType)] = hasPolyCursor.map(r => {
+      (r.polyId, (r._id, r.woeType))
+    }).toMap
+
+    // in byte order, positives come before negative
+    writeRevGeoIndex(idMap, MongoDBObject("cellid" -> MongoDBObject("$gte" -> 0)))
+    writeRevGeoIndex(idMap, MongoDBObject("cellid" -> MongoDBObject("$lt" -> 0)))
+    //
 
     writer.close()
   }

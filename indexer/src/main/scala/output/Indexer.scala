@@ -41,9 +41,9 @@ abstract class Indexer extends DurationUtils {
 
   def writeIndex() {
     val name = this.getClass.getName
-    print("starting indexing for %s".format(name))
+    logger.info("starting indexing for %s".format(name))
     logDuration(name) { writeIndexImpl() }
-    print("done indexing for %s".format(name))
+    logger.info("done indexing for %s".format(name))
   }
 
   val ThriftClassValue: String = "value.thrift.class"
@@ -122,5 +122,5 @@ abstract class Indexer extends DurationUtils {
 
   def fidsToCanonicalFids(fids: List[StoredFeatureId]): Seq[StoredFeatureId] = {
     fids.flatMap(fid => fidMap.get(fid)).toSet.toSeq
-  }  
+  }
 }
