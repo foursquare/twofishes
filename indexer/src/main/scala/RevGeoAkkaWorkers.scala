@@ -59,7 +59,7 @@ class RevGeoWorker extends Actor with DurationUtils {
 
       val geom = wkbReader.read(geomBytes)
    	
-     	println("generating cover for %s".format(polyId))
+     	// println("generating cover for %s".format(polyId))
       val cells = logDuration("generated cover for %s".format(polyId)) {
         GeometryUtils.s2PolygonCovering(
           geom, minS2Level, maxS2Level,
