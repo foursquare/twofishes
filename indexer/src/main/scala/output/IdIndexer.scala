@@ -10,7 +10,7 @@ import com.novus.salat.global._
 import java.io._
 import org.apache.hadoop.hbase.util.Bytes._
 import scalaj.collection.Implicits._
-
+import com.foursquare.twofishes.MongoGeocodeDAO
 
 class IdIndexer(override val basepath: String, override val fidMap: FidMap, slugEntryMap: SlugEntryMap) extends Indexer {
   def writeIndexImpl() {
@@ -22,9 +22,18 @@ class IdIndexer(override val basepath: String, override val fidMap: FidMap, slug
       slug -> canonicalFid
     }
 
+    // val concordanceEntries: List[(String, StoredFeatureId)] = for {
+    //   record <- MongoGeocodeDAO.find(MongoDBObject())
+    //   id <- record.ids
+    //   fid <- StoredFeatureId.fromLong(id)
+    //   if (fid !=? record.featureId)
+    // } yield {
+    //   (fid.humanReadableString, record.featureId)
+    // }
+
     val writer = buildMapFileWriter(Indexes.IdMappingIndex)
 
-    val sortedEntries = slugEntries.sortWith((a, b) => lexicalSort(a._1, b._1)).foreach({case (k, v) => {
+    val sortedEntries = (slugEntries).sortWith((a, b) => lexicalSort(a._1, b._1)).foreach({case (k, v) => {
       writer.append(k, v)
     }})
 

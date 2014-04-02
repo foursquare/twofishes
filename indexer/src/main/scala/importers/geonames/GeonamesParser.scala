@@ -302,12 +302,15 @@ class GeonamesParser(
       StoredFeatureId.fromHumanReadableString(id, defaultNamespace = Some(GeonamesNamespace))
     }).get
 
+    // this isn't great, because it means we need entries in StoredFeatureId for any
+    // keys from this table
     val ids: List[StoredFeatureId] = List(geonameId) ++
-      concordanceMap.get(geonameId).flatMap(id =>
+      concordanceMap.get(geonameId).flatMap(id => {
+        GeonamesParser.slugIndexer.slugEntryMap(id) = (SlugEntry(geonameId.humanReadableString, 0))
         if (id.contains(":")) {
           StoredFeatureId.fromHumanReadableString(id)
         } else { None }
-      )
+    })
 
     val preferredEnglishAltName = alternateNamesMap.getOrElse(geonameId, Nil).find(altName =>
       altName.lang == "en" // && altName.isPrefName
@@ -505,7 +508,8 @@ class GeonamesParser(
       canGeocode = canGeocode,
       slug = slug,
       // hasPoly = polygonExtraEntry.isDefined,
-      extraRelations = extraRelations
+      extraRelations = extraRelations,
+      ids = ids.map(_.longId)
     )
 
     if (attributesSet) {

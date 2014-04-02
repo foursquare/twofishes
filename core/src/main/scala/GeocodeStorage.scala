@@ -74,7 +74,8 @@ case class GeocodeRecord(
   var attributes: Option[Array[Byte]] = None,
   extraRelations: List[Long] = Nil,
   var loc: GeoJsonPoint = NilPoint,
-  polyId: ObjectId = GeocodeRecord.dummyOid
+  polyId: ObjectId = GeocodeRecord.dummyOid,
+  ids: List[Long]
 ) extends Ordered[GeocodeRecord] {
   // gross that we overwrite this
   loc = GeoJsonPoint(lat, lng)
@@ -266,7 +267,7 @@ case class GeocodeRecord(
       .cc(cc)
       .geometry(geometryBuilder.result)
       .woeType(this.woeType)
-      .ids(featureIds.map(_.thriftFeatureId))
+      .ids(ids.flatMap(id => StoredFeatureId.fromLong(id)).map(_.thriftFeatureId))
       .id(featureIds.headOption.map(_.humanReadableString))
       .longId(featureIds.headOption.map(_.longId))
       .slug(slug)

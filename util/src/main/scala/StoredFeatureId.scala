@@ -9,12 +9,13 @@ case object GeonamesNamespace extends FeatureNamespace("geonameid",
   Option(System.getProperty("geonameidNamespace")).map(_.toInt).getOrElse(1).toByte)
 case object GeonamesZipNamespace extends FeatureNamespace("geonamezip", 2.toByte)
 case object AdHocNamespace extends FeatureNamespace("adhoc", 3.toByte)
+case object WoeIdNamespace extends FeatureNamespace("woeid", 4.toByte)
 
 object FeatureNamespace {
   // higher is better
-  val NamespaceOrdering = List(AdHocNamespace, GeonamesNamespace, MaponicsNamespace)
+  val NamespaceOrdering = List(WoeIdNamespace, AdHocNamespace, GeonamesNamespace, MaponicsNamespace)
 
-  val values = List(AdHocNamespace, GeonamesNamespace, MaponicsNamespace, GeonamesZipNamespace)
+  val values = List(WoeIdNamespace, AdHocNamespace, GeonamesNamespace, MaponicsNamespace, GeonamesZipNamespace)
 
   def fromId(id: Byte): FeatureNamespace = fromIdOpt(id).getOrElse(
     throw new RuntimeException("unrecognized feature namespace id '%d'".format(id))
