@@ -40,7 +40,7 @@ class FidMap(preload: Boolean) extends DurationUtils {
     } else {
       if (!fidMap.contains(fid)) {
         val longidOpt = MongoGeocodeDAO.primitiveProjection[Long](
-          MongoDBObject("ids" -> fid.longId), "_id")
+          MongoDBObject("_id" -> fid.longId), "_id")
         fidMap(fid) = longidOpt.flatMap(StoredFeatureId.fromLong _)
         if (longidOpt.isEmpty) {
           //println("missing fid: %s".format(fid))
