@@ -27,11 +27,22 @@ class ReverseGeocodeParseOrdering extends Ordering[Parse[Sorted]] {
         aServingFeature.feature.woeTypeOption.getOrElse(YahooWoeType.UNKNOWN))
       val bWoeTypeOrder = YahooWoeTypes.getOrdering(
         bServingFeature.feature.woeTypeOption.getOrElse(YahooWoeType.UNKNOWN))
-      if (aWoeTypeOrder != bWoeTypeOrder) {
-         aWoeTypeOrder - bWoeTypeOrder
+      val woeTypeOrderDiff = aWoeTypeOrder - bWoeTypeOrder
+      val distanceDiff = a.scoringFeatures.featureToRequestCenterDistance.toInt -
+        b.scoringFeatures.featureToRequestCenterDistance.toInt
+      val boostDiff = bServingFeature.scoringFeatures.boost - aServingFeature.scoringFeatures.boost
+      val coverageDiff = b.scoringFeatures.percentOfRequestCovered.toInt -
+        a.scoringFeatures.percentOfRequestCovered.toInt
+      
+      
+      if (woeTypeOrderDiff != 0) {
+        woeTypeOrderDiff
+      } else if (distanceDiff != 0) {
+        distanceDiff
+      } else if (boostDiff != 0) {
+        boostDiff
       } else {
-        bServingFeature.scoringFeatures.boost -
-          aServingFeature.scoringFeatures.boost
+        coverageDiff
       }
     }
 
@@ -200,16 +211,20 @@ class ReverseGeocoderHelperImpl(
 	      f <- servingFeaturesMap.get(fid)
       } yield {
         val parse = Parse[Sorted](List(FeatureMatch(0, 0, "", f)))
+        val scoringFeatures = InterpretationScoringFeatures.newBuilder
         if (responseIncludes(ResponseIncludes.REVGEO_COVERAGE) &&
             otherGeom.getNumPoints > 2) {
           polygonMap.get(fid).foreach(geom => {
             if (geom.getNumPoints > 2) {
               val overlapArea = computeIntersectionArea(geom, otherGeom)
-              parse.scoringFeatures.percentOfRequestCovered(overlapArea / otherGeom.getArea())
-              parse.scoringFeatures.percentOfFeatureCovered(overlapArea / geom.getArea())
+              scoringFeatures.percentOfRequestCovered(100.0 * overlapArea / otherGeom.getArea())
+              scoringFeatures.percentOfFeatureCovered(100.0 * overlapArea / geom.getArea())
             }
+            scoringFeatures.featureToRequestCenterDistance(
+              GeometryUtils.pointToShapeDistance(otherGeom.getCentroid(), geom))
           })
         }
+        parse.setScoringFeatures(scoringFeatures.result)
         parse
       }
 

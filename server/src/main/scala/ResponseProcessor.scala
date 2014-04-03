@@ -451,7 +451,7 @@ class ResponseProcessor(
         .what(what)
         .where(where)
         .feature(fixedFeature)
-        .scores(p.scoringFeatures.result)
+        .scores(p.scoringFeatures)
 
       if (req.debug > 0) {
         // interpBuilder.debugInfo(p.debugInfo.map(_.result))

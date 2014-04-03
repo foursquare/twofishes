@@ -31,8 +31,7 @@ trait Unsorted extends MaybeSorted
 
 // Parse = one particular interpretation of the query
 case class Parse[T <: MaybeSorted](
-  fmatches: Seq[FeatureMatch],
-  scoringFeatures: InterpretationScoringFeatures.Builder.AllUnspecified = InterpretationScoringFeatures.newBuilder
+  fmatches: Seq[FeatureMatch]
 ) extends Seq[FeatureMatch] {
   def apply(i: Int) = fmatches(i)
   def iterator = fmatches.iterator
@@ -40,6 +39,7 @@ case class Parse[T <: MaybeSorted](
 
   val debugLines = new ListBuffer[DebugScoreComponent]
   var finalScore = 0.0
+  var scoringFeatures = InterpretationScoringFeatures.createRecord
   var allLongIds: Seq[Long] = Nil
   lazy val extraLongIds: Seq[Long] = allLongIds.filterNot(_ =? featureId.longId)
 
@@ -48,6 +48,8 @@ case class Parse[T <: MaybeSorted](
   }
 
   def setFinalScore(score: Double) { finalScore = score }
+
+  def setScoringFeatures(scoringFeaturesIn: InterpretationScoringFeatures) { scoringFeatures = scoringFeaturesIn}
 
   override def toString: String = {
     val namesandids = this.map(f => {
@@ -62,8 +64,11 @@ case class Parse[T <: MaybeSorted](
 
   def tokenLength = fmatches.map(pp => pp.tokenEnd - pp.tokenStart).sum
 
-  def getSorted: Parse[Sorted] =
-    Parse[Sorted](fmatches.sorted(FeatureMatchOrdering), scoringFeatures)
+  def getSorted: Parse[Sorted] = {
+    val sortedParse = Parse[Sorted](fmatches.sorted(FeatureMatchOrdering))
+    sortedParse.setScoringFeatures(scoringFeatures)
+    sortedParse
+  }
 
   def addFeature(f: FeatureMatch) = Parse[Unsorted](fmatches ++ List(f))
 
