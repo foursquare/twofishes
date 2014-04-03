@@ -75,24 +75,31 @@ class PolygonLoader(
   def updateRecord(
     store: GeocodeStorageWriteService,
     defaultNamespace: FeatureNamespace,
-    k: String,
+    geoids: List[String],
     geom: Geometry
-  ) = {
-    StoredFeatureId.fromHumanReadableString(k, Some(defaultNamespace)).foreach(fid => {
+  ): Unit = {
+    if (geoids.isEmpty) { return } 
+
+    val polyId = new ObjectId()
+    val geomBytes = wkbWriter.write(geom)
+    PolygonIndexDAO.save(PolygonIndex(polyId, geomBytes))
+    parser.revGeoMaster ! CalculateCover(polyId, geomBytes)
+
+    for {
+      geoid <- geoids
+      fid = StoredFeatureId.fromHumanReadableString(geoid, Some(defaultNamespace))
+        .getOrElse(throw new Exception("failed to parse %s".format(geoid)))
+    } {
       try {
-        logger.debug("adding poly to %s".format(fid))
+        logger.debug("adding poly %s to %s %s".format(polyId, fid, fid.longId))
         recordsUpdated += 1
-        val polyId = new ObjectId()
-        val geomBytes = wkbWriter.write(geom)
-        PolygonIndexDAO.save(PolygonIndex(polyId, geomBytes))
         store.addPolygonToRecord(fid, polyId)
-        parser.revGeoMaster ! CalculateCover(polyId, geomBytes)
       } catch {
         case e: Exception => {
           throw new Exception("couldn't write poly to %s".format(fid), e)
         }
       }
-    })
+    }
   }
 
   def load(defaultNamespace: FeatureNamespace): Unit = {
@@ -405,16 +412,15 @@ logger.info("done reading in polys")
       if (index % 100 == 0) {
         println("processing feature %d".format(index))
       }
-      val geoid: List[String] = fparts.lift(0).flatMap(p => Helpers.TryO(p.toInt.toString))
+      val geoids: List[String] = fparts.lift(0).flatMap(p => Helpers.TryO(p.toInt.toString))
         .orElse(feature.propMap.get("geonameid")
         .orElse(feature.propMap.get("qs_gn_id"))
         .orElse(feature.propMap.get("gn_id"))
         .orElse(polygonMappingConfig.flatMap(config => maybeMatchFeature(config, feature, geom, outputMatchWriter)))
         .orElse(maybeMakeFeature(feature))
       ).toList.filterNot(_.isEmpty).flatMap(_.split(",")).map(_.replace(".0", ""))
-      geoid.foreach(id => {
-        updateRecord(store, defaultNamespace, id, geom)
-      })
+      
+      updateRecord(store, defaultNamespace, geoids, geom)
     }
     outputMatchWriter.foreach(_.close())
   }
@@ -438,7 +444,7 @@ logger.info("done reading in polys")
         val parts = l.split("\t")
         val geom = wktReader.read(parts(1)).buffer(0)
         if (geom.isValid) {
-          updateRecord(store, defaultNamespace, parts(0), geom)
+          updateRecord(store, defaultNamespace, List(parts(0)), geom)
         } else {
           logger.error("geom is not valid for %s".format(parts(0)))
         }
