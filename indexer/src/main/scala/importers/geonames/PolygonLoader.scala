@@ -290,7 +290,7 @@ logger.info("done reading in polys")
     config: PolygonMappingConfig,
     feature: FsqSimpleFeature,
     geometry: Geometry,
-    outputMatchWriter: PrintWriter
+    outputMatchWriter: Option[PrintWriter]
   ): Option[String] = Helpers.flatTryO {
     var candidatesSeen = 0
 
@@ -342,9 +342,9 @@ logger.info("done reading in polys")
       None
     } else {
       val r = Some(matchingFeatures.map(_.featureId.humanReadableString).mkString(","))
-      outputMatchWriter.write("%s\t%s\n".format(
+      outputMatchWriter.foreach(_.write("%s\t%s\n".format(
         feature.propMap.get(config.idField).getOrElse(throw new Exception("missing id"))
-      ))
+      )))
       r
     }
   }
@@ -393,7 +393,9 @@ logger.info("done reading in polys")
       polygonMappingConfig: Option[PolygonMappingConfig]
     ) {
     val fparts = features.file.getName().split("\\.")
-    lazy val outputMatchWriter = new PrintWriter(new File(features.file.getName() + ".match.tsv"))
+    lazy val outputMatchWriter = polygonMappingConfig.map(c =>
+      new PrintWriter(new File(features.file.getPath() + ".match.tsv"))
+    )
     for {
       (rawFeature, index) <- features.zipWithIndex
       feature = new FsqSimpleFeature(rawFeature)
@@ -413,7 +415,7 @@ logger.info("done reading in polys")
         updateRecord(store, defaultNamespace, id, geom)
       })
     }
-    outputMatchWriter.close()
+    outputMatchWriter.foreach(_.close())
   }
 
   def load(defaultNamespace: FeatureNamespace, f: File): Unit = {
@@ -423,7 +425,7 @@ logger.info("done reading in polys")
     val extension = fparts.lastOption.getOrElse("")
     val shapeFileExtensions = List("shx", "dbf", "prj", "xml", "cpg")
 
-    if (extension == "json" || extension == "geojson") {
+    if ((extension == "json" || extension == "geojson") && !f.getName().endsWith("mapping.json")) {
       processFeatureIterator(defaultNamespace, new GeoJsonIterator(f), getMappingForFile(f))
     } else if (extension == "shp") {
       processFeatureIterator(defaultNamespace, new ShapefileIterator(f), getMappingForFile(f))
