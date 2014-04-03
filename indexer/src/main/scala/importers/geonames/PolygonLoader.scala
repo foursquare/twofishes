@@ -341,11 +341,12 @@ logger.info("done reading in polys")
     if (matchingFeatures.isEmpty) {
       None
     } else {
-      val r = Some(matchingFeatures.map(_.featureId.humanReadableString).mkString(","))
+      val idStr = matchingFeatures.map(_.featureId.humanReadableString).mkString(",")
       outputMatchWriter.foreach(_.write("%s\t%s\n".format(
-        feature.propMap.get(config.idField).getOrElse(throw new Exception("missing id"))
+        feature.propMap.get(config.idField).getOrElse(throw new Exception("missing id")),
+        idStr
       )))
-      r
+      Some(idStr)
     }
   }
 
