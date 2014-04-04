@@ -16,6 +16,9 @@ import scalaj.collection.Implicits._
 class FeatureIndexer(override val basepath: String, override val fidMap: FidMap) extends Indexer {
   def canonicalizeParentId(fid: StoredFeatureId) = fidMap.get(fid)
 
+  val index = Indexes.FeatureIndex
+  override val outputs = Seq(index)
+
   def makeGeocodeRecordWithoutGeometry(g: GeocodeRecord, poly: Option[PolygonIndex]): GeocodeServingFeature = {
     val fullFeature = poly.map(p => g.copy(polygon = Some(p.polygon)))
       .getOrElse(g).toGeocodeServingFeature()
@@ -48,7 +51,7 @@ class FeatureIndexer(override val basepath: String, override val fidMap: FidMap)
   }
 
   def writeIndexImpl() {
-    val writer = buildMapFileWriter(Indexes.FeatureIndex, indexInterval = Some(2))
+    val writer = buildMapFileWriter(index, indexInterval = Some(2))
     var fidCount = 0
     val fidSize = MongoGeocodeDAO.collection.count()
     val fidCursor = MongoGeocodeDAO.find(MongoDBObject())

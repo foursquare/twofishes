@@ -13,6 +13,9 @@ import scalaj.collection.Implicits._
 import com.foursquare.twofishes.MongoGeocodeDAO
 
 class IdIndexer(override val basepath: String, override val fidMap: FidMap, slugEntryMap: SlugEntryMap) extends Indexer {
+  val index = Indexes.IdMappingIndex
+  override val outputs = Seq(index)
+
   def writeIndexImpl() {
     val slugEntries: List[(String, StoredFeatureId)] = for {
       (slug, entry) <- slugEntryMap.toList
@@ -31,7 +34,7 @@ class IdIndexer(override val basepath: String, override val fidMap: FidMap, slug
     //   (fid.humanReadableString, record.featureId)
     // }
 
-    val writer = buildMapFileWriter(Indexes.IdMappingIndex)
+    val writer = buildMapFileWriter(index)
 
     val sortedEntries = (slugEntries).sortWith((a, b) => lexicalSort(a._1, b._1)).foreach({case (k, v) => {
       writer.append(k, v)

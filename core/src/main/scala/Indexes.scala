@@ -8,6 +8,7 @@ import java.util.Arrays
 import org.apache.thrift.{TBase, TDeserializer, TFieldIdEnum, TSerializer}
 import org.apache.thrift.protocol.TCompactProtocol
 import org.bson.types.ObjectId
+import java.io.File
 
 sealed abstract class Serde[T] {
   def toBytes(t: T): Array[Byte]
@@ -116,7 +117,11 @@ object Serde {
   }
 }
 
-sealed abstract class Index[K, V](val filename: String, val keySerde: Serde[K], val valueSerde: Serde[V])
+sealed abstract class Index[K, V](val filename: String, val keySerde: Serde[K], val valueSerde: Serde[V]) {
+  def exists(basepath: String) = {
+    new File(basepath, filename).exists
+  }
+}
 
 object Indexes {
   case object GeometryIndex extends Index[StoredFeatureId, Geometry](

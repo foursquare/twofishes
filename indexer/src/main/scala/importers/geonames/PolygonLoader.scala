@@ -16,7 +16,7 @@ import com.rockymadden.stringmetric.transform._
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTReader}
 import com.weiglewilczek.slf4s.Logging
-import java.io.{File, PrintWriter}
+import java.io.{File, FileWriter, OutputStreamWriter, Writer}
 import org.bson.types.ObjectId
 import org.geotools.geojson.geom.GeometryJSON
 import org.json4s._
@@ -325,7 +325,7 @@ logger.info("done reading in polys")
     config: PolygonMappingConfig,
     feature: FsqSimpleFeature,
     geometry: Geometry,
-    outputMatchWriter: Option[PrintWriter]
+    outputMatchWriter: Option[Writer]
   ): List[StoredFeatureId] = {
     var candidatesSeen = 0
 
@@ -433,9 +433,10 @@ logger.info("done reading in polys")
       matchingTable: Map[String, Seq[StoredFeatureId]]
     ) {
     val fparts = features.file.getName().split("\\.")
-    lazy val outputMatchWriter = polygonMappingConfig.map(c =>
-      new PrintWriter(new File(features.file.getPath() + matchExtension))
-    )
+    lazy val outputMatchWriter = polygonMappingConfig.map(c => {
+      val filename = features.file.getPath() + matchExtension
+      new FileWriter(filename, true);
+    })
     for {
       (rawFeature, index) <- features.zipWithIndex
       feature = new FsqSimpleFeature(rawFeature)

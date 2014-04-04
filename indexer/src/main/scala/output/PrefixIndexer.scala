@@ -16,6 +16,7 @@ import scalaj.collection.Implicits._
 
 object PrefixIndexer {
   val MaxPrefixLength = 5
+  val index = Indexes.PrefixIndex
 }
 
 class PrefixIndexer(
@@ -23,6 +24,9 @@ class PrefixIndexer(
   override val fidMap: FidMap,
   prefixSet: HashSet[String]
 ) extends Indexer {
+  val index = PrefixIndexer.index
+  override val outputs = Seq(index)
+
   def hasFlag(record: NameIndex, flag: FeatureNameFlags) =
     (record.flags & flag.getValue) > 0
 
@@ -76,7 +80,7 @@ class PrefixIndexer(
       YahooWoeType.COUNTRY
     ).map(_.getValue)
 
-    val prefixWriter = buildMapFileWriter(Indexes.PrefixIndex,
+    val prefixWriter = buildMapFileWriter(index,
       Map(
         ("MAX_PREFIX_LENGTH", PrefixIndexer.MaxPrefixLength.toString)
       )

@@ -19,6 +19,9 @@ class NameIndexer(
   override val fidMap: FidMap, 
   outputPrefixIndex: Boolean
 ) extends Indexer {
+  val index = Indexes.NameIndex
+  override val outputs = Seq(index, PrefixIndexer.index)
+
   def writeIndexImpl() {
     var nameCount = 0
     val nameSize = NameIndexDAO.collection.count()
@@ -31,7 +34,7 @@ class NameIndexer(
     var lastName = ""
     var nameFids = new HashSet[StoredFeatureId]
 
-    val writer = buildHFileV1Writer(Indexes.NameIndex)
+    val writer = buildHFileV1Writer(index)
 
     def writeFidsForLastName() {
       writer.append(lastName, fidsToCanonicalFids(nameFids.toList))

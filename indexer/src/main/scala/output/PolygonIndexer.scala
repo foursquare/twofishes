@@ -15,17 +15,20 @@ import org.apache.hadoop.hbase.util.Bytes._
 import scalaj.collection.Implicits._
 
 class PolygonIndexer(override val basepath: String, override val fidMap: FidMap) extends Indexer {
+  val index = Indexes.GeometryIndex
+  override val outputs = Seq(index)
+
   def writeIndexImpl() {
     val hasPolyCursor =
       MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
         .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
     hasPolyCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
 
-    val writer = buildMapFileWriter(Indexes.GeometryIndex)
+    val writer = buildMapFileWriter(index)
 
     val wkbReader = new WKBReader()
 
-    var index = 0
+    var polygonIndex = 0
     // would be great to unify this with featuresIndex
     for {
       g <- hasPolyCursor.grouped(1000)
@@ -37,10 +40,10 @@ class PolygonIndexer(override val basepath: String, override val fidMap: FidMap)
       f <- group
       poly <- polyMap.get(f.polyId)
     } {
-      if (index % 1000 == 0) {
+      if (polygonIndex % 1000 == 0) {
         logger.info("outputted %d polys so far".format(index))
       }
-      index += 1
+      polygonIndex += 1
       writer.append(StoredFeatureId.fromLong(f._id).get, wkbReader.read(poly.polygon))
     }
     writer.close()

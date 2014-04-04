@@ -37,11 +37,19 @@ abstract class Indexer extends DurationUtils {
   def basepath: String
   def fidMap: FidMap
 
+  def outputs: Seq[Index[_, _]]
+
   def writeIndexImpl(): Unit
 
   def writeIndex() {
     val name = this.getClass.getName
     logger.info("starting indexing for %s".format(name))
+
+    if (outputs.forall(_.exists(basepath))) {
+      logger.info("had all indexes for %s, skipping this phase".format(name))
+      return
+    }
+
     logDuration(name) { writeIndexImpl() }
     logger.info("done indexing for %s".format(name))
   }

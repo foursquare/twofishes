@@ -20,8 +20,11 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
   val maxCells = 10000
   val levelMod = 2
 
+  val index = Indexes.S2Index
+  override val outputs = Seq(index)
+
   lazy val writer = buildMapFileWriter(
-    Indexes.S2Index,
+    index,
     Map(
       "minS2Level" -> minS2Level.toString,
       "maxS2Level" -> maxS2Level.toString,
