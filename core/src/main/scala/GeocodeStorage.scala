@@ -13,7 +13,9 @@ import org.bson.types.ObjectId
 import scala.collection.mutable.HashMap
 import scalaj.collection.Implicits._
 
-class SlugEntryMap extends HashMap[String, SlugEntry]
+object SlugEntryMap {
+  type SlugEntryMap = HashMap[String, SlugEntry]
+}
 
 case class SlugEntry(
   id: String,

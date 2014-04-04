@@ -20,7 +20,8 @@ class NameIndexer(
   outputPrefixIndex: Boolean
 ) extends Indexer {
   val index = Indexes.NameIndex
-  override val outputs = Seq(index, PrefixIndexer.index)
+  override val outputs = Seq(index) ++
+    (if (outputPrefixIndex) { Seq(PrefixIndexer.index) } else { Seq.empty })
 
   def writeIndexImpl() {
     var nameCount = 0

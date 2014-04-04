@@ -12,7 +12,11 @@ import org.apache.hadoop.hbase.util.Bytes._
 import scalaj.collection.Implicits._
 import com.foursquare.twofishes.MongoGeocodeDAO
 
-class IdIndexer(override val basepath: String, override val fidMap: FidMap, slugEntryMap: SlugEntryMap) extends Indexer {
+class IdIndexer(
+  override val basepath: String,
+  override val fidMap: FidMap,
+  slugEntryMap: SlugEntryMap.SlugEntryMap
+) extends Indexer {
   val index = Indexes.IdMappingIndex
   override val outputs = Seq(index)
 
