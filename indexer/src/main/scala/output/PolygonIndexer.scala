@@ -41,7 +41,7 @@ class PolygonIndexer(override val basepath: String, override val fidMap: FidMap)
       poly <- polyMap.get(f.polyId)
     } {
       if (polygonIndex % 1000 == 0) {
-        logger.info("outputted %d polys so far".format(index))
+        logger.info("outputted %d polys so far".format(polygonIndex))
       }
       polygonIndex += 1
       writer.append(StoredFeatureId.fromLong(f._id).get, wkbReader.read(poly.polygon))

@@ -21,7 +21,7 @@ class OutputIndexes(
   slugEntryMap: SlugEntryMap.SlugEntryMap = HashMap.empty,
   outputRevgeo: Boolean = true
 ) extends DurationUtils {
-  def buildIndexes(revgeoLatch: CountDownLatch) {
+  def buildIndexes(revgeoLatch: CountDownLatch = new CountDownLatch(0)) {
     val fidMap = new FidMap(preload = false)
 
     // This one wastes a lot of ram, so do it on it's own
