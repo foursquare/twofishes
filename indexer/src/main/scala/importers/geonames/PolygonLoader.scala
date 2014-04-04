@@ -495,6 +495,7 @@ logger.info("done reading in polys")
         getMappingForFile(f),
         getMatchingForFile(f, defaultNamespace)
       )
+      logger.info("%d records updated by %s".format(recordsUpdated - previousRecordsUpdated, f))
     } else if (extension == "shp") {
       processFeatureIterator(
         defaultNamespace,
@@ -502,10 +503,10 @@ logger.info("done reading in polys")
         getMappingForFile(f),
         getMatchingForFile(f, defaultNamespace)
       )
+      logger.info("%d records updated by %s".format(recordsUpdated - previousRecordsUpdated, f))
     } else if (shapeFileExtensions.has(extension)) {
       // do nothing, shapefile aux file
       Nil
     }
-    logger.info("%d records updated by %s".format(recordsUpdated - previousRecordsUpdated, f))
   }
 }
