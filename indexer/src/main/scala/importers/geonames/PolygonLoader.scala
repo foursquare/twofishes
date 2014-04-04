@@ -48,9 +48,12 @@ class PolygonLoader(
   val wktReader = new WKTReader()
   val wkbWriter = new WKBWriter()
 
+  val mappingExtension = ".mapping.json"
+  val matchExtension = ".match.tsv"
+
   def getMappingForFile(f: File): Option[PolygonMappingConfig] = {
     implicit val formats = DefaultFormats
-    val file = new File(f.getPath() + ".mapping.json")
+    val file = new File(f.getPath() + mappingExtension)
     if (file.exists()) {
       val json = scala.io.Source.fromFile(file).getLines.mkString("")
       Some(
@@ -58,6 +61,33 @@ class PolygonLoader(
       )
     } else {
       None
+    }
+  }
+
+  def getMatchingForFile(
+    f: File,
+    defaultNamespace: FeatureNamespace
+  ): Map[String, Seq[StoredFeatureId]] = {
+    val file = new File(f.getPath() + matchExtension)
+    if (file.exists()) {
+      val lines = scala.io.Source.fromFile(file).getLines
+      lines.map(line => {
+        val parts = line.split("\t")
+        if (parts.size != 2) {
+          throw new Exception("broken line in %s:\n%s".format(file.getPath(), line))
+        }
+        (
+          parts(0) -> parts(1).split(",").map(geoid => {
+            StoredFeatureId.fromHumanReadableString(geoid, Some(defaultNamespace)).getOrElse(
+              throw new Exception("broken geoid %s in file %s on line: %s".format(
+                geoid, file.getPath(), line
+              ))
+            )
+          }).toList
+        )
+      }).toMap
+    } else {
+      Map.empty
     }
   }
 
@@ -75,10 +105,10 @@ class PolygonLoader(
   def updateRecord(
     store: GeocodeStorageWriteService,
     defaultNamespace: FeatureNamespace,
-    geoids: List[String],
+    geoids: List[StoredFeatureId],
     geom: Geometry
   ): Unit = {
-    if (geoids.isEmpty) { return } 
+    if (geoids.isEmpty) { return }
 
     val polyId = new ObjectId()
     val geomBytes = wkbWriter.write(geom)
@@ -87,16 +117,14 @@ class PolygonLoader(
 
     for {
       geoid <- geoids
-      fid = StoredFeatureId.fromHumanReadableString(geoid, Some(defaultNamespace))
-        .getOrElse(throw new Exception("failed to parse %s".format(geoid)))
     } {
       try {
-        logger.debug("adding poly %s to %s %s".format(polyId, fid, fid.longId))
+        logger.debug("adding poly %s to %s %s".format(polyId, geoid, geoid.longId))
         recordsUpdated += 1
-        store.addPolygonToRecord(fid, polyId)
+        store.addPolygonToRecord(geoid, polyId)
       } catch {
         case e: Exception => {
-          throw new Exception("couldn't write poly to %s".format(fid), e)
+          throw new Exception("couldn't write poly to %s".format(geoid), e)
         }
       }
     }
@@ -298,12 +326,12 @@ logger.info("done reading in polys")
     feature: FsqSimpleFeature,
     geometry: Geometry,
     outputMatchWriter: Option[PrintWriter]
-  ): Option[String] = Helpers.flatTryO {
+  ): List[StoredFeatureId] = {
     var candidatesSeen = 0
 
     if (!hasName(config, feature)) {
       logger.info("no names on " + debugFeature(config, feature) + " - " + buildQuery(geometry, config.getAllWoeTypes))
-      return None
+      return Nil
     }
 
     def matchAtWoeType(woeTypes: List[YahooWoeType], withLogging: Boolean = false): List[GeocodeRecord] = {
@@ -342,22 +370,25 @@ logger.info("done reading in polys")
         ))
       }
 
+      println("acc: " + acceptableCandidates)
       acceptableCandidates
     }
 
+    println("match: " + matchingFeatures)
+
     if (matchingFeatures.isEmpty) {
-      None
+      Nil
     } else {
       val idStr = matchingFeatures.map(_.featureId.humanReadableString).mkString(",")
       outputMatchWriter.foreach(_.write("%s\t%s\n".format(
         feature.propMap.get(config.idField).getOrElse(throw new Exception("missing id")),
         idStr
       )))
-      Some(idStr)
+      matchingFeatures.map(_.featureId).toList
     }
   }
 
-  def maybeMakeFeature(feature: FsqSimpleFeature): Option[String] = {
+  def maybeMakeFeature(feature: FsqSimpleFeature): Option[StoredFeatureId] = {
     (for {
       adminCode1 <- feature.propMap.get("adminCode1")
       countryCode <- feature.propMap.get("countryCode")
@@ -388,7 +419,7 @@ logger.info("done reading in polys")
       val gnfeature = new GeonamesFeature(attribMap ++ supplementalAttrubs)
       println("making adhoc feature: " + id + " " + id.longId)
       parser.insertGeocodeRecords(List(parser.parseFeature(gnfeature)))
-      id.humanReadableString
+      id
     }).orElse({
       logger.error("no id on %s".format(debugFeature(feature)))
       None
@@ -398,11 +429,12 @@ logger.info("done reading in polys")
   def processFeatureIterator(
       defaultNamespace: FeatureNamespace,
       features: ShapeIterator,
-      polygonMappingConfig: Option[PolygonMappingConfig]
+      polygonMappingConfig: Option[PolygonMappingConfig],
+      matchingTable: Map[String, Seq[StoredFeatureId]]
     ) {
     val fparts = features.file.getName().split("\\.")
     lazy val outputMatchWriter = polygonMappingConfig.map(c =>
-      new PrintWriter(new File(features.file.getPath() + ".match.tsv"))
+      new PrintWriter(new File(features.file.getPath() + matchExtension))
     )
     for {
       (rawFeature, index) <- features.zipWithIndex
@@ -412,15 +444,39 @@ logger.info("done reading in polys")
       if (index % 100 == 0) {
         println("processing feature %d".format(index))
       }
-      val geoids: List[String] = fparts.lift(0).flatMap(p => Helpers.TryO(p.toInt.toString))
-        .orElse(feature.propMap.get("geonameid")
-        .orElse(feature.propMap.get("qs_gn_id"))
-        .orElse(feature.propMap.get("gn_id"))
-        .orElse(polygonMappingConfig.flatMap(config => maybeMatchFeature(config, feature, geom, outputMatchWriter)))
-        .orElse(maybeMakeFeature(feature))
-      ).toList.filterNot(_.isEmpty).flatMap(_.split(",")).map(_.replace(".0", ""))
-      
-      updateRecord(store, defaultNamespace, geoids, geom)
+
+      val fidsFromFileName = fparts.lift(0).flatMap(p => Helpers.TryO(p.toInt.toString))
+        .flatMap(i => StoredFeatureId.fromHumanReadableString(i, Some(defaultNamespace))).toList
+
+      val geoidColumns = List("geonameid", "qs_gn_id", "gn_id")
+      val geoidsFromFile = geoidColumns.flatMap(feature.propMap.get)
+      val fidsFromFile = geoidsFromFile
+        .filterNot(_.isEmpty).flatMap(_.split(",")).map(_.replace(".0", ""))
+        .flatMap(i => StoredFeatureId.fromHumanReadableString(i, Some(defaultNamespace)))
+
+      val fids: List[StoredFeatureId] = if (fidsFromFileName.nonEmpty) {
+        fidsFromFileName
+      } else if (fidsFromFile.nonEmpty) {
+        fidsFromFile
+      } else {
+        val matches: List[StoredFeatureId] = polygonMappingConfig.toList.flatMap(config => {
+          val idOpt: Option[String] = feature.propMap.get(config.idField)
+          val priorMatches: List[StoredFeatureId] = idOpt.toList.flatMap(id => { matchingTable.get(id).getOrElse(Nil) })
+          if (priorMatches.nonEmpty) {
+            priorMatches
+          } else {
+            maybeMatchFeature(config, feature, geom, outputMatchWriter).toList
+          }
+        })
+
+        if (matches.nonEmpty) {
+          matches
+        } else {
+          maybeMakeFeature(feature).toList
+        }
+      }
+
+      updateRecord(store, defaultNamespace, fids, geom)
     }
     outputMatchWriter.foreach(_.close())
   }
@@ -432,10 +488,20 @@ logger.info("done reading in polys")
     val extension = fparts.lastOption.getOrElse("")
     val shapeFileExtensions = List("shx", "dbf", "prj", "xml", "cpg")
 
-    if ((extension == "json" || extension == "geojson") && !f.getName().endsWith("mapping.json")) {
-      processFeatureIterator(defaultNamespace, new GeoJsonIterator(f), getMappingForFile(f))
+    if ((extension == "json" || extension == "geojson") && !f.getName().endsWith(mappingExtension)) {
+      processFeatureIterator(
+        defaultNamespace,
+        new GeoJsonIterator(f),
+        getMappingForFile(f),
+        getMatchingForFile(f, defaultNamespace)
+      )
     } else if (extension == "shp") {
-      processFeatureIterator(defaultNamespace, new ShapefileIterator(f), getMappingForFile(f))
+      processFeatureIterator(
+        defaultNamespace,
+        new ShapefileIterator(f),
+        getMappingForFile(f),
+        getMatchingForFile(f, defaultNamespace)
+      )
     } else if (shapeFileExtensions.has(extension)) {
       // do nothing, shapefile aux file
       Nil
@@ -444,7 +510,9 @@ logger.info("done reading in polys")
         val parts = l.split("\t")
         val geom = wktReader.read(parts(1)).buffer(0)
         if (geom.isValid) {
-          updateRecord(store, defaultNamespace, List(parts(0)), geom)
+          StoredFeatureId.fromHumanReadableString(parts(0), Some(defaultNamespace)).foreach(fid => {
+            updateRecord(store, defaultNamespace, List(fid), geom)
+          })
         } else {
           logger.error("geom is not valid for %s".format(parts(0)))
         }
