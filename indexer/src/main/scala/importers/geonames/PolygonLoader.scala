@@ -10,6 +10,7 @@ import com.foursquare.twofishes.util.Lists.Implicits._
 import com.ibm.icu.text.Transliterator
 import com.mongodb.Bytes
 import com.mongodb.casbah.Imports._
+import com.mongodb.MongoException
 import com.rockymadden.stringmetric.phonetic.MetaphoneMetric
 import com.rockymadden.stringmetric.similarity.JaroWinklerMetric
 import com.rockymadden.stringmetric.transform._
@@ -335,13 +336,18 @@ logger.info("done reading in polys")
     }
 
     def matchAtWoeType(woeTypes: List[YahooWoeType], withLogging: Boolean = false): List[GeocodeRecord] = {
-      val candidates = findMatchCandidates(geometry, woeTypes)
+      try {
+        val candidates = findMatchCandidates(geometry, woeTypes)
 
-      candidates.filter(candidate => {
-        candidatesSeen += 1
-        // println(debugFeature(candidate))
-        isAcceptableMatch(feature, config, candidate, withLogging)
-      }).toList
+        candidates.filter(candidate => {
+          candidatesSeen += 1
+          // println(debugFeature(candidate))
+          isAcceptableMatch(feature, config, candidate, withLogging)
+        }).toList
+      } catch {
+        // sometimes our bounding box wraps around the world and mongo throws an error
+        case e: MongoException => Nil
+      }
     }
 
     val matchingFeatures: Seq[GeocodeRecord] = {
@@ -370,11 +376,9 @@ logger.info("done reading in polys")
         ))
       }
 
-      println("acc: " + acceptableCandidates)
       acceptableCandidates
     }
 
-    println("match: " + matchingFeatures)
 
     if (matchingFeatures.isEmpty) {
       Nil
@@ -417,7 +421,7 @@ logger.info("done reading in polys")
 
       PolygonLoader.adHocIdCounter += 1
       val gnfeature = new GeonamesFeature(attribMap ++ supplementalAttrubs)
-      println("making adhoc feature: " + id + " " + id.longId)
+      logger.debug("making adhoc feature: " + id + " " + id.longId)
       parser.insertGeocodeRecords(List(parser.parseFeature(gnfeature)))
       id
     }).orElse({
@@ -443,7 +447,7 @@ logger.info("done reading in polys")
       geom <- feature.geometry
     } {
       if (index % 100 == 0) {
-        println("processing feature %d".format(index))
+        logger.info("processing feature %d".format(index))
       }
 
       val fidsFromFileName = fparts.lift(0).flatMap(p => Helpers.TryO(p.toInt.toString))
