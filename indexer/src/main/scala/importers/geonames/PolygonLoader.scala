@@ -505,18 +505,6 @@ logger.info("done reading in polys")
     } else if (shapeFileExtensions.has(extension)) {
       // do nothing, shapefile aux file
       Nil
-    } else {
-      scala.io.Source.fromFile(f).getLines.filterNot(_.startsWith("#")).toList.foreach(l => {
-        val parts = l.split("\t")
-        val geom = wktReader.read(parts(1)).buffer(0)
-        if (geom.isValid) {
-          StoredFeatureId.fromHumanReadableString(parts(0), Some(defaultNamespace)).foreach(fid => {
-            updateRecord(store, defaultNamespace, List(fid), geom)
-          })
-        } else {
-          logger.error("geom is not valid for %s".format(parts(0)))
-        }
-      })
     }
     logger.info("%d records updated by %s".format(recordsUpdated - previousRecordsUpdated, f))
   }
