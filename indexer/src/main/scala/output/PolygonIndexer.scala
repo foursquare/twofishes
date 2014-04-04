@@ -19,6 +19,9 @@ class PolygonIndexer(override val basepath: String, override val fidMap: FidMap)
   override val outputs = Seq(index)
 
   def writeIndexImpl() {
+    val polygonSize = PolygonIndexDAO.collection.count()
+    val usedPolygonSize = MongoGeocodeDAO.count(MongoDBObject("hasPoly" -> true))
+
     val hasPolyCursor =
       MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
         .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
@@ -28,22 +31,24 @@ class PolygonIndexer(override val basepath: String, override val fidMap: FidMap)
 
     val wkbReader = new WKBReader()
 
-    var polygonIndex = 0
+    var numUsedPolygon = 0
+    val groupSize = 1000
     // would be great to unify this with featuresIndex
     for {
-      g <- hasPolyCursor.grouped(1000)
+      (g, groupIndex) <- hasPolyCursor.grouped(groupSize).zipWithIndex
       group = g.toList
       toFindPolys: Map[Long, ObjectId] = group.filter(f => f.hasPoly).map(r => (r._id, r.polyId)).toMap
       polyMap: Map[ObjectId, PolygonIndex] = PolygonIndexDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> toFindPolys.values.toList)))
         .toList
         .groupBy(_._id).map({case (k, v) => (k, v(0))})
-      f <- group
+      (f, polygonIndex) <- group.zipWithIndex
       poly <- polyMap.get(f.polyId)
     } {
-      if (polygonIndex % 1000 == 0) {
-        logger.info("outputted %d polys so far".format(polygonIndex))
+      if (polygonIndex == 0) {
+        logger.info("outputted %d of %d used polys, %d of %d total polys seen".format(
+          numUsedPolygon, usedPolygonSize, polygonSize, groupIndex*groupSize))
       }
-      polygonIndex += 1
+      numUsedPolygon += 1
       writer.append(StoredFeatureId.fromLong(f._id).get, wkbReader.read(poly.polygon))
     }
     writer.close()
