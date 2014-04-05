@@ -13,7 +13,7 @@ import scalaj.collection.Implicits._
 
 class SlugIndexer {
   val idToSlugMap = new HashMap[String, String]
-  val slugEntryMap = new SlugEntryMap
+  val slugEntryMap = new SlugEntryMap.SlugEntryMap
   var missingSlugList = new HashSet[String]
 
   def getBestSlug(id: StoredFeatureId): Option[String] = {

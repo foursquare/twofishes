@@ -2,13 +2,35 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.util.StoredFeatureId
+import com.mongodb.Bytes
 import com.mongodb.casbah.Imports._
 import com.mongodb.casbah.MongoConnection
-import com.mongodb.Bytes
 import com.novus.salat._
 import com.novus.salat.annotations._
 import com.novus.salat.dao._
 import com.novus.salat.global._
+
+trait GeocodeStorageWriteService {
+  def insert(record: GeocodeRecord): Unit
+  def insert(record: List[GeocodeRecord]): Unit
+  def setRecordNames(id: StoredFeatureId, names: List[DisplayName])
+  def addBoundingBoxToRecord(bbox: BoundingBox, id: StoredFeatureId)
+  def addNameToRecord(name: DisplayName, id: StoredFeatureId)
+  def addNameIndex(name: NameIndex)
+  def addNameIndexes(names: List[NameIndex])
+  def addPolygonToRecord(id: StoredFeatureId, polyId: ObjectId)
+  def addSlugToRecord(id: StoredFeatureId, slug: String)
+  def getById(id: StoredFeatureId): Iterator[GeocodeRecord]
+}
+
+object MongoGeocodeDAO extends SalatDAO[GeocodeRecord, ObjectId](
+  collection = MongoConnection()("geocoder")("features")) {
+  def makeIndexes() {
+    collection.ensureIndex(DBObject("hasPoly" -> -1))
+    collection.ensureIndex(DBObject("loc" -> "2dsphere", "_woeType" -> -1))
+
+  }
+}
 
 case class NameIndex(
   name: String,
@@ -24,34 +46,40 @@ case class NameIndex(
     throw new RuntimeException("can't convert %d to a feature id".format(fid)))
 }
 
+object NameIndexDAO extends SalatDAO[NameIndex, String](
+  collection = MongoConnection()("geocoder")("name_index")) {
+  def makeIndexes() {
+    collection.ensureIndex(DBObject("name" -> -1, "pop" -> -1))
+  }
+}
+
 case class PolygonIndex(
-  @Key("_id") _id: Long,
+  @Key("_id") _id: ObjectId,
   polygon: Array[Byte]
 )
 
-trait GeocodeStorageWriteService {
-  def insert(record: GeocodeRecord): Unit
-  def setRecordNames(id: StoredFeatureId, names: List[DisplayName])
-  def addBoundingBoxToRecord(bbox: BoundingBox, id: StoredFeatureId)
-  def addNameToRecord(name: DisplayName, id: StoredFeatureId)
-  def addNameIndex(name: NameIndex)
-  def addPolygonToRecord(id: StoredFeatureId, wkbGeometry: Array[Byte])
-  def addSlugToRecord(id: StoredFeatureId, slug: String)
-  def getById(id: StoredFeatureId): Iterator[GeocodeRecord]
+object PolygonIndexDAO extends SalatDAO[PolygonIndex, String](
+  collection = MongoConnection()("geocoder")("polygon_index")) {
+  def makeIndexes() {}
 }
 
-object MongoGeocodeDAO extends SalatDAO[GeocodeRecord, ObjectId](
-  collection = MongoConnection()("geocoder")("features"))
+case class RevGeoIndex(
+  cellid: Long,
+  polyId: ObjectId,
+  full: Boolean,
+  geom: Option[Array[Byte]]
+)
 
-object NameIndexDAO extends SalatDAO[NameIndex, String](
-  collection = MongoConnection()("geocoder")("name_index"))
-
-object PolygonIndexDAO extends SalatDAO[PolygonIndex, String](
-  collection = MongoConnection()("geocoder")("polygon_index"))
+object RevGeoIndexDAO extends SalatDAO[RevGeoIndex, String](
+  collection = MongoConnection()("geocoder")("revgeo_index")) {
+  def makeIndexes() {
+    collection.ensureIndex(DBObject("cellid" -> -1))
+  }
+}
 
 class MongoGeocodeStorageService extends GeocodeStorageWriteService {
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = {
-    val geocodeCursor = MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.longId))))
+    val geocodeCursor = MongoGeocodeDAO.find(MongoDBObject("id" -> id.longId))
     geocodeCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
     geocodeCursor
   }
@@ -60,14 +88,18 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
     MongoGeocodeDAO.insert(record)
   }
 
+  def insert(records: List[GeocodeRecord]) {
+    MongoGeocodeDAO.insert(records)
+  }
+
   def addBoundingBoxToRecord(bbox: BoundingBox, id: StoredFeatureId) {
-    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.longId))),
+    MongoGeocodeDAO.update(MongoDBObject("_id" -> id.longId),
       MongoDBObject("$set" -> MongoDBObject("boundingbox" -> grater[BoundingBox].asDBObject(bbox))),
       false, false)
   }
 
   def addNameToRecord(name: DisplayName, id: StoredFeatureId) {
-    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.longId))),
+    MongoGeocodeDAO.update(MongoDBObject("_id" -> id.longId),
       MongoDBObject("$addToSet" -> MongoDBObject("displayNames" -> grater[DisplayName].asDBObject(name))),
       false, false)
   }
@@ -76,29 +108,29 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
     NameIndexDAO.insert(name)
   }
 
-  def addPolygonToRecord(id: StoredFeatureId, wkbGeometry: Array[Byte]) {
-    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.longId))),
+  def addNameIndexes(names: List[NameIndex]) {
+    NameIndexDAO.insert(names)
+  }
+
+  def addPolygonToRecord(id: StoredFeatureId, polyId: ObjectId) {
+    MongoGeocodeDAO.update(MongoDBObject("_id" -> id.longId),
       MongoDBObject("$set" ->
         MongoDBObject(
-          "hasPoly" -> true
+          "hasPoly" -> true,
+          "polyId" -> polyId
         )
       ),
       false, false)
-
-    // apparently insert doesn't overwrite??
-    PolygonIndexDAO.save(
-      PolygonIndex(id.longId, wkbGeometry)
-    )
   }
 
   def addSlugToRecord(id: StoredFeatureId, slug: String) {
-    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.longId))),
+    MongoGeocodeDAO.update(MongoDBObject("_id" -> id.longId),
       MongoDBObject("$set" -> MongoDBObject("slug" -> slug)),
       false, false)
   }
 
   def setRecordNames(id: StoredFeatureId, names: List[DisplayName]) {
-    MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(id.longId))),
+    MongoGeocodeDAO.update(MongoDBObject("_id" -> id.longId),
       MongoDBObject("$set" -> MongoDBObject(
         "displayNames" -> names.map(n => grater[DisplayName].asDBObject(n)))),
       false, false)

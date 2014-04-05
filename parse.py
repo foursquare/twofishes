@@ -6,6 +6,7 @@ import os.path
 import socket
 import sys
 from optparse import OptionParser
+import subprocess
 
 usage = "usage: %prog [options] output_directory"
 parser = OptionParser(usage = usage)
@@ -22,9 +23,19 @@ parser.add_option("-r", "--output_revgeo_index", dest="output_revgeo_index",  ac
 parser.add_option("-n", "--dry_run", dest="dry_run",  action="store_true", default=False)
 parser.add_option("--reload", dest="reload_data",  action="store_true", default=True, help="reload data into mongo")
 parser.add_option("--noreload", dest="reload_data",  action="store_false", help="don't reload data into mongo")
-
+parser.add_option("--yes-i-am-sure", dest="yes_i_am_sure",  action="store_true", default=False, help="skip asking about reloading")
+parser.add_option("-g", "--geonamesonly", dest="geonamesonly", action="store_true",  default=False,
+  help="geonames is the canonical gazetteer and gets id namespace 0")
 
 (options, args) = parser.parse_args()
+
+mongo_version_str = subprocess.Popen('mongod --version', stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).stdout.readline().split(' v')[-1]
+mongo_version = mongo_version_str.split('.')
+if mongo_version[0] < 2 or mongo_version[1] < 4:
+  print 'need at least mongo 2.4, you have: %s' % mongo_version_str
+  sys.exit(1)
+
+
 
 basepath = ''
 if len(args) != 0:
@@ -57,16 +68,18 @@ passBoolOpt('output_revgeo_index', options.output_revgeo_index)
 passBoolOpt('output_prefix_index', options.output_prefix_index)
 passBoolOpt('reload_data', options.reload_data)
 
-if options.reload_data:
+jvm_args = []
+if options.geonamesonly:
+  jvm_args.append("-DgeonameidNamespace=0")
+
+if options.reload_data and not options.yes_i_am_sure:
   if raw_input('Are you suuuuuure you want to drop your mongo data? Type "yes" to continue: ') != 'yes':
     print "Bailing."
     print
     print "re-run with --noreload if you want to keep your mongo data around instead of rebuilding it"
     sys.exit(1)
 
-  os.system("./init-database.sh")
-
-cmd = './sbt "indexer/run-main com.foursquare.twofishes.importers.geonames.GeonamesParser %s --hfile_basepath %s %s"' % (cmd_opts, basepath, ' '.join(args))
+cmd = './sbt %s "indexer/run-main com.foursquare.twofishes.importers.geonames.GeonamesParser %s --hfile_basepath %s %s"' % (' '.join(jvm_args), cmd_opts, basepath, ' '.join(args))
 print(cmd)
 
 version_file = open(os.path.join(basepath, 'index-gen-info-%s' % now_str), 'w')

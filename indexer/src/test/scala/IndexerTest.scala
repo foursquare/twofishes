@@ -3,7 +3,7 @@ package com.foursquare.twofishes
 
 import collection.JavaConverters._
 import com.foursquare.twofishes.importers.geonames._
-import com.foursquare.twofishes.util.{GeonamesNamespace, GeonamesId, StoredFeatureId}
+import com.foursquare.twofishes.util.{GeonamesId, GeonamesNamespace, StoredFeatureId}
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTReader, WKTWriter}
 import org.bson.types.ObjectId
@@ -35,7 +35,7 @@ class MockGeocodeStorageWriteService extends GeocodeStorageWriteService {
     setRecordNames(id, name :: getOrCreateEmpty(id).displayNames)
   }
 
-  def addPolygonToRecord(id: StoredFeatureId, wkbGeometry: Array[Byte]) {}
+  def addPolygonToRecord(id: StoredFeatureId, polyId: ObjectId) {}
   def addBoundingBoxToRecord(id: StoredFeatureId, bbox: BoundingBox) {}
   def addSlugToRecord(id: StoredFeatureId, slug: String) {}
 

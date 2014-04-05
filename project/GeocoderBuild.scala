@@ -1,9 +1,9 @@
 import com.foursquare.spindle.codegen.plugin.ThriftCodegenPlugin.thriftSettings
-import sbt._
-import sbt.Keys._
-import sbtassembly.Plugin._
-import sbtassembly.Plugin.AssemblyKeys._
 import net.virtualvoid.sbt.graph.Plugin.graphSettings
+import sbt.Keys._
+import sbt._
+import sbtassembly.Plugin.AssemblyKeys._
+import sbtassembly.Plugin._
 
 object GeocoderBuild extends Build {
   lazy val buildSettings = Seq(
@@ -42,6 +42,7 @@ object GeocoderBuild extends Build {
     resolvers += "Java.net Maven 2 Repo" at "http://download.java.net/maven/2",
     resolvers += "apache" at "http://repo2.maven.org/maven2/org/apache/hbase/hbase/",
     resolvers += "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos/",
+    resolvers += "codahale" at "http://repo.codahale.com",
     resolvers += "springsource" at "http://repo.springsource.org/libs-release-remote",
     resolvers ++= Seq("snapshots" at "http://oss.sonatype.org/content/repositories/snapshots",
                       "releases"  at "http://oss.sonatype.org/content/repositories/releases"),
@@ -171,31 +172,42 @@ object GeocoderBuild extends Build {
 
   lazy val indexer = Project(id = "indexer",
       base = file("indexer"),
-      settings = defaultSettings ++ assemblySettings ++ scoptSettings ++ specsSettings ++ Seq(
+      settings = defaultSettings ++ assemblySettings ++ scoptSettings ++ specsSettings ++ 
+        net.virtualvoid.sbt.graph.Plugin.graphSettings ++ Seq(
         baseDirectory in run := file("."),
         mainClass in assembly := Some("com.foursquare.twofishes.importers.geonames.GeonamesParser"),
         initialCommands := """
         import com.foursquare.twofishes._
         import com.foursquare.twofishes.importers.geonames._
         import com.foursquare.twofishes.util.Helpers._
-        import java.io.File
-        import com.vividsolutions.jts.io._
-
+        import com.foursquare.twofishes.util._
+        import com.foursquare.twofishes.output._
         import com.mongodb.casbah.Imports._
         import com.novus.salat._
         import com.novus.salat.annotations._
         import com.novus.salat.dao._
         import com.novus.salat.global._
+        import com.vividsolutions.jts.io._
+        import java.io.File
 
         val store = new MongoGeocodeStorageService()
         val slugIndexer = new SlugIndexer()
-        val parser = new GeonamesParser(store, slugIndexer, Map.empty)
+        GeonamesParser.config = GeonamesImporterConfigParser.parse(
+          Array("--hfile_basepath", ".", "--output_revgeo_index", "true")
+        )
+        val parser = new GeonamesParser(store, slugIndexer)
+
         GeonamesParser.parseAdminInfoFile("data/downloaded/adminCodes.txt")
+        val polygonLoader = new PolygonLoader(parser, store)
         """,
 
         publishArtifact := false,
         libraryDependencies ++= Seq(
-          "com.novus" %% "salat" % "1.9.2"
+          "com.novus" %% "salat" % "1.9.6",
+          "com.rockymadden.stringmetric" %% "stringmetric-core" % "0.27.3",
+          "org.json4s" %% "json4s-native" % "3.2.8",
+          "org.json4s" %% "json4s-jackson" % "3.2.8",
+          "com.typesafe.akka" %% "akka-actor" % "2.3.1"
         )
       )
   ) dependsOn(core, util)
@@ -214,7 +226,8 @@ object GeocoderBuild extends Build {
           "org.scalaj" %% "scalaj-collection" % "1.5",
           "org.mongodb" % "mongo-java-driver" % "2.9.3",
           "com.weiglewilczek.slf4s" % "slf4s_2.9.1" % "1.0.7",
-          "ch.qos.logback" % "logback-classic" % "1.0.9"
+          "ch.qos.logback" % "logback-classic" % "1.0.9",
+          "com.ibm.icu" % "icu4j" % "52.1"
         ),
         ivyXML := (
           <dependencies>

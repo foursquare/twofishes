@@ -1,22 +1,25 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.importers.geonames
 
+import akka.actor.{ActorSystem, Props}
 import com.foursquare.geo.shapes.FsqSimpleFeatureImplicits._
 import com.foursquare.geo.shapes.ShapefileIterator
-import com.foursquare.twofishes._
 import com.foursquare.twofishes.Identity._
+import com.foursquare.twofishes._
+import com.foursquare.twofishes.output._
 import com.foursquare.twofishes.util.{GeonamesId, GeonamesNamespace, Helpers, NameNormalizer, StoredFeatureId}
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
-import java.io.{File, FileWriter, PrintStream}
+import com.weiglewilczek.slf4s.Logging
+import java.io.File
+import java.util.concurrent.CountDownLatch
 import org.bson.types.ObjectId
 import org.opengis.feature.simple.SimpleFeature
 import scala.collection.mutable.{HashMap, HashSet}
 import scala.io.Source
 import scalaj.collection.Implicits._
-import com.weiglewilczek.slf4s.Logging
 
 object GeonamesParser {
   var config: GeonamesImporterConfig = null
@@ -68,9 +71,19 @@ object GeonamesParser {
     config = GeonamesImporterConfigParser.parse(args)
 
     if (config.reloadData) {
+      MongoGeocodeDAO.collection.drop()
+      NameIndexDAO.collection.drop()
+      PolygonIndexDAO.collection.drop()
+      RevGeoIndexDAO.collection.drop()
       loadIntoMongo()
     }
     writeIndexes()
+  }
+
+  def makeFinalIndexes() {
+    NameIndexDAO.makeIndexes()
+    PolygonIndexDAO.makeIndexes()
+    RevGeoIndexDAO.makeIndexes()
   }
 
   def writeIndex(args: Array[String]) {
@@ -78,19 +91,25 @@ object GeonamesParser {
     writeIndexes()
   }
 
-  def writeIndexes() {
-    val writer = new FileWriter(new File(config.hfileBasePath, "provider_mapping.txt"))
-    config.providerMapping.foreach({case (k, v) => {
-      writer.write("%s\t%s\n".format(k, v))
-    }})
-    writer.close()
+  var revGeoLatch = new CountDownLatch(0)
 
-    val outputter = new OutputIndexes(config.hfileBasePath, config.outputPrefixIndex, GeonamesParser.slugIndexer.slugEntryMap, config.outputRevgeo)
-    outputter.buildIndexes()
+  // TODO(blackmad): if we aren't redoing mongo indexing
+  // then add some code to see if the s2 index is 'done'
+  // We should also add an option to skip reloading polys
+  def writeIndexes() {
+    makeFinalIndexes()
+    val outputter = new OutputIndexes(
+      config.hfileBasePath,
+      config.outputPrefixIndex,
+      GeonamesParser.slugIndexer.slugEntryMap,
+      config.outputRevgeo
+    )
+    outputter.buildIndexes(revGeoLatch)
   }
 
   def loadIntoMongo() {
-    val parser = new GeonamesParser(store, slugIndexer, config.providerMapping.toMap)
+    val parser = new GeonamesParser(store, slugIndexer)
+    revGeoLatch = parser.revGeoLatch
 
     parseCountryInfo()
 
@@ -142,16 +161,17 @@ object GeonamesParser {
       slugIndexer.writeMissingSlugs(store)
     }
 
-    new PolygonLoader(parser, store).load(GeonamesNamespace)
+    MongoGeocodeDAO.makeIndexes()
+    parser.polygonLoader.load(GeonamesNamespace)
   }
 }
 
 import GeonamesParser._
 class GeonamesParser(
   store: GeocodeStorageWriteService,
-  slugIndexer: SlugIndexer,
-  providerMapping: Map[String, Int]
+  slugIndexer: SlugIndexer
 ) extends Logging {
+  val polygonLoader = new PolygonLoader(this, store)
   lazy val hierarchyTable = HierarchyParser.parseHierarchy(List(
     "data/downloaded/hierarchy.txt",
     "data/private/hierarchy.txt",
@@ -210,6 +230,15 @@ class GeonamesParser(
 
   val helperTables = List(rewriteTable, boostTable)
 
+  val revGeoLatch = new CountDownLatch(1)
+  val system = ActorSystem("RevGeoSystem")
+
+  val revGeoMaster = if (config.outputRevgeo) {
+    system.actorOf(Props(new RevGeoMaster(revGeoLatch)), name = "master")
+   } else {
+    system.actorOf(Props(new NullActor()), name = "master")
+  }
+
   def logUnusedHelperEntries {
     helperTables.flatMap(_.logUnused).foreach(line => logger.error(line))
   }
@@ -226,6 +255,7 @@ class GeonamesParser(
         })
       })
     }})
+    nameSet ++= names.map(_.replace("ß", "ss"))
     nameSet.toList
   }
 
@@ -240,15 +270,24 @@ class GeonamesParser(
     })
   }
 
-  def addDisplayNameToNameIndex(dn: DisplayName, fid: StoredFeatureId, record: Option[GeocodeRecord]) {
+  def createNameIndexRecords(displayNames: List[DisplayName], fid: StoredFeatureId, record: Option[GeocodeRecord]) = {
+    displayNames.map(name => {
+      createNameIndexRecord(name, fid, record)
+    })
+  }
+
+  def addDisplayNameToNameIndex(dn: DisplayName, fid: StoredFeatureId, record: Option[GeocodeRecord]) = {
+    store.addNameIndexes(List(createNameIndexRecord(dn, fid, record)))
+  }
+
+  def createNameIndexRecord(dn: DisplayName, fid: StoredFeatureId, record: Option[GeocodeRecord]) = {
     val name = NameNormalizer.normalize(dn.name)
 
     val pop: Int =
       record.flatMap(_.population).getOrElse(0) + record.flatMap(_.boost).getOrElse(0)
     val woeType: Int =
       record.map(_._woeType).getOrElse(0)
-    val nameIndex = NameIndex(name, fid.longId, pop, woeType, dn.flags, dn.lang, dn._id)
-    store.addNameIndex(nameIndex)
+    NameIndex(name, fid.longId, pop, woeType, dn.flags, dn.lang, dn._id)
   }
 
   def rewriteNames(names: List[String]): (List[String], List[String]) = {
@@ -269,12 +308,15 @@ class GeonamesParser(
       StoredFeatureId.fromHumanReadableString(id, defaultNamespace = Some(GeonamesNamespace))
     }).get
 
+    // this isn't great, because it means we need entries in StoredFeatureId for any
+    // keys from this table
     val ids: List[StoredFeatureId] = List(geonameId) ++
-      concordanceMap.get(geonameId).flatMap(id =>
+      concordanceMap.get(geonameId).flatMap(id => {
+        GeonamesParser.slugIndexer.slugEntryMap(id) = (SlugEntry(geonameId.humanReadableString, 0))
         if (id.contains(":")) {
           StoredFeatureId.fromHumanReadableString(id)
         } else { None }
-      )
+    })
 
     val preferredEnglishAltName = alternateNamesMap.getOrElse(geonameId, Nil).find(altName =>
       altName.lang == "en" // && altName.isPrefName
@@ -398,14 +440,11 @@ class GeonamesParser(
 
     val canGeocode = feature.extraColumns.get("canGeocode").map(_.toInt).getOrElse(1) > 0
 
-    val polygonExtraEntry: Option[Geometry] = feature.extraColumns.get("geometry").map(polygon => {
-      wktReader.read(polygon)
+    // I hate this code, let's please deprecate this codepath
+    feature.extraColumns.get("geometry").map(polygon => {
+      val geom = wktReader.read(polygon)
+      polygonLoader.updateRecord(store, List(geonameId), geom)
     })
-
-    polygonExtraEntry.foreach(geom => {
-      store.addPolygonToRecord(geonameId, wkbWriter.write(geom))
-    })
-
 
     val slug: Option[String] = slugIndexer.getBestSlug(geonameId)
 
@@ -455,7 +494,6 @@ class GeonamesParser(
 
     val record = GeocodeRecord(
       _id = geonameId.longId,
-      ids = ids.map(_.longId),
       names = Nil,
       cc = feature.countryCode,
       _woeType = feature.featureClass.woeType.getValue,
@@ -469,19 +507,14 @@ class GeonamesParser(
       displayBounds = displayBboxTable.get(geonameId),
       canGeocode = canGeocode,
       slug = slug,
-      hasPoly = polygonExtraEntry.isDefined,
-      extraRelations = extraRelations
+      // hasPoly = polygonExtraEntry.isDefined,
+      extraRelations = extraRelations,
+      ids = ids.map(_.longId)
     )
 
     if (attributesSet) {
       record.setAttributes(Some(attributesBuilder.result))
     }
-
-    store.insert(record)
-
-    displayNames.foreach(n =>
-      addDisplayNameToNameIndex(n, geonameId, Some(record))
-    )
 
     record
   }
@@ -496,39 +529,50 @@ class GeonamesParser(
       GeonamesFeature.parseFromPostalCodeLine(index, line), "postal codes")
   }
 
+  private def shouldTakeFeature(f: GeonamesFeature, allowBuildings: Boolean): Boolean = {
+    !f.featureClass.isStupid &&
+    !(f.featureClass.woeType == YahooWoeType.ADMIN3 &&
+    f.featureClass.adminLevel == AdminLevel.OTHER &&
+    f.name.startsWith("City of") &&
+    f.countryCode == "US") &&
+    !(f.name.contains(", Stadt") && f.countryCode == "DE") &&
+    !f.geonameid.exists(ignoreList.contains) &&
+    (!f.featureClass.isBuilding || config.shouldParseBuildings || allowBuildings)
+  }
+
   private def parseFromFile(filename: String,
     lineProcessor: (Int, String) => Option[GeonamesFeature],
     typeName: String,
     allowBuildings: Boolean = false) {
 
     var processed = 0
-    val numThreads = 5
-    val workers = 0.until(numThreads).toList.map(offset => {
-      val lines = scala.io.Source.fromFile(new File(filename), "UTF-8").getLines
+    val lines = scala.io.Source.fromFile(new File(filename), "UTF-8").getLines
 
-      lines.zipWithIndex.foreach({case (line, index) => {
-        if (index % numThreads == offset) {
-          if (processed % 10000 == 0) {
-            logger.info("imported %d %s so far".format(processed, typeName))
-          }
-          processed += 1
-          val feature = lineProcessor(index, line)
-          feature.foreach(f => {
-            if (
-              !f.featureClass.isStupid &&
-              !(f.featureClass.woeType == YahooWoeType.ADMIN3 &&
-                f.featureClass.adminLevel == AdminLevel.OTHER &&
-                f.name.startsWith("City of") &&
-                f.countryCode == "US") &&
-              !(f.name.contains(", Stadt") && f.countryCode == "DE") &&
-              !f.geonameid.exists(ignoreList.contains) &&
-              (!f.featureClass.isBuilding || config.shouldParseBuildings || allowBuildings)) {
-              parseFeature(f)
-            }
-          })
-        }
-      }})
-    })
+    val groupSize = 500
+    for {
+      (lineGroup, groupIndex) <- lines.grouped(groupSize).zipWithIndex
+    } {
+      val processed = groupIndex * groupSize
+      if (processed % 10000 == 0) {
+        logger.info("imported %d %s so far".format(processed, typeName))
+      }
+
+      val recordsToInsert = lineGroup.zipWithIndex.flatMap({case (line, index) => {
+        val realIndex = groupIndex * groupSize + index
+        lineProcessor(realIndex, line).filter(f => shouldTakeFeature(f, allowBuildings)).map(parseFeature)
+      }}).toList
+
+      insertGeocodeRecords(recordsToInsert)
+    }
+  }
+
+  def insertGeocodeRecords(recordsToInsert: List[GeocodeRecord]) {
+    store.insert(recordsToInsert)
+
+    val displayNamesToInsert = recordsToInsert.flatMap(r =>
+      createNameIndexRecords(r.displayNames, r.featureId, Some(r))
+    )
+    store.addNameIndexes(displayNamesToInsert)
   }
 
   var alternateNamesMap = new HashMap[StoredFeatureId, List[AlternateNameEntry]]

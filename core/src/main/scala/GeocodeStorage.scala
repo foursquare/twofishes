@@ -1,19 +1,21 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes
 
-import com.foursquare.twofishes.util.StoredFeatureId
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.Lists.Implicits._
+import com.foursquare.twofishes.util.StoredFeatureId
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory}
 import com.vividsolutions.jts.io.WKBReader
 import java.nio.ByteBuffer
-import org.apache.thrift.{TBaseHelper, TDeserializer, TSerializer}
+import org.apache.thrift.{TDeserializer, TSerializer}
 import org.apache.thrift.protocol.TCompactProtocol
 import org.bson.types.ObjectId
 import scala.collection.mutable.HashMap
 import scalaj.collection.Implicits._
 
-class SlugEntryMap extends HashMap[String, SlugEntry]
+object SlugEntryMap {
+  type SlugEntryMap = HashMap[String, SlugEntry]
+}
 
 case class SlugEntry(
   id: String,
@@ -40,9 +42,22 @@ case class BoundingBox(
   sw: Point
 )
 
+object GeoJsonPoint {
+  def apply(lat: Double, lng: Double): GeoJsonPoint =
+    GeoJsonPoint(coordinates = List(lng, lat))
+}
+case class GeoJsonPoint(
+  `type`: String = "Point",
+  coordinates: List[Double]
+)
+object NilPoint extends GeoJsonPoint("Point", List(0, 0))
+
+object GeocodeRecord {
+  val dummyOid = new ObjectId()
+}
+
 case class GeocodeRecord(
   _id: Long,
-  ids: List[Long],
   names: List[String],
   cc: String,
   _woeType: Int,
@@ -59,8 +74,14 @@ case class GeocodeRecord(
   polygon: Option[Array[Byte]] = None,
   hasPoly: Boolean = false,
   var attributes: Option[Array[Byte]] = None,
-  extraRelations: List[Long] = Nil
+  extraRelations: List[Long] = Nil,
+  var loc: GeoJsonPoint = NilPoint,
+  polyId: ObjectId = GeocodeRecord.dummyOid,
+  ids: List[Long] = Nil
 ) extends Ordered[GeocodeRecord] {
+  // gross that we overwrite this
+  loc = GeoJsonPoint(lat, lng)
+
   val factory = new TCompactProtocol.Factory()
   val serializer = new TSerializer(factory)
   val deserializer = new TDeserializer(factory)
@@ -80,7 +101,8 @@ case class GeocodeRecord(
   def featureId: StoredFeatureId = StoredFeatureId.fromLong(_id).getOrElse(
     throw new RuntimeException("can't convert %s to a StoredFeatureId".format(_id)))
 
-  def featureIds: List[StoredFeatureId] = ids.flatMap(StoredFeatureId.fromLong _)
+  def allIds = (List(_id) ++ ids).distinct
+  def featureIds: List[StoredFeatureId] = allIds.flatMap(StoredFeatureId.fromLong)
 
   def parentFeatureIds: List[StoredFeatureId] = parents.flatMap(StoredFeatureId.fromLong _)
 
@@ -280,6 +302,16 @@ case class GeocodeRecord(
 
   def isCountry = woeType == YahooWoeType.COUNTRY
   def isPostalCode = woeType == YahooWoeType.POSTAL_CODE
+
+  def debugString(): String = {
+    "%s - %s %s - %s,%s".format(
+      featureId,
+      displayNames.headOption.map(_.name).getOrElse("????"),
+      cc,
+      lat,
+      lng
+    )
+  }
 }
 
 trait GeocodeStorageReadService {

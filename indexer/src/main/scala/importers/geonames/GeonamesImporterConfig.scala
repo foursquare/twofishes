@@ -26,7 +26,7 @@ case class GeonamesImporterConfig(
   outputPrefixIndex: Boolean = true,
   outputRevgeo: Boolean = false,
   reloadData: Boolean = true,
-  providerMapping: Map[String, Int] = Map("geonameid" -> 1)
+  redoPolygonMatches: Boolean = false
 )
 
 object GeonamesImporterConfigParser {
@@ -61,17 +61,9 @@ object GeonamesImporterConfigParser {
         opt[Boolean]("reload_data")
           .text("reload data into mongo")
           .action{ (v, c) => c.copy(reloadData = v) }
-        opt[(String, Int)]("provider_mapping")
-          .text("mapping from provider namespace to integer")
-          .action { case ((key, value), c) =>
-            println(key)
-            println(value)
-            if (value == 1) {
-              throw new Exception("1 is reserved for geonameid")
-            }
-            c.copy(providerMapping = (c.providerMapping ++ Map(key -> value)))
-          }
-          .keyValueName("providerid", "intValue")
+        opt[Boolean]("redo_polygon_matches")
+          .text("redo polygon matches for files which have a mapping.json")
+          .action{ (v, c) => c.copy(redoPolygonMatches = v) }
       }
 
     // parser.parse returns Option[C]
