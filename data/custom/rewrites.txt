@@ -20,3 +20,8 @@ eme\b|E ARRONDISSEMENT
 eme\b|th ARRONDISSEMENT
 область|обл
 Область|Обл
+St|Saint
+Ste|Sainte
+# these should probably be italy-only
+d'|di 
+di |d'

@@ -10,3 +10,23 @@ Borough of
 Town of
 Kotamadya
 область
+Gemeinde
+(rhld.)
+am main
+stadt
+Province of
+Province
+# we really need to strip these on query parsing as well
+# japanese attached suffixes
+# city
+市
+# ward / ku / district
+区
+# prefecture
+県
+# chinese!
+# township
+鄉
+# estonia
+Küla
+küla
