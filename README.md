@@ -72,6 +72,12 @@ NOTE: mongod is not required for serving, only index building.
 
 A better option is to run "./sbt server/assembly" and then use the resulting server/target/server-assembly-VERSION.jar. Serve that with java -jar JARFILE --hfile_basepath /directory
 
+Troubleshooting
+===============
+If you see a java OutOfMemory error at start, you may need to up your # of mapped files
+
+on linux: sysctl -w vm.max_map_count = 131072
+
 Talking to the Server
 =====================
 - [Twofishes Request Format Documentation](docs/twofishes_requests.md)
