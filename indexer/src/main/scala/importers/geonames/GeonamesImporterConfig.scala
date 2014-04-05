@@ -25,7 +25,8 @@ case class GeonamesImporterConfig(
   hfileBasePath: String = null,
   outputPrefixIndex: Boolean = true,
   outputRevgeo: Boolean = false,
-  reloadData: Boolean = true
+  reloadData: Boolean = true,
+  redoPolygonMatches: Boolean = false
 )
 
 object GeonamesImporterConfigParser {
@@ -60,6 +61,9 @@ object GeonamesImporterConfigParser {
         opt[Boolean]("reload_data")
           .text("reload data into mongo")
           .action{ (v, c) => c.copy(reloadData = v) }
+        opt[Boolean]("redo_polygon_matches")
+          .text("redo polygon matches for files which have a mapping.json")
+          .action{ (v, c) => c.copy(redoPolygonMatches = v) }
       }
 
     // parser.parse returns Option[C]

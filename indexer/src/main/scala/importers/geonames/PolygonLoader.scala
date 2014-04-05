@@ -195,7 +195,7 @@ logger.info("done reading in polys")
     // seeming MongoDBObject has no from-string parser
     // The bounding box is easier to reason about anyway.
     // val geoJson = GeometryJSON.toString(geometry)
-    val envelope = geometry.getEnvelope().buffer(0.1).getEnvelope()
+    val envelope = geometry.getEnvelope().buffer(0.01).getEnvelope()
     val coords = envelope.getCoordinates().toList
 
     MongoDBObject(
@@ -240,21 +240,28 @@ logger.info("done reading in polys")
     (parser.doRewrites(names.toList) ++ names).toSet.toList.map(removeDiacritics)
   }
 
-  def isGoodEnoughNameMatch(namesFromFeature: List[String], namesFromShape: List[String]): Boolean = {
+  def bestNameScore(namesFromFeature: List[String], namesFromShape: List[String]): Int = {
     val namesFromShape_Modified = namesFromShape.flatMap(applyHacks)
     val namesFromFeature_Modified = namesFromFeature.flatMap(applyHacks)
 
     val composedTransform = (filterAlpha andThen ignoreAlphaCase)
 
-    namesFromShape_Modified.exists(ns =>
-      namesFromFeature_Modified.exists(ng => {
-        ng.nonEmpty && ns.nonEmpty &&
-        (ng == ns ||
-          // MetaphoneMetric withTransform composedTransform).compare(ns, ng).getOrElse(false) ||
-          (JaroWinklerMetric withTransform composedTransform).compare(ns, ng).getOrElse(0.0) > 0.95
-        )
+    val scores = namesFromShape_Modified.flatMap(ns => {
+      namesFromFeature_Modified.map(ng => {
+        if (ng.nonEmpty && ns.nonEmpty) {
+          if (ng == ns) {
+            return 100
+          } else {
+            val jaroScore = (JaroWinklerMetric withTransform composedTransform).compare(ns, ng).getOrElse(0.0)
+            jaroScore * 100
+          }
+        } else {
+          0
+        }
       })
-    )
+    })
+
+    if (scores.nonEmpty) { scores.max.toInt } else { 0 }
   }
 
   def hasName(config: PolygonMappingConfig, feature: FsqSimpleFeature): Boolean = {
@@ -280,13 +287,20 @@ logger.info("done reading in polys")
     feature.propMap.filterNot(_._1 == "the_geom").toString
   }
 
+  case class PolygonMatch(
+    candidate: GeocodeRecord,
+    var nameScore: Int = 0
+  )
+
   val parenNameRegex = "^(.*) \\((.*)\\)$".r
-  def isAcceptableMatch(
+  def scoreMatch(
     feature: FsqSimpleFeature,
     config: PolygonMappingConfig,
     candidate: GeocodeRecord,
     withLogging: Boolean = false
-  ): Boolean = {
+  ): PolygonMatch = {
+    val polygonMatch = PolygonMatch(candidate)
+
     val originalFeatureNames = config.nameFields.flatMap(nameField =>
       feature.propMap.get(nameField)
     ).filterNot(_.isEmpty)
@@ -302,9 +316,10 @@ logger.info("done reading in polys")
     }).flatMap(_.split(",").map(_.trim))
 
     val candidateNames = candidate.displayNames.map(_.name).filterNot(_.isEmpty)
-    val nameMatch = isGoodEnoughNameMatch(featureNames, candidateNames)
+    polygonMatch.nameScore = bestNameScore(featureNames, candidateNames)
+
     if (withLogging) {
-      if (!nameMatch) {
+      if (!isGoodEnoughMatch(polygonMatch)) {
         logger.debug(
           "%s vs %s -- %s vs %s".format(
             candidate.featureId.humanReadableString,
@@ -314,12 +329,17 @@ logger.info("done reading in polys")
         )
       }
     }
-    nameMatch
+
+    polygonMatch
   }
 
   def debugFeature(r: GeocodeRecord): String = r.debugString
   def getId(polygonMappingConfig: PolygonMappingConfig, feature: FsqSimpleFeature) = {
     feature.propMap.get(polygonMappingConfig.idField).getOrElse("????")
+  }
+
+  def isGoodEnoughMatch(polygonMatch: PolygonMatch) = {
+    polygonMatch.nameScore > 95
   }
 
   def maybeMatchFeature(
@@ -335,15 +355,22 @@ logger.info("done reading in polys")
       return Nil
     }
 
-    def matchAtWoeType(woeTypes: List[YahooWoeType], withLogging: Boolean = false): List[GeocodeRecord] = {
+    def matchAtWoeType(woeTypes: List[YahooWoeType], withLogging: Boolean = false): Seq[GeocodeRecord] = {
       try {
         val candidates = findMatchCandidates(geometry, woeTypes)
-
-        candidates.filter(candidate => {
+        val scores: Seq[PolygonMatch] = candidates.map(candidate => {
           candidatesSeen += 1
           // println(debugFeature(candidate))
-          isAcceptableMatch(feature, config, candidate, withLogging)
-        }).toList
+          scoreMatch(feature, config, candidate, withLogging)
+        }).filter(isGoodEnoughMatch).toList
+          
+        val scoresMap = scores.groupBy(_.nameScore)
+
+        if (scoresMap.nonEmpty) {
+          scoresMap(scoresMap.keys.max).map(_.candidate)
+        } else {
+          Nil
+        }
       } catch {
         // sometimes our bounding box wraps around the world and mongo throws an error
         case e: MongoException => Nil
