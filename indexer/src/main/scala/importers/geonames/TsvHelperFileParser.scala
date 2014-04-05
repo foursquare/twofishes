@@ -2,8 +2,8 @@
 package com.foursquare.twofishes.importers.geonames
 
 import com.foursquare.twofishes.util.{FeatureNamespace, StoredFeatureId}
-import java.io.File
 import com.weiglewilczek.slf4s.Logging
+import java.io.File
 
 trait TsvHelperFileParserLogger {
   def logUnused: Iterable[String]

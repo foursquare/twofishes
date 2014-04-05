@@ -1,6 +1,6 @@
 package com.foursquare.twofishes
 
-import com.foursquare.twofishes.util.{GeonamesId, MaponicsId, GeonamesZip}
+import com.foursquare.twofishes.util.{GeonamesId, GeonamesZip, MaponicsId}
 import org.bson.types.ObjectId
 import org.specs2.mutable.Specification
 

@@ -6,10 +6,10 @@ import com.vividsolutions.jts.geom.Geometry
 import java.io.File
 import java.nio.charset.Charset
 import org.geotools.data.shapefile.ShapefileDataStore
+import org.geotools.geojson.GeoJSONUtil
+import org.geotools.geojson.feature.FeatureJSON
 import org.opengis.feature.simple.SimpleFeature
 import scalaj.collection.Imports._
-import org.geotools.geojson.feature.FeatureJSON
-import org.geotools.geojson.GeoJSONUtil
 
 object FsqSimpleFeatureImplicits {
   implicit def simpleFeatureToFsqSimpleFeature(f: SimpleFeature) =

@@ -13,23 +13,20 @@ import com.twitter.ostrich.admin._
 import com.twitter.ostrich.admin.config._
 import com.twitter.ostrich.stats.Stats
 import com.twitter.util.{Future, FuturePool, RingBuffer}
+import com.weiglewilczek.slf4s.Logging
 import java.io.InputStream
 import java.net.InetSocketAddress
-import org.apache.thrift.{TDeserializer, TSerializer}
 import java.util.Date
 import java.util.concurrent.{ConcurrentHashMap, Executors}
-import org.apache.thrift.{TBase, TFieldIdEnum, TSerializer}
+import org.apache.thrift.{TBase, TDeserializer, TFieldIdEnum, TSerializer}
 import org.apache.thrift.protocol.{TBinaryProtocol, TSimpleJSONProtocol}
-import org.apache.thrift.server.TThreadPoolServer
-import org.apache.thrift.transport.TServerSocket
 import org.bson.types.ObjectId
 import org.jboss.netty.buffer.ChannelBuffers
 import org.jboss.netty.handler.codec.http._
 import org.jboss.netty.util.CharsetUtil
 import scala.collection.mutable.ListBuffer
-import scalaj.collection.Implicits._
 import scala.io.BufferedSource
-import com.weiglewilczek.slf4s.Logging
+import scalaj.collection.Implicits._
 
 class QueryLogHttpHandler(
   queryMap: ConcurrentHashMap[ObjectId, (TBase[_, _], Long)],
