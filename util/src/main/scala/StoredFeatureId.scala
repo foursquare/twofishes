@@ -2,19 +2,20 @@ package com.foursquare.twofishes.util
 
 import com.foursquare.twofishes._
 import org.bson.types.ObjectId
-import scala.io.Source
 
 sealed abstract class FeatureNamespace(val name: String, val id: Byte)
 case object MaponicsNamespace extends FeatureNamespace("maponics", 0.toByte)
-case object GeonamesNamespace extends FeatureNamespace("geonameid", 1.toByte)
+case object GeonamesNamespace extends FeatureNamespace("geonameid", 
+  Option(System.getProperty("geonameidNamespace")).map(_.toInt).getOrElse(1).toByte)
 case object GeonamesZipNamespace extends FeatureNamespace("geonamezip", 2.toByte)
 case object AdHocNamespace extends FeatureNamespace("adhoc", 3.toByte)
+case object WoeIdNamespace extends FeatureNamespace("woeid", 4.toByte)
 
 object FeatureNamespace {
   // higher is better
-  val NamespaceOrdering = List(AdHocNamespace, GeonamesNamespace, MaponicsNamespace)
+  val NamespaceOrdering = List(WoeIdNamespace, AdHocNamespace, GeonamesNamespace, MaponicsNamespace)
 
-  val values = List(AdHocNamespace, GeonamesNamespace, MaponicsNamespace, GeonamesZipNamespace)
+  val values = List(WoeIdNamespace, AdHocNamespace, GeonamesNamespace, MaponicsNamespace, GeonamesZipNamespace)
 
   def fromId(id: Byte): FeatureNamespace = fromIdOpt(id).getOrElse(
     throw new RuntimeException("unrecognized feature namespace id '%d'".format(id))
@@ -53,6 +54,7 @@ sealed abstract class StoredFeatureId(val namespace: FeatureNamespace) {
   def thriftFeatureId: FeatureId = FeatureId(namespace.name, namespaceSpecificId.toString)
 }
 
+case class WoeId(override val namespaceSpecificId: Long) extends StoredFeatureId(WoeIdNamespace)
 case class AdHocId(override val namespaceSpecificId: Long) extends StoredFeatureId(AdHocNamespace)
 case class GeonamesId(override val namespaceSpecificId: Long) extends StoredFeatureId(GeonamesNamespace)
 case class MaponicsId(override val namespaceSpecificId: Long) extends StoredFeatureId(MaponicsNamespace)
@@ -181,6 +183,7 @@ object StoredFeatureId {
     case GeonamesZipNamespace => new GeonamesZip(id)
     case MaponicsNamespace => MaponicsId(id)
     case AdHocNamespace => AdHocId(id)
+    case WoeIdNamespace => WoeId(id)
   }
 
   private def fromNamespaceAndId(n: String, id: String): Option[StoredFeatureId] = {
