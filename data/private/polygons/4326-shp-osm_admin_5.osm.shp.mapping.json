@@ -1,0 +1,6 @@
+{
+  "source": "osm",
+  "nameFields": ["name", "name_af", "name_sq", "name_am", "name_ar", "name_hy", "name_az", "name_eu", "name_be", "name_bn", "name_bh", "name_bg", "name_my", "name_ca", "name_chr", "name_zh", "name_zh-CN", "name_zh-TW", "name_hr", "name_cs", "name_da", "name_dv", "name_nl", "name_en", "name_eo", "name_et", "name_tl", "name_fi", "name_fr", "name_gl", "name_ka", "name_de", "name_el", "name_gn", "name_gu", "name_iw", "name_hi", "name_hu", "name_is", "name_id", "name_iu", "name_ga", "name_it", "name_ja", "name_kn", "name_kk", "name_km", "name_ko", "name_ku", "name_ky", "name_lo", "name_lv", "name_lt", "name_mk", "name_ms", "name_ml", "name_mt", "name_mr", "name_mn", "name_ne", "name_no", "name_or", "name_ps", "name_fa", "name_pl", "name_pt-PT", "name_pa", "name_ro", "name_ru", "name_sa", "name_sr", "name_sd", "name_si", "name_sk", "name_sl", "name_es", "name_sw", "name_sv", "name_tg", "name_ta", "name_tl_1", "name_te", "name_th", "name_bo", "name_tr", "name_uk", "name_ur", "name_uz", "name_ug", "name_vi", "name_cy", "name_cy_1", "name_hak", "name_haw", "name_yi"],
+  "woeTypes": [["ADMIN1"], ["ADMIN2"]],
+  "idField": "id"
+}
