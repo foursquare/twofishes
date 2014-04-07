@@ -1,8 +1,9 @@
 // Copyright 2011 Foursquare Labs Inc. All Rights Reserved.
 
-package com.foursquare.geo
+package com.foursquare.geo.quadtree
 
 import com.vividsolutions.jts.geom.{Coordinate, Envelope, Geometry}
+import java.net.URL
 import java.io.{File, Serializable}
 import org.geotools.data.{DataStoreFactorySpi, FileDataStore}
 import org.geotools.data.shapefile.ShapefileDataStoreFactory
@@ -134,7 +135,7 @@ object ShapefileGeo {
 
   // Loads in a shape file, simplifying if necessary
   def load(
-    file: File,
+    url: URL,
     keyAttribute: String,
     validValues: Option[Set[String]],
     defaultValue: String,
@@ -150,7 +151,6 @@ object ShapefileGeo {
       )
     }
 
-    val url = file.toURI.toURL
     val dataStoreParams: java.util.Map[String, Serializable] = new java.util.HashMap[String, Serializable]()
     dataStoreParams.put(ShapefileDataStoreFactory.URLP.key, url)
     dataStoreParams.put(ShapefileDataStoreFactory.MEMORY_MAPPED.key, java.lang.Boolean.TRUE)

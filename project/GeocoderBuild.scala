@@ -212,17 +212,33 @@ object GeocoderBuild extends Build {
       )
   ) dependsOn(core, util)
 
+  val geoToolsVersion = "9.2"
+
+  lazy val quadtree = Project(id = "quadtree",
+      base = file("quadtree"),
+      settings = defaultSettings ++ assemblySettings ++ specsSettings ++ Seq(
+        publishArtifact := true,
+        libraryDependencies ++= Seq(
+          "org.geotools" % "gt-shapefile" % geoToolsVersion,
+          "org.geotools" % "gt-epsg-hsql" % geoToolsVersion,
+          "org.geotools" % "gt-epsg-extension" % geoToolsVersion,
+          "org.geotools" % "gt-referencing" % geoToolsVersion,
+          "org.scalaj" %% "scalaj-collection" % "1.5"
+        )
+      )
+    )
+
   lazy val util = Project(id = "util",
       base = file("util"),
       settings = defaultSettings ++ assemblySettings ++ specsSettings ++ Seq(
         publishArtifact := true,
         libraryDependencies ++= Seq(
           "com.google.caliper" % "caliper" % "0.5-rc1",
-          "org.geotools" % "gt-shapefile" % "9.2",
-          "org.geotools" % "gt-geojson" % "9.2",
-          "org.geotools" % "gt-epsg-hsql" % "9.2",
-          "org.geotools" % "gt-epsg-extension" % "9.2",
-          "org.geotools" % "gt-referencing" % "9.2",
+          "org.geotools" % "gt-shapefile" % geoToolsVersion,
+          "org.geotools" % "gt-geojson" % geoToolsVersion,
+          "org.geotools" % "gt-epsg-hsql" % geoToolsVersion,
+          "org.geotools" % "gt-epsg-extension" % geoToolsVersion,
+          "org.geotools" % "gt-referencing" % geoToolsVersion,
           "org.scalaj" %% "scalaj-collection" % "1.5",
           "org.mongodb" % "mongo-java-driver" % "2.9.3",
           "com.weiglewilczek.slf4s" % "slf4s_2.9.1" % "1.0.7",

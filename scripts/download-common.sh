@@ -1,3 +1,6 @@
+git submodule init
+git submodule update
+
 FILE=data/downloaded/alternateNames.txt
 if [ -f $FILE ];
 then

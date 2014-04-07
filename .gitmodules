@@ -1,0 +1,3 @@
+[submodule "quadtree/src/main/resources"]
+	path = quadtree/src/main/resources
+	url = https://github.com/foursquare/cc-shapefiles.git
