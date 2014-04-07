@@ -168,7 +168,7 @@ object GeocoderBuild extends Build {
           }
         }}
       ),
-      base = file("server")) dependsOn(core, interface, util)
+      base = file("server")) dependsOn(core, interface, util, quadtree)
 
   lazy val indexer = Project(id = "indexer",
       base = file("indexer"),
@@ -179,6 +179,7 @@ object GeocoderBuild extends Build {
         initialCommands := """
         import com.foursquare.twofishes._
         import com.foursquare.twofishes.importers.geonames._
+        import com.foursquare.twofishes.mongo._
         import com.foursquare.twofishes.util.Helpers._
         import com.foursquare.twofishes.util._
         import com.foursquare.twofishes.output._
@@ -210,7 +211,7 @@ object GeocoderBuild extends Build {
           "com.typesafe.akka" %% "akka-actor" % "2.3.1"
         )
       )
-  ) dependsOn(core, util)
+  ) dependsOn(core, util, quadtree)
 
   val geoToolsVersion = "9.2"
 
