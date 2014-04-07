@@ -178,6 +178,16 @@ class IndexerSpec extends Specification {
     names must contain("Cook County")
   }
 
+  "long deletes work" in {
+    val displayNames = parser.processFeatureName(
+      StoredFeatureId(GeonamesNamespace, "11111"),
+      "US", "en", "County of Cook", false, false, woeType = YahooWoeType.TOWN)
+    val names = displayNames.map(_.name)
+    names.size aka names.toString mustEqual 2
+    names must contain("Cook")
+    names must contain("Cook County")
+  }
+
   "deletes and rewrites work" in {
     val displayNames = parser.processFeatureName(
       StoredFeatureId(GeonamesNamespace, "11111"),

@@ -277,15 +277,19 @@ class GeonamesParser(
     nameSet.toList
   }
 
-  def doDelete(name: String): List[String] = {
-    deletesList.flatMap(delete => {
-      val newName = name.replaceAll(delete + "\\b", "").split(" ").filterNot(_.isEmpty).mkString(" ")
-      if (newName != name) {
-        Some(newName)
-      } else {
-        None
-      }
-    })
+  val bigDeleteRe = deletesList
+    .map(_ + "\\b")
+    .sortBy(_.size * -1)
+    .mkString("|")
+    .r
+
+  def doDelete(name: String): Option[String] = {
+    val newName = bigDeleteRe.replaceAllIn(name, "")
+    if (newName != name) {
+      Some(fixName(newName))
+    } else {
+      None
+    }
   }
 
   def createNameIndexRecords(displayNames: List[DisplayName], fid: StoredFeatureId, record: Option[GeocodeRecord]) = {
@@ -578,7 +582,7 @@ class GeonamesParser(
     var processed = 0
     val lines = scala.io.Source.fromFile(new File(filename), "UTF-8").getLines
 
-    val groupSize = 500
+    val groupSize = 2000
     for {
       (lineGroup, groupIndex) <- lines.grouped(groupSize).zipWithIndex
     } {
@@ -624,15 +628,18 @@ class GeonamesParser(
     alternateNamesMap = AlternateNamesReader.readAlternateNamesFiles(files)
   }
 
+  val spaceRe = " +".r
+  def fixName(s: String) = spaceRe.replaceAllIn(s, " ").trim
+
   def doShorten(cc: String, name: String): List[String] = {
     val candidates = shortensList.flatMap({case (countryRestricts, shorten) => {
       if (countryRestricts.has(cc) || countryRestricts =? List("*")) {
         val parts = shorten.split("\\|")
         val toShortenFrom = parts(0)
         val toShortenTo = parts.lift(1).getOrElse("")
-        val newName = name.replaceAll(toShortenFrom + "\\b", toShortenTo).split(" ").filterNot(_.isEmpty).mkString(" ")
+        val newName = name.replaceAll(toShortenFrom + "\\b", toShortenTo)
         if (newName != name) {
-          Some(newName)
+          Some(fixName(newName))
         } else {
           None
         }
