@@ -1,9 +1,8 @@
 // Copyright 2011 Foursquare Labs Inc. All Rights Reserved.
 
-package com.foursquare.batch
+package com.foursquare.geo.quadtree
 
-import com.foursquare.geo.ShapefileGeo
-import com.foursquare.geo.ShapefileGeo.{GeoBounds, ShapeLeafNode, ShapeTrieNode}
+import com.foursquare.geo.quadtree.ShapefileGeo.{ShapeTrieNode, GeoBounds, ShapeLeafNode}
 import com.vividsolutions.jts.geom.{Coordinate, Geometry}
 import java.io.File
 import org.geotools.data._
