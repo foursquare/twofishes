@@ -21,6 +21,9 @@ import org.opengis.feature.simple.SimpleFeature
 import scala.collection.mutable.{HashMap, HashSet}
 import scala.io.Source
 import scalaj.collection.Implicits._
+import com.twitter.ostrich.stats.Stats
+import com.twitter.ostrich.admin.{RuntimeEnvironment, ServiceTracker}
+import com.twitter.ostrich.admin.config.AdminServiceConfig
 
 object GeonamesParser extends DurationUtils {
   var config: GeonamesImporterConfig = null
@@ -28,6 +31,14 @@ object GeonamesParser extends DurationUtils {
   var countryLangMap = new HashMap[String, List[String]]()
   var countryNameMap = new HashMap[String, String]()
   var adminIdMap = new HashMap[String, String]()
+
+
+  val adminConfig = new AdminServiceConfig {
+    httpPort = 7655
+  }
+  val runtime = RuntimeEnvironment(this, Array.empty)
+  val admin = adminConfig()(runtime)
+
 
   lazy val naturalEarthPopulatedPlacesMap: Map[StoredFeatureId, SimpleFeature] = {
     new ShapefileIterator("data/downloaded/ne_10m_populated_places_simple.shp").flatMap(f => {
@@ -578,10 +589,16 @@ class GeonamesParser(
 
       val recordsToInsert = lineGroup.zipWithIndex.flatMap({case (line, index) => {
         val realIndex = groupIndex * groupSize + index
-        lineProcessor(realIndex, line).filter(f => shouldTakeFeature(f, allowBuildings)).map(parseFeature)
+        lineProcessor(realIndex, line).filter(f => shouldTakeFeature(f, allowBuildings)).map(line => {
+          Stats.time("parse.line." + typeName) {
+            parseFeature(line)
+          }
+        })
       }}).toList
 
-      insertGeocodeRecords(recordsToInsert)
+      Stats.time("parse.insert" + typeName + "." + groupSize) {
+        insertGeocodeRecords(recordsToInsert)
+      }
     }
   }
 
