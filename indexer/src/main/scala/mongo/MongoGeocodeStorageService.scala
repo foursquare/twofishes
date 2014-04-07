@@ -13,7 +13,7 @@ import com.novus.salat.global._
 
 class MongoGeocodeStorageService extends GeocodeStorageWriteService {
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord] = {
-    val geocodeCursor = MongoGeocodeDAO.find(MongoDBObject("id" -> id.longId))
+    val geocodeCursor = MongoGeocodeDAO.find(MongoDBObject("_id" -> id.longId))
     geocodeCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
     geocodeCursor
   }
