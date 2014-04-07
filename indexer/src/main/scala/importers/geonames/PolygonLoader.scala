@@ -46,7 +46,8 @@ case class PolygonMappingConfig (
 
 class PolygonLoader(
   parser: GeonamesParser,
-  store: GeocodeStorageWriteService
+  store: GeocodeStorageWriteService,
+  shouldCreateFeatures: Boolean = false
 ) extends Logging {
   val wktReader = new WKTReader()
   val wkbWriter = new WKBWriter()
@@ -226,8 +227,17 @@ class PolygonLoader(
     )
   }
 
-  def findMatchCandidates(geometry: Geometry, woeTypes: List[YahooWoeType]) = {
-    val candidateCursor = MongoGeocodeDAO.find(buildQuery(geometry, woeTypes))
+  def findMatchCandidates(geometry: Geometry, woeTypes: List[YahooWoeType]): Iterator[GeocodeRecord] = {
+    val query = buildQuery(geometry, woeTypes)
+    val size = MongoGeocodeDAO.count(query)
+    if (size > 10000) {
+      logger.error("result set too big: %s for %s".format(size, query))
+      return Iterator.empty
+    } else if (size > 2000) {
+      logger.info("oversize result set: %s for %s".format(size, query))
+    }
+
+    val candidateCursor = MongoGeocodeDAO.find(query)
     candidateCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
     candidateCursor
   }
