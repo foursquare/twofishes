@@ -2,6 +2,13 @@ Township
 Township of
 County
 District
+District of
+Distrito
+Distrito de
+Cantón
+Canton
+Municipio
+Municipio de
 kraj
 Kraj
 Oblast
