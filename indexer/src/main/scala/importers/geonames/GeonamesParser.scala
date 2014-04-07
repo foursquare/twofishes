@@ -8,7 +8,7 @@ import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes._
 import com.foursquare.twofishes.output._
 import com.foursquare.twofishes.mongo._
-import com.foursquare.twofishes.util.{GeonamesId, GeonamesNamespace, Helpers, NameNormalizer, StoredFeatureId}
+import com.foursquare.twofishes.util.{GeonamesId, GeonamesNamespace, GeoTools, Helpers, NameNormalizer, StoredFeatureId}
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.vividsolutions.jts.geom.Geometry
@@ -441,12 +441,6 @@ class GeonamesParser(
 
     val canGeocode = feature.extraColumns.get("canGeocode").map(_.toInt).getOrElse(1) > 0
 
-    // I hate this code, let's please deprecate this codepath
-    feature.extraColumns.get("geometry").map(polygon => {
-      val geom = wktReader.read(polygon)
-      polygonLoader.updateRecord(store, List(geonameId), geom, "infile")
-    })
-
     val slug: Option[String] = slugIndexer.getBestSlug(geonameId)
 
     if (slug.isEmpty &&
@@ -493,6 +487,22 @@ class GeonamesParser(
 
     val extraRelations = extraRelationsList.get(geonameId).map(_.split(",").toList.map(_.toLong)).flatten
 
+    case class PolygonRecord(geom: Geometry) {
+      def id = new ObjectId()
+    }
+
+    // I hate this code, let's please deprecate this codepath
+    val polygonOpt = feature.extraColumns.get("geometry").map(polygon => {
+      wktReader.read(polygon)
+    })
+
+    val polygonRecordOpt = if (feature.featureClass.woeType == YahooWoeType.POI
+     && config.revgeoIndexPoints) {
+      Some(PolygonRecord(GeoTools.pointToGeometry(lat, lng)))
+    } else {
+      polygonOpt.map(poly => PolygonRecord(poly))
+    }
+
     val record = GeocodeRecord(
       _id = geonameId.longId,
       names = Nil,
@@ -510,8 +520,18 @@ class GeonamesParser(
       slug = slug,
       // hasPoly = polygonExtraEntry.isDefined,
       extraRelations = extraRelations,
-      ids = ids.map(_.longId)
+      ids = ids.map(_.longId),
+      polyId = polygonRecordOpt.map(_.id).getOrElse(GeocodeRecord.dummyOid),
+      hasPoly = polygonRecordOpt.isDefined
     )
+
+    polygonRecordOpt.foreach(polygonRecord => {
+      polygonLoader.indexPolygon(
+        polygonRecord.id,
+        polygonRecord.geom,
+        "self_point"
+      )
+    })
 
     if (attributesSet) {
       record.setAttributes(Some(attributesBuilder.result))

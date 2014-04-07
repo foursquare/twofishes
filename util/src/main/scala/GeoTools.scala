@@ -29,8 +29,12 @@ object GeoTools {
   }
 
   def pointToGeometry(p: GeocodePoint): Geometry = {
+    pointToGeometry(p.lat, p.lng)
+  }
+
+  def pointToGeometry(lat: Double, lng: Double): Geometry = {
     val geometryFactory = new GeometryFactory()
-    val coord = new Coordinate(p.lng, p.lat)
+    val coord = new Coordinate(lng, lat)
     geometryFactory.createPoint(coord);
   }
 

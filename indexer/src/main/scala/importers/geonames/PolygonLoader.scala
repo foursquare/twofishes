@@ -105,6 +105,16 @@ class PolygonLoader(
 
   var recordsUpdated = 0
 
+  def indexPolygon(
+    polyId: ObjectId,
+    geom: Geometry,
+    source: String
+  ) {
+    val geomBytes = wkbWriter.write(geom)
+    PolygonIndexDAO.save(PolygonIndex(polyId, geomBytes, source))
+    parser.revGeoMaster ! CalculateCover(polyId, geomBytes)
+  }
+
   def updateRecord(
     store: GeocodeStorageWriteService,
     geoids: List[StoredFeatureId],
@@ -114,9 +124,7 @@ class PolygonLoader(
     if (geoids.isEmpty) { return }
 
     val polyId = new ObjectId()
-    val geomBytes = wkbWriter.write(geom)
-    PolygonIndexDAO.save(PolygonIndex(polyId, geomBytes, source))
-    parser.revGeoMaster ! CalculateCover(polyId, geomBytes)
+    indexPolygon(polyId, geom, source)
 
     for {
       geoid <- geoids

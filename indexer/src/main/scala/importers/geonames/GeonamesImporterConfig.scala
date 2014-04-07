@@ -26,7 +26,8 @@ case class GeonamesImporterConfig(
   outputPrefixIndex: Boolean = true,
   outputRevgeo: Boolean = false,
   reloadData: Boolean = true,
-  redoPolygonMatches: Boolean = false
+  redoPolygonMatches: Boolean = false,
+  revgeoIndexPoints: Boolean = false
 )
 
 object GeonamesImporterConfigParser {
@@ -64,6 +65,9 @@ object GeonamesImporterConfigParser {
         opt[Boolean]("redo_polygon_matches")
           .text("redo polygon matches for files which have a mapping.json")
           .action{ (v, c) => c.copy(redoPolygonMatches = v) }
+        opt[Boolean]("revgeo_index_points")
+          .text("index point features for radius queries")
+          .action{ (v, c) => c.copy(revgeoIndexPoints = v) }
       }
 
     // parser.parse returns Option[C]

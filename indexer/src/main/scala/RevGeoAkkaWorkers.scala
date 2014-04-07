@@ -74,7 +74,6 @@ class RevGeoWorker extends Actor with DurationUtils {
   	  val preparedRecordShape = PreparedGeometryFactory.prepare(recordShape)
         val records = cells.asScala.map((cellid: S2CellId) => {
           val s2shape = ShapefileS2Util.fullGeometryForCell(cellid)
-          val cellGeometryBuilder = CellGeometry.newBuilder
           if (preparedRecordShape.contains(s2shape)) {    	
     	      RevGeoIndex(cellid.id(), polyId, full = true, geom = None)
           } else {

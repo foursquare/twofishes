@@ -1,6 +1,7 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.mongo
 
+import com.foursquare.twofishes.GeocodePoint
 import com.foursquare.twofishes.util.StoredFeatureId
 import com.mongodb.Bytes
 import com.mongodb.casbah.Imports._
@@ -14,8 +15,15 @@ case class RevGeoIndex(
   cellid: Long,
   polyId: ObjectId,
   full: Boolean,
-  geom: Option[Array[Byte]]
-)
+  geom: Option[Array[Byte]],
+  point: Option[(Double, Double)] = None
+) {
+  def getGeocodePoint: Option[GeocodePoint] = {
+    point.map({case (lat, lng) => {
+      GeocodePoint.newBuilder.lat(lat).lng(lng).result
+	}})
+  }
+}
 
 object RevGeoIndexDAO extends SalatDAO[RevGeoIndex, String](
   collection = MongoConnection()("geocoder")("revgeo_index")) {
