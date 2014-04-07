@@ -46,8 +46,7 @@ case class PolygonMappingConfig (
 
 class PolygonLoader(
   parser: GeonamesParser,
-  store: GeocodeStorageWriteService,
-  shouldCreateFeatures: Boolean = false
+  store: GeocodeStorageWriteService
 ) extends Logging {
   val wktReader = new WKTReader()
   val wkbWriter = new WKBWriter()
