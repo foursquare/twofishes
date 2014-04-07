@@ -100,16 +100,25 @@ object GeometryUtils {
       maxS2Level: Int,
       maxCellsHintWhichMightBeIgnored: Option[Int] = None,
       levelMod: Option[Int] = None
-    ) = {
-    val s2poly = s2Polygon(geomCollection)
-    val coverer =  new S2RegionCoverer
-    coverer.setMinLevel(minS2Level)
-    coverer.setMaxLevel(maxS2Level)
-    maxCellsHintWhichMightBeIgnored.foreach(coverer.setMaxCells)
-    levelMod.foreach(m => coverer.setLevelMod(m))
-    val coveringCells = new java.util.ArrayList[com.google.common.geometry.S2CellId]
-    coverer.getCovering(s2poly, coveringCells)
-    coveringCells
+  ): Seq[S2CellId] = {
+    if (geomCollection.isInstanceOf[Point]) {
+      val point = geomCollection.asInstanceOf[Point]
+      val lat = point.getY
+      val lng = point.getX
+      minS2Level.to(maxS2Level, levelMod.getOrElse(2)).map(level => {
+        GeometryUtils.getS2CellIdForLevel(lat, lng, level)
+      })
+    } else {
+      val s2poly = s2Polygon(geomCollection)
+      val coverer =  new S2RegionCoverer
+      coverer.setMinLevel(minS2Level)
+      coverer.setMaxLevel(maxS2Level)
+      maxCellsHintWhichMightBeIgnored.foreach(coverer.setMaxCells)
+      levelMod.foreach(m => coverer.setLevelMod(m))
+      val coveringCells = new java.util.ArrayList[com.google.common.geometry.S2CellId]
+      coverer.getCovering(s2poly, coveringCells)
+      coveringCells.asScala.toSeq
+    }
   }
 
   // def coverAtAllLevels(geomCollection: Geometry,

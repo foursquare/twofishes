@@ -21,6 +21,8 @@ object CountryRevGeo {
     java.util.Locale.getISOCountries.foreach(validCCs += _)
     val ccShapefile = loadResource("4sq_cc-1.1.shp")
     ShapefileGeo.load(ccShapefile, "ISO2", Some(validCCs.toSet), "XX",
+      // ie, if it's in the ocean off the edge of a country, allow it to
+      // be part of the country
       alwaysCheckGeometry = false)
   }
 

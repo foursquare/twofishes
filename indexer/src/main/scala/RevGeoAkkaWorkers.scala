@@ -70,9 +70,9 @@ class RevGeoWorker extends Actor with DurationUtils {
       }
 
       logDuration("clipped and outputted cover for %d cells (%s)".format(cells.size, polyId)) {
-        val recordShape = geom.buffer(0)
+      val recordShape = geom.buffer(0)
   	  val preparedRecordShape = PreparedGeometryFactory.prepare(recordShape)
-        val records = cells.asScala.map((cellid: S2CellId) => {
+        val records = cells.map((cellid: S2CellId) => {
           val s2shape = ShapefileS2Util.fullGeometryForCell(cellid)
           if (preparedRecordShape.contains(s2shape)) {    	
     	      RevGeoIndex(cellid.id(), polyId, full = true, geom = None)
