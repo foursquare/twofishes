@@ -1,6 +1,7 @@
 package com.foursquare.twofishes.output
 
-import com.foursquare.twofishes.{FeatureNameFlags, Indexes, NameIndex, NameIndexDAO, YahooWoeType}
+import com.foursquare.twofishes.{FeatureNameFlags, Indexes, YahooWoeType}
+import com.foursquare.twofishes.mongo.{NameIndex, NameIndexDAO}
 import com.foursquare.twofishes.util.StoredFeatureId
 import com.mongodb.Bytes
 import com.mongodb.casbah.Imports._

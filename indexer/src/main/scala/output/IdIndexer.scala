@@ -10,7 +10,7 @@ import com.novus.salat.global._
 import java.io._
 import org.apache.hadoop.hbase.util.Bytes._
 import scalaj.collection.Implicits._
-import com.foursquare.twofishes.MongoGeocodeDAO
+import com.foursquare.twofishes.mongo.MongoGeocodeDAO
 
 class IdIndexer(
   override val basepath: String,

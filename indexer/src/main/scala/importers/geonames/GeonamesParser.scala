@@ -7,6 +7,7 @@ import com.foursquare.geo.shapes.ShapefileIterator
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes._
 import com.foursquare.twofishes.output._
+import com.foursquare.twofishes.mongo._
 import com.foursquare.twofishes.util.{GeonamesId, GeonamesNamespace, Helpers, NameNormalizer, StoredFeatureId}
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._

@@ -1,5 +1,6 @@
 package com.foursquare.twofishes
 
+import com.foursquare.twofishes.mongo.MongoGeocodeDAO
 import com.mongodb.casbah.Imports._
 import com.novus.salat._
 import com.novus.salat.annotations._
@@ -16,6 +17,8 @@ import org.geotools.feature.simple.SimpleFeatureBuilder
 import org.geotools.referencing.crs.DefaultGeographicCRS
 import org.opengis.feature.simple.SimpleFeatureType
 import scalaj.collection.Imports._
+
+
 object BuildPolygonShapefile {
   val TYPE: SimpleFeatureType = DataUtilities.createType("Location",
     "location:MultiPolygon:srid=4326," + // <- the geometry attribute: Point type

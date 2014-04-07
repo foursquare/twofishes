@@ -1,6 +1,6 @@
 package com.foursquare.twofishes.output
 
-import com.foursquare.twofishes.MongoGeocodeDAO
+import com.foursquare.twofishes.mongo.MongoGeocodeDAO
 import com.foursquare.twofishes.util.{DurationUtils, StoredFeatureId}
 import com.mongodb.Bytes
 import com.mongodb.casbah.Imports._

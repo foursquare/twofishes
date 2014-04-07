@@ -1,7 +1,7 @@
 package com.foursquare.twofishes.output
 
-import com.foursquare.twofishes.{GeocodeRecord, GeocodeServingFeature, Indexes, MongoGeocodeDAO, PolygonIndex,
-    PolygonIndexDAO}
+import com.foursquare.twofishes.{GeocodeRecord, GeocodeServingFeature, Indexes}
+import com.foursquare.twofishes.mongo.{PolygonIndexDAO, PolygonIndex, MongoGeocodeDAO}
 import com.foursquare.twofishes.util.StoredFeatureId
 import com.mongodb.Bytes
 import com.mongodb.casbah.Imports._

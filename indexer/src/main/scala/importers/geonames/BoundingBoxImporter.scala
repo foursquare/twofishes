@@ -2,6 +2,7 @@
 package com.foursquare.twofishes.importers.geonames
 
 import com.foursquare.twofishes._
+import com.foursquare.twofishes.mongo.GeocodeStorageWriteService
 import com.foursquare.twofishes.util.{GeonamesNamespace, StoredFeatureId}
 import com.weiglewilczek.slf4s.Logging
 import java.io.File

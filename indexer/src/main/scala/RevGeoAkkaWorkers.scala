@@ -4,6 +4,7 @@ import akka.actor.{Actor, ActorSystem, PoisonPill, Props}
 import akka.routing.{Broadcast, RoundRobinRouter}
 import com.foursquare.geo.shapes.ShapefileS2Util
 import com.foursquare.twofishes.util.{DurationUtils, GeometryUtils}
+import com.foursquare.twofishes.mongo.{PolygonIndexDAO, RevGeoIndexDAO, RevGeoIndex}
 import com.google.common.geometry.S2CellId
 import com.mongodb.casbah.Imports._
 import com.vividsolutions.jts.geom.prep.PreparedGeometryFactory
