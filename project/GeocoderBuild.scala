@@ -209,7 +209,14 @@ object GeocoderBuild extends Build {
           "org.json4s" %% "json4s-native" % "3.2.8",
           "org.json4s" %% "json4s-jackson" % "3.2.8",
           "com.typesafe.akka" %% "akka-actor" % "2.3.1"
-        )
+        ),
+        mergeStrategy in assembly <<= (mergeStrategy in assembly) { mergeStrategy => {
+          case entry => {
+            val strategy = mergeStrategy(entry)
+            if (strategy == MergeStrategy.deduplicate) MergeStrategy.first
+            else strategy
+          }
+        }}
       )
   ) dependsOn(core, util, quadtree)
 
