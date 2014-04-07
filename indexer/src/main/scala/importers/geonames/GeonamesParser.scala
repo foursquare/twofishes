@@ -251,7 +251,7 @@ class GeonamesParser(
   val revGeoLatch = new CountDownLatch(1)
   val system = ActorSystem("RevGeoSystem")
 
-  val revGeoMaster = if (config.outputRevgeo) {
+  val revGeoMaster = if (config != null && config.outputRevgeo) {
     system.actorOf(Props(new RevGeoMaster(revGeoLatch)), name = "master")
    } else {
     system.actorOf(Props(new NullActor()), name = "master")

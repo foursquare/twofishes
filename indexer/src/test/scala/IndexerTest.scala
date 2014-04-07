@@ -59,9 +59,9 @@ class MockGeocodeStorageWriteService extends GeocodeStorageWriteService {
 }
 
 class IndexerSpec extends Specification {
-  var store = new MockGeocodeStorageWriteService()
-  val slugIndexer = new SlugIndexer()
-  val parser = new GeonamesParser(store, slugIndexer)
+  lazy val store = new MockGeocodeStorageWriteService()
+  lazy val slugIndexer = new SlugIndexer()
+  lazy val parser = new GeonamesParser(store, slugIndexer)
 
   def cleanUp {
     store.recordMap.clear()
