@@ -8,7 +8,7 @@ import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes._
 import com.foursquare.twofishes.output._
 import com.foursquare.twofishes.mongo._
-import com.foursquare.twofishes.util.{GeonamesId, GeonamesNamespace, GeoTools, Helpers, NameNormalizer, StoredFeatureId}
+import com.foursquare.twofishes.util.{DurationUtils, GeonamesId, GeonamesNamespace, GeoTools, Helpers, NameNormalizer, StoredFeatureId}
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.vividsolutions.jts.geom.Geometry
@@ -22,7 +22,7 @@ import scala.collection.mutable.{HashMap, HashSet}
 import scala.io.Source
 import scalaj.collection.Implicits._
 
-object GeonamesParser {
+object GeonamesParser extends DurationUtils {
   var config: GeonamesImporterConfig = null
 
   var countryLangMap = new HashMap[String, List[String]]()
@@ -134,10 +134,13 @@ object GeonamesParser {
       })
     } else {
       parseAdminInfoFile("data/downloaded/adminCodes.txt")
-      parser.parseAdminFile(
-        "data/downloaded/allCountries.txt")
+      logPhase("parse global features") {
+        parser.parseAdminFile("data/downloaded/allCountries.txt")
+      }
       if (config.importPostalCodes) {
-        parser.parsePostalCodeFile("data/downloaded/zip/allCountries.txt")
+        logPhase("parse global postal codes") {
+          parser.parsePostalCodeFile("data/downloaded/zip/allCountries.txt")
+        }
       }
     }
 
@@ -148,13 +151,16 @@ object GeonamesParser {
     supplementalDirs.foreach(supplementalDir =>
       if (supplementalDir.exists) {
         supplementalDir.listFiles.foreach(f => {
-          println("parsing supplemental file: %s".format(f))
-          parser.parseAdminFile(f.toString, allowBuildings=true)
+          logPhase("parsing supplemental file: %s".format(f)) {
+            parser.parseAdminFile(f.toString, allowBuildings=true)
+          }
         })
       }
     )
 
-    parser.parseNameTransforms()
+    logPhase("parseNameTransforms") {
+      parser.parseNameTransforms()
+    }
 
     if (config.buildMissingSlugs) {
       println("building missing slugs")
@@ -303,11 +309,8 @@ class GeonamesParser(
     (deaccentedNames, (deleteModifiedNames ++ rewrittenNames).distinct)
   }
 
-  def parseFeature(feature: GeonamesFeature): GeocodeRecord = {
-    // Build ids
-    val geonameId = feature.geonameid.flatMap(id => {
-      StoredFeatureId.fromHumanReadableString(id, defaultNamespace = Some(GeonamesNamespace))
-    }).get
+  def parseFeature(feature: InputFeature): GeocodeRecord = {
+    val geonameId = feature.featureId
 
     // this isn't great, because it means we need entries in StoredFeatureId for any
     // keys from this table
@@ -550,14 +553,9 @@ class GeonamesParser(
       GeonamesFeature.parseFromPostalCodeLine(index, line), "postal codes")
   }
 
-  private def shouldTakeFeature(f: GeonamesFeature, allowBuildings: Boolean): Boolean = {
-    !f.featureClass.isStupid &&
-    !(f.featureClass.woeType == YahooWoeType.ADMIN3 &&
-    f.featureClass.adminLevel == AdminLevel.OTHER &&
-    f.name.startsWith("City of") &&
-    f.countryCode == "US") &&
-    !(f.name.contains(", Stadt") && f.countryCode == "DE") &&
-    !f.geonameid.exists(ignoreList.contains) &&
+  private def shouldTakeFeature(f: InputFeature, allowBuildings: Boolean): Boolean = {
+    f.shouldIndex &&
+    !ignoreList.contains(f.featureId) &&
     (!f.featureClass.isBuilding || config.shouldParseBuildings || allowBuildings)
   }
 

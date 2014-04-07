@@ -12,4 +12,13 @@ trait DurationUtils extends Logging {
     }
     rv
   }
-}
+
+  def logPhase[T](what: String)(f: => T): T = {
+    logger.info("starting: " + what)
+    val (rv, duration) = Duration.inNanoseconds(f)
+    logger.info("finished: %s in %s secs / %s mins".format(
+    	what, duration.inSeconds, duration.inMinutes
+    ))
+    rv
+  }
+ }

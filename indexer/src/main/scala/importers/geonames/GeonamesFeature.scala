@@ -2,9 +2,11 @@
 package com.foursquare.twofishes.importers.geonames
 
 import com.foursquare.twofishes.YahooWoeType
-import com.foursquare.twofishes.util.GeonamesZip
+import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.Helpers._
+import com.foursquare.twofishes.util.{GeonamesNamespace, GeonamesZip, StoredFeatureId}
 import com.weiglewilczek.slf4s.Logging
+
 
 object GeonamesFeatureColumns extends Enumeration {
    type GeonamesFeatureColumns = Value
@@ -125,10 +127,22 @@ object AdminLevel extends Enumeration {
 
 import AdminLevel._
 
+trait FeatureClass {
+  def woeType: YahooWoeType
+
+  def isAdmin1 = woeType == YahooWoeType.ADMIN1
+  def isAdmin2 = woeType == YahooWoeType.ADMIN2
+  def isAdmin3 = woeType == YahooWoeType.ADMIN3
+
+  def isAdmin1Capital: Boolean = false
+
+  def isBuilding: Boolean = woeType == YahooWoeType.POI
+}
+
 // http://www.geonames.org/export/codes.html
 // I added Z for zipcodes. It's missing from the geonames hierarchy.
-class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[String]) {
-  def isBuilding = featureClass.exists(_ == "S")
+class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[String]) extends FeatureClass {
+  override def isBuilding = featureClass.exists(_ == "S")
   def isPopulatedPlace = featureClass.exists(_ == "P")
   def isPostalCode = featureClass.exists(_ == "Z")
   def isSuburb = featureCode.exists(_.contains("PPLX"))
@@ -139,7 +153,7 @@ class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[Str
   def isCountry = featureCode.exists(_.contains("PCL"))
   def isAdmin = adminLevel != OTHER
   def isAirport = featureCode.exists(_.startsWith("AIR"))
-  def isAdmin1Capital = featureCode.exists(_ == "PPLA")
+  override def isAdmin1Capital = featureCode.exists(_ == "PPLA")
   val stupidCodes = List(
     "RGNE", // economic region
     "PPLQ", // abandoned (historical) place
@@ -148,9 +162,6 @@ class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[Str
   def isContinent = featureCode.exists(_ == "CONT")
   def isStupid = featureCode.exists(fc => stupidCodes.contains(fc))
   def isPark = featureCode.exists(_ == "PRK")
-  def isAdmin1 = featureCode.exists(_ == "ADM1")
-  def isAdmin2 = featureCode.exists(_ == "ADM2")
-  def isAdmin3 = featureCode.exists(_ == "ADM3")
   def isAdmin4 = featureCode.exists(_ == "ADM4")
 
   def woeType: YahooWoeType = {
@@ -198,8 +209,50 @@ class GeonamesFeatureClass(featureClass: Option[String], featureCode: Option[Str
   }
 }
 
-class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) {
-  def isValid = {
+trait InputFeature {
+  def isValid: Boolean = true
+  def shouldIndex: Boolean = true
+
+  def featureClass: FeatureClass
+
+  def adminCode: Option[String] = None
+
+  def getAdminCode(level: AdminLevel.Value): Option[String] = None
+
+  def adminId: Option[String] = None
+
+  def parents: List[String] = Nil
+
+  def population: Option[Int] = None
+  def latitude: Double
+  def longitude: Double
+  def countryCode: String
+
+  def name: String
+  def asciiname: Option[String] = None
+
+  def extraColumns: Map[String,String] = Map.empty
+
+  def featureId: StoredFeatureId
+}
+
+class BasicFeatureClass(
+  val woeType: YahooWoeType
+) extends FeatureClass
+
+class BasicFeature(
+  val latitude: Double,
+  val longitude: Double,
+  val countryCode: String,
+  val name: String,
+  val featureId: StoredFeatureId,
+  woeType: YahooWoeType
+) extends InputFeature {
+  override val featureClass = new BasicFeatureClass(woeType)
+}
+
+class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) extends InputFeature {
+  override def isValid = {
     values.contains(NAME) &&
     values.contains(LATITUDE) &&
     values.contains(LONGITUDE) &&
@@ -207,11 +260,21 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) {
     TryO { values(LONGITUDE).toDouble }.isDefined
   }
 
-  val featureClass = new GeonamesFeatureClass(values.get(FEATURE_CLASS), values.get(FEATURE_CODE))
+  override def shouldIndex = {
+    !featureClass.isStupid &&
+    !(featureClass.woeType =? YahooWoeType.ADMIN3 &&
+      featureClass.adminLevel =? AdminLevel.OTHER &&
+      name.startsWith("City of") &&
+      countryCode =? "US"
+    ) &&
+    !(name.contains(", Stadt") && countryCode =? "DE")
+  }
 
-  def adminCode = getAdminCode(this.featureClass.adminLevel)
+  override val featureClass = new GeonamesFeatureClass(values.get(FEATURE_CLASS), values.get(FEATURE_CODE))
 
-  def getAdminCode(level: AdminLevel.Value): Option[String] = {
+  override def adminCode = getAdminCode(this.featureClass.adminLevel)
+
+  override def getAdminCode(level: AdminLevel.Value): Option[String] = {
     level match {
       case COUNTRY => values.get(COUNTRY_CODE)
       case ADM1 => values.get(ADMIN1_CODE)
@@ -232,7 +295,7 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) {
     }
   }
 
-  def adminId: Option[String] = {
+  override def adminId: Option[String] = {
     if (featureClass.isAdmin) {
       makeAdminId(featureClass.adminLevel)
     } else {
@@ -240,25 +303,25 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) {
     }
   }
 
-  def parents: List[String] = {
+  override def parents: List[String] = {
     AdminLevel.values.filter(_ < featureClass.adminLevel).flatMap(l =>
       makeAdminId(l)
     ).toList.filterNot(_.contains(".00"))
   }
 
-  def population: Option[Int] = flatTryO {values.get(POPULATION).map(_.toInt)}
-  def latitude: Double = values.get(LATITUDE).map(_.toDouble).get
-  def longitude: Double = values.get(LONGITUDE).map(_.toDouble).get
-  def countryCode: String = if (featureClass.isIsraeliSettlement) {
+  override def population: Option[Int] = flatTryO {values.get(POPULATION).map(_.toInt)}
+  override def latitude: Double = values.get(LATITUDE).map(_.toDouble).get
+  override def longitude: Double = values.get(LONGITUDE).map(_.toDouble).get
+  override def countryCode: String = if (featureClass.isIsraeliSettlement) {
     "IL"
   } else {
     values.get(COUNTRY_CODE).getOrElse("XX")
   }
-  def name: String = values.getOrElse(NAME, "no name")
-  def asciiname: Option[String] = values.get(ASCIINAME)
+  override def name: String = values.getOrElse(NAME, "no name")
+  override def asciiname: Option[String] = values.get(ASCIINAME)
   def place: String = values.getOrElse(PLACE_NAME, "no name")
 
-  def extraColumns: Map[String,String] = values.getOrElse(EXTRA, "").split("\t").flatMap(p => {
+  override def extraColumns: Map[String,String] = values.getOrElse(EXTRA, "").split("\t").flatMap(p => {
     if (p.nonEmpty) {
       val parts = p.split(";")
       if (parts.size == 2) {
@@ -285,4 +348,8 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) {
     names ++= alternateNames
     names
   }
+
+  override def featureId = geonameid.flatMap(id => {
+    StoredFeatureId.fromHumanReadableString(id, defaultNamespace = Some(GeonamesNamespace))
+  }).get
 }
