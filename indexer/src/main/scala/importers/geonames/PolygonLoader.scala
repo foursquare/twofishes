@@ -32,7 +32,8 @@ object PolygonLoader {
 case class PolygonMappingConfig (
   nameFields: List[String],
   woeTypes: List[List[String]],
-  idField: String
+  idField: String,
+  source: Option[String]
 ) {
   private val _woeTypes: List[List[YahooWoeType]] = {
     woeTypes.map(_.map(s => Option(YahooWoeType.findByNameOrNull(s)).getOrElse(
@@ -107,13 +108,14 @@ class PolygonLoader(
   def updateRecord(
     store: GeocodeStorageWriteService,
     geoids: List[StoredFeatureId],
-    geom: Geometry
+    geom: Geometry,
+    source: String
   ): Unit = {
     if (geoids.isEmpty) { return }
 
     val polyId = new ObjectId()
     val geomBytes = wkbWriter.write(geom)
-    PolygonIndexDAO.save(PolygonIndex(polyId, geomBytes))
+    PolygonIndexDAO.save(PolygonIndex(polyId, geomBytes, source))
     parser.revGeoMaster ! CalculateCover(polyId, geomBytes)
 
     for {
@@ -506,7 +508,8 @@ class PolygonLoader(
         }
       }
 
-      updateRecord(store, fids, geom)
+      val source = polygonMappingConfig.flatMap(_.source).getOrElse(features.file.getName())
+      updateRecord(store, fids, geom, source)
     }
     outputMatchWriter.foreach(_.close())
   }

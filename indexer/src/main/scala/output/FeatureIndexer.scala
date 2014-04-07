@@ -20,8 +20,11 @@ class FeatureIndexer(override val basepath: String, override val fidMap: FidMap)
   override val outputs = Seq(index)
 
   def makeGeocodeRecordWithoutGeometry(g: GeocodeRecord, poly: Option[PolygonIndex]): GeocodeServingFeature = {
-    val fullFeature = poly.map(p => g.copy(polygon = Some(p.polygon)))
-      .getOrElse(g).toGeocodeServingFeature()
+    val fullFeature = poly.map(p => 
+        g.copy(
+          polygon = Some(p.polygon), 
+          polygonSource = Some(p.source))
+        ).getOrElse(g).toGeocodeServingFeature()
 
     val partialFeature = fullFeature.copy(
       feature = fullFeature.feature.copy(

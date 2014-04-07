@@ -62,7 +62,8 @@ case class GeocodeRecord(
   extraRelations: List[Long] = Nil,
   var loc: GeoJsonPoint = NilPoint,
   polyId: ObjectId = GeocodeRecord.dummyOid,
-  ids: List[Long] = Nil
+  ids: List[Long] = Nil,
+  polygonSource: Option[String] = None
 ) extends Ordered[GeocodeRecord] {
   // gross that we overwrite this
   loc = GeoJsonPoint(lat, lng)
@@ -128,6 +129,7 @@ case class GeocodeRecord(
     // geom
     val geometryBuilder = FeatureGeometry.newBuilder
       .center(GeocodePoint(lat, lng))
+      .source(polygonSource)
 
     if (polygon.isEmpty) {
       boundingbox.foreach(bounds => {

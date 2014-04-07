@@ -444,7 +444,7 @@ class GeonamesParser(
     // I hate this code, let's please deprecate this codepath
     feature.extraColumns.get("geometry").map(polygon => {
       val geom = wktReader.read(polygon)
-      polygonLoader.updateRecord(store, List(geonameId), geom)
+      polygonLoader.updateRecord(store, List(geonameId), geom, "infile")
     })
 
     val slug: Option[String] = slugIndexer.getBestSlug(geonameId)

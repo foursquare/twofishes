@@ -119,6 +119,8 @@ struct FeatureGeometry {
   6: optional string wktGeometrySimplified
 
   7: optional GeocodeBoundingBox displayBounds
+
+  8: optional string source
 }
 
 enum GeocodeRelationType {

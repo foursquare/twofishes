@@ -12,7 +12,8 @@ import com.novus.salat.global._
 
 case class PolygonIndex(
   @Key("_id") _id: ObjectId,
-  polygon: Array[Byte]
+  polygon: Array[Byte],
+  source: String
 )
 
 object PolygonIndexDAO extends SalatDAO[PolygonIndex, String](
