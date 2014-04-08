@@ -185,7 +185,7 @@ class IndexerSpec extends Specification {
     val names = displayNames.map(_.name)
     names.size aka names.toString mustEqual 2
     names must contain("Cook")
-    names must contain("Cook County")
+    names must contain("County of Cook")
   }
 
   "deletes and rewrites work" in {
