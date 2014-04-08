@@ -171,7 +171,7 @@ class PolygonLoader(
     val wkbReader = new WKBReader()
     for {
       (polyRecord, index) <- polygons.zipWithIndex
-      featureRecord <- MongoGeocodeDAO.find(MongoDBObject("ids" -> MongoDBObject("$in" -> List(polyRecord._id))))
+      featureRecord <- MongoGeocodeDAO.find(MongoDBObject("_id" -> polyRecord._id)))
       polyData = polyRecord.polygon
     } {
       val polygon = wkbReader.read(polyData)
@@ -180,7 +180,7 @@ class PolygonLoader(
         logger.info("bad poly on %s -- %s too far from %s".format(
           featureRecord.featureId, polygon, point))
 
-          MongoGeocodeDAO.update(MongoDBObject("ids" -> MongoDBObject("$in" -> List(featureRecord.featureId.longId))),
+          MongoGeocodeDAO.update(MongoDBObject("_id" -> eatureRecord.featureId.longId)),
             MongoDBObject("$set" ->
               MongoDBObject(
                 "polygon" -> None,

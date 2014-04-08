@@ -62,7 +62,7 @@ class SlugIndexer {
   val parentMap = new HashMap[StoredFeatureId, Option[GeocodeFeature]]
 
   def findFeature(fid: StoredFeatureId): Option[GeocodeServingFeature] = {
-    val ret = MongoGeocodeDAO.findOne(MongoDBObject("ids" -> fid.longId)).map(_.toGeocodeServingFeature)
+    val ret = MongoGeocodeDAO.findOne(MongoDBObject("_id" -> fid.longId)).map(_.toGeocodeServingFeature)
     if (ret.isEmpty) {
       println("couldn't find %s".format(fid))
     }

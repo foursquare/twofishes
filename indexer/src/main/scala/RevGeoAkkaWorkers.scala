@@ -109,7 +109,7 @@ class RevGeoMaster(latch: CountDownLatch) extends Actor {
     case msg: CalculateCover =>
 	    router ! msg
     case msg: Done =>
-      println("all done, sending poison pills")
+      logger.info("all done with revgeo coverage indexing, sending poison pills")
       // send a PoisonPill to all workers telling them to shut down themselves
       router ! Broadcast(PoisonPill)
       // I believe that the router shuts down once all the children shutdown
@@ -121,9 +121,10 @@ class RevGeoMaster(latch: CountDownLatch) extends Actor {
 
   override def postStop() {
     // tell the world that the calculation is complete
-    println(
-      "\n\tCalculation time: \t%s millis"
-      .format((System.currentTimeMillis - start)))
+    logger.info(
+      "revgeo covering calculation time: \t%s millis"
+        .format((System.currentTimeMillis - start))
+    )
     latch.countDown()
   }
 }
