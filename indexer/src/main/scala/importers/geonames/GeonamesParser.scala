@@ -15,6 +15,7 @@ import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
 import com.weiglewilczek.slf4s.Logging
 import java.io.File
+import scala.util.matching.Regex
 import java.util.concurrent.CountDownLatch
 import org.bson.types.ObjectId
 import org.opengis.feature.simple.SimpleFeature
@@ -197,15 +198,27 @@ class GeonamesParser(
   ))
 
   // token -> alt tokens
-  lazy val rewriteTable = new TsvHelperFileParser("data/custom/rewrites.txt",
-    "data/private/rewrites.txt")
+  lazy val rewriteTable = new TsvHelperFileParser(
+    "data/custom/rewrites.txt",
+    "data/private/rewrites.txt"
+  ).gidMap.map({case(from, toList) => {
+    (from.r, toList)
+  }})
 
   // (country -> tokenlist)
-  lazy val shortensList: List[(List[String], String)] = scala.io.Source.fromFile(new File("data/custom/shortens.txt"))
-    .getLines.toList.filterNot(_.startsWith("#")).map(l => {
-      val parts = l.split("[\\|\t]").toList
-      (parts(0).split(",").toList, parts(1))
-    })
+  case class ShortenPattern(from: Regex, to: String)
+
+  lazy val shortensList: Map[String, List[ShortenPattern]] = {
+    scala.io.Source.fromFile(new File("data/custom/shortens.txt"))
+      .getLines.toList.filterNot(_.startsWith("#")).flatMap(l => {
+        val parts = l.split("[\\|\t]").toList
+        val countries = parts(0).split(",").toList
+        val shortenParts = parts(1).split("\\|")
+        val toShortenFrom = shortenParts(0)
+        val toShortenTo = shortenParts.lift(1).getOrElse("")
+        countries.map(cc => (cc -> ShortenPattern(toShortenFrom.r, toShortenTo)))
+      }).groupBy(_._1).mapValues(_.map(_._2)).toList.toMap
+    }
   // geonameid -> boost value
   lazy val boostTable = new GeoIdTsvHelperFileParser(GeonamesNamespace,
     "data/custom/boosts.txt",
@@ -246,7 +259,7 @@ class GeonamesParser(
   }).sorted
   lazy val displayBboxTable = BoundingBoxTsvImporter.parse(displayBboxFiles)
 
-  val helperTables = List(rewriteTable, boostTable)
+  val helperTables = List(boostTable)
 
   val revGeoLatch = new CountDownLatch(1)
   val system = ActorSystem("RevGeoSystem")
@@ -266,10 +279,10 @@ class GeonamesParser(
 
   def doRewrites(names: List[String]): List[String] = {
     val nameSet = new scala.collection.mutable.HashSet[String]()
-    rewriteTable.gidMap.foreach({case(from, toList) => {
+    rewriteTable.foreach({case(from, toList) => {
       names.foreach(name => {
         toList.values.foreach(to => {
-          nameSet += name.replaceAll(from, to)
+          nameSet += from.replaceAllIn(name, to)
         })
       })
     }})
@@ -632,21 +645,17 @@ class GeonamesParser(
   def fixName(s: String) = spaceRe.replaceAllIn(s, " ").trim
 
   def doShorten(cc: String, name: String): List[String] = {
-    val candidates = shortensList.flatMap({case (countryRestricts, shorten) => {
-      if (countryRestricts.has(cc) || countryRestricts =? List("*")) {
-        val parts = shorten.split("\\|")
-        val toShortenFrom = parts(0)
-        val toShortenTo = parts.lift(1).getOrElse("")
-        val newName = name.replaceAll(toShortenFrom + "\\b", toShortenTo)
-        if (newName != name) {
-          Some(fixName(newName))
-        } else {
-          None
-        }
+    val shortens = shortensList.getOrElse("*", Nil) ++ 
+      shortensList.getOrElse(cc, Nil)
+
+    val candidates = shortens.flatMap(shorten => {
+      val newName = shorten.from.replaceAllIn(name, shorten.to)
+      if (newName != name) {
+        Some(fixName(newName))
       } else {
         None
       }
-    }})
+    })
 
     candidates.sortBy(_.size).headOption.toList
   }
