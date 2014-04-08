@@ -17,7 +17,7 @@ import scalaj.collection.Implicits._
 
 class RevGeoIndexer(
   override val basepath: String,
-  override val fidMap: FidMap, 
+  override val fidMap: FidMap,
   polygonMap: Map[ObjectId, (Long, YahooWoeType)]
 ) extends Indexer with RevGeoConstants{
   val index = Indexes.S2Index
@@ -35,6 +35,8 @@ class RevGeoIndexer(
   def writeRevGeoIndex(
     restrict: MongoDBObject
   ) = {
+    val total = RevGeoIndexDAO.count(restrict)
+
     val revGeoCursor = RevGeoIndexDAO.find(restrict)
       .sort(orderBy = MongoDBObject("cellid" -> 1))
     revGeoCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
@@ -42,9 +44,12 @@ class RevGeoIndexer(
     var currentKey = 0L
     var currentCells = new ListBuffer[CellGeometry]
     for {
-      revgeoIndexRecord <- revGeoCursor
+      (revgeoIndexRecord, index) <- revGeoCursor.zipWithIndex
       (geoid, woeType) <- polygonMap.get(revgeoIndexRecord.polyId)
     } {
+      if (index % 10000 == 0) {
+        logger.info("processed %d of %d revgeo entries for %s".format(index, total, restrict))
+      }
       if (currentKey != revgeoIndexRecord.cellid) {
         if (currentKey != 0L) {
           writer.append(currentKey, CellGeometries(currentCells))
