@@ -50,7 +50,7 @@ class PolygonIndexer(override val basepath: String, override val fidMap: FidMap)
           numUsedPolygon, usedPolygonSize, polygonSize, groupIndex*groupSize))
       }
       numUsedPolygon += 1
-      writer.append(StoredFeatureId.fromLong(f._id).get, wkbReader.read(poly.polygon))
+      writer.append(f.featureId, wkbReader.read(poly.polygon))
     }
     writer.close()
 

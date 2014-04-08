@@ -21,7 +21,7 @@ object PrefixIndexer {
 }
 
 class PrefixIndexer(
-  override val basepath: String, 
+  override val basepath: String,
   override val fidMap: FidMap,
   prefixSet: HashSet[String]
 ) extends Indexer {
@@ -102,7 +102,7 @@ class PrefixIndexer(
       val (prefSortedRecords, unprefSortedRecords) =
         sortRecordsByNames(woeMatches.toList)
 
-      var fids = new HashSet[StoredFeatureId]
+      val fids = new HashSet[StoredFeatureId]
       prefSortedRecords.foreach(f => {
         if (fids.size < 50) {
           fids.add(f.fidAsFeatureId)

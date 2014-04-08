@@ -30,12 +30,13 @@ case class BoundingBox(
 object GeoJsonPoint {
   def apply(lat: Double, lng: Double): GeoJsonPoint =
     GeoJsonPoint(coordinates = List(lng, lat))
+  val NilPoint = GeoJsonPoint("Point", List(0.0, 0.0))
 }
+
 case class GeoJsonPoint(
   `type`: String = "Point",
   coordinates: List[Double]
 )
-object NilPoint extends GeoJsonPoint("Point", List(0, 0))
 
 object GeocodeRecord {
   val dummyOid = new ObjectId()
@@ -60,7 +61,7 @@ case class GeocodeRecord(
   hasPoly: Boolean = false,
   var attributes: Option[Array[Byte]] = None,
   extraRelations: List[Long] = Nil,
-  var loc: GeoJsonPoint = NilPoint,
+  var loc: GeoJsonPoint = GeoJsonPoint.NilPoint,
   polyId: ObjectId = GeocodeRecord.dummyOid,
   ids: List[Long] = Nil,
   polygonSource: Option[String] = None

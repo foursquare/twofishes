@@ -29,15 +29,6 @@ class IdIndexer(
       slug -> canonicalFid
     }
 
-    // val concordanceEntries: List[(String, StoredFeatureId)] = for {
-    //   record <- MongoGeocodeDAO.find(MongoDBObject())
-    //   id <- record.ids
-    //   fid <- StoredFeatureId.fromLong(id)
-    //   if (fid !=? record.featureId)
-    // } yield {
-    //   (fid.humanReadableString, record.featureId)
-    // }
-
     val writer = buildMapFileWriter(index)
 
     val sortedEntries = (slugEntries).sortWith((a, b) => lexicalSort(a._1, b._1)).foreach({case (k, v) => {

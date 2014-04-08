@@ -16,8 +16,8 @@ import scalaj.collection.Implicits._
 
 
 class NameIndexer(
-  override val basepath: String, 
-  override val fidMap: FidMap, 
+  override val basepath: String,
+  override val fidMap: FidMap,
   outputPrefixIndex: Boolean
 ) extends Indexer {
   val index = Indexes.NameIndex
@@ -34,16 +34,18 @@ class NameIndexer(
     var prefixSet = new HashSet[String]
 
     var lastName = ""
-    var nameFids = new HashSet[StoredFeatureId]
+    val nameFids = new HashSet[StoredFeatureId]
 
     val writer = buildHFileV1Writer(index)
 
     def writeFidsForLastName() {
       writer.append(lastName, fidsToCanonicalFids(nameFids.toList))
       if (outputPrefixIndex) {
-        1.to(List(PrefixIndexer.MaxPrefixLength, lastName.size).min).foreach(length =>
+        for {
+         length <- 1 to math.min(PrefixIndexer.MaxPrefixLength, lastName.size)
+        } {
           prefixSet.add(lastName.substring(0, length))
-        )
+        }
       }
     }
 

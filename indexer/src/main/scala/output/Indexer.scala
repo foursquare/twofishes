@@ -1,4 +1,4 @@
-package com.foursquare.twofishes.output
+  package com.foursquare.twofishes.output
 
 import com.foursquare.twofishes.{Index, MapFileUtils}
 import com.foursquare.twofishes.util.{DurationUtils, StoredFeatureId}
@@ -43,15 +43,14 @@ abstract class Indexer extends DurationUtils {
 
   def writeIndex() {
     val name = this.getClass.getName
-    logger.info("starting indexing for %s".format(name))
 
     if (outputs.forall(_.exists(basepath))) {
       logger.info("had all indexes for %s, skipping this phase".format(name))
-      return
+    } else {
+      logger.info("starting indexing for %s".format(name))
+      logDuration(name) { writeIndexImpl() }
+      logger.info("done indexing for %s".format(name))
     }
-
-    logDuration(name) { writeIndexImpl() }
-    logger.info("done indexing for %s".format(name))
   }
 
   val ThriftClassValue: String = "value.thrift.class"
