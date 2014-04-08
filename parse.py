@@ -42,13 +42,16 @@ if len(args) != 0:
   if not args[0].startswith("-"):
     basepath = args[0]
     args = args[1:]
+
 now_str = str(datetime.datetime.now()).replace(' ', '-').replace(':', '-')
+if not basepath:
+  basepath = os.path.join('indexes', basepath, now_str)
 
 if not os.path.exists('indexes'):
   os.mkdir('indexes')
-basepath = os.path.join('indexes', basepath, now_str)
 print "outputting index to %s" % basepath
-os.mkdir(basepath)
+if not os.path.exists(basepath):
+  os.mkdir(basepath)
 
 cmd_opts = ''
 
