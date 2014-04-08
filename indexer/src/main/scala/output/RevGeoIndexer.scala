@@ -2,6 +2,7 @@ package com.foursquare.twofishes.output
 
 import com.foursquare.twofishes.{CellGeometries, CellGeometry, Indexes, YahooWoeType}
 import com.foursquare.twofishes.mongo.{MongoGeocodeDAO, RevGeoIndexDAO}
+import com.foursquare.twofishes.util.RevGeoConstants
 import com.mongodb.Bytes
 import com.mongodb.casbah.Imports._
 import com.novus.salat._
@@ -14,13 +15,11 @@ import org.apache.hadoop.hbase.util.Bytes._
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._
 
-
-class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) extends Indexer {
-  val minS2Level = 8
-  val maxS2Level = 12
-  val maxCells = 10000
-  val levelMod = 2
-
+class RevGeoIndexer(
+  override val basepath: String,
+  override val fidMap: FidMap, 
+  polygonMap: Map[ObjectId, (Long, YahooWoeType)]
+) extends Indexer with RevGeoConstants{
   val index = Indexes.S2Index
   override val outputs = Seq(index)
 
@@ -29,12 +28,11 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
     Map(
       "minS2Level" -> minS2Level.toString,
       "maxS2Level" -> maxS2Level.toString,
-      "levelMod" -> levelMod.toString
+      "levelMod" -> defaultLevelMod.toString
     )
   )
 
   def writeRevGeoIndex(
-    idMap: Map[ObjectId, (Long, YahooWoeType)],
     restrict: MongoDBObject
   ) = {
     val revGeoCursor = RevGeoIndexDAO.find(restrict)
@@ -45,7 +43,7 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
     var currentCells = new ListBuffer[CellGeometry]
     for {
       revgeoIndexRecord <- revGeoCursor
-      (geoid, woeType) <- idMap.get(revgeoIndexRecord.polyId)
+      (geoid, woeType) <- polygonMap.get(revgeoIndexRecord.polyId)
     } {
       if (currentKey != revgeoIndexRecord.cellid) {
         if (currentKey != 0L) {
@@ -67,20 +65,12 @@ class RevGeoIndexer(override val basepath: String, override val fidMap: FidMap) 
     }
 
     writer.append(currentKey, CellGeometries(currentCells))
-
   }
 
   def writeIndexImpl() {
-    val hasPolyCursor =
-      MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
-    hasPolyCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
-    val idMap: Map[ObjectId, (Long, YahooWoeType)] = hasPolyCursor.map(r => {
-      (r.polyId, (r._id, r.woeType))
-    }).toMap
-
     // in byte order, positives come before negative
-    writeRevGeoIndex(idMap, MongoDBObject("cellid" -> MongoDBObject("$gte" -> 0)))
-    writeRevGeoIndex(idMap, MongoDBObject("cellid" -> MongoDBObject("$lt" -> 0)))
+    writeRevGeoIndex(MongoDBObject("cellid" -> MongoDBObject("$gte" -> 0)))
+    writeRevGeoIndex(MongoDBObject("cellid" -> MongoDBObject("$lt" -> 0)))
     //
 
     writer.close()

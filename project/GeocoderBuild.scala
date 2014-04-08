@@ -199,7 +199,7 @@ object GeocoderBuild extends Build {
         val parser = new GeonamesParser(store, slugIndexer)
 
         GeonamesParser.parseAdminInfoFile("data/downloaded/adminCodes.txt")
-        val polygonLoader = new PolygonLoader(parser, store)
+        val polygonLoader = new PolygonLoader(parser, store, true)
         """,
 
         publishArtifact := false,

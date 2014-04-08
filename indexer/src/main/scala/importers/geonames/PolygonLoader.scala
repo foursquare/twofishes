@@ -24,9 +24,15 @@ import org.geotools.geojson.geom.GeometryJSON
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import scalaj.collection.Implicits._
+import com.foursquare.geo.quadtree.CountryRevGeo
 
 object PolygonLoader {
-  var adHocIdCounter = 1
+  var adHocIdCounter = 0
+
+  def getAdHocId() = {
+    PolygonLoader.adHocIdCounter += 1
+    AdHocId(PolygonLoader.adHocIdCounter)
+  }
 }
 
 case class PolygonMappingConfig (
@@ -46,7 +52,8 @@ case class PolygonMappingConfig (
 
 class PolygonLoader(
   parser: GeonamesParser,
-  store: GeocodeStorageWriteService
+  store: GeocodeStorageWriteService,
+  parserConfig: GeonamesImporterConfig
 ) extends Logging {
   val wktReader = new WKTReader()
   val wkbWriter = new WKBWriter()
@@ -282,15 +289,21 @@ class PolygonLoader(
   }
 
   def hasName(config: PolygonMappingConfig, feature: FsqSimpleFeature): Boolean = {
+    getName(config, feature).nonEmpty
+  }
+
+  def getName(config: PolygonMappingConfig, feature: FsqSimpleFeature): Option[String] = {
+    getNames(config, feature).headOption
+  }
+
+  def getNames(config: PolygonMappingConfig, feature: FsqSimpleFeature): Seq[String] = {
     config.nameFields.view.flatMap(nameField =>
       feature.propMap.get(nameField)
-    ).filterNot(_.isEmpty).nonEmpty
+    ).filterNot(_.isEmpty)
   }
 
   def debugFeature(config: PolygonMappingConfig, feature: FsqSimpleFeature): String = {
-    val names = config.nameFields.view.flatMap(nameField =>
-      feature.propMap.get(nameField)
-    ).filterNot(_.isEmpty)
+    val names = getNames(config, feature)
 
     val firstName = names.headOption.getOrElse("????")
 
@@ -436,15 +449,19 @@ class PolygonLoader(
     }
   }
 
-  def maybeMakeFeature(feature: FsqSimpleFeature): Option[StoredFeatureId] = {
-    (for {
+  def maybeMakeFeature(
+    polygonMappingConfig: Option[PolygonMappingConfig],
+    feature: FsqSimpleFeature
+  ): Option[StoredFeatureId] = {
+    // If it's been prematched, like the neighborhood geojson files
+    lazy val featureOpt = for {
       adminCode1 <- feature.propMap.get("adminCode1")
       countryCode <- feature.propMap.get("countryCode")
       name <- feature.propMap.get("name")
       lat <- feature.propMap.get("lat")
       lng <- feature.propMap.get("lng")
     } yield {
-      val id = AdHocId(PolygonLoader.adHocIdCounter)
+      val id = PolygonLoader.getAdHocId()
 
       val attribMap: Map[GeonamesFeatureColumns.Value, String] = Map(
         (GeonamesFeatureColumns.GEONAMEID -> id.humanReadableString),
@@ -468,7 +485,41 @@ class PolygonLoader(
       logger.debug("making adhoc feature: " + id + " " + id.longId)
       parser.insertGeocodeRecords(List(parser.parseFeature(gnfeature)))
       id
-    }).orElse({
+    }
+
+    // This will get fixed up at output time based on revgeo
+    lazy val toFixFeature = for {
+      config <- polygonMappingConfig
+      if (parserConfig.createUnmatchdFeatures)
+      name <- getName(config, feature)
+      geometry <- feature.geometry
+      centroid = geometry.getCentroid() 
+      if (config.getWoeTypes.headOption.exists(_.size == 1))
+      woeType <- config.getWoeTypes.headOption.flatMap(_.headOption)
+      cc <- CountryRevGeo.getNearestCountryCode(centroid.getY, centroid.getX)
+    } yield {
+      val id = (for {
+        ns <- config.source.flatMap(FeatureNamespace.fromNameOpt)
+        lid <- TryO { getId(config, feature).toLong }
+      } yield { StoredFeatureId(ns, lid) }).getOrElse({
+        PolygonLoader.getAdHocId()
+      })
+      val basicFeature = new BasicFeature(
+        centroid.getY,
+        centroid.getX,
+        cc,
+        name,
+        id,
+        woeType
+      )
+      logger.info("creating feature for %s in %s".format(
+        debugFeature(config, feature), cc
+      ))
+      parser.insertGeocodeRecords(List(parser.parseFeature(basicFeature)))
+      id
+    }
+
+    featureOpt.orElse(toFixFeature).orElse({
       logger.error("no id on %s".format(debugFeature(feature)))
       None
     })
@@ -511,17 +562,19 @@ class PolygonLoader(
         val matches: List[StoredFeatureId] = polygonMappingConfig.toList.flatMap(config => {
           val idOpt: Option[String] = feature.propMap.get(config.idField)
           val priorMatches: List[StoredFeatureId] = idOpt.toList.flatMap(id => { matchingTable.get(id).getOrElse(Nil) })
-          if (priorMatches.nonEmpty) {
+          if (priorMatches.nonEmpty && !parserConfig.redoPolygonMatching) {
             priorMatches
-          } else {
+          } else if (!parserConfig.skipPolygonMatching) {
             maybeMatchFeature(config, feature, geom, outputMatchWriter).toList
+          } else {
+            Nil
           }
         })
 
         if (matches.nonEmpty) {
           matches
         } else {
-          maybeMakeFeature(feature).toList
+          maybeMakeFeature(polygonMappingConfig, feature).toList
         }
       }
 

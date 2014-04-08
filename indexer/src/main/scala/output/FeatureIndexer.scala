@@ -1,19 +1,25 @@
 package com.foursquare.twofishes.output
 
-import com.foursquare.twofishes.{GeocodeRecord, GeocodeServingFeature, Indexes}
-import com.foursquare.twofishes.mongo.{PolygonIndexDAO, PolygonIndex, MongoGeocodeDAO}
-import com.foursquare.twofishes.util.StoredFeatureId
+import com.foursquare.twofishes.{GeocodeRecord, GeocodeServingFeature, Indexes, YahooWoeType}
+import com.foursquare.twofishes.mongo.{PolygonIndexDAO, PolygonIndex, MongoGeocodeDAO, RevGeoIndexDAO}
+import com.foursquare.twofishes.util.{GeoTools, GeometryUtils, StoredFeatureId}
+import com.foursquare.twofishes.Identity._
 import com.mongodb.Bytes
 import com.mongodb.casbah.Imports._
 import com.novus.salat._
 import com.novus.salat.annotations._
 import com.novus.salat.dao._
 import com.novus.salat.global._
+import com.vividsolutions.jts.io.WKBReader
 import java.io._
 import org.apache.hadoop.hbase.util.Bytes._
 import scalaj.collection.Implicits._
 
-class FeatureIndexer(override val basepath: String, override val fidMap: FidMap) extends Indexer {
+class FeatureIndexer(
+  override val basepath: String, 
+  override val fidMap: FidMap,
+  polygonMap: Map[ObjectId, (Long, YahooWoeType)]
+) extends Indexer {
   def canonicalizeParentId(fid: StoredFeatureId) = fidMap.get(fid)
 
   val index = Indexes.FeatureIndex
@@ -39,17 +45,38 @@ class FeatureIndexer(override val basepath: String, override val fidMap: FidMap)
     makeGeocodeServingFeature(g.toGeocodeServingFeature())
   }
 
+  val wkbReader = new WKBReader()
   def makeGeocodeServingFeature(f: GeocodeServingFeature) = {
-    val parents = for {
+    var parents = (for {
       parentLongId <- f.scoringFeatures.parentIds
       parentFid <- StoredFeatureId.fromLong(parentLongId)
       parentId <- canonicalizeParentId(parentFid)
     } yield {
       parentFid
+    }).map(_.longId)
+
+    if (f.scoringFeatures.parentIds.isEmpty &&
+        f.feature.woeType !=? YahooWoeType.COUNTRY) {
+      // take the center and reverse geocode it against the revgeo index!
+      val geom = GeoTools.pointToGeometry(f.feature.geometryOrNull.center)
+      val cells: Seq[Long] = GeometryUtils.s2PolygonCovering(geom).map(_.id)
+
+      // now for each cell, find the matches in our index
+      val candidates = RevGeoIndexDAO.find(MongoDBObject("cellid" -> MongoDBObject("$in" -> cells)))
+
+      // for each candidate, check if it's full or we're in it
+      val matches = (for {
+        revGeoCell <- candidates
+        fidLong <- polygonMap.get(revGeoCell.polyId)
+        if (revGeoCell.full || revGeoCell.geom.exists(geomBytes =>
+          wkbReader.read(geomBytes).contains(geom)))
+      } yield { fidLong }).toList
+
+      parents = matches.map(_._1)
     }
 
     f.copy(
-      scoringFeatures = f.scoringFeatures.copy(parentIds = parents.map(_.longId))
+      scoringFeatures = f.scoringFeatures.copy(parentIds = parents)
     )
   }
 

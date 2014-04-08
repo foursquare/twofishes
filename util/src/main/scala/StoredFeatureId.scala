@@ -10,12 +10,13 @@ case object GeonamesNamespace extends FeatureNamespace("geonameid",
 case object GeonamesZipNamespace extends FeatureNamespace("geonamezip", 2.toByte)
 case object AdHocNamespace extends FeatureNamespace("adhoc", 3.toByte)
 case object WoeIdNamespace extends FeatureNamespace("woeid", 4.toByte)
+case object OsmNamespace extends FeatureNamespace("osm", 5.toByte)
 
 object FeatureNamespace {
   // higher is better
-  val NamespaceOrdering = List(WoeIdNamespace, AdHocNamespace, GeonamesNamespace, MaponicsNamespace)
+  val NamespaceOrdering = List(OsmNamespace, WoeIdNamespace, AdHocNamespace, GeonamesNamespace, MaponicsNamespace)
 
-  val values = List(WoeIdNamespace, AdHocNamespace, GeonamesNamespace, MaponicsNamespace, GeonamesZipNamespace)
+  val values = List(WoeIdNamespace, AdHocNamespace, GeonamesNamespace, MaponicsNamespace, GeonamesZipNamespace, OsmNamespace)
 
   def fromId(id: Byte): FeatureNamespace = fromIdOpt(id).getOrElse(
     throw new RuntimeException("unrecognized feature namespace id '%d'".format(id))
@@ -58,6 +59,8 @@ case class WoeId(override val namespaceSpecificId: Long) extends StoredFeatureId
 case class AdHocId(override val namespaceSpecificId: Long) extends StoredFeatureId(AdHocNamespace)
 case class GeonamesId(override val namespaceSpecificId: Long) extends StoredFeatureId(GeonamesNamespace)
 case class MaponicsId(override val namespaceSpecificId: Long) extends StoredFeatureId(MaponicsNamespace)
+case class OsmId(override val namespaceSpecificId: Long) extends StoredFeatureId(OsmNamespace)
+
 case class GeonamesZip(override val namespaceSpecificId: Long) extends StoredFeatureId(GeonamesZipNamespace) {
   def this(country: String, postalcode: String) = this(GeonamesZip.convertToLong(country, postalcode))
   def this(countryAndPostalCode: String) = this(GeonamesZip.convertToLong(countryAndPostalCode))
@@ -184,6 +187,7 @@ object StoredFeatureId {
     case MaponicsNamespace => MaponicsId(id)
     case AdHocNamespace => AdHocId(id)
     case WoeIdNamespace => WoeId(id)
+    case OsmNamespace => OsmId(id)
   }
 
   private def fromNamespaceAndId(n: String, id: String): Option[StoredFeatureId] = {

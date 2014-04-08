@@ -26,8 +26,10 @@ case class GeonamesImporterConfig(
   outputPrefixIndex: Boolean = true,
   outputRevgeo: Boolean = false,
   reloadData: Boolean = true,
-  redoPolygonMatches: Boolean = false,
-  revgeoIndexPoints: Boolean = false
+  redoPolygonMatching: Boolean = false,
+  skipPolygonMatching: Boolean = false,
+  revgeoIndexPoints: Boolean = false,
+  createUnmatchdFeatures: Boolean = false
 )
 
 object GeonamesImporterConfigParser {
@@ -62,12 +64,18 @@ object GeonamesImporterConfigParser {
         opt[Boolean]("reload_data")
           .text("reload data into mongo")
           .action{ (v, c) => c.copy(reloadData = v) }
-        opt[Boolean]("redo_polygon_matches")
+        opt[Boolean]("redo_polygon_matching")
           .text("redo polygon matches for files which have a mapping.json")
-          .action{ (v, c) => c.copy(redoPolygonMatches = v) }
+          .action{ (v, c) => c.copy(redoPolygonMatching = v) }
+        opt[Boolean]("skip_polygon_matching")
+          .text("don't try to match polygons to geonames features for which we don't have a mapping")
+          .action{ (v, c) => c.copy(skipPolygonMatching = v) }
         opt[Boolean]("revgeo_index_points")
           .text("index point features for radius queries")
           .action{ (v, c) => c.copy(revgeoIndexPoints = v) }
+        opt[Boolean]("create_unmatched_features")
+          .text("create features for unmatched polygons")
+          .action{ (v, c) => c.copy(createUnmatchdFeatures = v) }
       }
 
     // parser.parse returns Option[C]

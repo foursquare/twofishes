@@ -1,7 +1,9 @@
 package com.foursquare.twofishes.output
 
 import com.foursquare.twofishes.{SlugEntry, SlugEntryMap}
+import com.foursquare.twofishes.mongo.MongoGeocodeDAO
 import com.foursquare.twofishes.util.DurationUtils
+import com.mongodb.Bytes
 import com.mongodb.casbah.Imports._
 import com.novus.salat._
 import com.novus.salat.annotations._
@@ -30,12 +32,17 @@ class OutputIndexes(
     // this should really really be done by now
     revgeoLatch.await()
 
+    val hasPolyCursor =
+      MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
+    hasPolyCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
+    val polygonMap = hasPolyCursor.map(r => (r.polyId, (r._id, r.woeType))).toList.toMap
+
     val parallelizedIndexers = List(
       new IdIndexer(basepath, fidMap, slugEntryMap),
-      new FeatureIndexer(basepath, fidMap),
+      new FeatureIndexer(basepath, fidMap, polygonMap),
       new PolygonIndexer(basepath, fidMap)
     ) ++ (if (outputRevgeo) {
-      List(new RevGeoIndexer(basepath, fidMap))
+      List(new RevGeoIndexer(basepath, fidMap, polygonMap))
     } else { Nil })
 
     val diskIoFuturePool = FuturePool(Executors.newFixedThreadPool(4))

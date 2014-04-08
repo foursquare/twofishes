@@ -3,7 +3,7 @@ package com.foursquare.twofishes
 import akka.actor.{Actor, ActorSystem, PoisonPill, Props}
 import akka.routing.{Broadcast, RoundRobinRouter}
 import com.foursquare.geo.shapes.ShapefileS2Util
-import com.foursquare.twofishes.util.{DurationUtils, GeometryUtils}
+import com.foursquare.twofishes.util.{DurationUtils, GeometryUtils, RevGeoConstants}
 import com.foursquare.twofishes.mongo.{PolygonIndexDAO, RevGeoIndexDAO, RevGeoIndex}
 import com.google.common.geometry.S2CellId
 import com.mongodb.casbah.Imports._
@@ -12,6 +12,7 @@ import com.vividsolutions.jts.io.{WKBReader, WKBWriter}
 import java.util.concurrent.CountDownLatch
 import org.bson.types.ObjectId
 import scalaj.collection.Implicits._
+import java.util.concurrent.atomic.AtomicInteger
 
 // ====================
 // ===== Messages =====
@@ -28,15 +29,10 @@ class NullActor extends Actor {
 }
 
 object TerribleCounter {
-  var count = 0
+  val count = new AtomicInteger
 }
 
-class RevGeoWorker extends Actor with DurationUtils {
-  val minS2Level = 8
-  val maxS2Level = 12
-  val maxCells = 10000
-  val levelMod = 2
-
+class RevGeoWorker extends Actor with DurationUtils with RevGeoConstants {
   val wkbReader = new WKBReader()
   val wkbWriter = new WKBWriter()
 
@@ -53,9 +49,10 @@ class RevGeoWorker extends Actor with DurationUtils {
 
   def calculateCover(polyId: ObjectId, geomBytes: Array[Byte]) {
     logDuration("generated cover for %s".format(polyId)) {
-      TerribleCounter.count += 1
-      if (TerribleCounter.count % 1000 == 0) {
-        logger.info("processed about %s polygons for revgeo coverage".format(TerribleCounter.count))
+      val currentCount = TerribleCounter.count.getAndIncrement()
+
+      if (currentCount % 1000 == 0) {
+        logger.info("processed about %s polygons for revgeo coverage".format(currentCount))
       }
 
       val geom = wkbReader.read(geomBytes)
@@ -64,7 +61,7 @@ class RevGeoWorker extends Actor with DurationUtils {
       val cells = logDuration("generated cover for %s".format(polyId)) {
         GeometryUtils.s2PolygonCovering(
           geom, minS2Level, maxS2Level,
-          levelMod = Some(levelMod),
+          levelMod = Some(defaultLevelMod),
           maxCellsHintWhichMightBeIgnored = Some(1000)
         )
       }
