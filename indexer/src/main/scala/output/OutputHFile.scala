@@ -24,7 +24,7 @@ class OutputIndexes(
   outputRevgeo: Boolean = true
 ) extends DurationUtils {
   def buildIndexes(revgeoLatch: Option[CountDownLatch]) {
-    val fidMap = new FidMap(preload = false)
+    val fidMap = logPhase("preload fid map") { new FidMap(preload = true) }
 
     // This one wastes a lot of ram, so do it on it's own
     (new NameIndexer(basepath, fidMap, outputPrefixIndex)).writeIndex()
