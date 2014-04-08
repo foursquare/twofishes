@@ -17,7 +17,7 @@ class FidMap(preload: Boolean) extends DurationUtils {
   val fidMap = new HashMap[StoredFeatureId, Option[StoredFeatureId]]
 
   if (preload) {
-    logDuration("preloading fids") {
+    logPhase("preloading fids") {
       var i = 0
       val total = MongoGeocodeDAO.collection.count()
       val geocodeCursor = MongoGeocodeDAO.find(MongoDBObject())
