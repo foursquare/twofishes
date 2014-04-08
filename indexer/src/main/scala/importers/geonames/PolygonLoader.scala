@@ -50,16 +50,10 @@ case class PolygonMappingConfig (
   def getAllWoeTypes() = getWoeTypes.flatten
 }
 
-class PolygonLoader(
-  parser: GeonamesParser,
-  store: GeocodeStorageWriteService,
-  parserConfig: GeonamesImporterConfig
-) extends Logging {
-  val wktReader = new WKTReader()
-  val wkbWriter = new WKBWriter()
-
+object PolygonMappingConfig {
   val mappingExtension = ".mapping.json"
-  val matchExtension = ".match.tsv"
+
+  def isMappingFile(f: File) = f.getName().endsWith(mappingExtension)
 
   def getMappingForFile(f: File): Option[PolygonMappingConfig] = {
     implicit val formats = DefaultFormats
@@ -73,6 +67,17 @@ class PolygonLoader(
       None
     }
   }
+}
+
+class PolygonLoader(
+  parser: GeonamesParser,
+  store: GeocodeStorageWriteService,
+  parserConfig: GeonamesImporterConfig
+) extends Logging {
+  val wktReader = new WKTReader()
+  val wkbWriter = new WKBWriter()
+
+  val matchExtension = ".match.tsv"
 
   def getMatchingForFile(
     f: File,
@@ -119,7 +124,7 @@ class PolygonLoader(
   ) {
     val geomBytes = wkbWriter.write(geom)
     PolygonIndexDAO.save(PolygonIndex(polyId, geomBytes, source))
-    parser.revGeoMaster ! CalculateCover(polyId, geomBytes)
+    parser.revGeoMaster.foreach(_ ! CalculateCover(polyId, geomBytes))
   }
 
   def updateRecord(
@@ -193,16 +198,16 @@ class PolygonLoader(
       }
     }
     logger.info("done reading in polys")
-    parser.revGeoMaster ! Done
+    parser.revGeoMaster.foreach(_ ! Done)
   }
 
   def rebuildRevGeoIndex {
     RevGeoIndexDAO.collection.drop()
     PolygonIndexDAO.find(MongoDBObject()).foreach(p => {
-      parser.revGeoMaster ! CalculateCover(p._id, p.polygon)
+      parser.revGeoMaster.foreach(_ ! CalculateCover(p._id, p.polygon))
     })
     logger.info("done reading in polys")
-    parser.revGeoMaster ! Done
+    parser.revGeoMaster.foreach(_ ! Done)
   }
 
   def buildQuery(geometry: Geometry, woeTypes: List[YahooWoeType]) = {
@@ -302,6 +307,7 @@ class PolygonLoader(
     ).filterNot(_.isEmpty)
   }
 
+  // Formats a feature from a shapefile if we know a little about it based on a mapping config
   def debugFeature(config: PolygonMappingConfig, feature: FsqSimpleFeature): String = {
     val names = getNames(config, feature)
 
@@ -312,14 +318,17 @@ class PolygonLoader(
     "%s: %s (%s)".format(id, firstName, names.toSet.filterNot(_ =? firstName).mkString(", "))
   }
 
-
+  // Formats a feature from a shapefile if we know nothing about it based on a mapping config
   def debugFeature(feature: FsqSimpleFeature): String = {
     feature.propMap.filterNot(_._1 == "the_geom").toString
   }
 
+  // Formats a geonames record
+  def debugFeature(r: GeocodeRecord): String = r.debugString
+
   case class PolygonMatch(
     candidate: GeocodeRecord,
-    var nameScore: Int = 0
+    nameScore: Int = 0
   )
 
   val parenNameRegex = "^(.*) \\((.*)\\)$".r
@@ -329,24 +338,33 @@ class PolygonLoader(
     candidate: GeocodeRecord,
     withLogging: Boolean = false
   ): PolygonMatch = {
-    val polygonMatch = PolygonMatch(candidate)
-
     val originalFeatureNames = config.nameFields.flatMap(nameField =>
       feature.propMap.get(nameField)
     ).filterNot(_.isEmpty)
+
+    var featureNames = originalFeatureNames
+
     // some OSM feature names look like A (B), make that into two extra names
-    // This is a terrible way to execute this transform
-    val featureNames = originalFeatureNames ++ originalFeatureNames.flatMap(n => {
+    featureNames ++= originalFeatureNames.flatMap(n => {
+      // If the name looks like "A (B)"
       parenNameRegex.findFirstIn(n).toList.flatMap(_ => {
+        // split it into "A" and "B"
         List(
           parenNameRegex.replaceAllIn(n, "$1"),
           parenNameRegex.replaceAllIn(n, "$2")
         )
       })
-    }).flatMap(_.split(",").map(_.trim))
+    })
+
+    // Additionally, some names are actually multiple comma separated names, 
+    // so split those into individual names too
+    featureNames = featureNames.flatMap(_.split(",").map(_.trim))
 
     val candidateNames = candidate.displayNames.map(_.name).filterNot(_.isEmpty)
-    polygonMatch.nameScore = bestNameScore(featureNames, candidateNames)
+    val polygonMatch = PolygonMatch(
+      candidate,
+      nameScore = bestNameScore(featureNames, candidateNames)
+    )
 
     if (withLogging) {
       if (!isGoodEnoughMatch(polygonMatch)) {
@@ -363,7 +381,6 @@ class PolygonLoader(
     polygonMatch
   }
 
-  def debugFeature(r: GeocodeRecord): String = r.debugString
   def getId(polygonMappingConfig: PolygonMappingConfig, feature: FsqSimpleFeature) = {
     feature.propMap.get(polygonMappingConfig.idField).getOrElse("????")
   }
@@ -591,11 +608,11 @@ class PolygonLoader(
     val extension = fparts.lastOption.getOrElse("")
     val shapeFileExtensions = List("shx", "dbf", "prj", "xml", "cpg")
 
-    if ((extension == "json" || extension == "geojson") && !f.getName().endsWith(mappingExtension)) {
+    if ((extension == "json" || extension == "geojson") && !PolygonMappingConfig.isMappingFile(f)) {
       processFeatureIterator(
         defaultNamespace,
         new GeoJsonIterator(f),
-        getMappingForFile(f),
+        PolygonMappingConfig.getMappingForFile(f),
         getMatchingForFile(f, defaultNamespace)
       )
       logger.info("%d records updated by %s".format(recordsUpdated - previousRecordsUpdated, f))
@@ -603,7 +620,7 @@ class PolygonLoader(
       processFeatureIterator(
         defaultNamespace,
         new ShapefileIterator(f),
-        getMappingForFile(f),
+        PolygonMappingConfig.getMappingForFile(f),
         getMatchingForFile(f, defaultNamespace)
       )
       logger.info("%d records updated by %s".format(recordsUpdated - previousRecordsUpdated, f))

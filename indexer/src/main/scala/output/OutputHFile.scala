@@ -23,14 +23,14 @@ class OutputIndexes(
   slugEntryMap: SlugEntryMap.SlugEntryMap = HashMap.empty,
   outputRevgeo: Boolean = true
 ) extends DurationUtils {
-  def buildIndexes(revgeoLatch: CountDownLatch = new CountDownLatch(0)) {
+  def buildIndexes(revgeoLatch: Option[CountDownLatch]) {
     val fidMap = new FidMap(preload = false)
 
     // This one wastes a lot of ram, so do it on it's own
     (new NameIndexer(basepath, fidMap, outputPrefixIndex)).writeIndex()
 
     // this should really really be done by now
-    revgeoLatch.await()
+    revgeoLatch.foreach(_.await())
 
     val hasPolyCursor =
       MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))

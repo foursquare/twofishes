@@ -34,13 +34,11 @@ object GeonamesParser extends DurationUtils {
   var countryNameMap = new HashMap[String, String]()
   var adminIdMap = new HashMap[String, String]()
 
-
   val adminConfig = new AdminServiceConfig {
     httpPort = 7655
   }
   val runtime = RuntimeEnvironment(this, Array.empty)
   val admin = adminConfig()(runtime)
-
 
   lazy val naturalEarthPopulatedPlacesMap: Map[StoredFeatureId, SimpleFeature] = {
     new ShapefileIterator("data/downloaded/ne_10m_populated_places_simple.shp").flatMap(f => {
@@ -83,6 +81,7 @@ object GeonamesParser extends DurationUtils {
 
   def main(args: Array[String]) {
     config = GeonamesImporterConfigParser.parse(args)
+    val parser = new GeonamesParser(store, slugIndexer)
 
      try {
       CountryRevGeo.getNearestCountryCode(40.74, -74)
@@ -98,9 +97,10 @@ object GeonamesParser extends DurationUtils {
       NameIndexDAO.collection.drop()
       PolygonIndexDAO.collection.drop()
       RevGeoIndexDAO.collection.drop()
-      loadIntoMongo()
+      parser.loadIntoMongo()
     }
-    writeIndexes()
+
+    writeIndexes(Some(parser.revGeoLatch))
   }
 
   def makeFinalIndexes() {
@@ -111,15 +111,13 @@ object GeonamesParser extends DurationUtils {
 
   def writeIndex(args: Array[String]) {
     config = GeonamesImporterConfigParser.parse(args)
-    writeIndexes()
+    writeIndexes(None)
   }
-
-  var revGeoLatch = new CountDownLatch(0)
 
   // TODO(blackmad): if we aren't redoing mongo indexing
   // then add some code to see if the s2 index is 'done'
   // We should also add an option to skip reloading polys
-  def writeIndexes() {
+  def writeIndexes(revGeoLatch: Option[CountDownLatch]) {
     makeFinalIndexes()
     val outputter = new OutputIndexes(
       config.hfileBasePath,
@@ -128,70 +126,6 @@ object GeonamesParser extends DurationUtils {
       config.outputRevgeo
     )
     outputter.buildIndexes(revGeoLatch)
-  }
-
-  def loadIntoMongo() {
-    val parser = new GeonamesParser(store, slugIndexer)
-    revGeoLatch = parser.revGeoLatch
-
-    parseCountryInfo()
-
-    if (config.importAlternateNames) {
-      Helpers.duration("readAlternateNamesFile") {
-        parser.loadAlternateNames()
-      }
-    }
-
-    if (!config.parseWorld) {
-      val countries = config.parseCountry.split(",")
-      countries.foreach(f => {
-        parser.logger.info("Parsing %s".format(f))
-        parseAdminInfoFile("data/downloaded/adminCodes-%s.txt".format(f))
-        parser.parseAdminFile(
-          "data/downloaded/%s.txt".format(f))
-
-        if (config.importPostalCodes) {
-          parser.parsePostalCodeFile("data/downloaded/zip/%s.txt".format(f))
-        }
-      })
-    } else {
-      parseAdminInfoFile("data/downloaded/adminCodes.txt")
-      logPhase("parse global features") {
-        parser.parseAdminFile("data/downloaded/allCountries.txt")
-      }
-      if (config.importPostalCodes) {
-        logPhase("parse global postal codes") {
-          parser.parsePostalCodeFile("data/downloaded/zip/allCountries.txt")
-        }
-      }
-    }
-
-    val supplementalDirs = List(
-      new File("data/computed/features"),
-      new File("data/private/features")
-    )
-    supplementalDirs.foreach(supplementalDir =>
-      if (supplementalDir.exists) {
-        supplementalDir.listFiles.foreach(f => {
-          logPhase("parsing supplemental file: %s".format(f)) {
-            parser.parseAdminFile(f.toString, allowBuildings=true)
-          }
-        })
-      }
-    )
-
-    logPhase("parseNameTransforms") {
-      parser.parseNameTransforms()
-    }
-
-    if (config.buildMissingSlugs) {
-      println("building missing slugs")
-      slugIndexer.buildMissingSlugs()
-      slugIndexer.writeMissingSlugs(store)
-    }
-
-    MongoGeocodeDAO.makeIndexes()
-    parser.polygonLoader.load(GeonamesNamespace)
   }
 }
 
@@ -275,9 +209,9 @@ class GeonamesParser(
   val system = ActorSystem("RevGeoSystem")
 
   val revGeoMaster = if (config != null && config.outputRevgeo) {
-    system.actorOf(Props(new RevGeoMaster(revGeoLatch)), name = "master")
+    Some(system.actorOf(Props(new RevGeoMaster(revGeoLatch)), name = "master"))
    } else {
-    system.actorOf(Props(new NullActor()), name = "master")
+    None
   }
 
   def logUnusedHelperEntries {
@@ -286,6 +220,67 @@ class GeonamesParser(
 
   val wkbWriter = new WKBWriter()
   val wktReader = new WKTReader()
+
+  def loadIntoMongo() {    
+    parseCountryInfo()
+
+    if (config.importAlternateNames) {
+      Helpers.duration("readAlternateNamesFile") {
+        loadAlternateNames()
+      }
+    }
+
+    if (!config.parseWorld) {
+      val countries = config.parseCountry.split(",")
+      countries.foreach(f => {
+        logger.info("Parsing %s".format(f))
+        parseAdminInfoFile("data/downloaded/adminCodes-%s.txt".format(f))
+        parseAdminFile(
+          "data/downloaded/%s.txt".format(f))
+
+        if (config.importPostalCodes) {
+          parsePostalCodeFile("data/downloaded/zip/%s.txt".format(f))
+        }
+      })
+    } else {
+      parseAdminInfoFile("data/downloaded/adminCodes.txt")
+      logPhase("parse global features") {
+        parseAdminFile("data/downloaded/allCountries.txt")
+      }
+      if (config.importPostalCodes) {
+        logPhase("parse global postal codes") {
+          parsePostalCodeFile("data/downloaded/zip/allCountries.txt")
+        }
+      }
+    }
+
+    val supplementalDirs = List(
+      new File("data/computed/features"),
+      new File("data/private/features")
+    )
+    supplementalDirs.foreach(supplementalDir =>
+      if (supplementalDir.exists) {
+        supplementalDir.listFiles.foreach(f => {
+          logPhase("parsing supplemental file: %s".format(f)) {
+            parseAdminFile(f.toString, allowBuildings=true)
+          }
+        })
+      }
+    )
+
+    logPhase("parseNameTransforms") {
+      parseNameTransforms()
+    }
+
+    if (config.buildMissingSlugs) {
+      println("building missing slugs")
+      slugIndexer.buildMissingSlugs()
+      slugIndexer.writeMissingSlugs(store)
+    }
+
+    MongoGeocodeDAO.makeIndexes()
+    polygonLoader.load(GeonamesNamespace)
+  }
 
   def doRewrites(names: List[String]): List[String] = {
     val nameSet = new scala.collection.mutable.HashSet[String]()
@@ -350,13 +345,15 @@ class GeonamesParser(
   def parseFeature(feature: InputFeature): GeocodeRecord = {
     val geonameId = feature.featureId
 
-    // this isn't great, because it means we need entries in StoredFeatureId for any
-    // keys from this table
     val ids: List[StoredFeatureId] = List(geonameId) ++
-      concordanceMap.get(geonameId).flatMap(id => {
-        GeonamesParser.slugIndexer.slugEntryMap(id) = (SlugEntry(geonameId.humanReadableString, 0))
-        if (id.contains(":")) {
-          StoredFeatureId.fromHumanReadableString(id)
+      concordanceMap.get(geonameId).flatMap(concordanceId => {
+        GeonamesParser.slugIndexer.slugEntryMap(concordanceId) = (SlugEntry(geonameId.humanReadableString, 0))
+
+        // this isn't great, because it means we need a mapping for the namespace of
+        // any concordances in StoredFeatureId, so it's harder to add ad-hoc concordances to 
+        // external datasets
+        if (concordanceId.contains(":")) {
+          StoredFeatureId.fromHumanReadableString(concordanceId)
         } else { None }
     })
 
