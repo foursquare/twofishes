@@ -98,9 +98,10 @@ object GeonamesParser extends DurationUtils {
       PolygonIndexDAO.collection.drop()
       RevGeoIndexDAO.collection.drop()
       parser.loadIntoMongo()
+      writeIndexes(Some(parser.revGeoLatch))
+    } else {
+      writeIndexes(None)
     }
-
-    writeIndexes(Some(parser.revGeoLatch))
   }
 
   def makeFinalIndexes() {
