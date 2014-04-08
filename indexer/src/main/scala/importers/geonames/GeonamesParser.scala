@@ -4,6 +4,7 @@ package com.foursquare.twofishes.importers.geonames
 import akka.actor.{ActorSystem, Props}
 import com.foursquare.geo.shapes.FsqSimpleFeatureImplicits._
 import com.foursquare.geo.shapes.ShapefileIterator
+import com.foursquare.geo.quadtree.CountryRevGeo
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes._
 import com.foursquare.twofishes.output._
@@ -82,6 +83,15 @@ object GeonamesParser extends DurationUtils {
 
   def main(args: Array[String]) {
     config = GeonamesImporterConfigParser.parse(args)
+
+     try {
+      CountryRevGeo.getNearestCountryCode(40.74, -74)
+    } catch {
+      case e: Exception => {
+        println("caught exception in country revgeo, might need to run \ngit submodule init\n git submodule update;")
+        System.exit(1)
+      }
+    }
 
     if (config.reloadData) {
       MongoGeocodeDAO.collection.drop()
