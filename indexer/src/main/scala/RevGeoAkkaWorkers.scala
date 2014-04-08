@@ -9,6 +9,7 @@ import com.google.common.geometry.S2CellId
 import com.mongodb.casbah.Imports._
 import com.vividsolutions.jts.geom.prep.PreparedGeometryFactory
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter}
+import com.weiglewilczek.slf4s.Logging
 import java.util.concurrent.CountDownLatch
 import org.bson.types.ObjectId
 import scalaj.collection.Implicits._
@@ -32,7 +33,7 @@ object TerribleCounter {
   val count = new AtomicInteger
 }
 
-class RevGeoWorker extends Actor with DurationUtils with RevGeoConstants {
+class RevGeoWorker extends Actor with DurationUtils with RevGeoConstants with Logging {
   val wkbReader = new WKBReader()
   val wkbWriter = new WKBWriter()
 
@@ -98,7 +99,7 @@ class RevGeoWorker extends Actor with DurationUtils with RevGeoConstants {
 // ==================
 // ===== Master =====
 // ==================
-class RevGeoMaster(latch: CountDownLatch) extends Actor {
+class RevGeoMaster(latch: CountDownLatch) extends Actor with Logging {
   var start: Long = 0
 
   val _system = ActorSystem("RoundRobinRouterExample")
