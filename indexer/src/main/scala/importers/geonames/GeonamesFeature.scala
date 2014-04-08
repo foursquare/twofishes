@@ -321,7 +321,7 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) extends
   override def asciiname: Option[String] = values.get(ASCIINAME)
   def place: String = values.getOrElse(PLACE_NAME, "no name")
 
-  override def extraColumns: Map[String,String] = values.getOrElse(EXTRA, "").split("\t").flatMap(p => {
+  override val extraColumns: Map[String,String] = values.getOrElse(EXTRA, "").split("\t").flatMap(p => {
     if (p.nonEmpty) {
       val parts = p.split(";")
       if (parts.size == 2) {
@@ -349,7 +349,7 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) extends
     names
   }
 
-  override def featureId = geonameid.flatMap(id => {
+  override val featureId = geonameid.flatMap(id => {
     StoredFeatureId.fromHumanReadableString(id, defaultNamespace = Some(GeonamesNamespace))
   }).get
 }
