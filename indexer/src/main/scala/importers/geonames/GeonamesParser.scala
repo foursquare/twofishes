@@ -102,6 +102,7 @@ object GeonamesParser extends DurationUtils {
     } else {
       writeIndexes(None)
     }
+    admin.foreach(_.shutdown())
   }
 
   def makeFinalIndexes() {
@@ -222,7 +223,7 @@ class GeonamesParser(
   val wkbWriter = new WKBWriter()
   val wktReader = new WKTReader()
 
-  def loadIntoMongo() {    
+  def loadIntoMongo() {
     parseCountryInfo()
 
     if (config.importAlternateNames) {
@@ -351,7 +352,7 @@ class GeonamesParser(
         GeonamesParser.slugIndexer.slugEntryMap(concordanceId) = (SlugEntry(geonameId.humanReadableString, 0))
 
         // this isn't great, because it means we need a mapping for the namespace of
-        // any concordances in StoredFeatureId, so it's harder to add ad-hoc concordances to 
+        // any concordances in StoredFeatureId, so it's harder to add ad-hoc concordances to
         // external datasets
         if (concordanceId.contains(":")) {
           StoredFeatureId.fromHumanReadableString(concordanceId)
@@ -653,7 +654,7 @@ class GeonamesParser(
   def fixName(s: String) = spaceRe.replaceAllIn(s, " ").trim
 
   def doShorten(cc: String, name: String): List[String] = {
-    val shortens = shortensList.getOrElse("*", Nil) ++ 
+    val shortens = shortensList.getOrElse("*", Nil) ++
       shortensList.getOrElse(cc, Nil)
 
     val candidates = shortens.flatMap(shorten => {

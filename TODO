@@ -1,8 +1,6 @@
 Short Term
 ==========
-*   general code cleanup
-*   should we have parents/full be separate req params?
-*   fewer names returned?
-*   maybe make future the default storage interface?
-*   integrate country revgeo? maybe?
-*   integrate timezone revgeo? at indexing time? maybe?
+*   fix OSM names and langid them
+*   check that OSM is getting parents
+*   dump counters at the end of the run
+*   integrate OSM pois
