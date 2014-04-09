@@ -35,11 +35,11 @@ if mongo_version[0] < 2 or mongo_version[1] < 4:
   print 'need at least mongo 2.4, you have: %s' % mongo_version_str
   sys.exit(1)
 
-
-
+user_specified_basepath = False
 basepath = ''
 if len(args) != 0:
   if not args[0].startswith("-"):
+    user_specified_basepath = True
     basepath = args[0]
     args = args[1:]
 
@@ -94,8 +94,9 @@ version_file.close()
 
 if not options.dry_run:
   os.system(cmd)
-  if os.path.exists("latest"):
-    os.unlink("latest")
-  os.symlink(basepath, "latest")
+  if not user_specified_basepath:
+    if os.path.exists("latest"):
+      os.unlink("latest")
+    os.symlink(basepath, "latest")
 
 
