@@ -5,7 +5,7 @@ import com.foursquare.geo.shapes.{FsqSimpleFeature, GeoJsonIterator, ShapeIterat
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes._
 import com.foursquare.twofishes.mongo.{GeocodeStorageWriteService, PolygonIndex, PolygonIndexDAO, MongoGeocodeDAO, RevGeoIndexDAO}
-import com.foursquare.twofishes.util.{AdHocId, FeatureNamespace, Helpers, NameNormalizer, StoredFeatureId}
+import com.foursquare.twofishes.util.{AdHocId, CountryCodes, FeatureNamespace, Helpers, NameNormalizer, StoredFeatureId}
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.ibm.icu.text.Transliterator
@@ -18,6 +18,7 @@ import com.rockymadden.stringmetric.transform._
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTReader}
 import com.weiglewilczek.slf4s.Logging
+import java.nio.charset.{Charset, CharsetEncoder}
 import java.io.{File, FileWriter, OutputStreamWriter, Writer}
 import org.bson.types.ObjectId
 import org.geotools.geojson.geom.GeometryJSON
@@ -26,6 +27,34 @@ import org.json4s.jackson.JsonMethods._
 import scalaj.collection.Implicits._
 import com.foursquare.geo.quadtree.CountryRevGeo
 import com.cybozu.labs.langdetect.{Detector, DetectorFactory, Language}
+
+object LanguageDetector {
+  DetectorFactory.loadProfile("./indexer/src/main/resources/profiles.sm/")
+
+  val asciiEncoder = Charset.forName("US-ASCII").newEncoder()
+  
+  def isPureAscii(v: String) = asciiEncoder.canEncode(v)
+
+  def detectLang(cc: String, s: String) = {
+    val detector = DetectorFactory.create()
+    detector.append(s)
+    try {
+      val lang = detector.detect
+      if (!CountryCodes.getLangs(cc).has(lang)) {
+        if (isPureAscii(s)) { 
+          "en"
+        } else {
+          "unk"
+        }
+      } else {
+        lang
+      }
+    } catch {
+      case e: Exception => "unk"
+    }
+  }
+
+}
 
 object PolygonLoader {
   var adHocIdCounter = 0
@@ -335,7 +364,16 @@ class PolygonLoader(
       )
     })
 
-    featureNames
+    // Additionally, some names are actually multiple slash separated names
+    // so split those into individual names too
+    featureNames = featureNames.flatMap(n => {
+      n.name.split("/").map(_.trim).filterNot(_.isEmpty).map(namePart =>
+        DisplayName(n.lang, namePart)
+      )
+    })
+
+
+    featureNames.filterNot(_.name.isEmpty)
   }
 
   // Formats a feature from a shapefile if we know a little about it based on a mapping config
@@ -477,13 +515,6 @@ class PolygonLoader(
     }
   }
 
-  DetectorFactory.loadProfile("./indexer/src/main/resources/profiles.sm/")
-  def detectLang(s: String) = {
-    val detector = DetectorFactory.create()
-    detector.append(s)
-    detector.detect
-  }
-
   def maybeMakeFeature(
     polygonMappingConfig: Option[PolygonMappingConfig],
     feature: FsqSimpleFeature
@@ -554,7 +585,7 @@ class PolygonLoader(
       val allNames = getFixedNames(config, feature)
       val langIdDisplayNames = allNames.map(n => {
         if (n.lang =? "unk") {
-          n.copy(lang = detectLang(n.name))
+          n.copy(lang = LanguageDetector.detectLang(cc, n.name))
         } else {
           n
         }
