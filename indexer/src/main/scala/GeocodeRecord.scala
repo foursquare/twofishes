@@ -16,7 +16,7 @@ import scalaj.collection.Implicits._
 case class DisplayName(
   lang: String,
   name: String,
-  flags: Int,
+  flags: Int = 0,
   _id: ObjectId = new ObjectId()
 )
 

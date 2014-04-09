@@ -1,7 +1,6 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes
 
-import com.foursquare.twofishes.GeocodeServingFeature
 import com.foursquare.twofishes.util.StoredFeatureId
 import com.vividsolutions.jts.geom.Geometry
 

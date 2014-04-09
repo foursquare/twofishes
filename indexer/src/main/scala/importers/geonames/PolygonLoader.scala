@@ -25,6 +25,7 @@ import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import scalaj.collection.Implicits._
 import com.foursquare.geo.quadtree.CountryRevGeo
+import com.cybozu.labs.langdetect.{Detector, DetectorFactory, Language}
 
 object PolygonLoader {
   var adHocIdCounter = 0
@@ -36,7 +37,7 @@ object PolygonLoader {
 }
 
 case class PolygonMappingConfig (
-  nameFields: List[String],
+  nameFields: Map[String, List[String]],
   woeTypes: List[List[String]],
   idField: String,
   source: Option[String]
@@ -269,7 +270,7 @@ class PolygonLoader(
     (parser.doRewrites(names.toList) ++ names).toSet.toList.map(removeDiacritics)
   }
 
-  def bestNameScore(namesFromFeature: List[String], namesFromShape: List[String]): Int = {
+  def bestNameScore(namesFromFeature: Seq[String], namesFromShape: Seq[String]): Int = {
     val namesFromShape_Modified = namesFromShape.flatMap(applyHacks)
     val namesFromFeature_Modified = namesFromFeature.flatMap(applyHacks)
 
@@ -298,24 +299,54 @@ class PolygonLoader(
   }
 
   def getName(config: PolygonMappingConfig, feature: FsqSimpleFeature): Option[String] = {
-    getNames(config, feature).headOption
+    getNames(config, feature).headOption.map(_.name)
   }
 
-  def getNames(config: PolygonMappingConfig, feature: FsqSimpleFeature): Seq[String] = {
-    config.nameFields.view.flatMap(nameField =>
-      feature.propMap.get(nameField)
-    ).filterNot(_.isEmpty)
+  def getNames(config: PolygonMappingConfig, feature: FsqSimpleFeature): Seq[DisplayName] = {
+    config.nameFields.view.flatMap({case (lang, nameFields) => {
+      nameFields.flatMap(nameField => feature.propMap.get(nameField)).filterNot(_.isEmpty).map(name =>
+        DisplayName(lang, name)
+      )
+    }}).toSeq
+  }
+
+  def getFixedNames(config: PolygonMappingConfig, feature: FsqSimpleFeature) = {
+    val originalFeatureNames = getNames(config, feature)
+
+   var featureNames: Seq[DisplayName] = originalFeatureNames
+
+    // some OSM feature names look like A (B), make that into two extra names
+    featureNames ++= originalFeatureNames.flatMap(n => {
+      // If the name looks like "A (B)"
+      parenNameRegex.findFirstIn(n.name).toList.flatMap(_ => {
+        // split it into "A" and "B"
+        List(
+          DisplayName(n.lang, parenNameRegex.replaceAllIn(n.name, "$1")),
+          DisplayName(n.lang, parenNameRegex.replaceAllIn(n.name, "$2"))
+        )
+      })
+    })
+
+    // Additionally, some names are actually multiple comma separated names,
+    // so split those into individual names too
+    featureNames = featureNames.flatMap(n => {
+      n.name.split(",").map(_.trim).filterNot(_.isEmpty).map(namePart =>
+        DisplayName(n.lang, namePart)
+      )
+    })
+
+    featureNames
   }
 
   // Formats a feature from a shapefile if we know a little about it based on a mapping config
   def debugFeature(config: PolygonMappingConfig, feature: FsqSimpleFeature): String = {
     val names = getNames(config, feature)
 
-    val firstName = names.headOption.getOrElse("????")
+    val firstName = names.headOption.map(_.name).getOrElse("????")
 
     val id = getId(config, feature)
 
-    "%s: %s (%s)".format(id, firstName, names.toSet.filterNot(_ =? firstName).mkString(", "))
+    "%s: %s (%s)".format(id, firstName, names.map(_.name).toSet.filterNot(_ =? firstName).mkString(", "))
   }
 
   // Formats a feature from a shapefile if we know nothing about it based on a mapping config
@@ -338,32 +369,12 @@ class PolygonLoader(
     candidate: GeocodeRecord,
     withLogging: Boolean = false
   ): PolygonMatch = {
-    val originalFeatureNames = config.nameFields.flatMap(nameField =>
-      feature.propMap.get(nameField)
-    ).filterNot(_.isEmpty)
-
-    var featureNames = originalFeatureNames
-
-    // some OSM feature names look like A (B), make that into two extra names
-    featureNames ++= originalFeatureNames.flatMap(n => {
-      // If the name looks like "A (B)"
-      parenNameRegex.findFirstIn(n).toList.flatMap(_ => {
-        // split it into "A" and "B"
-        List(
-          parenNameRegex.replaceAllIn(n, "$1"),
-          parenNameRegex.replaceAllIn(n, "$2")
-        )
-      })
-    })
-
-    // Additionally, some names are actually multiple comma separated names, 
-    // so split those into individual names too
-    featureNames = featureNames.flatMap(_.split(",").map(_.trim))
+    val featureNames = getFixedNames(config, feature)
 
     val candidateNames = candidate.displayNames.map(_.name).filterNot(_.isEmpty)
     val polygonMatch = PolygonMatch(
       candidate,
-      nameScore = bestNameScore(featureNames, candidateNames)
+      nameScore = bestNameScore(featureNames.map(_.name), candidateNames)
     )
 
     if (withLogging) {
@@ -372,7 +383,7 @@ class PolygonLoader(
           "%s vs %s -- %s vs %s".format(
             candidate.featureId.humanReadableString,
             feature.propMap.get(config.idField).getOrElse("0"),
-            featureNames.flatMap(applyHacks).toSet, candidateNames.flatMap(applyHacks).toSet
+            featureNames.map(_.name).flatMap(applyHacks).toSet, candidateNames.flatMap(applyHacks).toSet
           )
         )
       }
@@ -410,7 +421,7 @@ class PolygonLoader(
           // println(debugFeature(candidate))
           scoreMatch(feature, config, candidate, withLogging)
         }).filter(isGoodEnoughMatch).toList
-          
+
         val scoresMap = scores.groupBy(_.nameScore)
 
         if (scoresMap.nonEmpty) {
@@ -466,6 +477,13 @@ class PolygonLoader(
     }
   }
 
+  DetectorFactory.loadProfile("./indexer/src/main/resources/profiles.sm/")
+  def detectLang(s: String) = {
+    val detector = DetectorFactory.create()
+    detector.append(s)
+    detector.detect
+  }
+
   def maybeMakeFeature(
     polygonMappingConfig: Option[PolygonMappingConfig],
     feature: FsqSimpleFeature
@@ -507,10 +525,10 @@ class PolygonLoader(
     // This will get fixed up at output time based on revgeo
     lazy val toFixFeature = for {
       config <- polygonMappingConfig
-      if (parserConfig.createUnmatchdFeatures)
+      if (parserConfig.createUnmatchedFeatures)
       name <- getName(config, feature)
       geometry <- feature.geometry
-      centroid = geometry.getCentroid() 
+      centroid = geometry.getCentroid()
       if (config.getWoeTypes.headOption.exists(_.size == 1))
       woeType <- config.getWoeTypes.headOption.flatMap(_.headOption)
       cc <- CountryRevGeo.getNearestCountryCode(centroid.getY, centroid.getX)
@@ -532,7 +550,18 @@ class PolygonLoader(
       logger.info("creating feature for %s in %s".format(
         debugFeature(config, feature), cc
       ))
-      parser.insertGeocodeRecords(List(parser.parseFeature(basicFeature)))
+      val geocodeRecord = parser.parseFeature(basicFeature)
+      val allNames = getFixedNames(config, feature)
+      val langIdDisplayNames = allNames.map(n => {
+        if (n.lang =? "unk") {
+          n.copy(lang = detectLang(n.name))
+        } else {
+          n
+        }
+      }).toList
+
+      parser.insertGeocodeRecords(List(geocodeRecord.copy(
+        displayNames = langIdDisplayNames)))
       id
     }
 

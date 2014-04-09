@@ -172,7 +172,7 @@ object GeocoderBuild extends Build {
 
   lazy val indexer = Project(id = "indexer",
       base = file("indexer"),
-      settings = defaultSettings ++ assemblySettings ++ scoptSettings ++ specsSettings ++ 
+      settings = defaultSettings ++ assemblySettings ++ scoptSettings ++ specsSettings ++
         net.virtualvoid.sbt.graph.Plugin.graphSettings ++ Seq(
         baseDirectory in run := file("."),
         mainClass in assembly := Some("com.foursquare.twofishes.importers.geonames.GeonamesParser"),
@@ -199,7 +199,7 @@ object GeocoderBuild extends Build {
         val parser = new GeonamesParser(store, slugIndexer)
 
         GeonamesParser.parseAdminInfoFile("data/downloaded/adminCodes.txt")
-        val polygonLoader = new PolygonLoader(parser, store, true)
+        val polygonLoader = new PolygonLoader(parser, store, GeonamesParser.config)
         """,
 
         publishArtifact := false,

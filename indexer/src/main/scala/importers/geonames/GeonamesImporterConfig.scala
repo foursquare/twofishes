@@ -29,7 +29,7 @@ case class GeonamesImporterConfig(
   redoPolygonMatching: Boolean = false,
   skipPolygonMatching: Boolean = false,
   revgeoIndexPoints: Boolean = false,
-  createUnmatchdFeatures: Boolean = false
+  createUnmatchedFeatures: Boolean = false
 )
 
 object GeonamesImporterConfigParser {
@@ -75,7 +75,7 @@ object GeonamesImporterConfigParser {
           .action{ (v, c) => c.copy(revgeoIndexPoints = v) }
         opt[Boolean]("create_unmatched_features")
           .text("create features for unmatched polygons")
-          .action{ (v, c) => c.copy(createUnmatchdFeatures = v) }
+          .action{ (v, c) => c.copy(createUnmatchedFeatures = v) }
       }
 
     // parser.parse returns Option[C]
