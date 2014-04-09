@@ -108,9 +108,11 @@ object GeonamesParser extends DurationUtils {
   }
 
   def makeFinalIndexes() {
-    NameIndexDAO.makeIndexes()
-    PolygonIndexDAO.makeIndexes()
-    RevGeoIndexDAO.makeIndexes()
+    logPhase("making indexes before generating output") {
+      NameIndexDAO.makeIndexes()
+      PolygonIndexDAO.makeIndexes()
+      RevGeoIndexDAO.makeIndexes()
+    }
   }
 
   def writeIndex(args: Array[String]) {
@@ -277,12 +279,15 @@ class GeonamesParser(
     }
 
     if (config.buildMissingSlugs) {
-      println("building missing slugs")
-      slugIndexer.buildMissingSlugs()
-      slugIndexer.writeMissingSlugs(store)
+      logPhase("building missing slugs") {
+        slugIndexer.buildMissingSlugs()
+        slugIndexer.writeMissingSlugs(store)
+      }
     }
 
-    MongoGeocodeDAO.makeIndexes()
+    logPhase("building feature indexes pre polygon loading") {
+      MongoGeocodeDAO.makeIndexes()
+    }
     polygonLoader.load(GeonamesNamespace)
   }
 
