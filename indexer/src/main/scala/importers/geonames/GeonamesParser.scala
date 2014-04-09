@@ -98,10 +98,9 @@ object GeonamesParser extends DurationUtils {
       PolygonIndexDAO.collection.drop()
       RevGeoIndexDAO.collection.drop()
       parser.loadIntoMongo()
-      writeIndexes(Some(parser.revGeoLatch))
-    } else {
-      writeIndexes(None)
     }
+
+    writeIndexes(parser.revGeoLatch)
 
     logger.info("all done with parse, trying to shutdown admin server and exit")
     admin.foreach(_.shutdown())
@@ -211,13 +210,13 @@ class GeonamesParser(
 
   val helperTables = List(boostTable)
 
-  val revGeoLatch = new CountDownLatch(1)
   val system = ActorSystem("RevGeoSystem")
 
-  val revGeoMaster = if (config != null && config.outputRevgeo) {
-    Some(system.actorOf(Props(new RevGeoMaster(revGeoLatch)), name = "master"))
+  val (revGeoMaster, revGeoLatch) = if (config != null && config.outputRevgeo) {
+    val latch = new CountDownLatch(1)
+    (Some(system.actorOf(Props(new RevGeoMaster(latch)), name = "master")), Some(latch))
    } else {
-    None
+    (None, None)
   }
 
   def logUnusedHelperEntries {

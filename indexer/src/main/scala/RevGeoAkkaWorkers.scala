@@ -69,7 +69,7 @@ class RevGeoWorker extends Actor with DurationUtils with RevGeoConstants with Lo
       }
 
       logDuration("clipped and outputted cover for %d cells (%s)".format(cells.size, polyId)) {
-      val recordShape = geom.buffer(0)
+      val recordShape = geom. buffer(0)
   	  val preparedRecordShape = PreparedGeometryFactory.prepare(recordShape)
         val records = cells.map((cellid: S2CellId) => {
           if (recordShape.isInstanceOf[JTSPoint]) {
@@ -108,7 +108,7 @@ class RevGeoWorker extends Actor with DurationUtils with RevGeoConstants with Lo
 // ==================
 // ===== Master =====
 // ==================
-class RevGeoMaster(latch: CountDownLatch) extends Actor with Logging {
+class RevGeoMaster(val latch: CountDownLatch) extends Actor with Logging {
   var start: Long = 0
 
   val _system = ActorSystem("RoundRobinRouterExample")
