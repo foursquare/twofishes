@@ -7,6 +7,7 @@ import com.foursquare.twofishes.util.{DurationUtils, GeometryUtils, RevGeoConsta
 import com.foursquare.twofishes.mongo.{PolygonIndexDAO, RevGeoIndexDAO, RevGeoIndex}
 import com.google.common.geometry.S2CellId
 import com.mongodb.casbah.Imports._
+import com.vividsolutions.jts.geom.{Point => JTSPoint}
 import com.vividsolutions.jts.geom.prep.PreparedGeometryFactory
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter}
 import com.weiglewilczek.slf4s.Logging
@@ -57,7 +58,7 @@ class RevGeoWorker extends Actor with DurationUtils with RevGeoConstants with Lo
       }
 
       val geom = wkbReader.read(geomBytes)
-   	
+
      	// println("generating cover for %s".format(polyId))
       val cells = logDuration("generated cover for %s".format(polyId)) {
         GeometryUtils.s2PolygonCovering(
@@ -71,16 +72,24 @@ class RevGeoWorker extends Actor with DurationUtils with RevGeoConstants with Lo
       val recordShape = geom.buffer(0)
   	  val preparedRecordShape = PreparedGeometryFactory.prepare(recordShape)
         val records = cells.map((cellid: S2CellId) => {
-          val s2shape = ShapefileS2Util.fullGeometryForCell(cellid)
-          if (preparedRecordShape.contains(s2shape)) {    	
-    	      RevGeoIndex(cellid.id(), polyId, full = true, geom = None)
+          if (recordShape.isInstanceOf[JTSPoint]) {
+            RevGeoIndex(
+              cellid.id(), polyId,
+              full = false,
+              geom = Some(wkbWriter.write(recordShape))
+            )
           } else {
-  	      	RevGeoIndex(
-  	      		cellid.id(), polyId,
-  	      		full = false,
-  	      		geom = Some(wkbWriter.write(s2shape.intersection(recordShape)))
-  	      	)
-  	      }
+            val s2shape = ShapefileS2Util.fullGeometryForCell(cellid)
+            if (preparedRecordShape.contains(s2shape)) {
+      	      RevGeoIndex(cellid.id(), polyId, full = true, geom = None)
+            } else {
+              RevGeoIndex(
+                cellid.id(), polyId,
+                full = false,
+                geom = Some(wkbWriter.write(s2shape.intersection(recordShape)))
+              )
+            }
+          }
         })
         RevGeoIndexDAO.insert(records)
       }

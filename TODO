@@ -2,7 +2,7 @@ Short Term
 ==========
 *   fix OSM names and langid them
 *   check that OSM is getting parents
-*   dump counters at the end of the run
 *   integrate OSM pois
+*   dump counters at the end of the run
 *   make logback rotate
 *   woeid lookup isn't working, though it is at least there
