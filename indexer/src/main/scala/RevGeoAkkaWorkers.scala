@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger
 // ===== Messages =====
 // ====================
 sealed trait CoverMessage
-case class Done extends CoverMessage
+case class Done() extends CoverMessage
 case class CalculateCover(polyId: ObjectId, geomBytes: Array[Byte]) extends CoverMessage
 case class CalculateCoverRange(polyIds: List[ObjectId]) extends CoverMessage
 

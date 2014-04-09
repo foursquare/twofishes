@@ -32,7 +32,7 @@ object LanguageDetector {
   DetectorFactory.loadProfile("./indexer/src/main/resources/profiles.sm/")
 
   val asciiEncoder = Charset.forName("US-ASCII").newEncoder()
-  
+
   def isPureAscii(v: String) = asciiEncoder.canEncode(v)
 
   def detectLang(cc: String, s: String) = {
@@ -41,7 +41,7 @@ object LanguageDetector {
     try {
       val lang = detector.detect
       if (!CountryCodes.getLangs(cc).has(lang)) {
-        if (isPureAscii(s)) { 
+        if (isPureAscii(s)) {
           "en"
         } else {
           "unk"
@@ -228,7 +228,7 @@ class PolygonLoader(
       }
     }
     logger.info("done reading in polys")
-    parser.revGeoMaster.foreach(_ ! Done)
+    parser.revGeoMaster.foreach(_ ! Done())
   }
 
   def rebuildRevGeoIndex {
@@ -237,7 +237,7 @@ class PolygonLoader(
       parser.revGeoMaster.foreach(_ ! CalculateCover(p._id, p.polygon))
     })
     logger.info("done reading in polys")
-    parser.revGeoMaster.foreach(_ ! Done)
+    parser.revGeoMaster.foreach(_ ! Done())
   }
 
   def buildQuery(geometry: Geometry, woeTypes: List[YahooWoeType]) = {
