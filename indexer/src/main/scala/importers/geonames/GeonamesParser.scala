@@ -102,6 +102,8 @@ object GeonamesParser extends DurationUtils {
     } else {
       writeIndexes(None)
     }
+
+    logger.info("all done with parse, trying to shutdown admin server and exit")
     admin.foreach(_.shutdown())
   }
 

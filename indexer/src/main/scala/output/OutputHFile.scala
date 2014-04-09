@@ -53,5 +53,7 @@ class OutputIndexes(
     )
     // wait forever to finish
     Future.collect(indexFutures).apply()
+
+    logger.info("all done with output")
   }
 }
