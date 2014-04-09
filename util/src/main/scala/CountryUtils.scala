@@ -30,7 +30,7 @@ object CountryUtils {
   import CountryInfoFields._
 
   private val countryCodeToGeoIdMap: Map[String, Long] =
-    new BufferedSource(getClass.getResourceAsStream("/countryInfo.txt"))
+    scala.io.Source.fromFile("./data/downloaded/countryInfo.txt")
       .getLines.filterNot(_.startsWith("#"))
       .map(line => {
           var parts = line.split("\t")
@@ -70,4 +70,5 @@ object CountryUtils {
 
   def isCountryDependentOnCountry(dcc: String, cc: String) =
     getDependentCountryCodesForCountry(cc).has(dcc)
+
 }
