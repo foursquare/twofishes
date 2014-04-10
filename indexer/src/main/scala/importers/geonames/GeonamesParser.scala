@@ -98,9 +98,10 @@ object GeonamesParser extends DurationUtils {
       PolygonIndexDAO.collection.drop()
       RevGeoIndexDAO.collection.drop()
       parser.loadIntoMongo()
+      writeIndexes(parser.revGeoLatch)
+    } else {
+      writeIndexes(None)
     }
-
-    writeIndexes(parser.revGeoLatch)
 
     logger.info("all done with parse, trying to shutdown admin server and exit")
     admin.foreach(_.shutdown())
