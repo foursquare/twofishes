@@ -97,7 +97,7 @@ object GeocoderBuild extends Build {
     settings = defaultSettings ++ assemblySettings ++ Seq(
       publishArtifact := true
     ),
-    base = file(".")) aggregate(util, core, interface, server, indexer)
+    base = file(".")) aggregate(util, core, interface, server, indexer, quadtree)
 
   lazy val core = Project(id = "core",
       base = file("core"),
