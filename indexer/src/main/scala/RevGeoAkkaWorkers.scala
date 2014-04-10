@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger
 sealed trait CoverMessage
 case class Done() extends CoverMessage
 case class CalculateCover(polyId: ObjectId, geomBytes: Array[Byte]) extends CoverMessage
-case class CalculateCoverRange(polyIds: List[ObjectId]) extends CoverMessage
+case class FinishedCover() extends CoverMessage
 
 class NullActor extends Actor {
   def receive = {
@@ -38,12 +38,6 @@ class RevGeoWorker extends Actor with DurationUtils with RevGeoConstants with Lo
   val wkbReader = new WKBReader()
   val wkbWriter = new WKBWriter()
 
-  def calculateCover(msg: CalculateCoverRange) {
-    val cursor = PolygonIndexDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> msg.polyIds)))
-    cursor.foreach(poly => {
-      calculateCover(poly._id, poly.polygon)
-    })
-  }
 
   def calculateCover(msg: CalculateCover) {
     calculateCover(msg.polyId, msg.geomBytes)
@@ -99,8 +93,7 @@ class RevGeoWorker extends Actor with DurationUtils with RevGeoConstants with Lo
   def receive = {
     case msg: CalculateCover =>
       calculateCover(msg)
-    case msg: CalculateCoverRange =>
-      calculateCover(msg)
+      sender ! FinishedCover()
   }
 }
 
@@ -113,16 +106,33 @@ class RevGeoMaster(val latch: CountDownLatch) extends Actor with Logging {
 
   val _system = ActorSystem("RoundRobinRouterExample")
   val router = _system.actorOf(Props[RevGeoWorker].withRouter(RoundRobinRouter(8)), name = "myRoundRobinRouterActor")
+  var totalSeen = 0
+  var seenDone = false
 
   // message handler
   def receive = {
+    case msg: FinishedCover =>
+      totalSeen -= 1
+      if (totalSeen == 0 && seenDone) {
+        logger.info("finished all revgeo covers, shutting down system")
+        self ! PoisonPill
+      }
+      if (totalSeen < 0) {
+        logger.error("totalSeen < 0 ... we're bad at a counting")
+      }
     case msg: CalculateCover =>
+      totalSeen += 1
 	    router ! msg
     case msg: Done =>
       logger.info("all done with revgeo coverage indexing, sending poison pills")
       // send a PoisonPill to all workers telling them to shut down themselves
       router ! Broadcast(PoisonPill)
-      // I believe that the router shuts down once all the children shutdown
+      latch.countDown()
+      seenDone = true
+      if (totalSeen == 0) {
+        logger.info("had already finished all revgeo covers, shutting down system")
+        self ! PoisonPill
+      }
   }
 
   override def preStart() {
@@ -135,6 +145,5 @@ class RevGeoMaster(val latch: CountDownLatch) extends Actor with Logging {
       "revgeo covering calculation time: \t%s millis"
         .format((System.currentTimeMillis - start))
     )
-    latch.countDown()
   }
 }
