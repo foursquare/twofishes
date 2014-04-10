@@ -38,7 +38,6 @@ class RevGeoWorker extends Actor with DurationUtils with RevGeoConstants with Lo
   val wkbReader = new WKBReader()
   val wkbWriter = new WKBWriter()
 
-
   def calculateCover(msg: CalculateCover) {
     calculateCover(msg.polyId, msg.geomBytes)
   }
@@ -63,16 +62,16 @@ class RevGeoWorker extends Actor with DurationUtils with RevGeoConstants with Lo
       }
 
       logDuration("clipped and outputted cover for %d cells (%s)".format(cells.size, polyId)) {
-      val recordShape = geom. buffer(0)
-  	  val preparedRecordShape = PreparedGeometryFactory.prepare(recordShape)
         val records = cells.map((cellid: S2CellId) => {
-          if (recordShape.isInstanceOf[JTSPoint]) {
+          if (geom.isInstanceOf[JTSPoint]) {
             RevGeoIndex(
               cellid.id(), polyId,
               full = false,
-              geom = Some(wkbWriter.write(recordShape))
+              geom = Some(wkbWriter.write(geom))
             )
           } else {
+            val recordShape = geom.buffer(0)
+            val preparedRecordShape = PreparedGeometryFactory.prepare(recordShape)
             val s2shape = ShapefileS2Util.fullGeometryForCell(cellid)
             if (preparedRecordShape.contains(s2shape)) {
       	      RevGeoIndex(cellid.id(), polyId, full = true, geom = None)
