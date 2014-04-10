@@ -69,6 +69,8 @@ class ReverseGeocoderHelperImpl(
   def featureGeometryIntersections(wkbGeometry: Array[Byte], otherGeom: Geometry) = {
     val wkbReader = new WKBReader()
     val geom = wkbReader.read(wkbGeometry)
+    println(geom)
+    println(otherGeom)
     try {
       (geom, geom.intersects(otherGeom))
     } catch {

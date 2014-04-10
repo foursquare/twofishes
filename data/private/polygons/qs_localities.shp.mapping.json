@@ -1,0 +1,8 @@
+{
+  "source": "qs",
+  "nameFields": {
+    "unk": ["qs_loc", "qs_loc_alt", "qs_loc_lc"]
+  },
+  "woeTypes": [["TOWN"], ["SUBURB"]],
+  "idField": "qs_gn_id"
+}
