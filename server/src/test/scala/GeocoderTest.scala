@@ -58,7 +58,7 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
         maxCellsHintWhichMightBeIgnored = Some(1000)
       )
 
-    cells.asScala.foreach(cellid => {
+    cells.foreach(cellid => {
       val s2shape = ShapefileS2Util.fullGeometryForCell(cellid)
       val bucket = s2map.getOrElseUpdate(cellid.id, new ListBuffer[CellGeometry]())
       val cellGeometryBuilder = CellGeometry.newBuilder
