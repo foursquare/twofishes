@@ -30,7 +30,7 @@ object CountryUtils {
   import CountryInfoFields._
 
   private val countryCodeToGeoIdMap: Map[String, Long] =
-    scala.io.Source.fromFile("./data/downloaded/countryInfo.txt")
+    new BufferedSource(getClass.getResourceAsStream("/countryInfo.txt"))
       .getLines.filterNot(_.startsWith("#"))
       .map(line => {
           var parts = line.split("\t")
