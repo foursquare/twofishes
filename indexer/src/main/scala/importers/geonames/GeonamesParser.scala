@@ -305,11 +305,13 @@ class GeonamesParser(
     nameSet.toList
   }
 
-  val bigDeleteRe = deletesList
-    .map(_ + "\\b")
-    .sortBy(_.size * -1)
-    .mkString("|")
-    .r
+  val bigDeleteRe = {
+    val re = deletesList
+      .map(_ + "\\b")
+      .sortBy(_.size * -1)
+      .mkString("|")
+    ("(?i)%s".format(re)).r
+  }
 
   def doDelete(name: String): Option[String] = {
     val newName = bigDeleteRe.replaceAllIn(name, "")
