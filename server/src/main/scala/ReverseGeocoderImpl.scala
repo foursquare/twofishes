@@ -13,43 +13,22 @@ import org.apache.thrift.TBaseHelper
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._
 
-class ReverseGeocodeParseOrdering extends Ordering[Parse[Sorted]] {
-  def compare(a: Parse[Sorted], b: Parse[Sorted]): Int = {
-    val comparisonOpt = for {
-      aFeatureMatch <- a.headOption
-      bFeatureMatch <- b.headOption
+object ReverseGeocodeParseOrdering {
+  def parseToSortKey(p: Parse[Sorted]) = {
+    for {
+      featureMatch <- p.headOption
     } yield {
-      val aServingFeature = aFeatureMatch.fmatch
-      val bServingFeature = bFeatureMatch.fmatch
-      val aWoeTypeOrder = YahooWoeTypes.getOrdering(
-        aServingFeature.feature.woeTypeOption.getOrElse(YahooWoeType.UNKNOWN))
-      val bWoeTypeOrder = YahooWoeTypes.getOrdering(
-        bServingFeature.feature.woeTypeOption.getOrElse(YahooWoeType.UNKNOWN))
-      val woeTypeOrderDiff = aWoeTypeOrder - bWoeTypeOrder
-      val boostDiff = bServingFeature.scoringFeatures.boost - aServingFeature.scoringFeatures.boost
-
-      val (distanceDiff, coverageDiff) = (for {
-        aScoringFeatures <- a.scoringFeaturesOption
-        bScoringFeatures <- b.scoringFeaturesOption
-      } yield {
-        (aScoringFeatures.featureToRequestCenterDistance.toInt - bScoringFeatures.featureToRequestCenterDistance.toInt,
-         bScoringFeatures.percentOfRequestCovered.toInt - aScoringFeatures.percentOfRequestCovered.toInt)
-      }).toList.headOption.getOrElse((0, 0))
-      
-      
-      if (woeTypeOrderDiff != 0) {
-        woeTypeOrderDiff
-      } else if (distanceDiff != 0) {
-        distanceDiff
-      } else if (boostDiff != 0) {
-        boostDiff
-      } else {
-        coverageDiff
-      }
+      val servingFeature = featureMatch.fmatch
+      val woeTypeInt = YahooWoeTypes.getOrdering(
+        servingFeature.feature.woeTypeOption.getOrElse(YahooWoeType.UNKNOWN))
+      val boost = servingFeature.scoringFeatures.boost
+      val distance = p.scoringFeaturesOption.flatMap(s => Some(s.featureToRequestCenterDistance.toInt)).getOrElse(0)
+      val coverage = p.scoringFeaturesOption.flatMap(s => Some(s.percentOfRequestCovered.toInt)).getOrElse(0)
+      (woeTypeInt, distance, -1*boost, -1*coverage)
     }
-
-    comparisonOpt.getOrElse(0)
   }
+
+  val ParseOrdering: Ordering[Parse[Sorted]] = Ordering.by(parseToSortKey)
 }
 
 trait TimeResponseHelper {
@@ -238,7 +217,7 @@ class ReverseGeocoderHelperImpl(
         req.maxInterpretations
       }
 
-      val sortedParses = parses.sorted(new ReverseGeocodeParseOrdering).take(maxInterpretations)
+      val sortedParses = parses.sorted(ReverseGeocodeParseOrdering.ParseOrdering).take(maxInterpretations)
 
       val filteredParses = responseProcessor.filterParses(sortedParses, parseParams)
       (filteredParses, (otherGeom -> filteredParses.flatMap(p => StoredFeatureId.fromLong(p.fmatches(0).fmatch.longId))))
