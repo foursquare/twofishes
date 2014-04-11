@@ -46,3 +46,25 @@ küla
 seniūnija
 # rural settlement
 сельское поселение
+# polish "commune"
+gmina
+# russian village council
+сельсовет
+# district
+район
+# village
+сільська
+parish
+# parish
+parroquia
+seniūnija
+# council
+совет
+municipality
+municipality of
+# municipality
+Δήμος
+# urban settlement
+городское поселение
+# management community
+verwaltungsgemeinschaft
