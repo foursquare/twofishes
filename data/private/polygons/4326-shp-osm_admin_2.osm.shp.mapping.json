@@ -1,7 +1,7 @@
 {
   "source": "osm",
   "nameFields": {
-    "unk": ["name"],
+    "unk": ["name", "alt_name", "int_name", "loc_name", "nat_name", "short_name"],
     "af": ["name_af"],
     "sq": ["name_sq"],
     "am": ["name_am"],
