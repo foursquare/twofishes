@@ -5,7 +5,7 @@ import com.foursquare.geo.shapes.{FsqSimpleFeature, GeoJsonIterator, ShapeIterat
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes._
 import com.foursquare.twofishes.mongo.{GeocodeStorageWriteService, PolygonIndex, PolygonIndexDAO, MongoGeocodeDAO, RevGeoIndexDAO}
-import com.foursquare.twofishes.util.{AdHocId, CountryCodes, FeatureNamespace, Helpers, NameNormalizer, StoredFeatureId}
+import com.foursquare.twofishes.util.{AdHocId, CountryCodes, DurationUtils, FeatureNamespace, Helpers, NameNormalizer, StoredFeatureId}
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.ibm.icu.text.Transliterator
@@ -103,7 +103,7 @@ class PolygonLoader(
   parser: GeonamesParser,
   store: GeocodeStorageWriteService,
   parserConfig: GeonamesImporterConfig
-) extends Logging {
+) extends DurationUtils {
   val wktReader = new WKTReader()
   val wkbWriter = new WKBWriter()
 
@@ -625,6 +625,9 @@ class PolygonLoader(
       val fidsFromFileName = fparts.lift(0).flatMap(p => Helpers.TryO(p.toInt.toString))
         .flatMap(i => StoredFeatureId.fromHumanReadableString(i, Some(defaultNamespace))).toList
 
+      val source = polygonMappingConfig.flatMap(_.source).getOrElse(features.file.getName())
+      val sourceKey = "polygonMatching." + source
+
       val geoidColumns = List("geonameid", "qs_gn_id", "gn_id")
       val geoidsFromFile = geoidColumns.flatMap(feature.propMap.get)
       val fidsFromFile = geoidsFromFile
@@ -642,7 +645,11 @@ class PolygonLoader(
           if (priorMatches.nonEmpty && !parserConfig.redoPolygonMatching) {
             priorMatches
           } else if (!parserConfig.skipPolygonMatching) {
-            maybeMatchFeature(config, feature, geom, outputMatchWriter).toList
+            logDuration("polygonMatching") {
+              logDuration(sourceKey) {
+                maybeMatchFeature(config, feature, geom, outputMatchWriter).toList
+              }
+            }
           } else {
             Nil
           }
@@ -655,7 +662,6 @@ class PolygonLoader(
         }
       }
 
-      val source = polygonMappingConfig.flatMap(_.source).getOrElse(features.file.getName())
       updateRecord(store, fids, geom, source)
     }
     outputMatchWriter.foreach(_.close())

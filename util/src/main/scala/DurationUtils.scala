@@ -2,13 +2,15 @@ package com.foursquare.twofishes.util
 
 import com.twitter.util.Duration
 import com.weiglewilczek.slf4s.Logging
+import com.twitter.ostrich.stats.Stats
 
 trait DurationUtils extends Logging {
-  def logDuration[T](what: String)(f: => T): T = {
+  def logDuration[T](ostrichKey: String, extraInfo: String = "")(f: => T): T = {
     val (rv, duration) = Duration.inNanoseconds(f)
     if (duration.inMilliseconds > 200) {
-      logger.debug(what + " in %s µs / %s ms".format(duration.inMicroseconds, duration.inMilliseconds))
+      logger.debug(ostrichKey + ": " + extraInfo + " in %s µs / %s ms".format(duration.inMicroseconds, duration.inMilliseconds))
     }
+    Stats.addMetric(ostrichKey + "_msec", duration.inMilliseconds.toInt)
     rv
   }
 

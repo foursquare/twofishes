@@ -104,7 +104,6 @@ object GeocoderBuild extends Build {
       settings = defaultSettings ++ specsSettings ++ Seq(
         publishArtifact := true,
         libraryDependencies ++= Seq(
-          "com.twitter" %% "ostrich" % "9.1.0",
           "com.twitter" %% "util-core" % "6.3.0",
           "com.twitter" %% "util-logging" % "6.3.0",
           "org.slf4j" % "slf4j-api" % "1.6.1",
@@ -240,6 +239,7 @@ object GeocoderBuild extends Build {
       settings = defaultSettings ++ assemblySettings ++ specsSettings ++ Seq(
         publishArtifact := true,
         libraryDependencies ++= Seq(
+          "com.twitter" %% "ostrich" % "9.1.3",
           "com.google.caliper" % "caliper" % "0.5-rc1",
           "org.geotools" % "gt-shapefile" % geoToolsVersion,
           "org.geotools" % "gt-geojson" % geoToolsVersion,

@@ -43,7 +43,7 @@ class RevGeoWorker extends Actor with DurationUtils with RevGeoConstants with Lo
   }
 
   def calculateCover(polyId: ObjectId, geomBytes: Array[Byte]) {
-    logDuration("generated cover for %s".format(polyId)) {
+    logDuration("totalCovering", "generated cover for %s".format(polyId)) {
       val currentCount = TerribleCounter.count.getAndIncrement()
 
       if (currentCount % 1000 == 0) {
@@ -53,7 +53,7 @@ class RevGeoWorker extends Actor with DurationUtils with RevGeoConstants with Lo
       val geom = wkbReader.read(geomBytes)
 
      	// println("generating cover for %s".format(polyId))
-      val cells = logDuration("generated cover for %s".format(polyId)) {
+      val cells = logDuration("s2Covering", "generated cover for %s".format(polyId)) {
         GeometryUtils.s2PolygonCovering(
           geom, minS2Level, maxS2Level,
           levelMod = Some(defaultLevelMod),
@@ -61,7 +61,7 @@ class RevGeoWorker extends Actor with DurationUtils with RevGeoConstants with Lo
         )
       }
 
-      logDuration("clipped and outputted cover for %d cells (%s)".format(cells.size, polyId)) {
+      logDuration("coverClipping", "clipped and outputted cover for %d cells (%s)".format(cells.size, polyId)) {
         val records = cells.map((cellid: S2CellId) => {
           if (geom.isInstanceOf[JTSPoint]) {
             RevGeoIndex(
