@@ -104,7 +104,6 @@ class PolygonLoader(
   store: GeocodeStorageWriteService,
   parserConfig: GeonamesImporterConfig
 ) extends DurationUtils {
-  val wktReader = new WKTReader()
   val wkbWriter = new WKBWriter()
 
   val matchExtension = ".match.tsv"
@@ -619,7 +618,7 @@ class PolygonLoader(
       geom <- feature.geometry
     } {
       if (index % 100 == 0) {
-        logger.info("processing feature %d".format(index))
+        logger.info("processing feature %d in %s".format(index, features.file.getName))
       }
 
       val fidsFromFileName = fparts.lift(0).flatMap(p => Helpers.TryO(p.toInt.toString))
