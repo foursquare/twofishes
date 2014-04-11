@@ -26,11 +26,15 @@ class ReverseGeocodeParseOrdering extends Ordering[Parse[Sorted]] {
       val bWoeTypeOrder = YahooWoeTypes.getOrdering(
         bServingFeature.feature.woeTypeOption.getOrElse(YahooWoeType.UNKNOWN))
       val woeTypeOrderDiff = aWoeTypeOrder - bWoeTypeOrder
-      val distanceDiff = a.scoringFeatures.featureToRequestCenterDistance.toInt -
-        b.scoringFeatures.featureToRequestCenterDistance.toInt
       val boostDiff = bServingFeature.scoringFeatures.boost - aServingFeature.scoringFeatures.boost
-      val coverageDiff = b.scoringFeatures.percentOfRequestCovered.toInt -
-        a.scoringFeatures.percentOfRequestCovered.toInt
+
+      val (distanceDiff, coverageDiff) = (for {
+        aScoringFeatures <- a.scoringFeaturesOption
+        bScoringFeatures <- b.scoringFeaturesOption
+      } yield {
+        (aScoringFeatures.featureToRequestCenterDistance.toInt - bScoringFeatures.featureToRequestCenterDistance.toInt,
+         bScoringFeatures.percentOfRequestCovered.toInt - aScoringFeatures.percentOfRequestCovered.toInt)
+      }).toList.headOption.getOrElse((0, 0))
       
       
       if (woeTypeOrderDiff != 0) {
@@ -224,7 +228,7 @@ class ReverseGeocoderHelperImpl(
               GeometryUtils.pointToShapeDistance(otherGeom.getCentroid(), geom))
           })
         }
-        parse.setScoringFeatures(scoringFeatures.result)
+        parse.setScoringFeatures(Some(scoringFeatures.result))
         parse
       }
 

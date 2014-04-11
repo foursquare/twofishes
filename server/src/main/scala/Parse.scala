@@ -39,7 +39,7 @@ case class Parse[T <: MaybeSorted](
 
   val debugLines = new ListBuffer[DebugScoreComponent]
   var finalScore = 0.0
-  var scoringFeatures = InterpretationScoringFeatures.createRecord
+  var scoringFeaturesOption: Option[InterpretationScoringFeatures] = None
   var allLongIds: Seq[Long] = Nil
   lazy val extraLongIds: Seq[Long] = allLongIds.filterNot(_ =? featureId.longId)
 
@@ -49,7 +49,9 @@ case class Parse[T <: MaybeSorted](
 
   def setFinalScore(score: Double) { finalScore = score }
 
-  def setScoringFeatures(scoringFeaturesIn: InterpretationScoringFeatures) { scoringFeatures = scoringFeaturesIn}
+  def setScoringFeatures(scoringFeaturesIn: Option[InterpretationScoringFeatures]) {
+    scoringFeaturesOption = scoringFeaturesIn
+  }
 
   override def toString: String = {
     val namesandids = this.map(f => {
@@ -66,7 +68,7 @@ case class Parse[T <: MaybeSorted](
 
   def getSorted: Parse[Sorted] = {
     val sortedParse = Parse[Sorted](fmatches.sorted(FeatureMatchOrdering))
-    sortedParse.setScoringFeatures(scoringFeatures)
+    sortedParse.setScoringFeatures(scoringFeaturesOption)
     sortedParse
   }
 
