@@ -38,3 +38,11 @@ Province
 # estonia
 Küla
 küla
+# independent city
+городской округ
+# borough
+городской округ
+# parish
+seniūnija
+# rural settlement
+сельское поселение
