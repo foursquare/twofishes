@@ -46,6 +46,7 @@ küla
 seniūnija
 # rural settlement
 сельское поселение
+сельсовет
 # polish "commune"
 gmina
 # russian village council
@@ -68,3 +69,7 @@ municipality of
 городское поселение
 # management community
 verwaltungsgemeinschaft
+# haiti
+Commnune
+Commune
+
