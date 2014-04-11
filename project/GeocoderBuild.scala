@@ -250,7 +250,7 @@ object GeocoderBuild extends Build {
           "org.mongodb" % "mongo-java-driver" % "2.9.3",
           "com.weiglewilczek.slf4s" % "slf4s_2.9.1" % "1.0.7",
           "ch.qos.logback" % "logback-classic" % "1.0.9",
-          "com.ibm.icu" % "icu4j" % "52.1"
+          "com.ibm.icu" % "icu4j" % "49.1"
         ),
         ivyXML := (
           <dependencies>
