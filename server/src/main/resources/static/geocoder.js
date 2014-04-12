@@ -165,9 +165,9 @@ function geocode() {
     }
     query = rewrittenQuery;
   }
-
+I
   var url = 'http://' + window.location.host + '/?debug=1'
-    + '&responseIncludes=EVERYTHING,WKT_GEOMETRY_SIMPLIFIED'
+    + '&responseIncludes=EVERYTHING,WKT_GEOMETRY_SIMPLIFIED,WKB_GEOMETRY_SIMPLIFIED'
 
   if (query.match(/.*=.*/)) {
     url += '&' + query
