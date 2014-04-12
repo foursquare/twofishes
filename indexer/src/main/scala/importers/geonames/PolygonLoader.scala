@@ -27,6 +27,8 @@ import org.json4s.jackson.JsonMethods._
 import scalaj.collection.Implicits._
 import com.foursquare.geo.quadtree.CountryRevGeo
 import com.cybozu.labs.langdetect.{Detector, DetectorFactory, Language}
+import com.novus.salat.global._
+
 
 object LanguageDetector {
   DetectorFactory.loadProfile("./indexer/src/main/resources/profiles.sm/")
@@ -232,9 +234,10 @@ class PolygonLoader(
 
   def rebuildRevGeoIndex {
     RevGeoIndexDAO.collection.drop()
-    PolygonIndexDAO.find(MongoDBObject()).foreach(p => {
-      parser.revGeoMaster.foreach(_ ! CalculateCover(p._id, p.polygon))
-    })
+    PolygonIndexDAO.primitiveProjection[ObjectId](MongoDBObject(), "_id")
+      .grouped(1000).foreach(group => {
+        parser.revGeoMaster.foreach(_ ! CalculateCoverFromMongo(group.toList))
+      })
     logger.info("done reading in polys")
     parser.revGeoMaster.foreach(_ ! Done())
   }

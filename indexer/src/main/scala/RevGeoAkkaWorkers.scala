@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger
 // ====================
 sealed trait CoverMessage
 case class Done() extends CoverMessage
+case class CalculateCoverFromMongo(polyIds: List[ObjectId]) extends CoverMessage
 case class CalculateCover(polyId: ObjectId, geomBytes: Array[Byte]) extends CoverMessage
 case class FinishedCover() extends CoverMessage
 
@@ -37,6 +38,12 @@ object TerribleCounter {
 class RevGeoWorker extends Actor with DurationUtils with RevGeoConstants with Logging {
   val wkbReader = new WKBReader()
   val wkbWriter = new WKBWriter()
+
+  def calculateCoverFromMongo(msg: CalculateCoverFromMongo) {
+    PolygonIndexDAO.find(MongoDBObject("_id" -> msg.polyIds)).foreach(p =>
+      calculateCover(p._id, p.polygon)
+    )
+  }
 
   def calculateCover(msg: CalculateCover) {
     calculateCover(msg.polyId, msg.geomBytes)
@@ -122,6 +129,9 @@ class RevGeoMaster(val latch: CountDownLatch) extends Actor with Logging {
     case msg: CalculateCover =>
       totalSeen += 1
 	    router ! msg
+    case msg: CalculateCoverFromMongo =>
+      totalSeen += msg.polyIds.size
+      router ! msg
     case msg: Done =>
       logger.info("all done with revgeo coverage indexing, sending poison pills")
       // send a PoisonPill to all workers telling them to shut down themselves

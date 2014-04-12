@@ -57,7 +57,7 @@ class ReverseGeocoderHelperImpl(
     } catch {
       case e: Exception =>
         Stats.addMetric("intersects_exception", 1)
-        println("failed to calculate intersection: %s".format(otherGeom), e)
+        // println("failed to calculate intersection: %s".format(otherGeom), e)
         (geom, false)
     }
   }
@@ -71,7 +71,7 @@ class ReverseGeocoderHelperImpl(
     } catch {
       case e: Exception =>
         Stats.addMetric("intersection_exception", 1)
-        println("failed to calculate intersection: %s x %s".format(featureGeometry, requestGeometry), e)
+        // println("failed to calculate intersection: %s x %s".format(featureGeometry, requestGeometry), e)
         0.0
     }
   }
