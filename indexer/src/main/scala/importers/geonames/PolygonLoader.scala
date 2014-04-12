@@ -234,11 +234,11 @@ class PolygonLoader(
 
   def rebuildRevGeoIndex {
     RevGeoIndexDAO.collection.drop()
-    PolygonIndexDAO.primitiveProjections[ObjectId](MongoDBObject(), "_id").grouped(1000).foreach(group => {
-      val ids = group.toList
-      parser.revGeoMaster.foreach(_ ! CalculateCoverFromMongo(ids))
-    })
-    logger.info("done sending in polys")
+    PolygonIndexDAO.primitiveProjections[ObjectId](MongoDBObject(), "_id")
+      .grouped(1000).foreach(group => {
+        parser.revGeoMaster.foreach(_ ! CalculateCoverFromMongo(group.toList))
+      })
+    logger.info("done reading in polys")
     parser.revGeoMaster.foreach(_ ! Done())
   }
 

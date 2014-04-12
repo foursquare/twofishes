@@ -2,6 +2,8 @@ package com.foursquare.twofishes.output
 
 import com.foursquare.twofishes.{Indexes, SlugEntryMap}
 import com.foursquare.twofishes.util.StoredFeatureId
+import com.foursquare.twofishes.Identity._
+import com.mongodb.Bytes
 import com.mongodb.casbah.Imports._
 import com.novus.salat._
 import com.novus.salat.annotations._
@@ -29,9 +31,19 @@ class IdIndexer(
       slug -> canonicalFid
     }
 
+    val featureCursor = MongoGeocodeDAO.find(MongoDBObject())
+    featureCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
+    val extraIds: List[(String, StoredFeatureId)]  = featureCursor.flatMap(f => {
+      f.ids.filterNot(_ =? f._id).flatMap(id => {
+        for {
+          extraId <- StoredFeatureId.fromLong(id)
+        } yield { (extraId.humanReadableString -> f.featureId) }
+      })
+    }).toList
+
     val writer = buildMapFileWriter(index)
 
-    val sortedEntries = (slugEntries).sortWith((a, b) => lexicalSort(a._1, b._1)).foreach({case (k, v) => {
+    val sortedEntries = (slugEntries ++ extraIds).distinct.sortWith((a, b) => lexicalSort(a._1, b._1)).foreach({case (k, v) => {
       writer.append(k, v)
     }})
 
