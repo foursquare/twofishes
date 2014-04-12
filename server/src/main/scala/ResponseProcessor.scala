@@ -339,7 +339,8 @@ class ResponseProcessor(
           mutableGeometry.wkbGeometrySimplified_=(ByteBuffer.wrap(wkbWriter.write(
             DouglasPeuckerSimplifier.simplify(geom, 0.0001)))) // 11m tolerance
         }
-        if (responseIncludes(ResponseIncludes.WKB_GEOMETRY)) {
+        if (responseIncludes(ResponseIncludes.WKB_GEOMETRY) &&
+            !req.responseIncludes.has(ResponseIncludes.WKB_GEOMETRY_SIMPLIFIED)) {
           val wkbWriter = new WKBWriter()
           mutableGeometry.wkbGeometry_=(ByteBuffer.wrap(wkbWriter.write(geom)))
         }
@@ -350,7 +351,8 @@ class ResponseProcessor(
             DouglasPeuckerSimplifier.simplify(geom, 0.0001))) // 11m tolerance
         }
 
-        if (responseIncludes(ResponseIncludes.WKT_GEOMETRY)) {
+        if (responseIncludes(ResponseIncludes.WKT_GEOMETRY) &&
+          !req.responseIncludes.has(ResponseIncludes.WKT_GEOMETRY_SIMPLIFIED)) {
           val wktWriter = new WKTWriter()
           mutableGeometry.wktGeometry_=(wktWriter.write(geom))
         }
