@@ -2,6 +2,7 @@ package com.foursquare.twofishes
 
 import akka.actor.{Actor, ActorSystem, PoisonPill, Props}
 import akka.routing.{Broadcast, RoundRobinRouter}
+import com.mongodb.Bytes
 import com.foursquare.geo.shapes.ShapefileS2Util
 import com.foursquare.twofishes.util.{DurationUtils, GeometryUtils, RevGeoConstants}
 import com.foursquare.twofishes.mongo.{PolygonIndexDAO, RevGeoIndexDAO, RevGeoIndex}
@@ -40,7 +41,9 @@ class RevGeoWorker extends Actor with DurationUtils with RevGeoConstants with Lo
   val wkbWriter = new WKBWriter()
 
   def calculateCoverFromMongo(msg: CalculateCoverFromMongo) {
-    PolygonIndexDAO.find(MongoDBObject("_id" -> msg.polyIds)).foreach(p =>
+    val records = PolygonIndexDAO.find(MongoDBObject("_id" -> MongoDBObject("$in" -> msg.polyIds)))
+    records.option = Bytes.QUERYOPTION_NOTIMEOUT
+    records.foreach(p =>
       calculateCover(p._id, p.polygon)
     )
   }
@@ -100,6 +103,9 @@ class RevGeoWorker extends Actor with DurationUtils with RevGeoConstants with Lo
     case msg: CalculateCover =>
       calculateCover(msg)
       sender ! FinishedCover()
+    case msg: CalculateCoverFromMongo =>
+      calculateCoverFromMongo(msg)
+      sender ! FinishedCover()
   }
 }
 
@@ -130,7 +136,7 @@ class RevGeoMaster(val latch: CountDownLatch) extends Actor with Logging {
       totalSeen += 1
 	    router ! msg
     case msg: CalculateCoverFromMongo =>
-      totalSeen += msg.polyIds.size
+      totalSeen += 1
       router ! msg
     case msg: Done =>
       logger.info("all done with revgeo coverage indexing, sending poison pills")
