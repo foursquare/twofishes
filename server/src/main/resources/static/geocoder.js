@@ -303,6 +303,17 @@ function success(data, bulkInputs) {
         map.fitBounds(boundingBox);
       }
 
+      // create a popup to show latlng on right-click
+      var popup = L.popup();
+
+      map.on('contextmenu',
+        function(e){
+          popup
+            .setLatLng(e.latlng)
+            .setContent(e.latlng.lat + ',' + e.latlng.lng)
+            .openOn(map);
+        });
+
       var wktGeometry = feature.geometry.wktGeometrySimplified || feature.geometry.wktGeometry;
       if (wktGeometry) {
         var wkt = new Wkt.Wkt();
