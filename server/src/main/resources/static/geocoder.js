@@ -165,7 +165,7 @@ function geocode() {
     }
     query = rewrittenQuery;
   }
-I
+
   var url = 'http://' + window.location.host + '/?debug=1'
     + '&responseIncludes=EVERYTHING,WKT_GEOMETRY_SIMPLIFIED,WKB_GEOMETRY_SIMPLIFIED'
 
@@ -308,9 +308,10 @@ function success(data, bulkInputs) {
 
       map.on('contextmenu',
         function(e){
+          var ll = e.latlng.lat + ',' + e.latlng.lng;
           popup
             .setLatLng(e.latlng)
-            .setContent(e.latlng.lat + ',' + e.latlng.lng)
+            .setContent('<a href="?ll=' + ll + '">' + ll + '</a>')
             .openOn(map);
         });
 
