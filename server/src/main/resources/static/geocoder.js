@@ -318,7 +318,7 @@ function success(data, bulkInputs) {
       var wktGeometry = feature.geometry.wktGeometrySimplified || feature.geometry.wktGeometry;
       if (wktGeometry) {
         var wkt = new Wkt.Wkt();
-        wkt.read(feature.geometry.wktGeometry);
+        wkt.read(wktGeometry);
         map.addLayer(wkt.toObject({color: 'blue'}));
       }
 
