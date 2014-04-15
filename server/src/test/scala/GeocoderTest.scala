@@ -436,6 +436,17 @@ class GeocoderSpec extends Specification {
     r.interpretations.size must_== 0
   }
 
+  "original punctuation is preserved" in {
+    val store = buildRegoPark()
+
+    val req = GeocodeRequest.newBuilder.query("carl's jr. near Rego Park, New York").result
+    val r = new GeocodeRequestDispatcher(store).geocode(req)
+    r.interpretations.size must_== 1
+    val interp = r.interpretations(0)
+    interp.what must_== "carl's jr."
+    interp.where must_== "rego park new york"
+  }
+
   "autocomplete" in {
     val store = buildRegoPark()
     addRego(store)
