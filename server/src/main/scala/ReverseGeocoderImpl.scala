@@ -187,6 +187,7 @@ class ReverseGeocoderHelperImpl(
         store.getByFeatureIds(featureIds.toSet.toList)
 
       // for each, check if we're really in it
+      val otherGeomCentroid = otherGeom.getCentroid()
       val parses: SortedParseSeq = for {
 	      fid <- featureIds
 	      f <- servingFeaturesMap.get(fid)
@@ -202,7 +203,8 @@ class ReverseGeocoderHelperImpl(
               scoringFeatures.percentOfFeatureCovered(100.0 * overlapArea / geom.getArea())
             }
             scoringFeatures.featureToRequestCenterDistance(
-              GeometryUtils.pointToShapeDistance(otherGeom.getCentroid(), geom))
+              // multiply distance in degrees by 100000 so it can be converted to Int
+              100000.0 * GeometryUtils.pointToShapeDistanceInDegrees(otherGeomCentroid, geom))
           })
         }
         parse.setScoringFeatures(Some(scoringFeatures.result))

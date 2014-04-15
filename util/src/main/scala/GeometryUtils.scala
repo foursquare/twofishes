@@ -178,7 +178,7 @@ object GeometryUtils extends RevGeoConstants {
     // 3. intersect buffered point with shape
     // 4. get centroid for intersection
     // 5. compute real distance from point to centroid
-    val dist = point.distance(shape)
+    val dist = pointToShapeDistanceInDegrees(point, shape)
     if (dist == 0.0) {
       dist
     } else {
@@ -192,5 +192,9 @@ object GeometryUtils extends RevGeoConstants {
       val centroid = bufferedPoint.intersection(shape).getCentroid()
       getDistanceAccurate(point.getY(), point.getX(), centroid.getY(), centroid.getX())
     }
+  }
+
+  def pointToShapeDistanceInDegrees(point: Point, shape: Geometry): Double = {
+    point.distance(shape)
   }
 }
