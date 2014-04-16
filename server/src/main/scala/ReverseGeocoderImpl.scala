@@ -173,16 +173,11 @@ class ReverseGeocoderHelperImpl(
       }
     )
 
-    val servingFeaturesMap: Map[StoredFeatureId, GeocodeServingFeature] =
-      store.getByFeatureIds(matchedIds)
-
     val parseParams = ParseParams()
     val responseProcessor = new ResponseProcessor(req, store, queryLogger)
     val parsesAndOtherGeomToFids: Seq[(SortedParseSeq, (Geometry, Seq[StoredFeatureId]))] = (for {
       ((otherGeom, featureIds), index) <- geomToMatches.zipWithIndex
     } yield {
-      val cellGeometries = geomIndexToCellIdMap(index).flatMap(cellid => cellGeometryMap(cellid))
-
       val servingFeaturesMap: Map[StoredFeatureId, GeocodeServingFeature] =
         store.getByFeatureIds(featureIds.toSet.toList)
 
