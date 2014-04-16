@@ -2,6 +2,5 @@
 # options we can use here.
 language: scala
 scala:
-   - 2.9.2
    - 2.10.2
 sbt_args: -J-Xmx2G -J-XX:MaxPermSize=384M
