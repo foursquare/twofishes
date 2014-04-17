@@ -10,7 +10,6 @@ import scalaj.collection.Implicits._
 trait RevGeoConstants {
   val minS2Level = 8
   val maxS2Level = 12
-  val maxCells = 10000
   val defaultLevelMod = 2
 }
 
@@ -104,7 +103,7 @@ object GeometryUtils extends RevGeoConstants {
   def s2PolygonCovering(geomCollection: Geometry,
     minS2Level: Int = minS2Level,
     maxS2Level: Int = maxS2Level,
-    maxCellsHintWhichMightBeIgnored: Option[Int] = Some(maxCells),
+    maxCellsHintWhichMightBeIgnored: Option[Int] = None,
     levelMod: Option[Int] = Some(defaultLevelMod)
   ): Seq[S2CellId] = {
     if (geomCollection.isInstanceOf[Point]) {
