@@ -141,6 +141,7 @@ class ReverseGeocoderHelperImpl(
 
   def doBulkReverseGeocode(otherGeoms: Seq[Geometry]):
       (Seq[Seq[Int]], Seq[GeocodeInterpretation], Seq[GeocodeFeature]) = {
+    Stats.addMetric("revgeo.num-geoms", otherGeoms.size)
     val geomIndexToCellIdMap: Map[Int, Seq[Long]] = (for {
       (g, index) <- otherGeoms.zipWithIndex
     } yield { index -> s2CoverGeometry(g) }).toMap
@@ -151,6 +152,8 @@ class ReverseGeocoderHelperImpl(
       } yield {
         cellid -> store.getByS2CellId(cellid)
       }).toMap
+
+    Stats.addMetric("revgeo.cells-to-lookup", cellGeometryMap.size)
 
     val geomToMatches = (for {
       (otherGeom, index) <- otherGeoms.zipWithIndex
@@ -163,10 +166,12 @@ class ReverseGeocoderHelperImpl(
     })
 
     val matchedIds = geomToMatches.flatMap(_._2).toSet.toList
+    Stats.addMetric("revgeo.candidates", matchedIds.size)
 
     // need to get polygons if we need to calculate coverage
     val polygonMap: Map[StoredFeatureId, Geometry] = (
       if (GeocodeRequestUtils.shouldFetchPolygon(req)) {
+        Stats.incr("revgeo.polygons-fetched", 1)
         store.getPolygonByFeatureIds(matchedIds)
       } else {
         Map.empty

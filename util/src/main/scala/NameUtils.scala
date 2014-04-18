@@ -165,11 +165,10 @@ object NameFormatter {
   }
 }
 
-trait NameUtils {
-  def countryUsesStateAbbrev(cc: String) =
-    Set("US", "CA", "BR", "AU", "MX").has(cc)
+object CountryConstants {
+  val countryUsesStateAbbrev = Set("US", "CA", "BR", "AU", "MX")
 
-  def countryUsesState(cc: String) =
+  val countryUsesState =
     Set("GR", "CO", "MY", "TV", "IT", "MX", "PW",
       "KI", "GU", "CA", "TH", "PH", "IE", "PA",
       "AM", "BS", "MP", "AU", "CV", "KN", "VE",
@@ -178,10 +177,20 @@ trait NameUtils {
       "HM", "ID", "FM", "KY", "PF", "MN", "KR",
       "GB", "UY", "SC", "BR", "TW", "CX", "AR",
       "NR", "CL", "IQ", "SV", "NF", "IN", "VI",
-      "US", "UM", "JM", "SR", "AD", "UZ", "HK").has(cc)
+      "US", "UM", "JM", "SR", "AD", "UZ", "HK")
+
+  val countryUsesCountyAsState = Set("TW", "IE", "BE", "GB")
+}
+
+trait NameUtils {
+  def countryUsesStateAbbrev(cc: String) =
+    CountryConstants.countryUsesStateAbbrev.has(cc)
+
+  def countryUsesState(cc: String) =
+    CountryConstants.countryUsesState.has(cc)
 
   def countryUsesCountyAsState(cc: String) =
-    Set("TW", "IE", "BE", "GB").has(cc)
+    CountryConstants.countryUsesCountyAsState.has(cc)
 
   private val blacklistedParentIds =
     new BufferedSource(getClass.getResourceAsStream("/blacklist_parents.txt"))
