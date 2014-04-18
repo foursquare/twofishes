@@ -31,24 +31,11 @@ object ReverseGeocodeParseOrdering {
   val ParseOrdering: Ordering[Parse[Sorted]] = Ordering.by(parseToSortKey)
 }
 
-trait TimeResponseHelper {
-  def timeResponse(ostrichKey: String)(f: GeocodeResponse) = {
-    val (rv, duration) = Duration.inNanoseconds(f)
-    Stats.addMetric(ostrichKey + "_usec", duration.inMicroseconds.toInt)
-    Stats.addMetric(ostrichKey + "_msec", duration.inMilliseconds.toInt)
-    if (rv.interpretations.size > 0) {
-      Stats.addMetric(ostrichKey + "_with_results_usec", duration.inMicroseconds.toInt)
-      Stats.addMetric(ostrichKey + "_with_results_msec", duration.inMilliseconds.toInt)
-    }
-    rv
-  }
-}
-
 class ReverseGeocoderHelperImpl(
   store: GeocodeStorageReadService,
   req: CommonGeocodeRequestParams,
   queryLogger: MemoryLogger
-) extends GeocoderImplTypes with TimeResponseHelper with BulkImplHelpers {
+) extends GeocoderImplTypes  with BulkImplHelpers {
   def featureGeometryIntersections(wkbGeometry: Array[Byte], otherGeom: Geometry) = {
     val wkbReader = new WKBReader()
     val geom = wkbReader.read(wkbGeometry)
@@ -198,13 +185,17 @@ class ReverseGeocoderHelperImpl(
             otherGeom.getNumPoints > 2) {
           polygonMap.get(fid).foreach(geom => {
             if (geom.getNumPoints > 2) {
-              val overlapArea = computeIntersectionArea(geom, otherGeom)
-              scoringFeatures.percentOfRequestCovered(100.0 * overlapArea / otherGeom.getArea())
-              scoringFeatures.percentOfFeatureCovered(100.0 * overlapArea / geom.getArea())
+              Stats.time("revGeo.revgeo-coverage") {
+                val overlapArea = computeIntersectionArea(geom, otherGeom)
+                scoringFeatures.percentOfRequestCovered(100.0 * overlapArea / otherGeom.getArea())
+                scoringFeatures.percentOfFeatureCovered(100.0 * overlapArea / geom.getArea())
+              }
             }
-            scoringFeatures.featureToRequestCenterDistance(
-              // multiply distance in degrees by 100000 so it can be converted to Int
-              100000.0 * GeometryUtils.pointToShapeDistanceInDegrees(otherGeomCentroid, geom))
+            Stats.time("revGeo.point-to-shape-distance") {
+              scoringFeatures.featureToRequestCenterDistance(
+                // multiply distance in degrees by 100000 so it can be converted to Int
+                100000.0 * GeometryUtils.pointToShapeDistanceInDegrees(otherGeomCentroid, geom))
+            }
           })
         }
         parse.setScoringFeatures(Some(scoringFeatures.result))
@@ -242,7 +233,7 @@ class ReverseGeocoderHelperImpl(
 class ReverseGeocoderImpl(
   store: GeocodeStorageReadService,
   req: GeocodeRequest
-) extends GeocoderImplTypes with TimeResponseHelper {
+) extends GeocoderImplTypes {
   val queryLogger = new MemoryLogger(req)
   val commonParams = GeocodeRequestUtils.geocodeRequestToCommonRequestParams(req)
   val reverseGeocoder =
@@ -283,7 +274,7 @@ class ReverseGeocoderImpl(
 class BulkReverseGeocoderImpl(
   store: GeocodeStorageReadService,
   req: BulkReverseGeocodeRequest
-) extends GeocoderImplTypes with TimeResponseHelper {
+) extends GeocoderImplTypes {
   val params = req.paramsOption.getOrElse(CommonGeocodeRequestParams.newBuilder.result)
 
   val queryLogger = new MemoryLogger(params)

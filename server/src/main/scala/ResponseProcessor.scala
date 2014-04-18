@@ -11,6 +11,7 @@ import com.vividsolutions.jts.simplify.DouglasPeuckerSimplifier
 import java.nio.ByteBuffer
 import scala.collection.mutable.{HashSet, ListBuffer}
 import scalaj.collection.Implicits._
+import com.twitter.ostrich.stats.Stats
 
 // Sort a list of features, smallest to biggest
 object GeocodeServingFeatureOrdering extends Ordering[GeocodeServingFeature] {
@@ -148,6 +149,9 @@ class ResponseProcessor(
       buckets += bucketKey
       return bucketKey
     }
+
+    Stats.addMetric("responseProcessor.interpretations-to-dedup", parseMap.size)
+    Stats.addMetric("responseProcessor.dedup-buckets", buckets.size)
 
     val dedupedMap: Seq[(Parse[Sorted], Int)] = for {
       (textKey, parsePairs) <- parseMap.toSeq
