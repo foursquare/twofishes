@@ -152,6 +152,7 @@ class GeocodeServerImpl(store: GeocodeStorageReadService, doWarmup: Boolean) ext
     val labels = Stats.getLabels()
     Stats.clearAll()
     labels.foreach({case (k, v) => Stats.setLabel(k, v)})
+    System.gc()
   }
 
   def geocode(r: GeocodeRequest): Future[GeocodeResponse] = queryFuturePool {
