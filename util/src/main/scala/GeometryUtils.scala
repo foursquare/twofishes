@@ -171,28 +171,6 @@ object GeometryUtils extends RevGeoConstants {
     (EarthRadiusInMeters * math.acos(math.min(math.max(dist, -1.0), 1.0)))
   }
 
-  def pointToShapeDistance(point: Point, shape: Geometry): Double = {
-    // 1. compute linear distance
-    // 2. buffer point by distance plus epsilon
-    // 3. intersect buffered point with shape
-    // 4. get centroid for intersection
-    // 5. compute real distance from point to centroid
-    val dist = pointToShapeDistanceInDegrees(point, shape)
-    if (dist == 0.0) {
-      dist
-    } else {
-      var epsilon = 0.0000001
-      var bufferedPoint = point.buffer(dist + epsilon)
-      while (!bufferedPoint.intersects(shape)) {
-        epsilon = epsilon * 10
-        bufferedPoint = point.buffer(dist + epsilon)
-      }
-
-      val centroid = bufferedPoint.intersection(shape).getCentroid()
-      getDistanceAccurate(point.getY(), point.getX(), centroid.getY(), centroid.getX())
-    }
-  }
-
   def pointToShapeDistanceInDegrees(point: Point, shape: Geometry): Double = {
     point.distance(shape)
   }
