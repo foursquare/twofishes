@@ -6,8 +6,11 @@ import com.foursquare.twofishes.util.GeoTools
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.vividsolutions.jts.geom.Geometry
 import scalaj.collection.Implicits._
+import com.twitter.ostrich.stats.Stats
 
 object GeocodeRequestUtils {
+  val maxRadius = 5000 // km
+
   def responseIncludes(req: CommonGeocodeRequestParams, include: ResponseIncludes): Boolean = {
     req.responseIncludes.has(include) ||
       req.responseIncludes.has(ResponseIncludes.EVERYTHING)
@@ -35,10 +38,23 @@ object GeocodeRequestUtils {
       .result
   }
 
+  def makeCircle(ll: GeocodePoint, radius: Double) = {
+    Stats.incr("revgeo.circleQueries")
+    Stats.addMetric("revgeo.radius", radius.toInt)
+    val adjustedRadius: Int  = if (radius > maxRadius) {
+      Stats.incr("revgeo.radiusTruncated")
+      maxRadius
+    } else {
+      radius.toInt
+    }
+
+    Some(GeoTools.makeCircle(ll, adjustedRadius))
+  }
+
   def getRequestGeometry(req: GeocodeRequest): Option[Geometry] = {
     val radius = req.radiusOption.getOrElse(0)
     (req.llOption, req.boundsOption) match {
-      case (Some(ll), None) if (radius > 0) => Some(GeoTools.makeCircle(ll, radius))
+      case (Some(ll), None) if (radius > 0) => makeCircle(ll, radius)
       case (Some(ll), None) => Some(GeoTools.pointToGeometry(ll))
       case (None, Some(bounds)) => Some(GeoTools.boundsToGeometry(bounds))
       case (None, None) => None

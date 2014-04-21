@@ -8,7 +8,6 @@ import com.twitter.ostrich.stats.Stats
 import com.twitter.util.Duration
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory, Point => JTSPoint}
 import com.vividsolutions.jts.io.WKBReader
-// import com.weiglewilczek.slf4s.Logging
 import org.apache.thrift.TBaseHelper
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._
@@ -251,16 +250,6 @@ class ReverseGeocoderImpl(
   def reverseGeocode(): GeocodeResponse = {
     Stats.incr("revgeo-requests", 1)
 
-    if (req.radius > 50000) {
-      Stats.incr("revgeo.requests.rejected", 1)
-      GeocodeResponse.newBuilder.interpretations(Nil).result
-    } else {
-      Stats.incr("revgeo.requests.accepted", 1)
-      doReverseGeocode()
-    }
-  }
-
-  def doReverseGeocode(): GeocodeResponse = {
     val geom = GeocodeRequestUtils.getRequestGeometry(req)
       .getOrElse(throw new Exception("no bounds or ll"))
     Stats.incr("revgeo-requests", 1)
