@@ -252,10 +252,15 @@ class ReverseGeocoderImpl(
     Stats.incr("revgeo-requests", 1)
 
     if (req.radius > 50000) {
-      //throw new Exception("radius too big (%d > %d)".format(req.radius, maxRadius))
+      Stats.incr("revgeo.requests.rejected", 1)
       GeocodeResponse.newBuilder.interpretations(Nil).result
+    } else {
+      Stats.incr("revgeo.requests.accepted", 1)
+      doReverseGeocode()
     }
+  }
 
+  def doReverseGeocode(): GeocodeResponse = {
     val geom = GeocodeRequestUtils.getRequestGeometry(req)
       .getOrElse(throw new Exception("no bounds or ll"))
     Stats.incr("revgeo-requests", 1)
