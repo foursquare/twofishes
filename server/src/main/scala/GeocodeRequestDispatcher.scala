@@ -21,21 +21,12 @@ class GeocodeRequestDispatcher(
 
     finalReq.responseIncludes_=(ResponseIncludes.DISPLAY_NAME :: req.responseIncludes.toList)
 
-    val query = req.queryOption.getOrElse("")
-    val parseParams = new QueryParser(logger).parseQuery(query)
-
     if (req.slugOption.exists(_.nonEmpty)) {
-      Stats.time("slug-geocode") {
-        new SlugGeocoderImpl(store, finalReq, logger).doSlugGeocode(req.slugOption.getOrElse(""))
-      }
+      new SlugGeocoderImpl(store, finalReq, logger).doGeocode()
     } else if (req.autocomplete) {
-      Stats.time("autocomplete-geocode") {
-        new AutocompleteGeocoderImpl(store, finalReq, logger).doAutocompleteGeocode(parseParams)
-      }
+      new AutocompleteGeocoderImpl(store, finalReq, logger).doGeocode()
     } else {
-      Stats.time("geocode") {
-        new GeocoderImpl(store, finalReq, logger).doNormalGeocode(parseParams)
-      }
+      new GeocoderImpl(store, finalReq, logger).doGeocode()
     }
   }
 }

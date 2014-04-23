@@ -12,15 +12,18 @@ class SlugGeocoderImpl(
   store: GeocodeStorageReadService,
   req: GeocodeRequest,
   logger: MemoryLogger
-) extends GeocoderImplTypes {
+) extends AbstractGeocoderImpl[GeocodeResponse] {
+  override val implName = "slug"
+
   val commonParams = GeocodeRequestUtils.geocodeRequestToCommonRequestParams(req)
   val responseProcessor = new ResponseProcessor(
     commonParams,
     store,
     logger)
 
-  def doSlugGeocode(slug: String): GeocodeResponse = {
-    Stats.incr("slug-lookup-requests", 1)
+  def doGeocodeImpl(): GeocodeResponse = {
+    val slug = req.slugOption.getOrElse("")
+
     val parseParams = ParseParams()
 
     val featureMap: Map[String, GeocodeServingFeature] = store.getBySlugOrFeatureIds(List(slug))
@@ -37,14 +40,15 @@ class SlugGeocoderImpl(
 class BulkSlugLookupImpl(
   store: GeocodeStorageReadService,
   req: BulkSlugLookupRequest
-) extends GeocoderImplTypes with BulkImplHelpers {
+) extends AbstractGeocoderImpl[BulkSlugLookupResponse] with BulkImplHelpers {
+  override val implName = "bulk_slug"
+
   val params = req.paramsOption.getOrElse(CommonGeocodeRequestParams.newBuilder.result)
   val logger = new MemoryLogger(params)
 
   val responseProcessor = new ResponseProcessor(params, store, logger)
 
-  def slugLookup(): BulkSlugLookupResponse = {
-    Stats.incr("bulk-slug-lookup-requests", 1)
+  def doGeocodeImpl(): BulkSlugLookupResponse = {
     val parseParams = ParseParams()
 
     val featureMap: Map[String, GeocodeServingFeature] = store.getBySlugOrFeatureIds(req.slugs)
@@ -65,7 +69,7 @@ class BulkSlugLookupImpl(
     val (interpIdxs, retInterps, parents) = makeBulkReply(
       req.slugs,
       featureMap.mapValues(servingFeature => StoredFeatureId.fromLong(servingFeature.feature.longId).toList),
-      interps) 
+      interps)
 
     val respBuilder = BulkSlugLookupResponse.newBuilder
       .interpretations(interps)

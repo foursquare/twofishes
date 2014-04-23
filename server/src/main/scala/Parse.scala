@@ -84,20 +84,6 @@ case class Parse[T <: MaybeSorted](
       rest.exists(_.fmatch.feature.ids == primaryFeature.fmatch.feature.ids)
     })
   }
-
-}
-
-trait GeocoderImplTypes {
-  case class SortedParseWithPosition(parse: Parse[Sorted], position: Int)
-
-  val NullParse = Parse[Sorted](Nil)
-  // ParseSeq = multiple interpretations
-  type ParseSeq = Seq[Parse[Unsorted]]
-  type SortedParseSeq = Seq[Parse[Sorted]]
-
-  // ParseCache = a table to save our previous parses from the left-most
-  // side of the string.
-  type ParseCache = ConcurrentHashMap[Int, SortedParseSeq]
 }
 
 object ParseUtils {

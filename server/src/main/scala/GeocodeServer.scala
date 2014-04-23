@@ -143,8 +143,8 @@ class GeocodeServerImpl(store: GeocodeStorageReadService, doWarmup: Boolean) ext
         }
         val parts = line.split(",")
         queryFuturePool {
-          new ReverseGeocoderImpl(store, GeocodeRequest.newBuilder.ll(GeocodePoint(parts(0).toDouble, parts(1).toDouble)).result).reverseGeocode()
-          new ReverseGeocoderImpl(store, GeocodeRequest.newBuilder.ll(GeocodePoint(parts(0).toDouble, parts(1).toDouble)).radius(300).result).reverseGeocode()
+          new ReverseGeocoderImpl(store, GeocodeRequest.newBuilder.ll(GeocodePoint(parts(0).toDouble, parts(1).toDouble)).result).doGeocode()
+          new ReverseGeocoderImpl(store, GeocodeRequest.newBuilder.ll(GeocodePoint(parts(0).toDouble, parts(1).toDouble)).radius(300).result).doGeocode()
         }
       }}).toSeq))
     }
@@ -160,15 +160,15 @@ class GeocodeServerImpl(store: GeocodeStorageReadService, doWarmup: Boolean) ext
   }
 
   def reverseGeocode(r: GeocodeRequest): Future[GeocodeResponse] = queryFuturePool {
-    new ReverseGeocoderImpl(store, r).reverseGeocode()
+    new ReverseGeocoderImpl(store, r).doGeocode()
   }
 
   def bulkReverseGeocode(r: BulkReverseGeocodeRequest): Future[BulkReverseGeocodeResponse] = queryFuturePool {
-    new BulkReverseGeocoderImpl(store, r).reverseGeocode()
+    new BulkReverseGeocoderImpl(store, r).doGeocode()
   }
 
   def bulkSlugLookup(r: BulkSlugLookupRequest): Future[BulkSlugLookupResponse] = queryFuturePool {
-    new BulkSlugLookupImpl(store, r).slugLookup()
+    new BulkSlugLookupImpl(store, r).doGeocode()
   }
 }
 

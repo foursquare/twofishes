@@ -18,9 +18,10 @@ import scalaj.collection.Implicits._
 
 class GeocoderImpl(
   store: GeocodeStorageReadService,
-  req: GeocodeRequest,
+  val req: GeocodeRequest,
   logger: MemoryLogger
-) extends GeocoderUtils(req) with GeocoderImplTypes {
+) extends AbstractGeocoderImpl[GeocodeResponse] with GeocoderUtils {
+  override val implName = "geocode"
 
   // ACK!!! MUTABLE STATE!!!!
   var inRetry = false
@@ -205,7 +206,7 @@ class GeocoderImpl(
     // do not drop common word if it is *part of* an already matched parse phrase
     // however, do drop it if it is the *entire* parse phrase as this must be a match to a bad name
     // e.g. do not drop "city" from (kansas city) but drop it from (city)
-    tokens.filterNot(t => commonWords.contains(t) && !parsedPhrases.exists(p => p.contains(t) && p != t)) 
+    tokens.filterNot(t => commonWords.contains(t) && !parsedPhrases.exists(p => p.contains(t) && p != t))
   }
 
   def getMaxInterpretations = {
@@ -227,7 +228,7 @@ class GeocoderImpl(
     if (modifiedTokens.size != parseParams.originalTokens.size && !inRetry) {
       inRetry = true
       logger.ifDebug("RESTARTING common words query: %s", modifiedTokens)
-      doNormalGeocode(new QueryParser(logger).parseQueryTokens(modifiedTokens))
+      doGeocodeForQuery(new QueryParser(logger).parseQueryTokens(modifiedTokens))
     } else {
       responseProcessor.buildFinalParses(parses, parseParams, getMaxInterpretations)
     }
@@ -239,7 +240,14 @@ class GeocoderImpl(
     store,
     logger)
 
-  def doNormalGeocode(parseParams: ParseParams) = {
+  def doGeocodeImpl() = {
+    val query = req.queryOption.getOrElse("")
+    val parseParams = new QueryParser(logger).parseQuery(query)
+
+    doGeocodeForQuery(parseParams)
+  }
+
+  def doGeocodeForQuery(parseParams: ParseParams) = {
     val tokens = parseParams.tokens
     val originalTokens = parseParams.originalTokens
     val connectorStart = parseParams.connectorStart

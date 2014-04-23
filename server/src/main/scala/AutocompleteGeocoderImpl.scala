@@ -8,7 +8,9 @@ import com.foursquare.twofishes.util.NameUtils.BestNameMatch
 import scala.collection.mutable.HashMap
 import scalaj.collection.Implicits._
 
-class GeocoderUtils(req: GeocodeRequest) {
+trait GeocoderUtils {
+  def req: GeocodeRequest
+
   lazy val requestGeom = GeocodeRequestUtils.getRequestGeometry(req)
 
   def isAcceptableFeature(req: GeocodeRequest, servingFeature: GeocodeServingFeature): Boolean = {
@@ -24,9 +26,14 @@ class GeocoderUtils(req: GeocodeRequest) {
 
 class AutocompleteGeocoderImpl(
   store: GeocodeStorageReadService,
-  req: GeocodeRequest,
+  val req: GeocodeRequest,
   logger: MemoryLogger
-) extends GeocoderUtils(req) with GeocoderImplTypes {
+) extends AbstractGeocoderImpl[GeocodeResponse] with GeocoderUtils {
+  val query = req.queryOption.getOrElse("")
+  val parseParams = new QueryParser(logger).parseQuery(query)
+
+  override val implName = "autocomplete"
+
   val commonParams = GeocodeRequestUtils.geocodeRequestToCommonRequestParams(req)
   val responseProcessor = new ResponseProcessor(
     commonParams,
@@ -112,7 +119,7 @@ class AutocompleteGeocoderImpl(
           _.possibleNameHits.filter(_.flags.contains(FeatureNameFlags.PREFERRED))
           .map(_.lang))
 
-        val allowedLanguages = 
+        val allowedLanguages =
           Set("en", "abbr") ++ Set(req.lang) ++
           (if (preferredNameLanguages.nonEmpty) {
             preferredNameLanguages
@@ -130,15 +137,15 @@ class AutocompleteGeocoderImpl(
 
           val featureIsParent = parse.exists(_.fmatch.scoringFeatures.parentIds.has(fid))
           val featureIsExtraRelation = parse.exists(_.fmatch.scoringFeatures.extraRelationIds.has(fid))
-          val featureHasDependentCountryRelation = 
+          val featureHasDependentCountryRelation =
             featureMatch.fmatch.feature.woeType == YahooWoeType.COUNTRY &&
             parse.exists(p =>
                 CountryUtils.isCountryDependentOnCountry(p.fmatch.feature.cc, fcc))
-          
+
           val featureIsNotRepeat = !parse.exists(_.fmatch.longId.toString == fid)
           val featureNameHitsInAllowedLanguage =
             featureMatch.possibleNameHits.exists(n => allowedLanguages.has(n.lang))
-          
+
           val isValid = (featureIsParent || featureIsExtraRelation || featureHasDependentCountryRelation) &&
              featureIsNotRepeat && featureNameHitsInAllowedLanguage
 
@@ -270,9 +277,7 @@ class AutocompleteGeocoderImpl(
     }
   }
 
-  def doAutocompleteGeocode(
-    parseParams: ParseParams
-  ) = {
+  def doGeocodeImpl(): GeocodeResponse = {
     val parses = generateAutoParses(parseParams.tokens, parseParams.spaceAtEnd)
     if (req.debug > 0) {
       parses.foreach(p => {
