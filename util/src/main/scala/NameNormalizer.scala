@@ -5,8 +5,9 @@ import java.text.Normalizer
 import java.util.regex.Pattern
 
 object NameNormalizer {
+  val splitTokenRegex = "[ ,]"
   def tokenize(s: String): List[String] = {
-    s.split(" ").filterNot(_.isEmpty).toList
+    s.split(splitTokenRegex).filterNot(_.isEmpty).toList
   }
 
   val whitespaceRegexp = "[ \t]+".r

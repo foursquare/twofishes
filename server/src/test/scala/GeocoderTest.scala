@@ -300,6 +300,20 @@ class GeocoderSpec extends Specification {
     interp.where must_== "rego park new york"
   }
 
+  "split on commas without spaces" in {
+    val store = buildRegoPark()
+
+    val req = GeocodeRequest.newBuilder.query("Rego Park,New York").result
+    val r = new GeocodeRequestDispatcher(store).geocode(req)
+
+    r.interpretations.size must_== 1
+    val interp = r.interpretations(0)
+    interp.what must_== ""
+    interp.feature.geometry.center.lat must_== 5
+    interp.feature.geometry.center.lng must_== 6
+    interp.where must_== "rego park new york"
+  }
+
   "splitting geocodes succeeds with matching data" in {
     val store = buildRegoPark()
 
