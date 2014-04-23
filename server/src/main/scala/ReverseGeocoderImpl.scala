@@ -4,7 +4,6 @@ package com.foursquare.twofishes
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.{GeometryUtils, StoredFeatureId}
 import com.foursquare.twofishes.util.Lists.Implicits._
-import com.twitter.ostrich.stats.Stats
 import com.twitter.util.Duration
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory, Point => JTSPoint}
 import com.vividsolutions.jts.io.WKBReader
@@ -33,8 +32,9 @@ object ReverseGeocodeParseOrdering {
 class ReverseGeocoderHelperImpl(
   store: GeocodeStorageReadService,
   req: CommonGeocodeRequestParams,
-  queryLogger: MemoryLogger
-) extends GeocoderImplTypes  with BulkImplHelpers {
+  queryLogger: MemoryLogger,
+  Stats: StatsInterface[_]
+) extends GeocoderTypes with BulkImplHelpers {
   def featureGeometryIntersections(wkbGeometry: Array[Byte], otherGeom: Geometry) = {
     val wkbReader = new WKBReader()
     val geom = wkbReader.read(wkbGeometry)
@@ -127,7 +127,7 @@ class ReverseGeocoderHelperImpl(
 
   def doBulkReverseGeocode(otherGeoms: Seq[Geometry]):
       (Seq[Seq[Int]], Seq[GeocodeInterpretation], Seq[GeocodeFeature]) = {
-    Stats.addMetric("revgeo.num-geoms", otherGeoms.size)
+    Stats.addMetric("num_geoms", otherGeoms.size)
     val geomIndexToCellIdMap: Map[Int, Seq[Long]] = (for {
       (g, index) <- otherGeoms.zipWithIndex
     } yield { index -> s2CoverGeometry(g) }).toMap
@@ -139,7 +139,7 @@ class ReverseGeocoderHelperImpl(
         cellid -> store.getByS2CellId(cellid)
       }).toMap
 
-    Stats.addMetric("revgeo.cells-to-lookup", cellGeometryMap.size)
+    Stats.addMetric("cells_to_lookup", cellGeometryMap.size)
 
     val geomToMatches = (for {
       (otherGeom, index) <- otherGeoms.zipWithIndex
@@ -152,12 +152,12 @@ class ReverseGeocoderHelperImpl(
     })
 
     val matchedIds = geomToMatches.flatMap(_._2).toSet.toList
-    Stats.addMetric("revgeo.candidates", matchedIds.size)
+    Stats.addMetric("candidates", matchedIds.size)
 
     // need to get polygons if we need to calculate coverage
     val polygonMap: Map[StoredFeatureId, Geometry] = (
       if (GeocodeRequestUtils.shouldFetchPolygon(req)) {
-        Stats.incr("revgeo.polygons-fetched", 1)
+        Stats.incr("polygons_fetched")
         store.getPolygonByFeatureIds(matchedIds)
       } else {
         Map.empty
@@ -184,13 +184,13 @@ class ReverseGeocoderHelperImpl(
             otherGeom.getNumPoints > 2) {
           polygonMap.get(fid).foreach(geom => {
             if (geom.getNumPoints > 2) {
-              Stats.time("revGeo.revgeo-coverage") {
+              Stats.time("coverage") {
                 val overlapArea = computeIntersectionArea(geom, otherGeom)
                 scoringFeatures.percentOfRequestCovered(100.0 * overlapArea / otherGeom.getArea())
                 scoringFeatures.percentOfFeatureCovered(100.0 * overlapArea / geom.getArea())
               }
             }
-            Stats.time("revGeo.point-to-shape-distance") {
+            Stats.time("point_to_shape_distance") {
               scoringFeatures.featureToRequestCenterDistance(
                 // multiply distance in degrees by 100000 so it can be converted to Int
                 100000.0 * GeometryUtils.pointToShapeDistanceInDegrees(otherGeomCentroid, geom))
@@ -232,11 +232,13 @@ class ReverseGeocoderHelperImpl(
 class ReverseGeocoderImpl(
   store: GeocodeStorageReadService,
   req: GeocodeRequest
-) extends GeocoderImplTypes {
+) extends AbstractGeocoderImpl[GeocodeResponse] {
+  override val implName = "revgeo"
+
   val queryLogger = new MemoryLogger(req)
   val commonParams = GeocodeRequestUtils.geocodeRequestToCommonRequestParams(req)
   val reverseGeocoder =
-    new ReverseGeocoderHelperImpl(store, commonParams, queryLogger)
+    new ReverseGeocoderHelperImpl(store, commonParams, queryLogger, Stats)
 
   def doSingleReverseGeocode(geom: Geometry): GeocodeResponse = {
     val (interpIdxes, interpretations, _) = reverseGeocoder.doBulkReverseGeocode(List(geom))
@@ -247,17 +249,14 @@ class ReverseGeocoderImpl(
   }
 
 
-  def reverseGeocode(): GeocodeResponse = {
-    Stats.incr("revgeo-requests", 1)
-
+  def doGeocodeImpl(): GeocodeResponse = {
     val geom = GeocodeRequestUtils.getRequestGeometry(req)
       .getOrElse(throw new Exception("no bounds or ll"))
-    Stats.incr("revgeo-requests", 1)
 
     val statStr = if (geom.isInstanceOf[JTSPoint]) {
-      "revgeo-point"
+      "requests.point"
     } else {
-      "revgeo-geom"
+      "requests.geom"
     }
     Stats.time(statStr) {
       doSingleReverseGeocode(geom)
@@ -268,15 +267,15 @@ class ReverseGeocoderImpl(
 class BulkReverseGeocoderImpl(
   store: GeocodeStorageReadService,
   req: BulkReverseGeocodeRequest
-) extends GeocoderImplTypes {
+) extends AbstractGeocoderImpl[BulkReverseGeocodeResponse] {
+  override val implName = "bulk_revgeo"
+
   val params = req.paramsOption.getOrElse(CommonGeocodeRequestParams.newBuilder.result)
 
   val queryLogger = new MemoryLogger(params)
-  val reverseGeocoder = new ReverseGeocoderHelperImpl(store, params, queryLogger)
+  val reverseGeocoder = new ReverseGeocoderHelperImpl(store, params, queryLogger, Stats)
 
-  def reverseGeocode(): BulkReverseGeocodeResponse = {
-    Stats.incr("bulk-revgeo-requests", 1)
-
+  def doGeocodeImpl(): BulkReverseGeocodeResponse = {
     val geomFactory = new GeometryFactory()
 
     val points = req.latlngs.map(ll => geomFactory.createPoint(new Coordinate(ll.lng, ll.lat)))

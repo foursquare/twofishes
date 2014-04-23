@@ -45,7 +45,7 @@ class ResponseProcessor(
   req: CommonGeocodeRequestParams,
   store: GeocodeStorageReadService,
   logger: MemoryLogger
-) extends GeocoderImplTypes {
+) extends GeocoderTypes {
   def responseIncludes(include: ResponseIncludes): Boolean = GeocodeRequestUtils.responseIncludes(req, include)
 
   def dedupeParses(parses: SortedParseSeq): SortedParseSeq = {
@@ -150,8 +150,8 @@ class ResponseProcessor(
       return bucketKey
     }
 
-    Stats.addMetric("responseProcessor.interpretations-to-dedup", parseMap.size)
-    Stats.addMetric("responseProcessor.dedup-buckets", buckets.size)
+    Stats.addMetric("responseProcessor.interpretations_to_dedup", parseMap.size)
+    Stats.addMetric("responseProcessor.dedup_buckets", buckets.size)
 
     val dedupedMap: Seq[(Parse[Sorted], Int)] = for {
       (textKey, parsePairs) <- parseMap.toSeq

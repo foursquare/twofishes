@@ -608,17 +608,17 @@ class GeocoderSpec extends Specification {
     )
 
     var req = GeocodeRequest.newBuilder.ll(GeocodePoint(48.7996273507997, 2.43896484375)).result
-    var r = new ReverseGeocoderImpl(store, req).reverseGeocode()
+    var r = new ReverseGeocoderImpl(store, req).doGeocode()
     r.interpretations.size must_== 1
     r.interpretations(0).feature.nameOrNull must_== "Paris"
 
     // look up in kansas
     var req2 = GeocodeRequest.newBuilder.ll(GeocodePoint(-97.822265625, 38.06539235133249)).result
-    r = new ReverseGeocoderImpl(store, req2).reverseGeocode()
+    r = new ReverseGeocoderImpl(store, req2).doGeocode()
     r.interpretations.size must_== 0
 
     var req3 = GeocodeRequest.newBuilder.ll(GeocodePoint(40.74, -74)).result
-    r = new ReverseGeocoderImpl(store, req3).reverseGeocode()
+    r = new ReverseGeocoderImpl(store, req3).doGeocode()
     r.interpretations.size must_== 1
     r.interpretations(0).feature.nameOrNull must_== "New York"
   }

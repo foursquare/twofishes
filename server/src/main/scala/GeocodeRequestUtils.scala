@@ -39,10 +39,8 @@ object GeocodeRequestUtils {
   }
 
   def makeCircle(ll: GeocodePoint, radius: Double) = {
-    Stats.incr("revgeo.circleQueries")
-    Stats.addMetric("revgeo.radius", radius.toInt)
+    Stats.addMetric("incoming_radius", radius.toInt)
     val adjustedRadius: Int  = if (radius > maxRadius) {
-      Stats.incr("revgeo.radiusTruncated")
       maxRadius
     } else {
       radius.toInt
