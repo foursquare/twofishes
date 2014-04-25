@@ -8,12 +8,13 @@ import com.foursquare.twofishes.util.{DurationUtils, GeometryUtils, RevGeoConsta
 import com.foursquare.twofishes.mongo.{PolygonIndexDAO, RevGeoIndexDAO, RevGeoIndex}
 import com.google.common.geometry.S2CellId
 import com.mongodb.casbah.Imports._
-import com.vividsolutions.jts.geom.{Point => JTSPoint}
+import com.vividsolutions.jts.geom.{Point => JTSPoint, Geometry}
 import com.vividsolutions.jts.geom.prep.PreparedGeometryFactory
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter}
 import com.weiglewilczek.slf4s.Logging
 import java.util.concurrent.CountDownLatch
 import org.bson.types.ObjectId
+import scala.collection.JavaConverters._
 import scalaj.collection.Implicits._
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -86,10 +87,16 @@ class RevGeoWorker extends Actor with DurationUtils with RevGeoConstants with Lo
             if (preparedRecordShape.contains(s2shape)) {
       	      RevGeoIndex(cellid.id(), polyId, full = true, geom = None)
             } else {
+              val intersection = s2shape.intersection(recordShape)
+              val geomToIndex = if (intersection.getGeometryType == "GeometryCollection") {
+                cleanupGeometryCollection(intersection)
+              } else {
+                intersection
+              }
               RevGeoIndex(
                 cellid.id(), polyId,
                 full = false,
-                geom = Some(wkbWriter.write(s2shape.intersection(recordShape)))
+                geom = Some(wkbWriter.write(geomToIndex))
               )
             }
           }
@@ -97,6 +104,17 @@ class RevGeoWorker extends Actor with DurationUtils with RevGeoConstants with Lo
         RevGeoIndexDAO.insert(records)
       }
     }
+  }
+
+  private def cleanupGeometryCollection(geom: Geometry): Geometry = {
+    val geometryCount = geom.getNumGeometries
+    val polygons = for {
+      i <- 0 to geometryCount - 1
+      geometry = geom.getGeometryN(i)
+      if (geometry.getGeometryType == "Polygon" ||
+          geometry.getGeometryType == "MultiPolygon")
+    } yield geometry
+    geom.getFactory.buildGeometry(polygons.asJavaCollection)
   }
 
   def receive = {
