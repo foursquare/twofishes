@@ -538,7 +538,7 @@ class GeonamesParser(
     val extraRelations = extraRelationsList.get(geonameId).map(_.split(",").toList.map(_.toLong)).flatten
 
     case class PolygonRecord(geom: Geometry) {
-      def id = new ObjectId()
+      val id = new ObjectId()
     }
 
     // I hate this code, let's please deprecate this codepath
