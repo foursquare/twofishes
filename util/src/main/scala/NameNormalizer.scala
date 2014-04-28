@@ -10,9 +10,9 @@ object NameNormalizer {
     s.split(splitTokenRegex).filterNot(_.isEmpty).toList
   }
 
-  val whitespaceRegexp = "[ \t]+".r
-  val allPunctuationRegexp = "[\\p{Punct}\\u2018\\u2019\\u2013]+".r
-  val loosePunctuationRegexp = ("\\s+" + allPunctuationRegexp).r
+  val spaceRegexp = " +".r
+  val punctRegexp = "\\p{Punct}".r
+  val dotsAndOtherRegexp = "['\u2018\u2019\\.\u2013]".r
 
   def normalize(s: String): String = {
     var n: String = null
@@ -27,15 +27,16 @@ object NameNormalizer {
       n = s.toLowerCase
     }
 
-    // Remove loose punctuation and collapse redundant whitespace.
-    n = loosePunctuationRegexp.replaceAllIn(n, "")
-    n = whitespaceRegexp.replaceAllIn(n, " ")
+    // remove periods and quotes
+    // \u2013 = en-dash
+    n = dotsAndOtherRegexp.replaceAllIn(n, "")
+    // change all other punctuation to spaces
+    n = punctRegexp.replaceAllIn(n, " ")
+    // replace multiple spaces with one
+    n = spaceRegexp.replaceAllIn(n, " ")
+    n = n.replace("\t", " ")
 
     n
-  }
-
-  def depunctuate(s: String) = {
-    allPunctuationRegexp.replaceAllIn(s, "")
   }
 
   def deaccent(s: String): String = {
