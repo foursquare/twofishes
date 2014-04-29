@@ -64,7 +64,11 @@ class GeocodeParseOrdering(
 
       // Matching country hint is good
       if (req.ccOption.exists(_ == primaryFeature.feature.cc)) {
-        modifySignal(10000, "country code match")
+        if (primaryFeature.feature.woeType =? YahooWoeType.POSTAL_CODE) {
+          modifySignal(10000000, "postal code country code match")
+        } else {
+          modifySignal(10000, "country code match")
+        }
       }
 
       val attributes = primaryFeature.feature.attributesOption
