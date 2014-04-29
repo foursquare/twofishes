@@ -7,6 +7,7 @@ import com.foursquare.twofishes.util.Lists.Implicits._
 import com.vividsolutions.jts.geom.Geometry
 import scalaj.collection.Implicits._
 import com.twitter.ostrich.stats.Stats
+import com.foursquare.geo.quadtree.CountryRevGeo
 
 object GeocodeRequestUtils {
   val maxRadius = 5000 // km
@@ -24,11 +25,15 @@ object GeocodeRequestUtils {
     responseIncludes(req, ResponseIncludes.WKT_GEOMETRY_SIMPLIFIED)
 
   def geocodeRequestToCommonRequestParams(req: GeocodeRequest): CommonGeocodeRequestParams = {
+    val llToRevGeo: Option[GeocodePoint] = req.llOption.orElse(req.boundsOption.map(_.ne))
+    val ccOpt: Option[String] = req.ccOption.orElse(llToRevGeo.flatMap(ll =>
+      CountryRevGeo.getNearestCountryCode(ll.lat, ll.lng)))
+
     CommonGeocodeRequestParams.newBuilder
       .debug(req.debug)
       .woeHint(req.woeHint)
       .woeRestrict(req.woeRestrict)
-      .cc(req.ccOption)
+      .cc(ccOpt)
       .lang(req.langOption)
       .responseIncludes(req.responseIncludesOption)
       .allowedSources(req.allowedSourcesOption)
