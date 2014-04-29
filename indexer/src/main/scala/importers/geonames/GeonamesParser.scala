@@ -26,8 +26,8 @@ import scalaj.collection.Implicits._
 import com.twitter.ostrich.stats.Stats
 import com.twitter.ostrich.admin.{RuntimeEnvironment, ServiceTracker}
 import com.twitter.ostrich.admin.config.AdminServiceConfig
-import org.json4s._
-import org.json4s.jackson.JsonMethods._
+import org.json4s.NoTypeHints
+import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization
 
 object GeonamesParser extends DurationUtils {
@@ -50,7 +50,6 @@ object GeonamesParser extends DurationUtils {
       })
     }).toMap
   }
-
 
   def parseCountryInfo() {
     val fileSource = scala.io.Source.fromFile(new File("data/downloaded/countryInfo.txt"))
@@ -108,7 +107,7 @@ object GeonamesParser extends DurationUtils {
 
 
     implicit val formats = Serialization.formats(NoTypeHints)
-    val prettyJsonStats = Serialization.writePretty(parse(Stats.get().toJson))
+    val prettyJsonStats = Serialization.writePretty(JsonMethods.parse(Stats.get().toJson))
     logger.info(prettyJsonStats)
     logger.info("all done with parse, trying to shutdown admin server and exit")
     admin.foreach(_.shutdown())

@@ -154,7 +154,7 @@ class PolygonLoader(
     geom: Geometry,
     source: String
   ) {
-    Stats.incr("PolygonLoder.indexPolygon")
+    Stats.incr("PolygonLoader.indexPolygon")
     val geomBytes = wkbWriter.write(geom)
     PolygonIndexDAO.save(PolygonIndex(polyId, geomBytes, source))
     parser.revGeoMaster.foreach(_ ! CalculateCover(polyId, geomBytes))
