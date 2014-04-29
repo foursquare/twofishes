@@ -84,9 +84,9 @@ object GeoTools {
   }
 
   def distanceFromPointToBounds(p: GeocodePoint, bounds: GeocodeBoundingBox): Double = {
-    val point = pointToGeometry(p)
-    val geom = boundsToGeometry(bounds)
-    DistanceOp.distance(point, geom) * MetersPerDegreeLatitude
+    val s2rect = GeoTools.boundingBoxToS2Rect(bounds)
+    val point = pointToS2LatLng(p)
+    s2rect.getDistance(point).radians() * S2LatLng.S2LatLng
   }
 
   /**
