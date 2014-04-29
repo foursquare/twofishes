@@ -404,6 +404,12 @@ object GeocodeFinagleServer extends Logging {
   def main(args: Array[String]) {
     val handleExceptions = new HandleExceptions
 
+    val version = getClass.getPackage.getImplementationVersion
+    if (version != null) {
+      logger.info("starting version %s".format(version))
+      Stats.setLabel("version", version)
+    }
+
     val config: GeocodeServerConfig = GeocodeServerConfigSingleton.init(args)
 
     // Implement the Thrift Interface
