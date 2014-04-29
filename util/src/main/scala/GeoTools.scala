@@ -86,7 +86,7 @@ object GeoTools {
   def distanceFromPointToBounds(p: GeocodePoint, bounds: GeocodeBoundingBox): Double = {
     val s2rect = GeoTools.boundingBoxToS2Rect(bounds)
     val point = pointToS2LatLng(p)
-    s2rect.getDistance(point).radians() * S2LatLng.S2LatLng
+    s2rect.getDistance(point).radians() * S2LatLng.EARTH_RADIUS_METERS
   }
 
   /**
