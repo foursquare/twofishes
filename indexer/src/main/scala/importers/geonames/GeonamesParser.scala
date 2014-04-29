@@ -26,6 +26,9 @@ import scalaj.collection.Implicits._
 import com.twitter.ostrich.stats.Stats
 import com.twitter.ostrich.admin.{RuntimeEnvironment, ServiceTracker}
 import com.twitter.ostrich.admin.config.AdminServiceConfig
+import org.json4s._
+import org.json4s.jackson.JsonMethods._
+import org.json4s.jackson.Serialization
 
 object GeonamesParser extends DurationUtils {
   var config: GeonamesImporterConfig = null
@@ -103,6 +106,10 @@ object GeonamesParser extends DurationUtils {
       writeIndexes(None)
     }
 
+
+    implicit val formats = Serialization.formats(NoTypeHints)
+    val prettyJsonStats = Serialization.writePretty(parse(Stats.get().toJson))
+    logger.info(prettyJsonStats)
     logger.info("all done with parse, trying to shutdown admin server and exit")
     admin.foreach(_.shutdown())
     System.exit(0)
