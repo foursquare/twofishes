@@ -1,9 +1,10 @@
 <configuration debug="true">
-    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-        <file>/tmp/twofishes.log</file>
-        <append>false</append>
+    <timestamp key="bySecond" datePattern="yyyy-MM-dd-HH:mm:ss"/>
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>twofishes.${bySecond}.log</file>
         <encoder>
             <pattern>%-5relative %-5level %logger{35} - %msg%n</pattern>
+            <!-- <pattern>%d{dd HH:mm:ss:SSS} [%thread] %-5level %logger{35} - %msg%n</pattern> -->
         </encoder>
     </appender>
 
