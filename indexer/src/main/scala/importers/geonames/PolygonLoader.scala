@@ -15,6 +15,7 @@ import com.mongodb.MongoException
 import com.rockymadden.stringmetric.phonetic.MetaphoneMetric
 import com.rockymadden.stringmetric.similarity.JaroWinklerMetric
 import com.rockymadden.stringmetric.transform._
+import com.twitter.ostrich.stats.Stats
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTReader}
 import com.weiglewilczek.slf4s.Logging
@@ -153,6 +154,7 @@ class PolygonLoader(
     geom: Geometry,
     source: String
   ) {
+    Stats.incr("PolygonLoder.indexPolygon")
     val geomBytes = wkbWriter.write(geom)
     PolygonIndexDAO.save(PolygonIndex(polyId, geomBytes, source))
     parser.revGeoMaster.foreach(_ ! CalculateCover(polyId, geomBytes))

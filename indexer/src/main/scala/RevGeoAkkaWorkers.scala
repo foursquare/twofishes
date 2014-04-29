@@ -8,6 +8,7 @@ import com.foursquare.twofishes.util.{DurationUtils, GeometryUtils, RevGeoConsta
 import com.foursquare.twofishes.mongo.{PolygonIndexDAO, RevGeoIndexDAO, RevGeoIndex}
 import com.google.common.geometry.S2CellId
 import com.mongodb.casbah.Imports._
+import com.twitter.ostrich.stats.Stats
 import com.vividsolutions.jts.geom.{Point => JTSPoint, Geometry}
 import com.vividsolutions.jts.geom.prep.PreparedGeometryFactory
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter}
@@ -136,25 +137,26 @@ class RevGeoMaster(val latch: CountDownLatch) extends Actor with Logging {
 
   val _system = ActorSystem("RoundRobinRouterExample")
   val router = _system.actorOf(Props[RevGeoWorker].withRouter(RoundRobinRouter(8)), name = "myRoundRobinRouterActor")
-  var totalSeen = 0
+  var inFlight = 0
   var seenDone = false
 
   // message handler
   def receive = {
     case msg: FinishedCover =>
-      totalSeen -= 1
-      if (totalSeen == 0 && seenDone) {
+      inFlight -= 1
+      if (inFlight == 0 && seenDone) {
         logger.info("finished all revgeo covers, shutting down system")
         self ! PoisonPill
       }
-      if (totalSeen < 0) {
-        logger.error("totalSeen < 0 ... we're bad at a counting")
+      if (inFlight < 0) {
+        logger.error("inFlight < 0 ... we're bad at a counting")
       }
     case msg: CalculateCover =>
-      totalSeen += 1
+      Stats.incr("revgeo.akkaWorkers.CalculateCover")
+      inFlight += 1
 	    router ! msg
     case msg: CalculateCoverFromMongo =>
-      totalSeen += 1
+      inFlight += 1
       router ! msg
     case msg: Done =>
       logger.info("all done with revgeo coverage indexing, sending poison pills")
@@ -162,7 +164,7 @@ class RevGeoMaster(val latch: CountDownLatch) extends Actor with Logging {
       router ! Broadcast(PoisonPill)
       latch.countDown()
       seenDone = true
-      if (totalSeen == 0) {
+      if (inFlight == 0) {
         logger.info("had already finished all revgeo covers, shutting down system")
         self ! PoisonPill
       }
