@@ -145,9 +145,7 @@ class RevGeoMaster(val latch: CountDownLatch) extends Actor with Logging {
     case msg: FinishedCover =>
       inFlight -= 1
       if (inFlight == 0 && seenDone) {
-        logger.info("finished all revgeo covers, shutting down system")
-        latch.countDown()
-        self ! PoisonPill
+        shutdownWithMessage("finished all revgeo covers, shutting down system")
       }
       if (inFlight < 0) {
         logger.error("inFlight < 0 ... we're bad at a counting")
@@ -165,10 +163,14 @@ class RevGeoMaster(val latch: CountDownLatch) extends Actor with Logging {
       router ! Broadcast(PoisonPill)
       seenDone = true
       if (inFlight == 0) {
-        logger.info("had already finished all revgeo covers, shutting down system")
-        latch.countDown()
-        self ! PoisonPill
+        shutdownWithMessage("had already finished all revgeo covers, shutting down system")
       }
+  }
+
+  private def shutdownWithMessage(message: String): Unit = {
+    logger.info(message)
+    latch.countDown()
+    self ! PoisonPill
   }
 
   override def preStart() {
