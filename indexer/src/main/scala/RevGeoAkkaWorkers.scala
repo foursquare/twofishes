@@ -146,6 +146,7 @@ class RevGeoMaster(val latch: CountDownLatch) extends Actor with Logging {
       inFlight -= 1
       if (inFlight == 0 && seenDone) {
         logger.info("finished all revgeo covers, shutting down system")
+        latch.countDown()
         self ! PoisonPill
       }
       if (inFlight < 0) {
@@ -162,10 +163,10 @@ class RevGeoMaster(val latch: CountDownLatch) extends Actor with Logging {
       logger.info("all done with revgeo coverage indexing, sending poison pills")
       // send a PoisonPill to all workers telling them to shut down themselves
       router ! Broadcast(PoisonPill)
-      latch.countDown()
       seenDone = true
       if (inFlight == 0) {
         logger.info("had already finished all revgeo covers, shutting down system")
+        latch.countDown()
         self ! PoisonPill
       }
   }

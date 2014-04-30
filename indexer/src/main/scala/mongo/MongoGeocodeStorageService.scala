@@ -23,7 +23,9 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
   }
 
   def insert(records: List[GeocodeRecord]) {
-    MongoGeocodeDAO.insert(records)
+    records.foreach{record =>
+      insert(record)
+    }
   }
 
   def addBoundingBoxToRecord(bbox: BoundingBox, id: StoredFeatureId) {
