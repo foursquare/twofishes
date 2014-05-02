@@ -37,6 +37,8 @@ case class Parse[T <: MaybeSorted](
   def iterator = fmatches.iterator
   def length = fmatches.length
 
+  lazy val scoreKey = fmatches.map(_.fmatch.longId).mkString(":")
+
   val debugLines = new ListBuffer[DebugScoreComponent]
   var finalScore = 0.0
   var scoringFeaturesOption: Option[InterpretationScoringFeatures] = None
@@ -66,13 +68,12 @@ case class Parse[T <: MaybeSorted](
 
   def tokenLength = fmatches.map(pp => pp.tokenEnd - pp.tokenStart).sum
 
-  def getSorted: Parse[Sorted] = {
-    val sortedParse = Parse[Sorted](fmatches.sorted(FeatureMatchOrdering))
-    sortedParse.setScoringFeatures(scoringFeaturesOption)
-    sortedParse
-  }
+  def getSorted: Parse[Sorted] = Parse.makeSortedParse(fmatches, scoringFeaturesOption)
 
   def addFeature(f: FeatureMatch) = Parse[Unsorted](fmatches ++ List(f))
+
+  def addSortedFeature(f: FeatureMatch) =
+    Parse.makeSortedParse(fmatches ++ List(f), scoringFeaturesOption)
 
   def countryCode = fmatches.headOption.map(_.fmatch.feature.cc).getOrElse("XX")
 
@@ -83,6 +84,17 @@ case class Parse[T <: MaybeSorted](
       val rest = this.drop(1)
       rest.exists(_.fmatch.feature.ids == primaryFeature.fmatch.feature.ids)
     })
+  }
+}
+
+object Parse {
+  def makeSortedParse(
+    fmatches: Seq[FeatureMatch],
+    scoringFeaturesOption: Option[InterpretationScoringFeatures]
+  ) = {
+    val sortedParse = Parse[Sorted](fmatches.sorted(FeatureMatchOrdering))
+    sortedParse.setScoringFeatures(scoringFeaturesOption)
+    sortedParse
   }
 }
 

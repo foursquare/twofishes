@@ -20,8 +20,6 @@ class GeocodeParseOrdering(
     logger: TwofishesLogger,
     extraScorers: List[GeocodeParseOrdering.ScoringFunc] = Nil
   ) extends Ordering[Parse[Sorted]] {
-  var scoreMap = new scala.collection.mutable.HashMap[String, Int]
-
   // Higher is better
   def scoreParse(parse: Parse[Sorted]): Int = {
     parse.headOption.map(primaryFeatureMatch => {
@@ -183,8 +181,9 @@ class GeocodeParseOrdering(
     }).getOrElse(0)
   }
 
+  var scoreMap = new scala.collection.mutable.HashMap[String, Int]
   def getScore(p: Parse[Sorted]): Int = {
-    val scoreKey = p.map(_.fmatch.longId).mkString(":")
+    val scoreKey = p.scoreKey
     if (!scoreMap.contains(scoreKey)) {
       scoreMap(scoreKey) = scoreParse(p)
     }
@@ -228,8 +227,13 @@ class GeocodeParseOrdering(
     val scoreA = getScore(a)
     val scoreB = getScore(b)
     if (scoreA == scoreB) {
-      (a.headOption.map(_.fmatch.feature.longId).getOrElse(0L) -
-        b.headOption.map(_.fmatch.feature.longId).getOrElse(0L)).signum
+      val diff = (a.headOption.map(_.fmatch.feature.longId).getOrElse(0L) -
+        b.headOption.map(_.fmatch.feature.longId).getOrElse(0L))
+      // .signum is slow, we don't want the .toInt to cause weird
+      // long wrapping issues, so manually do this.
+      if (diff < 0) { -1 }
+      else if (diff > 0) { 1 }
+      else { 0 }
     } else {
       scoreB - scoreA
     }
