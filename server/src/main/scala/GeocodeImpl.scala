@@ -133,6 +133,9 @@ class GeocoderImpl(
             cc <- augmentedSubParsesByCountry.keys
             f <- featuresByCountry.getOrElse(cc, Nil)
             p <- augmentedSubParsesByCountry.getOrElse(cc, Nil)
+            diffentWoeTypes = p.mostSpecificFeature.fmatch.feature.woeType !=? f.fmatch.feature.woeType
+            sameFeatureId = p.mostSpecificFeature.fmatch.feature.longId =? f.fmatch.feature.longId
+            if (diffentWoeTypes || sameFeatureId)
           } {
             parsesBuilt += 1
             buildParse(f, p).foreach(parse => lb += parse)

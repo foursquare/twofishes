@@ -79,6 +79,8 @@ case class Parse[T <: MaybeSorted](
 
   lazy val featureId = StoredFeatureId.fromLong(fmatches(0).fmatch.longId).get
 
+  def mostSpecificFeature[Sorted] = fmatches(0)
+
   def hasDupeFeature: Boolean = {
     this.headOption.exists(primaryFeature => {
       val rest = this.drop(1)
