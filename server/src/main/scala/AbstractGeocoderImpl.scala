@@ -7,7 +7,7 @@ import com.twitter.ostrich.stats.{Stats => OstrichStats}
 trait GeocoderTypes {
   case class SortedParseWithPosition(parse: Parse[Sorted], position: Int)
 
-  val NullParse = Parse[Sorted](Nil)
+  val NullParse = Parse[Sorted](Vector.empty)
   // ParseSeq = multiple interpretations
   type ParseSeq = Seq[Parse[Unsorted]]
   type SortedParseSeq = Seq[Parse[Sorted]]

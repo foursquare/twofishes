@@ -69,7 +69,7 @@ class HFileStorageService(originalBasepath: String, shouldPreload: Boolean) exte
       fid <- StoredFeatureId.fromUserInputString(id).orElse(slugFidMap.flatMap(_.get(id)))
     } yield { (fid, id) }).toMap
 
-    getByFeatureIds(idMap.keys.toList).map({
+    getByFeatureIds(idMap.keys.toVector).map({
       case (k, v) => (idMap(k), v)
     })
   }
@@ -98,7 +98,7 @@ class HFileStorageService(originalBasepath: String, shouldPreload: Boolean) exte
   override val hotfixesDeletes: Seq[StoredFeatureId] = {
     val file = new File(basepath, "hotfixes_deletes.txt")
     if (file.exists()) {
-      scala.io.Source.fromFile(file).getLines.toList.flatMap(i => StoredFeatureId.fromLegacyObjectId(new ObjectId(i)))
+      scala.io.Source.fromFile(file).getLines.toVector.flatMap(i => StoredFeatureId.fromLegacyObjectId(new ObjectId(i)))
     } else {
       Nil
     }
@@ -107,7 +107,7 @@ class HFileStorageService(originalBasepath: String, shouldPreload: Boolean) exte
   override val hotfixesBoosts: Map[StoredFeatureId, Int] = {
     val file = new File(basepath, "hotfixes_boosts.txt")
     if (file.exists()) {
-      scala.io.Source.fromFile(file).getLines.toList.map(l => {
+      scala.io.Source.fromFile(file).getLines.toVector.map(l => {
         val parts = l.split("[\\|\t, ]")
         try {
           (StoredFeatureId.fromLegacyObjectId(new ObjectId(parts(0))).get, parts(1).toInt)
@@ -217,8 +217,8 @@ class NameIndexHFileInput(basepath: String, shouldPreload: Boolean) {
   val nameIndex = new HFileInput(basepath, Indexes.NameIndex, shouldPreload)
   val prefixMapOpt = PrefixIndexMapFileInput.readInput(basepath, shouldPreload)
 
-  def get(name: String): List[StoredFeatureId] = {
-    nameIndex.lookup(name).toList.flatten
+  def get(name: String): Seq[StoredFeatureId] = {
+    nameIndex.lookup(name).toVector.flatten
   }
 
   def getPrefix(name: String): Seq[StoredFeatureId] = {
@@ -252,8 +252,8 @@ class PrefixIndexMapFileInput(basepath: String, shouldPreload: Boolean) {
     "MAX_PREFIX_LENGTH",
     throw new Exception("missing MAX_PREFIX_LENGTH")).toInt
 
-  def get(name: String): List[StoredFeatureId] = {
-    prefixIndex.lookup(name).toList.flatten
+  def get(name: String): Seq[StoredFeatureId] = {
+    prefixIndex.lookup(name).toVector.flatten
   }
 }
 
@@ -283,8 +283,8 @@ class ReverseGeocodeMapFileInput(basepath: String, shouldPreload: Boolean) {
     "levelMod",
     throw new Exception("missing levelMod")).toInt
 
-  def get(cellid: Long): List[CellGeometry] = {
-    s2Index.lookup(cellid).toList.flatMap(_.cells)
+  def get(cellid: Long): Seq[CellGeometry] = {
+    s2Index.lookup(cellid).toVector.flatMap(_.cells)
   }
 }
 

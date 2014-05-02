@@ -142,7 +142,7 @@ class GeocoderImpl(
             parsesBuilt, lb.size, searchStr
           )
 
-          lb.toList
+          lb.toVector
         }
       }
     })
@@ -292,7 +292,7 @@ class GeocoderImpl(
         }
 
         for {
-          length <-  longest.to(1, -1).toList
+          length <- longest.to(1, -1).toVector
           if (parsesToConsider.size < maxInterpretationsToConsider)
           (size, parses) <- validParseCaches.find(_._1 == length)
         } {
