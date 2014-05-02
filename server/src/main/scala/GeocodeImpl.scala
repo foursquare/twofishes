@@ -125,27 +125,24 @@ class GeocoderImpl(
           }).toMap ++ subParsesByCountry
 
         logger.logDuration("buildParses", "buildParses for %s".format(searchStr)) {
-          val lb = new ListBuffer[Parse[Sorted]]()
-          lb.sizeHint(augmentedSubParsesByCountry.size * augmentedSubParsesByCountry.size)
-
           var parsesBuilt = 0
-          for {
+          val retList = (for {
             cc <- augmentedSubParsesByCountry.keys
             f <- featuresByCountry.getOrElse(cc, Nil)
             p <- augmentedSubParsesByCountry.getOrElse(cc, Nil)
             diffentWoeTypes = p.mostSpecificFeature.fmatch.feature.woeType !=? f.fmatch.feature.woeType
             sameFeatureId = p.mostSpecificFeature.fmatch.feature.longId =? f.fmatch.feature.longId
             if (diffentWoeTypes || sameFeatureId)
-          } {
+          } yield {
             parsesBuilt += 1
-            buildParse(f, p).foreach(parse => lb += parse)
-          }
+            buildParse(f, p)
+          }).flatten
 
           logger.ifDebug("built and checked %d parses, saved %d for %s",
-            parsesBuilt, lb.size, searchStr
+            parsesBuilt, retList.size, searchStr
           )
 
-          lb.toVector
+          retList
         }
       }
     })
