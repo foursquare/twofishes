@@ -191,42 +191,10 @@ class GeocodeParseOrdering(
     scoreMap.getOrElse(scoreKey, -1)
   }
 
-  def compare(a: Parse[Sorted], b: Parse[Sorted]): Int = {
-    // logger.ifDebug("Scoring %s vs %s".format(printDebugParse(a), printDebugParse(b)))
-
-    for {
-      aFeature <- a.headOption
-      bFeature <- b.headOption
-    } {
-      if (aFeature.tokenStart == bFeature.tokenStart &&
-          aFeature.tokenEnd == bFeature.tokenEnd &&
-          aFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY &&
-          bFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY &&
-          // if we have a hint that we want one of the types, then let the
-          // scoring happen naturally
-          !req.woeHint.has(aFeature.fmatch.feature.woeType) &&
-          !req.woeHint.has(bFeature.fmatch.feature.woeType)
-        ) {
-        // if a is a parent of b, prefer b
-        if (aFeature.fmatch.scoringFeatures.parentIds.has(bFeature.fmatch.longId) &&
-          (aFeature.fmatch.scoringFeatures.population * 1.0 / bFeature.fmatch.scoringFeatures.population) > 0.05
-        ) {
-          logger.ifDebug("Preferring %s because it's a child of %s", a, b)
-          return -1
-        }
-        // if b is a parent of a, prefer a
-        if (bFeature.fmatch.scoringFeatures.parentIds.has(aFeature.fmatch.longId) &&
-           (bFeature.fmatch.scoringFeatures.population * 1.0 / aFeature.fmatch.scoringFeatures.population) > 0.05
-          ) {
-          logger.ifDebug("Preferring %s because it's a child of %s", a, b)
-          return 1
-        }
-      }
-    }
-
+  def normalCompare(a: Parse[Sorted], b: Parse[Sorted]): Int = {
     val scoreA = getScore(a)
     val scoreB = getScore(b)
-    if (scoreA == scoreB) {
+    if (Math.abs(scoreA - scoreB) < 0.000001) {
       val diff = (a.headOption.map(_.fmatch.feature.longId).getOrElse(0L) -
         b.headOption.map(_.fmatch.feature.longId).getOrElse(0L))
       // .signum is slow, we don't want the .toInt to cause weird
@@ -236,6 +204,41 @@ class GeocodeParseOrdering(
       else { 0 }
     } else {
       scoreB - scoreA
+    }
+  }
+
+  def compare(a: Parse[Sorted], b: Parse[Sorted]): Int = {
+    // logger.ifDebug("Scoring %s vs %s".format(printDebugParse(a), printDebugParse(b)))
+
+    val aFeature = a.primaryFeature
+    val bFeature = b.primaryFeature
+
+    if (aFeature.tokenStart == bFeature.tokenStart &&
+        aFeature.tokenEnd == bFeature.tokenEnd &&
+        aFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY &&
+        bFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY &&
+        // if we have a hint that we want one of the types, then let the
+        // scoring happen naturally
+        !req.woeHint.has(aFeature.fmatch.feature.woeType) &&
+        !req.woeHint.has(bFeature.fmatch.feature.woeType)
+    ) {
+      // if a is a parent of b, prefer b
+      if (aFeature.fmatch.scoringFeatures.parentIds.has(bFeature.fmatch.longId) &&
+        (aFeature.fmatch.scoringFeatures.population * 1.0 / bFeature.fmatch.scoringFeatures.population) > 0.05
+      ) {
+        logger.ifDebug("Preferring %s because it's a child of %s", a, b)
+        -1
+      // if b is a parent of a, prefer a
+      } else if (bFeature.fmatch.scoringFeatures.parentIds.has(aFeature.fmatch.longId) &&
+         (bFeature.fmatch.scoringFeatures.population * 1.0 / aFeature.fmatch.scoringFeatures.population) > 0.05
+        ) {
+        logger.ifDebug("Preferring %s because it's a child of %s", a, b)
+        1
+      } else {
+        normalCompare(a, b)
+      }
+    } else {
+      normalCompare(a, b)
     }
   }
 }

@@ -39,6 +39,8 @@ case class Parse[T <: MaybeSorted](
 
   lazy val scoreKey = fmatches.map(_.fmatch.longId).mkString(":")
 
+  def primaryFeature = fmatches(0)
+
   val debugLines = new ListBuffer[DebugScoreComponent]
   var finalScore = 0.0
   var scoringFeaturesOption: Option[InterpretationScoringFeatures] = None
