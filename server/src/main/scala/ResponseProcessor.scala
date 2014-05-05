@@ -20,25 +20,6 @@ object GeocodeServingFeatureOrdering extends Ordering[GeocodeServingFeature] {
   }
 }
 
-object ResponseProcessor {
-  def generateResponse(
-    debugLevel: Int,
-    logger: MemoryLogger,
-    interpretations: Seq[GeocodeInterpretation],
-    requestGeom: Option[Geometry] = None): GeocodeResponse = {
-    val responseBuilder = GeocodeResponse.newBuilder
-      .interpretations(interpretations)
-    if (debugLevel > 0) {
-      responseBuilder.debugLines(logger.getLines)
-      requestGeom.foreach(geom => {
-        val wktWriter = new WKTWriter
-        responseBuilder.requestWktGeometry(wktWriter.write(geom))
-      })
-    }
-    responseBuilder.result
-  }
-}
-
 // After generating parses, the code in this class is called to clean that up into
 // GeocodeResponse/GeocodeInterpretation to return to the client
 class ResponseProcessor(
@@ -583,6 +564,7 @@ class ResponseProcessor(
     parses: SortedParseSeq,
     parseParams: ParseParams,
     originalMaxInterpretations: Int,
+    requestGeom: Option[Geometry],
     dedupByMatchedName: Boolean = false
   ) = {
     val tokens = parseParams.tokens
@@ -647,7 +629,26 @@ class ResponseProcessor(
     } else {
       Map.empty
     }
-    ResponseProcessor.generateResponse(req.debug, logger, hydrateParses(
-      sortedDedupedParses, parseParams, polygonMap, fixAmbiguousNames = true, dedupByMatchedName = dedupByMatchedName))
+    generateResponse(hydrateParses(
+      sortedDedupedParses, parseParams, polygonMap, fixAmbiguousNames = true,
+      dedupByMatchedName = dedupByMatchedName),
+      requestGeom
+    )
+  }
+
+  def generateResponse(
+    interpretations: Seq[GeocodeInterpretation],
+    requestGeom: Option[Geometry]
+  ): GeocodeResponse = {
+    val responseBuilder = GeocodeResponse.newBuilder
+      .interpretations(interpretations)
+    if (req.debug > 0) {
+      responseBuilder.debugLines(logger.getLines)
+      requestGeom.foreach(geom => {
+        val wktWriter = new WKTWriter
+        responseBuilder.requestWktGeometry(wktWriter.write(geom))
+      })
+    }
+    responseBuilder.result
   }
 }

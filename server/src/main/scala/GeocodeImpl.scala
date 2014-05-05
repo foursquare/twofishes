@@ -246,7 +246,8 @@ class GeocoderImpl(
       logger.ifDebug("RESTARTING common words query: %s", modifiedTokens)
       doGeocodeForQuery(new QueryParser(logger).parseQueryTokens(modifiedTokens))
     } else {
-      responseProcessor.buildFinalParses(parses, parseParams, getMaxInterpretations)
+      responseProcessor.buildFinalParses(
+        parses, parseParams, getMaxInterpretations, requestGeom)
     }
   }
 
@@ -278,7 +279,7 @@ class GeocoderImpl(
     if (validParseCaches.size > 0) {
       val longest = validParseCaches.map(_._1).max
       if (hadConnector && longest != tokens.size) {
-        ResponseProcessor.generateResponse(req.debug, logger, Nil)
+        responseProcessor.generateResponse(Nil, requestGeom)
       } else {
         val parsesToConsider = new ListBuffer[Parse[Sorted]]
 
@@ -304,11 +305,12 @@ class GeocoderImpl(
         if (longest != tokens.size) {
           maybeRetryParsing(parsesToConsider, parseParams)
         } else {
-          responseProcessor.buildFinalParses(parsesToConsider, parseParams, getMaxInterpretations)
+          responseProcessor.buildFinalParses(
+            parsesToConsider, parseParams, getMaxInterpretations, requestGeom)
         }
       }
     } else {
-      ResponseProcessor.generateResponse(req.debug, logger, Nil)
+      responseProcessor.generateResponse(Nil, requestGeom)
     }
   }
 }

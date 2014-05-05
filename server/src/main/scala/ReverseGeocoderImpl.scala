@@ -242,9 +242,11 @@ class ReverseGeocoderImpl(
 
   def doSingleReverseGeocode(geom: Geometry): GeocodeResponse = {
     val (interpIdxes, interpretations, _) = reverseGeocoder.doBulkReverseGeocode(List(geom))
-    val response = ResponseProcessor.generateResponse(req.debug, queryLogger,
+    val responseProcessor = new ResponseProcessor(commonParams, store, queryLogger)
+    val response = responseProcessor.generateResponse(
       interpIdxes(0).flatMap(interpIdx => interpretations.lift(interpIdx)),
-      requestGeom = if (req.debug > 0) { Some(geom) } else { None })
+      requestGeom = Some(geom)
+    )
     response
   }
 

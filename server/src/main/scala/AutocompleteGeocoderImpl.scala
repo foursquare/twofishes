@@ -300,6 +300,7 @@ class AutocompleteGeocoderImpl(
       validParses,
       parseParams,
       getMaxInterpretations,
+      requestGeom,
       dedupByMatchedName = true)
   }
 }
