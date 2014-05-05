@@ -268,6 +268,7 @@ function success(data, bulkInputs) {
 
       var map = new L.Map('result-' + count, opts);
       feature.geometry.wkbGeometry = null;
+      feature.geometry.wkbGeometrySimplified = null;
 
       fixFeature(feature);
       _.each(interp.parents, fixFeature);
