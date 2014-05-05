@@ -12,6 +12,7 @@ var bulkLookupInput = $('#bulkLookup');
 var bulkRevGeoButton = $('#bulkRevGeoButton');
 var bulkRevGeoInput = $('#bulkRevGeo');
 
+var llInput = $('#ll');
 var queryInput = $('#query');
 var searchButton = $('#search');
 var searchForm = $('#searchForm');
@@ -19,40 +20,37 @@ var debugInfo = $('#debugInfo');
 
 function initPage() {
   var ll = getParameterByName('ll');
-  var query = getParameterByName('query');
   var slug = getParameterByName('slug');
-  var urlQuery = decodeURIComponent(getQuery());
-  if (!!ll) { setQuery(ll); }
-  else if (!!query) { setQuery(query); }
-  else if (!!slug) { lookupInput.val(slug); }
-  else if (!!urlQuery) { setQuery(urlQuery); }
 
-  geocode();
+  var params = decodeURIComponent(window.location.hash.substr(1)) ||
+    decodeURIComponent(window.location.search.substr(1));
+
+  var query = getParameterByName('query') || params;
+
+  if (!!slug) { lookupInput.val(slug); }
+  else {
+    if (!!ll) { setLL(ll); }
+    if (!!query) { setQuery(query); }
+  }
+
+  geocode(params);
+}
+
+function setLL(q) {
+  llInput.val(q);
 }
 
 function setQuery(q) {
   queryInput.val(q);
 }
 
-function getQuery() {
-  query = window.location.hash.substr(1);
-
-  if (query == "") {
-    query = window.location.search.substr(1);
-  }
-
-  return query
-}
-
 lookupButton.click(function() {
-  window.location.hash = "lookup=" + lookupInput.val();
-  geocode();
+  geocode("slug=" + lookupInput.val());
   return false;
 })
 
 revgeoButton.click(function() {
-  window.location.hash = "revgeo=" + revgeoInput.val();
-  geocode();
+  geocode("ll=" + revgeoInput.val());
   return false;
 })
 
@@ -69,28 +67,41 @@ function rewriteInputIntoBulkRevGeoQuery(input) {
 }
 
 bulkLookupButton.click(function() {
-  window.location.hash = "bulkLookup=" + bulkLookupInput.val();
-  geocode();
+  geocode("bulkLookup=" + bulkLookupInput.val());
   return false;
 })
 
 bulkRevGeoButton.click(function() {
-  window.location.hash = "bulkRevGeo=" + bulkRevGeoInput.val();
-  geocode();
+  geocode("bulkRevGeo=" + bulkRevGeoInput.val());
   return false;
 })
 
-searchButton.click(function() {
-  window.location.hash = queryInput.val();
-  geocode();
+function doSearch() {
+  var query = queryInput.val();
+  var search = '';
+  if (query) {
+    search += '&query=' + query;
+  }
+  var ll = llInput.val();
+  if (ll) {
+    search += '&ll=' + ll;
+  }
+  geocode(search);
   return false;
-})
+}
 
-searchForm.submit(function() {
-  window.location.hash = queryInput.val();
-  geocode();
-  return false;
-})
+function searchOnEnter(event) {
+  if (event.which == 13) {
+    event.preventDefault();
+    searchForm.submit();
+  }
+}
+
+searchButton.click(doSearch);
+searchForm.submit(doSearch);
+
+queryInput.keypress(searchOnEnter);
+llInput.keypress(searchOnEnter);
 
 function getParameterByName(name) {
   params = location.search || location.hash;
@@ -100,8 +111,7 @@ function getParameterByName(name) {
   return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
 }
 
-function geocode() {
-  var query = getQuery();
+function geocode(query) {
   var bulkInputs = [];
 
   var maxInterpretations = getParameterByName('maxInterpretations') || 3;
@@ -136,55 +146,40 @@ function geocode() {
       }
     }
     query = rewrittenQuery;
-  } else if (query.match(/lookup=/)) {
+  } else if (query.match(/slug=/) || query.match(/revgeo=/)) {
+    // ie, unlimited
     maxInterpretations = 0;
-    // one slug lookup
-    var params = query.split('&')
-    var rewrittenQuery = "";
-    for (var i = 0; i < params.length; ++i) {
-      var keyval = params[i].split('=');
-      if (keyval[0] == 'lookup') {
-        rewrittenQuery += 'slug=' + keyval[1];
-      } else {
-        rewrittenQuery += params[i];
-      }
-    }
-    query = rewrittenQuery;
-  } else if (query.match(/revgeo=/)) {
-    maxInterpretations = 0;
-    // one revgeo
-    var params = query.split('&')
-    var rewrittenQuery = "";
-    for (var i = 0; i < params.length; ++i) {
-      var keyval = params[i].split('=');
-      if (keyval[0] == 'revgeo') {
-        rewrittenQuery += 'll=' + keyval[1];
-      } else {
-        rewrittenQuery += params[i];
-      }
-    }
-    query = rewrittenQuery;
   }
 
   var url = 'http://' + window.location.host + '/?debug=1'
     + '&responseIncludes=EVERYTHING,WKT_GEOMETRY_SIMPLIFIED,WKB_GEOMETRY_SIMPLIFIED'
 
+  var queryParams = ''
+
   if (query.match(/.*=.*/)) {
-    url += '&' + query
+    queryParams += '&' + query
   } else if (query.match(/^([-+]?\d{1,2}([.]\d+)?),\s*([-+]?\d{1,3}([.]\d+)?)$/)) {
     maxInterpretations = 10
-    url += '&ll=' + query
+    queryParams += '&ll=' + query
   } else {
-    url += '&query=' + query
+    queryParams += '&query=' + query
   }
 
-  url += '&maxInterpretations=' + maxInterpretations
+  history.pushState(null, null, '?' + queryParams.replace(/^&+/, ''))
 
+  if (queryParams.indexOf('maxInterpretations') != -1) {
+    queryParams += '&maxInterpretations=' + maxInterpretations
+  }
+  url += queryParams;
+
+  debugInfo.empty();
 
   $.getJSON(url,
-    function(data) { return success(data, bulkInputs) }
+    function(data) { 
+      debugInfo.append('raw search: ' + '<a href="' + url + '">' + url + '</a>');
+      return success(data, bulkInputs)
+    }
   ).error(function(jqXHR, textStatus, errorThrown) {
-    debugInfo.empty();
     debugInfo.append($('<font color="red">ERROR: <br/> ' + textStatus + ' <br/> ' + errorThrown.toString() +
         '<br/>' + 'probably want to debug @ <a href="' + url + '">' + url + '</a>'));
   });
@@ -206,8 +201,6 @@ function success(data, bulkInputs) {
   window.console.log(data);
 
   statusArea.empty();
-  debugInfo.empty();
-
 
   function linkifySlugs(str, group1, group2) {
     var id = group1 + ':' + group2;
@@ -335,13 +328,6 @@ function success(data, bulkInputs) {
           color: '#ff0000',
           fillColor: '#ff0000',
           icon: myIcon}));
-      } else {
-        var ll = getParameterByName('ll')
-        if (ll) {
-          var parts = ll.split(',');
-          var marker = new L.Marker(new L.LatLng(parts[0], parts[1]), {icon: myIcon})
-          map.addLayer(marker);
-        }
       }
     }
   });
