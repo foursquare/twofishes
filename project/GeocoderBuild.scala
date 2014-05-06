@@ -9,7 +9,7 @@ object GeocoderBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.foursquare.twofishes",
     name := "twofishes",
-    version      := "0.82.16",
+    version      := "0.82.17",
     scalaVersion := "2.10.2",
     javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
     javacOptions in doc := Seq("-source", "1.6")
@@ -148,7 +148,8 @@ object GeocoderBuild extends Build {
         publishArtifact := true,
         libraryDependencies ++= Seq(
           "com.twitter" %% "ostrich" % "9.1.0",
-          "com.twitter" %% "finagle-http" % "6.3.0"
+          "com.twitter" %% "finagle-http" % "6.3.0",
+          "com.vividsolutions" % "jts" % "1.13"
         ),
         ivyXML := (
           <dependencies>

@@ -57,11 +57,15 @@ object GeocodeRequestUtils {
   def getRequestGeometry(req: GeocodeRequest): Option[Geometry] = {
     val radius = req.radiusOption.getOrElse(0)
     (req.llOption, req.boundsOption) match {
-      case (Some(ll), None) if (radius > 0) => makeCircle(ll, radius)
-      case (Some(ll), None) => Some(GeoTools.pointToGeometry(ll))
-      case (None, Some(bounds)) => Some(GeoTools.boundsToGeometry(bounds))
-      case (None, None) => None
-      case (Some(ll), Some(bounds)) => throw new Exception("both bounds and ll, can't pick")
+      case (Some(ll), Some(bounds)) if (radius > 0) =>
+        throw new Exception("both bounds and ll+radius, can't pick")
+      case (_, Some(bounds)) =>
+        Some(GeoTools.boundsToGeometry(bounds))
+      case (Some(ll), None) if (radius > 0) =>
+        makeCircle(ll, radius)
+      case (Some(ll), None) =>
+        Some(GeoTools.pointToGeometry(ll))
+      case _ => None
     }
   }
 }
