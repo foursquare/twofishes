@@ -213,30 +213,29 @@ class GeocodeParseOrdering(
     val aFeature = a.primaryFeature
     val bFeature = b.primaryFeature
 
-    if (aFeature.tokenStart == bFeature.tokenStart &&
-        aFeature.tokenEnd == bFeature.tokenEnd &&
-        aFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY &&
-        bFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY &&
-        // if we have a hint that we want one of the types, then let the
-        // scoring happen naturally
-        !req.woeHint.has(aFeature.fmatch.feature.woeType) &&
-        !req.woeHint.has(bFeature.fmatch.feature.woeType)
-    ) {
+    val useSameTokens =
+      aFeature.tokenStart == bFeature.tokenStart && aFeature.tokenEnd == bFeature.tokenEnd 
+    val bothNotCountries = 
+      aFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY && 
+      bFeature.fmatch.feature.woeType != YahooWoeType.COUNTY
+
+    val bothNotHinted = 
+      // if we have a hint that we want one of the types, then let the
+      // scoring happen naturally
+      !req.woeHint.has(aFeature.fmatch.feature.woeType) &&
+      !req.woeHint.has(bFeature.fmatch.feature.woeType)
+
+    val shouldCheckParents = 
+      useSameTokens && bothNotCountries && bothNotHinted
+
       // if a is a parent of b, prefer b
-      if (aFeature.fmatch.scoringFeatures.parentIds.has(bFeature.fmatch.longId) &&
-        (aFeature.fmatch.scoringFeatures.population * 1.0 / bFeature.fmatch.scoringFeatures.population) > 0.05
-      ) {
-        logger.ifDebug("Preferring %s because it's a child of %s", a, b)
+    if (shouldCheckParents && aFeature.fmatch.scoringFeatures.parentIds.has(bFeature.fmatch.longId)) {
+        logger.ifDebug("Preferring parse (%s) because it's a child of parse (%s)", a, b)
         -1
-      // if b is a parent of a, prefer a
-      } else if (bFeature.fmatch.scoringFeatures.parentIds.has(aFeature.fmatch.longId) &&
-         (bFeature.fmatch.scoringFeatures.population * 1.0 / aFeature.fmatch.scoringFeatures.population) > 0.05
-        ) {
-        logger.ifDebug("Preferring %s because it's a child of %s", a, b)
-        1
-      } else {
-        normalCompare(a, b)
-      }
+    // if b is a parent of a, prefer a
+    } else if (shouldCheckParents && bFeature.fmatch.scoringFeatures.parentIds.has(aFeature.fmatch.longId)) {
+      logger.ifDebug("Preferring parse (%s) because it's a child of parse (%s)", b, a)
+      1
     } else {
       normalCompare(a, b)
     }
