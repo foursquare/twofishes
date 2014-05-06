@@ -16,6 +16,6 @@ object MongoGeocodeDAO extends SalatDAO[GeocodeRecord, ObjectId](
   def makeIndexes() {
     collection.ensureIndex(DBObject("hasPoly" -> -1))
     collection.ensureIndex(DBObject("loc" -> "2dsphere", "_woeType" -> -1))
-
+    collection.ensureIndex(DBObject("polyId" -> 1))
   }
 }

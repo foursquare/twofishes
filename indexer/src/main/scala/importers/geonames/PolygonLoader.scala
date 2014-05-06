@@ -209,7 +209,7 @@ class PolygonLoader(
     val wkbReader = new WKBReader()
     for {
       (polyRecord, index) <- polygons.zipWithIndex
-      featureRecord <- MongoGeocodeDAO.find(MongoDBObject("_id" -> polyRecord._id))
+      featureRecord <- getFeaturesByPolyId(polyRecord._id)
       polyData = polyRecord.polygon
     } {
       val polygon = wkbReader.read(polyData)
@@ -221,17 +221,23 @@ class PolygonLoader(
           MongoGeocodeDAO.update(MongoDBObject("_id" -> featureRecord.featureId.longId),
             MongoDBObject("$set" ->
               MongoDBObject(
-                "polygon" -> None,
                 "hasPoly" -> false
               )
             ),
             false, false)
 
           PolygonIndexDAO.remove(polyRecord)
+          Stats.incr("PolygonLoader.removeBadPolygon")
       }
     }
     logger.info("done reading in polys")
     parser.revGeoMaster.foreach(_ ! Done())
+  }
+
+  private def getFeaturesByPolyId(id: ObjectId) = {
+    val featureCursor = MongoGeocodeDAO.find(MongoDBObject("polyId" -> id))
+    featureCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
+    featureCursor.toList
   }
 
   def rebuildRevGeoIndex {
