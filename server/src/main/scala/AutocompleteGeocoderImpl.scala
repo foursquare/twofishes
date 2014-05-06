@@ -287,7 +287,7 @@ class AutocompleteGeocoderImpl(
 
     var validParses = parses
       .filterNot(p =>
-        p.headOption.exists(f =>
+        p.headOption.isEmptyOr(f =>
           (f.fmatch.feature.woeType == YahooWoeType.ADMIN1 ||
            f.fmatch.feature.woeType == YahooWoeType.CONTINENT ||
            f.fmatch.feature.woeType == YahooWoeType.COUNTRY) &&
