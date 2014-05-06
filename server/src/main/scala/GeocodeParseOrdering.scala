@@ -217,7 +217,7 @@ class GeocodeParseOrdering(
       aFeature.tokenStart == bFeature.tokenStart && aFeature.tokenEnd == bFeature.tokenEnd 
     val bothNotCountries = 
       aFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY && 
-      bFeature.fmatch.feature.woeType != YahooWoeType.COUNTY
+      bFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY
 
     val bothNotHinted = 
       // if we have a hint that we want one of the types, then let the

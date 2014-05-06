@@ -148,7 +148,8 @@ object GeocoderBuild extends Build {
         publishArtifact := true,
         libraryDependencies ++= Seq(
           "com.twitter" %% "ostrich" % "9.1.0",
-          "com.twitter" %% "finagle-http" % "6.3.0"
+          "com.twitter" %% "finagle-http" % "6.3.0",
+          "org.scalacheck" %% "scalacheck" % "1.11.3" % "test"
         ),
         ivyXML := (
           <dependencies>
