@@ -194,7 +194,7 @@ class GeocodeParseOrdering(
   def normalCompare(a: Parse[Sorted], b: Parse[Sorted]): Int = {
     val scoreA = getScore(a)
     val scoreB = getScore(b)
-    if (Math.abs(scoreA - scoreB) < 0.000001) {
+    if (scoreA == scoreB) {
       val diff = (a.headOption.map(_.fmatch.feature.longId).getOrElse(0L) -
         b.headOption.map(_.fmatch.feature.longId).getOrElse(0L))
       // .signum is slow, we don't want the .toInt to cause weird
