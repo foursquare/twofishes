@@ -201,7 +201,7 @@ class MapFileInput[K, V](basepath: String, index: Index[K, V], shouldPreload: Bo
       }
     }
 
-    Stats.addMetric(lookupMetricKey, duration.inMilliseconds.toInt)
+    // Stats.addMetric(lookupMetricKey, duration.inMilliseconds.toInt)
     // This might just end up logging GC pauses, but it's possible we have
     // degenerate keys/values as well.
     if (duration.inMilliseconds > 100) {
