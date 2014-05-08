@@ -163,17 +163,18 @@ class GeonamesParser(
   }})
 
   // (country -> tokenlist)
-  case class ShortenPattern(from: Regex, to: String)
+  case class ShortenInfo(from: Regex, to: String, flags: Int)
 
-  lazy val shortensList: Map[String, List[ShortenPattern]] = {
+  lazy val shortensList: Map[String, List[ShortenInfo]] = {
     scala.io.Source.fromFile(new File("data/custom/shortens.txt"))
       .getLines.toList.filterNot(_.startsWith("#")).flatMap(l => {
         val parts = l.split("[\\|\t]").toList
         val countries = parts(0).split(",").toList
-        val shortenParts = parts(1).split("\\|")
-        val toShortenFrom = shortenParts(0)
+        val shortenParts = parts.drop(1)
+        val toShortenFrom = shortenParts(0) + "\\b"
         val toShortenTo = shortenParts.lift(1).getOrElse("")
-        countries.map(cc => (cc -> ShortenPattern(toShortenFrom.r, toShortenTo)))
+        val shortenFlags = parseFeatureNameFlags(shortenParts.lift(2))
+        countries.map(cc => (cc -> ShortenInfo(toShortenFrom.r, toShortenTo, shortenFlags)))
       }).groupBy(_._1).mapValues(_.map(_._2)).toList.toMap
     }
   // geonameid -> boost value
@@ -669,6 +670,7 @@ class GeonamesParser(
   val spaceRe = " +".r
   def fixName(s: String) = spaceRe.replaceAllIn(s, " ").trim
 
+  // TODO(rahul): actually use flags
   def doShorten(cc: String, name: String): List[String] = {
     val shortens = shortensList.getOrElse("*", Nil) ++
       shortensList.getOrElse(cc, Nil)
@@ -785,32 +787,40 @@ class GeonamesParser(
     })
   }
 
+  private def parseFeatureNameFlags(
+    flagsString: Option[String],
+    default: List[FeatureNameFlags] = Nil
+  ): Int = {
+    val flags: List[FeatureNameFlags] = if (flagsString.isEmpty) {
+      default
+    } else {
+      flagsString.getOrElse("").split(",").map(f => FeatureNameFlags.unapply(f).getOrElse(
+        throw new Exception("couldn't parse name flag: %s".format(f))
+      )).toList
+    }
+
+    var flagsMask = 0
+    flags.foreach(f => flagsMask = flagsMask | f.getValue())
+    flagsMask
+  }
+
   def parseNameTransforms(lines: Iterator[String], filename: String = "n/a"): Unit =  {
     for {
       (line, lineIndex) <- lines.zipWithIndex
       if (!line.startsWith("#") && line.nonEmpty)
-      val parts = line.split("[\t ]").toList
+      parts = line.split("[\t ]").toList
       gid <- parts.lift(0)
-      val geonameId = (try {
+      geonameId = (try {
         GeonamesId(gid.toLong)
       } catch {
         case e: Exception => throw new Exception("failed to parse %s -- line: %s".format(filename, line))
       })
-      val rest = parts.drop(1).mkString(" ")
+      rest = parts.drop(1).mkString(" ")
       lang <- rest.split("\\|").lift(0)
       name <- rest.split("\\|").lift(1)
-      val originalFlags = rest.split("\\|").lift(2)
+      originalFlags = rest.split("\\|").lift(2)
     } {
-      val flags: List[FeatureNameFlags] =
-        if (originalFlags.isEmpty) {
-          List(FeatureNameFlags.PREFERRED)
-        } else {
-          originalFlags.getOrElse("").split(",").map(f => FeatureNameFlags.unapply(f).getOrElse(
-            throw new Exception("couldn't parse name flag: %s on line %s: %s".format(f, lineIndex, line))
-          )).toList
-        }
-      var flagsMask = 0
-      flags.foreach(f => flagsMask = flagsMask | f.getValue())
+      val flagsMask = parseFeatureNameFlags(originalFlags, List(FeatureNameFlags.PREFERRED))
 
       val records = store.getById(geonameId).toList
       records match {
@@ -827,7 +837,7 @@ class GeonamesParser(
             // if we're trying to put in a new preferred name, kill all the other preferred names in the same language
             if (dn.lang =? lang &&
                 dn.name !=? name &&
-                flags.has(FeatureNameFlags.PREFERRED)
+                (flagsMask & FeatureNameFlags.PREFERRED.getValue) != 0
             ) {
               DisplayName(dn.lang, dn.name, dn.flags & ~FeatureNameFlags.PREFERRED.getValue())
             } else {
