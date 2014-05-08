@@ -77,6 +77,39 @@ class GeocodeParseOrdering(
         }
       })
 
+      case class DistanceBoostWithDebugString(boost: Int, debugString: String)
+
+      def getDistanceBucketBoost(distance: Double, feature: GeocodeFeature): DistanceBoostWithDebugString = {
+        val (bucketName, distanceBoost, woeTypeBoost) = if (distance < 5000) {
+          ("<5km", 4000000, if (feature.woeType =? YahooWoeType.SUBURB) 6000000 else 0)
+        } else if (distance < 10000) {
+          ("5-10km", 2000000, if (feature.woeType =? YahooWoeType.SUBURB) 3000000 else 0)
+        } else if (distance < 20000) {
+          ("10-20km", 1000000, if (feature.woeType =? YahooWoeType.SUBURB) 2000000 else 0)
+        } else {
+          (">=20km", -(distance.toInt / 100), 0)
+        }
+
+        val boostWord = if (distanceBoost > 0) {
+          "boost"
+        } else {
+          "penalty"
+        }
+        val woeTypeBoostString = if (woeTypeBoost > 0) {
+          " (BONUS %s for woeType=%s)".format(woeTypeBoost, feature.woeType.stringValue)
+        } else {
+          ""
+        }
+        val debugString = "%s distance %s: %s for being %s meters away.%s".format(
+          bucketName,
+          boostWord,
+          distanceBoost,
+          distance.toString,
+          woeTypeBoostString
+        )
+        DistanceBoostWithDebugString(distanceBoost + woeTypeBoost, debugString)
+      }
+
       def distancePenalty(ll: GeocodePoint) {
         val distance = if (primaryFeature.feature.geometry.boundsOption.nonEmpty) {
           GeoTools.distanceFromPointToBounds(ll, primaryFeature.feature.geometry.boundsOrThrow)
@@ -85,16 +118,8 @@ class GeocodeParseOrdering(
             primaryFeature.feature.geometry.center.lat,
             primaryFeature.feature.geometry.center.lng)
         }
-        val distancePenalty = (distance.toInt / 100)
-        if (distance < 5000) {
-          modifySignal(2000000, "5km distance BONUS for being %s meters away".format(distance))
-
-          if (primaryFeature.feature.woeType =? YahooWoeType.SUBURB) {
-              modifySignal(3000000, "5km distance neightborhood intersection BONUS")
-            }
-        } else {
-          modifySignal(-distancePenalty, "distance penalty for being %s meters away".format(distance))
-        }
+        val distanceBoostWithDebugString = getDistanceBucketBoost(distance, primaryFeature.feature)
+        modifySignal(distanceBoostWithDebugString.boost, distanceBoostWithDebugString.debugString)
       }
 
       val llHint = req.llHintOption
