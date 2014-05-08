@@ -3,7 +3,7 @@
 package com.foursquare.twofishes.util
 
 import com.google.common.geometry.{S2CellId, S2LatLng, S2LatLngRect, S2Polygon, S2PolygonBuilder, S2RegionCoverer}
-import com.vividsolutions.jts.geom.{Geometry, Polygon, Point}
+import com.vividsolutions.jts.geom.{Coordinate, Geometry, Polygon, Point}
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, DataInputStream, DataOutputStream}
 import scalaj.collection.Implicits._
 
@@ -161,14 +161,16 @@ object GeometryUtils extends RevGeoConstants {
     allCells.result.toSeq
   }
 
-  val EarthRadiusInMeters: Int = 6378100 // Approximately a little less than the Earth's equatorial radius
+  def getDistanceAccurate(ll1: Coordinate, ll2: Coordinate): Double = {
+    getDistanceAccurate(ll1.y, ll1.x, ll2.y, ll2.x)
+  }
 
   def getDistanceAccurate(geolat1: Double, geolong1: Double, geolat2: Double, geolong2: Double): Double = {
     val theta = geolong1 - geolong2
     val dist = math.sin(math.toRadians(geolat1)) * math.sin(math.toRadians(geolat2)) +
                math.cos(math.toRadians(geolat1)) * math.cos(math.toRadians(geolat2)) * math.cos(math.toRadians(theta))
     // Clamp dist to [-1, 1] since that's the defined range of outputs of cosine.
-    (EarthRadiusInMeters * math.acos(math.min(math.max(dist, -1.0), 1.0)))
+    (GeoTools.RadiusInMeters * math.acos(math.min(math.max(dist, -1.0), 1.0)))
   }
 
   def pointToShapeDistanceInDegrees(point: Point, shape: Geometry): Double = {

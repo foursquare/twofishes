@@ -12,6 +12,7 @@ object GeoTools {
   val RadiusInMeters: Int = 6378100 // Approximately a little less than the Earth's polar radius
   val MetersPerDegreeLatitude: Double = 111111.0
   val MetersPerDegreeLongitude: Double = 110540.0 // I'm assuming this as at the Equator
+  val DegreesPerRadian: Double = 57.2957795
 
   def boundingBoxToS2Rect(bounds: GeocodeBoundingBox): S2LatLngRect = {
     S2LatLngRect.fromPointPair(
@@ -74,19 +75,24 @@ object GeoTools {
   def boundsToGeometry(bounds: GeocodeBoundingBox): Geometry = {
     val s2rect = GeoTools.boundingBoxToS2Rect(bounds)
     val geomFactory = new GeometryFactory()
+    val lngLo = s2rect.lng.lo * DegreesPerRadian
+    val latLo = s2rect.lat.lo * DegreesPerRadian
+    val lngHi = s2rect.lng.hi * DegreesPerRadian
+    val latHi = s2rect.lat.hi * DegreesPerRadian
     geomFactory.createLinearRing(Array(
-      new Coordinate(s2rect.lng.lo, s2rect.lat.lo),
-      new Coordinate(s2rect.lng.hi, s2rect.lat.lo),
-      new Coordinate(s2rect.lng.hi, s2rect.lat.hi),
-      new Coordinate(s2rect.lng.hi, s2rect.lat.lo),
-      new Coordinate(s2rect.lng.lo, s2rect.lat.lo)
+      new Coordinate(lngLo, latLo),
+      new Coordinate(lngHi, latLo),
+      new Coordinate(lngHi, latHi),
+      new Coordinate(lngLo, latHi),
+      new Coordinate(lngLo, latLo)
     ))
   }
 
   def distanceFromPointToBounds(p: GeocodePoint, bounds: GeocodeBoundingBox): Double = {
     val point = pointToGeometry(p)
     val geom = boundsToGeometry(bounds)
-    DistanceOp.distance(point, geom) * MetersPerDegreeLatitude
+    val nearestPoints = DistanceOp.nearestPoints(point, geom)
+    GeometryUtils.getDistanceAccurate(nearestPoints(0), nearestPoints(1))
   } 
  
   /**
