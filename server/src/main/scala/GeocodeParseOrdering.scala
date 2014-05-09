@@ -81,32 +81,29 @@ class GeocodeParseOrdering(
 
       def getDistanceBucketBoost(distance: Double, feature: GeocodeFeature): DistanceBoostWithDebugString = {
         val (bucketName, distanceBoost, woeTypeBoost) = if (distance < 5000) {
-          ("<5km", 4000000, if (feature.woeType =? YahooWoeType.SUBURB) 6000000 else 0)
+          ("<5km boost", 4000000, if (feature.woeType =? YahooWoeType.SUBURB) 6000000 else 0)
         } else if (distance < 10000) {
-          ("5-10km", 2000000, if (feature.woeType =? YahooWoeType.SUBURB) 3000000 else 0)
+          ("5-10km boost", 2000000, if (feature.woeType =? YahooWoeType.SUBURB) 3000000 else 0)
         } else if (distance < 20000) {
-          ("10-20km", 1000000, if (feature.woeType =? YahooWoeType.SUBURB) 2000000 else 0)
+          ("10-20km boost", 1000000, if (feature.woeType =? YahooWoeType.SUBURB) 2000000 else 0)
         } else {
-          (">=20km", -(distance.toInt / 100), 0)
+          (">=20km penalty", -(distance.toInt / 100), 0)
         }
 
-        val boostWord = if (distanceBoost > 0) {
-          "boost"
-        } else {
-          "penalty"
-        }
-        val woeTypeBoostString = if (woeTypeBoost > 0) {
-          " (BONUS %s for woeType=%s)".format(woeTypeBoost, feature.woeType.stringValue)
+        val debugString = if (req.debug > 0) {
+          val woeTypeBoostString = if (woeTypeBoost > 0) {
+            " (BONUS %s for woeType=%s)".format(woeTypeBoost, feature.woeType.stringValue)
+          } else {
+            ""
+          }
+          "%s : %s for being %s meters away.%s".format(
+            bucketName,
+            distanceBoost,
+            distance.toString,
+            woeTypeBoostString)
         } else {
           ""
         }
-        val debugString = "%s distance %s: %s for being %s meters away.%s".format(
-          bucketName,
-          boostWord,
-          distanceBoost,
-          distance.toString,
-          woeTypeBoostString
-        )
         DistanceBoostWithDebugString(distanceBoost + woeTypeBoost, debugString)
       }
 
