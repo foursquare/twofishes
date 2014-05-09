@@ -228,8 +228,8 @@ class NameIndexHFileInput(basepath: String, shouldPreload: Boolean) {
       case _  =>
         nameIndex.lookupPrefix(name).flatten
     }
-    if (seq.size > 2000) {
-      throw new Exception("too many matches")
+    if (seq.size > 2500) {
+      throw new Exception("too many matches for %s: %s".format(name, seq.size))
     }
     seq
   }
