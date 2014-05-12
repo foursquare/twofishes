@@ -269,14 +269,6 @@ class AutocompleteGeocoderImpl(
     }
   }
 
-  def downrankAirports(req: CommonGeocodeRequestParams, parse: Parse[Sorted], primaryFeature: GeocodeServingFeature, rest: Seq[FeatureMatch]): Option[(Int, String)] = {
-    if (primaryFeature.feature.woeType == YahooWoeType.AIRPORT) {
-      Some((-50000000, "downweight airports in autocomplete"))
-    } else {
-      None
-    }
-  }
-
   def doGeocodeImpl(): GeocodeResponse = {
     val parses = generateAutoParses(parseParams.tokens, parseParams.spaceAtEnd)
     if (req.debug > 0) {
@@ -294,7 +286,7 @@ class AutocompleteGeocoderImpl(
           (!commonParams.woeRestrict.has(f.fmatch.feature.woeType))
         )
       )
-      .sorted(new GeocodeParseOrdering(store, commonParams, logger, List(downrankAirports)))
+      .sorted(new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocomplete))
 
     responseProcessor.buildFinalParses(
       validParses,
