@@ -377,19 +377,31 @@ class GeonamesParser(
     })
 
     val preferredEnglishAltName = alternateNamesMap.getOrElse(geonameId, Nil).find(altName =>
-      altName.lang == "en" // && altName.isPrefName
+      altName.lang == "en" && altName.isPrefName
     )
 
-    val hasPreferredEnglishAltName = preferredEnglishAltName.isDefined
+    val nonPreferredEnglishAltNameIdenticalToFeatureName = alternateNamesMap.getOrElse(geonameId, Nil).find(altName =>
+      altName.lang == "en" && !altName.isPrefName && altName.name =? feature.name
+    )
 
-    // If we don't have an altname with lang=en marked as preferred, then assume that
-    // the primary name geonames gives us is english preferred
+    val hasEnglishAltName = alternateNamesMap.getOrElse(geonameId, Nil).exists(_.lang == "en")
+    val hasPreferredEnglishAltName = preferredEnglishAltName.isDefined
+    val hasNonPreferredEnglishAltNameIdenticalToFeatureName = nonPreferredEnglishAltNameIdenticalToFeatureName.isDefined
+
     var displayNames: List[DisplayName] = Nil
 
+    // consider using the primary feature name from geonames as an english name:
+    // skip: if an identical preferred english alt name exists
+    // add as preferred:
+    //    if no english alt name exists OR
+    //    no preferred english alt name exists BUT an identical non-preferred english name exists
+    // add as non-preferred otherwise (different preferred english alt name exists OR no identical non-preferred english
+    //    alt name exists
     if (!preferredEnglishAltName.exists(_.name =? feature.name)) {
       displayNames ++= processFeatureName(geonameId,
         feature.countryCode, "en", feature.name,
-        isPrefName = !hasPreferredEnglishAltName,
+        isPrefName = !hasEnglishAltName ||
+          (!hasPreferredEnglishAltName && hasNonPreferredEnglishAltNameIdenticalToFeatureName),
         isShortName = false,
         woeType = feature.featureClass.woeType
       )
