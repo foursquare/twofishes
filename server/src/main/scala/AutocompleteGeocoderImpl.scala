@@ -38,7 +38,8 @@ class AutocompleteGeocoderImpl(
   val responseProcessor = new ResponseProcessor(
     commonParams,
     store,
-    logger)
+    logger,
+    pickBestNamesForAutocomplete = true)
 
   // Another delightful hack. We don't save a pointer to the specific name we matched
   // in our inverted index, instead, if we know which tokens matched this feature,

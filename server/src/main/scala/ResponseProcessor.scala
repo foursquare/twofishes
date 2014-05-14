@@ -25,7 +25,8 @@ object GeocodeServingFeatureOrdering extends Ordering[GeocodeServingFeature] {
 class ResponseProcessor(
   req: CommonGeocodeRequestParams,
   store: GeocodeStorageReadService,
-  logger: MemoryLogger
+  logger: MemoryLogger,
+  pickBestNamesForAutocomplete: Boolean = false
 ) extends GeocoderTypes {
   def responseIncludes(include: ResponseIncludes): Boolean = GeocodeRequestUtils.responseIncludes(req, include)
 
@@ -510,7 +511,7 @@ class ResponseProcessor(
     preferAbbrev: Boolean,
     matchedStringOpt: Option[String]
   ): Option[BestNameMatch] = {
-    NameUtils.bestName(f, lang, preferAbbrev, matchedStringOpt, req.debug, logger)
+    NameUtils.bestName(f, lang, preferAbbrev, matchedStringOpt, req.debug, logger, pickBestNamesForAutocomplete)
   }
 
   def filterParses(parses: SortedParseSeq, parseParams: ParseParams): SortedParseSeq = {

@@ -291,15 +291,19 @@ trait NameUtils {
     preferAbbrev: Boolean,
     matchedStringOpt: Option[String],
     debugLevel: Int,
-    logger: TwofishesLogger
+    logger: TwofishesLogger,
+    treatPrefixMatchesEqualToExact: Boolean = false
   ): Option[BestNameMatch] = {
     val ret = matchedStringOpt.flatMap(matchedString => {
       val namesNormalized = f.names.map(n => {
         (n, NameNormalizer.normalize(n.name))
       })
 
-      val exactMatchNameCandidates = namesNormalized.filter(_._2 == matchedString).map(_._1)
       val prefixMatchNameCandidates = namesNormalized.filter(_._2.startsWith(matchedString)).map(_._1)
+      val exactMatchNameCandidates = namesNormalized.filter(_._2 == matchedString).map(_._1) ++
+        (if(treatPrefixMatchesEqualToExact) {
+          prefixMatchNameCandidates
+        } else Nil)
       val exactMatchesWithoutAirports =
         if (!f.woeTypeOption.exists(_ =? YahooWoeType.AIRPORT)) {
           exactMatchNameCandidates.filterNot(n => (n.lang == "iata" || n.lang == "icao"))
