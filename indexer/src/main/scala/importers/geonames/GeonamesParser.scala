@@ -380,13 +380,11 @@ class GeonamesParser(
       altName.lang == "en" && altName.isPrefName
     )
 
-    val nonPreferredEnglishAltNameIdenticalToFeatureName = alternateNamesMap.getOrElse(geonameId, Nil).find(altName =>
-      altName.lang == "en" && !altName.isPrefName && altName.name =? feature.name
-    )
-
     val hasEnglishAltName = alternateNamesMap.getOrElse(geonameId, Nil).exists(_.lang == "en")
     val hasPreferredEnglishAltName = preferredEnglishAltName.isDefined
-    val hasNonPreferredEnglishAltNameIdenticalToFeatureName = nonPreferredEnglishAltNameIdenticalToFeatureName.isDefined
+    val hasNonPreferredEnglishAltNameIdenticalToFeatureName = alternateNamesMap.getOrElse(geonameId, Nil).exists(altName =>
+      altName.lang == "en" && !altName.isPrefName && altName.name =? feature.name
+    )
 
     var displayNames: List[DisplayName] = Nil
 
@@ -395,8 +393,7 @@ class GeonamesParser(
     // add as preferred:
     //    if no english alt name exists OR
     //    no preferred english alt name exists BUT an identical non-preferred english name exists
-    // add as non-preferred otherwise (different preferred english alt name exists OR no identical non-preferred english
-    //    alt name exists
+    // add as non-preferred otherwise
     if (!preferredEnglishAltName.exists(_.name =? feature.name)) {
       displayNames ++= processFeatureName(geonameId,
         feature.countryCode, "en", feature.name,
