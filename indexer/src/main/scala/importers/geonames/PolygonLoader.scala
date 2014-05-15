@@ -226,7 +226,6 @@ class PolygonLoader(
             ),
             false, false)
 
-          PolygonIndexDAO.remove(polyRecord)
           Stats.incr("PolygonLoader.removeBadPolygon")
       }
     }
