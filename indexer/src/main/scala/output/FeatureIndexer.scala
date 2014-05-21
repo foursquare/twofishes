@@ -18,7 +18,7 @@ import scalaj.collection.Implicits._
 class FeatureIndexer(
   override val basepath: String, 
   override val fidMap: FidMap,
-  polygonMap: Map[ObjectId, (Long, YahooWoeType)]
+  polygonMap: Map[ObjectId, List[(Long, YahooWoeType)]]
 ) extends Indexer {
   def canonicalizeParentId(fid: StoredFeatureId) = fidMap.get(fid)
 
@@ -67,7 +67,7 @@ class FeatureIndexer(
       // for each candidate, check if it's full or we're in it
       val matches = (for {
         revGeoCell <- candidates
-        fidLong <- polygonMap.get(revGeoCell.polyId)
+        fidLong <- polygonMap.getOrElse(revGeoCell.polyId, Nil)
         if (revGeoCell.full || revGeoCell.geom.exists(geomBytes =>
           wkbReader.read(geomBytes).contains(geom)))
       } yield { fidLong }).toList

@@ -36,7 +36,10 @@ class OutputIndexes(
       MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
     hasPolyCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
     val polygonMap = logPhase("preloading polygon map") {
-      hasPolyCursor.map(r => (r.polyId, (r._id, r.woeType))).toList.toMap
+      hasPolyCursor.map(r => (r.polyId, (r._id, r.woeType))).toList
+        .groupBy(_._1)
+        .mapValues(v => v.map(_._2).toList)
+        .toMap
     }
 
     val parallelizedIndexers = List(
