@@ -168,7 +168,14 @@ class AutocompleteGeocoderImpl(
     if (name.flags.contains(FeatureNameFlags.PREFERRED) ||
         name.flags.contains(FeatureNameFlags.ABBREVIATION) ||
         name.flags.contains(FeatureNameFlags.LOCAL_LANG) ||
-        name.flags.contains(FeatureNameFlags.ALT_NAME)) {
+        name.flags.contains(FeatureNameFlags.ALT_NAME) ||
+        name.flags.contains(FeatureNameFlags.DEACCENT) ||
+        name.flags.contains(FeatureNameFlags.HISTORIC) ||
+        name.flags.contains(FeatureNameFlags.SHORT_NAME) ||
+        name.flags.contains(FeatureNameFlags.ALIAS) ||
+        // a lot of aliases tend to be names without a language
+        name.lang.isEmpty)
+    {
       val normalizedName = NameNormalizer.normalize(name.name)
       if (isEnd) {
         normalizedName.startsWith(query)
