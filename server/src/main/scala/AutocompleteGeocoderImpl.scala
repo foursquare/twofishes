@@ -217,7 +217,9 @@ class AutocompleteGeocoderImpl(
               .map({case (oid, servingFeature) => {
               FeatureMatch(offset, offset + i, query, servingFeature,
                 servingFeature.feature.names.filter(n => matchName(n, query, isEnd)))
-            }}).toSeq
+            }})
+            .filter(featureMatch => featureMatch.possibleNameHits.nonEmpty)
+            .toSeq
           } else {
             val parents = store.getByFeatureIds(possibleParents).toSeq
             val countriesOnWhichParentsAreDependent =

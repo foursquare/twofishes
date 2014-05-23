@@ -309,17 +309,18 @@ class GeocodeParseOrdering(
         !req.woeHint.has(aFeature.fmatch.feature.woeType) &&
         !req.woeHint.has(bFeature.fmatch.feature.woeType)
     ) {
-      // if a is a parent of b, prefer b
+
+      // if b is a parent of a, prefer a
       if (aFeature.fmatch.scoringFeatures.parentIds.has(bFeature.fmatch.longId) &&
         (aFeature.fmatch.scoringFeatures.population * 1.0 / bFeature.fmatch.scoringFeatures.population) > 0.05
       ) {
         logger.ifDebug("Preferring %s because it's a child of %s", a, b)
         -1
-      // if b is a parent of a, prefer a
+      // if a is a parent of b, prefer b
       } else if (bFeature.fmatch.scoringFeatures.parentIds.has(aFeature.fmatch.longId) &&
          (bFeature.fmatch.scoringFeatures.population * 1.0 / aFeature.fmatch.scoringFeatures.population) > 0.05
         ) {
-        logger.ifDebug("Preferring %s because it's a child of %s", a, b)
+        logger.ifDebug("Preferring %s because it's a child of %s", b, a)
         1
       } else {
         normalCompare(a, b)
