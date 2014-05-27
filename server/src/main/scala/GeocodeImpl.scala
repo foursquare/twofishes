@@ -3,7 +3,7 @@ package com.foursquare.twofishes
 
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.YahooWoeType._
-import com.foursquare.twofishes.util.{CountryUtils, GeoTools}
+import com.foursquare.twofishes.util.{NameNormalizer, CountryUtils, GeoTools}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._
@@ -94,7 +94,7 @@ class GeocoderImpl(
         store.getByName(searchStr)
           .filter(servingFeature => isAcceptableFeature(req, servingFeature))
           .map((f: GeocodeServingFeature) =>
-            FeatureMatch(offset, offset + i, searchStr, f)
+            FeatureMatch(offset, offset + i, searchStr, f, f.feature.names.filter(n => NameNormalizer.normalize(n.name) == searchStr))
           )
       }
       logger.ifDebug("got %d features for %s", featureMatches.size, searchStr)

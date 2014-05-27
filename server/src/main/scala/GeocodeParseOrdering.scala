@@ -2,7 +2,7 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.Identity._
-import com.foursquare.twofishes.util.{GeoTools, StoredFeatureId, TwofishesLogger}
+import com.foursquare.twofishes.util.{CountryUtils, GeoTools, StoredFeatureId, TwofishesLogger}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import scala.collection.mutable.HashMap
 import scalaj.collection.Implicits._
@@ -11,15 +11,17 @@ import scalaj.collection.Implicits._
 //
 
 case class ScoringTerm(func: GeocodeParseOrdering.ScoringFunc, multiplier: Double = 1.0)
+case class ScorerArguments(req: CommonGeocodeRequestParams, parse: Parse[Sorted], primaryFeature: GeocodeServingFeature, rest: Seq[FeatureMatch])
 
 object GeocodeParseOrdering {
-  type ScoringFunc = (CommonGeocodeRequestParams, Parse[Sorted], GeocodeServingFeature, Seq[FeatureMatch]) => Option[(Int, String)]
+  type ScoringFunc = (ScorerArguments) => Option[(Int, String)]
 
   val scorersForGeocode: List[ScoringTerm] = List(
     ScoringTerm(populationBoost),
     ScoringTerm(penalizeRepeatedFeatures),
     ScoringTerm(promoteFeatureWithBounds),
     ScoringTerm(promoteWoeHintMatch),
+    ScoringTerm(penalizeIrrelevantLanguageNameMatches),
     ScoringTerm(penalizeLongParses),
     ScoringTerm(promoteCountryHintMatch),
     //ScoringTerm(scaleRankBoost),
@@ -36,6 +38,7 @@ object GeocodeParseOrdering {
     ScoringTerm(penalizeRepeatedFeatures),
     ScoringTerm(promoteFeatureWithBounds),
     ScoringTerm(promoteWoeHintMatch),
+    ScoringTerm(penalizeIrrelevantLanguageNameMatches),
     ScoringTerm(penalizeLongParses),
     ScoringTerm(promoteCountryHintMatch, 10.0),
     //ScoringTerm(scaleRankBoost),
@@ -48,50 +51,69 @@ object GeocodeParseOrdering {
     ScoringTerm(penalizeAirports)
   )
 
-  def populationBoost(req: CommonGeocodeRequestParams, parse: Parse[Sorted], primaryFeature: GeocodeServingFeature, rest: Seq[FeatureMatch]): Option[(Int, String)] = {
-    Some(primaryFeature.scoringFeatures.population, "population")
+  def populationBoost(args: ScorerArguments): Option[(Int, String)] = {
+    Some(args.primaryFeature.scoringFeatures.population, "population")
   }
 
-  def penalizeRepeatedFeatures(req: CommonGeocodeRequestParams, parse: Parse[Sorted], primaryFeature: GeocodeServingFeature, rest: Seq[FeatureMatch]): Option[(Int, String)] = {
+  def penalizeRepeatedFeatures(args: ScorerArguments): Option[(Int, String)] = {
     // if we have a repeated feature, downweight this like crazy
     // so st petersburg, st petersburg works, but doesn't break new york, ny
-    if (parse.hasDupeFeature) {
+    if (args.parse.hasDupeFeature) {
       Some((-100000000, "downweighting dupe-feature parse"))
     } else None
   }
 
-  def promoteFeatureWithBounds(req: CommonGeocodeRequestParams, parse: Parse[Sorted], primaryFeature: GeocodeServingFeature, rest: Seq[FeatureMatch]): Option[(Int, String)] = {
-    if (primaryFeature.feature.geometry.boundsOption.nonEmpty) {
+  def promoteFeatureWithBounds(args: ScorerArguments): Option[(Int, String)] = {
+    if (args.primaryFeature.feature.geometry.boundsOption.nonEmpty) {
       Some((1000, "promoting feature with bounds"))
     } else None
   }
 
-  def promoteWoeHintMatch(req: CommonGeocodeRequestParams, parse: Parse[Sorted], primaryFeature: GeocodeServingFeature, rest: Seq[FeatureMatch]): Option[(Int, String)] = {
-    if (req.woeHint.has(primaryFeature.feature.woeType)) {
-      Some((50000000, "woe hint matches %d".format(primaryFeature.feature.woeType.getValue)))
+  def promoteWoeHintMatch(args: ScorerArguments): Option[(Int, String)] = {
+    if (args.req.woeHint.has(args.primaryFeature.feature.woeType)) {
+      Some((50000000, "woe hint matches %d".format(args.primaryFeature.feature.woeType.getValue)))
     } else None
   }
 
-  def penalizeLongParses(req: CommonGeocodeRequestParams, parse: Parse[Sorted], primaryFeature: GeocodeServingFeature, rest: Seq[FeatureMatch]): Option[(Int, String)] = {
-    // prefer a more aggressive parse ... bleh
-    // this prefers "mt laurel" over the town of "laurel" in "mt" (montana)
-    Some((-5000 * parse.length, "parse length boost"))
+  def penalizeIrrelevantLanguageNameMatches(args: ScorerArguments): Option[(Int, String)] = {
+    val primaryMatchLangs = (for {
+      fmatch <- args.parse.headOption.toList
+      nameHit <- fmatch.possibleNameHits
+      locale <- nameHit.langOption
+      lang = locale.split("-")(0)
+    } yield lang).toList
+
+    if (primaryMatchLangs.has("en") ||
+        primaryMatchLangs.has("abbr") ||
+        primaryMatchLangs.has("iata") ||
+        primaryMatchLangs.has("icao") ||
+        primaryMatchLangs.has("") || // a lot of aliases tend to be names without a language
+        args.req.langOption.exists(lang => primaryMatchLangs.has(lang)) ||
+        primaryMatchLangs.exists(lang => CountryUtils.isLocalLanguageForCountry(args.primaryFeature.feature.cc, lang))) {
+      None
+    } else Some((-100000000, "penalizing  name match in irrelevant language"))
   }
 
-  def promoteCountryHintMatch(req: CommonGeocodeRequestParams, parse: Parse[Sorted], primaryFeature: GeocodeServingFeature, rest: Seq[FeatureMatch]): Option[(Int, String)] = {
+  def penalizeLongParses(args: ScorerArguments): Option[(Int, String)] = {
+    // prefer a more aggressive parse ... bleh
+    // this prefers "mt laurel" over the town of "laurel" in "mt" (montana)
+    Some((-5000 * args.parse.length, "parse length boost"))
+  }
+
+  def promoteCountryHintMatch(args: ScorerArguments): Option[(Int, String)] = {
     // Matching country hint is good
-    if (req.ccOption.exists(_ == primaryFeature.feature.cc)) {
-      if (primaryFeature.feature.woeType =? YahooWoeType.POSTAL_CODE) {
+    if (args.req.ccOption.exists(_ == args.primaryFeature.feature.cc)) {
+      if (args.primaryFeature.feature.woeType =? YahooWoeType.POSTAL_CODE) {
         Some((10000000, "postal code country code match"))
       } else {
-        Some((10000, "country code match"))
+        Some((1000000, "country code match"))
       }
     } else None
   }
 
-  def scaleRankBoost(req: CommonGeocodeRequestParams, parse: Parse[Sorted], primaryFeature: GeocodeServingFeature, rest: Seq[FeatureMatch]): Option[(Int, String)] = {
+  def scaleRankBoost(args: ScorerArguments): Option[(Int, String)] = {
     for {
-      attributes <- primaryFeature.feature.attributesOption
+      attributes <- args.primaryFeature.feature.attributesOption
       rank <- attributes.scalerankOption
       if rank > 0
     } yield {
@@ -99,31 +121,31 @@ object GeocodeParseOrdering {
     }
   }
 
-  def distanceToBoundsOrLatLngHint(req: CommonGeocodeRequestParams, parse: Parse[Sorted], primaryFeature: GeocodeServingFeature, rest: Seq[FeatureMatch]): Option[(Int, String)] = {
+  def distanceToBoundsOrLatLngHint(args: ScorerArguments): Option[(Int, String)] = {
     def distanceBoostForPoint(ll: GeocodePoint): (Int, String) = {
-      val distance = if (primaryFeature.feature.geometry.boundsOption.nonEmpty) {
-        GeoTools.distanceFromPointToBounds(ll, primaryFeature.feature.geometry.boundsOrThrow)
+      val distance = if (args.primaryFeature.feature.geometry.boundsOption.nonEmpty) {
+        GeoTools.distanceFromPointToBounds(ll, args.primaryFeature.feature.geometry.boundsOrThrow)
       } else {
         GeoTools.getDistance(ll.lat, ll.lng,
-          primaryFeature.feature.geometry.center.lat,
-          primaryFeature.feature.geometry.center.lng)
+          args.primaryFeature.feature.geometry.center.lat,
+          args.primaryFeature.feature.geometry.center.lng)
       }
 
       val (bucketName, distanceBoost, woeTypeBoost) = if (distance < 5000) {
-        ("<5km boost", 4000000, if (primaryFeature.feature.woeType =? YahooWoeType.SUBURB) 6000000 else 0)
+        ("<5km boost", 4000000, if (args.primaryFeature.feature.woeType =? YahooWoeType.SUBURB) 6000000 else 0)
       } else if (distance < 10000) {
-        ("5-10km boost", 2000000, if (primaryFeature.feature.woeType =? YahooWoeType.SUBURB) 3000000 else 0)
+        ("5-10km boost", 2000000, if (args.primaryFeature.feature.woeType =? YahooWoeType.SUBURB) 3000000 else 0)
       } else if (distance < 20000) {
-        ("10-20km boost", 1000000, if (primaryFeature.feature.woeType =? YahooWoeType.SUBURB) 2000000 else 0)
+        ("10-20km boost", 1000000, if (args.primaryFeature.feature.woeType =? YahooWoeType.SUBURB) 2000000 else 0)
       } else if (distance < 100000) {
         ("20-100km boost", -10000, 0)
       } else {
         (">=100km penalty", -100000, 0)
       }
 
-      val debugString = if (req.debug > 0) {
+      val debugString = if (args.req.debug > 0) {
         val woeTypeBoostString = if (woeTypeBoost > 0) {
-          " (BONUS %s for woeType=%s)".format(woeTypeBoost, primaryFeature.feature.woeType.stringValue)
+          " (BONUS %s for woeType=%s)".format(woeTypeBoost, args.primaryFeature.feature.woeType.stringValue)
         } else {
           ""
         }
@@ -138,8 +160,8 @@ object GeocodeParseOrdering {
       (distanceBoost + woeTypeBoost, debugString)
     }
 
-    val llHint = req.llHintOption
-    val boundsHint = req.boundsOption
+    val llHint = args.req.llHintOption
+    val boundsHint = args.req.boundsOption
     if (boundsHint.isDefined) {
       boundsHint.flatMap(bounds => {
         // if you're in the bounds and the bounds are some small enough size
@@ -149,14 +171,14 @@ object GeocodeParseOrdering {
         // if it's smaller than looking at 1/4 of new york state, then
         // boost everything in it by a lot
         val bboxContainsCenter =
-          GeoTools.boundsContains(bounds, primaryFeature.feature.geometry.center)
+          GeoTools.boundsContains(bounds, args.primaryFeature.feature.geometry.center)
         val bboxesIntersect =
-          primaryFeature.feature.geometry.boundsOption.map(fBounds =>
+          args.primaryFeature.feature.geometry.boundsOption.map(fBounds =>
             GeoTools.boundsIntersect(bounds, fBounds)).getOrElse(false)
 
         if (bbox.lo().getEarthDistance(bbox.hi()) < 200 * 1000 &&
           (bboxContainsCenter || bboxesIntersect)) {
-          if (primaryFeature.feature.woeType =? YahooWoeType.SUBURB) {
+          if (args.primaryFeature.feature.woeType =? YahooWoeType.SUBURB) {
             Some((5000000, "200km bbox neighborhood intersection BONUS"))
           } else {
             Some((2000000, "200km bbox intersection BONUS"))
@@ -174,46 +196,46 @@ object GeocodeParseOrdering {
     }
   }
 
-  def manualBoost(req: CommonGeocodeRequestParams, parse: Parse[Sorted], primaryFeature: GeocodeServingFeature, rest: Seq[FeatureMatch]): Option[(Int, String)] = {
+  def manualBoost(args: ScorerArguments): Option[(Int, String)] = {
     // manual boost added at indexing time
-    if (primaryFeature.scoringFeatures.boost != 0) {
-      Some((primaryFeature.scoringFeatures.boost, "manual boost"))
+    if (args.primaryFeature.scoringFeatures.boost != 0) {
+      Some((args.primaryFeature.scoringFeatures.boost, "manual boost"))
     } else None
   }
 
-  def usTieBreak(req: CommonGeocodeRequestParams, parse: Parse[Sorted], primaryFeature: GeocodeServingFeature, rest: Seq[FeatureMatch]): Option[(Int, String)] = {
+  def usTieBreak(args: ScorerArguments): Option[(Int, String)] = {
     // as a terrible tie break, things in the US > elsewhere
     // meant primarily for zipcodes
-    if (primaryFeature.feature.cc == "US") {
+    if (args.primaryFeature.feature.cc == "US") {
       Some((1, "US tie-break"))
     } else None
   }
 
-  def penalizeCounties(req: CommonGeocodeRequestParams, parse: Parse[Sorted], primaryFeature: GeocodeServingFeature, rest: Seq[FeatureMatch]): Option[(Int, String)] = {
+  def penalizeCounties(args: ScorerArguments): Option[(Int, String)] = {
     // no one likes counties
-    if (primaryFeature.feature.cc == "US" && primaryFeature.feature.woeType == YahooWoeType.ADMIN2) {
+    if (args.primaryFeature.feature.cc == "US" && args.primaryFeature.feature.woeType == YahooWoeType.ADMIN2) {
       Some((-30000, "no one likes counties in the US"))
     } else None
   }
 
-  def woeTypeOrderForFeature(req: CommonGeocodeRequestParams, parse: Parse[Sorted], primaryFeature: GeocodeServingFeature, rest: Seq[FeatureMatch]): Option[(Int, String)] = {
-    Some((-1 * YahooWoeTypes.getOrdering(primaryFeature.feature.woeType), "prefer smaller interpretation"))
+  def woeTypeOrderForFeature(args: ScorerArguments): Option[(Int, String)] = {
+    Some((-1 * YahooWoeTypes.getOrdering(args.primaryFeature.feature.woeType), "prefer smaller interpretation"))
   }
 
-  def woeTypeOrderForParents(req: CommonGeocodeRequestParams, parse: Parse[Sorted], primaryFeature: GeocodeServingFeature, rest: Seq[FeatureMatch]): Option[(Int, String)] = {
+  def woeTypeOrderForParents(args: ScorerArguments): Option[(Int, String)] = {
     // In autocomplete mode, prefer "tighter" interpretations
     // That is, prefer "<b>Rego Park</b>, <b>N</b>Y" to
     // <b>Rego Park</b>, NY, <b>N</b>aalagaaffeqatigiit
     //
     // getOrdering returns a smaller # for a smaller thing
-    val parentTypes = rest.map(_.fmatch.feature.woeType).sortBy(YahooWoeTypes.getOrdering)
+    val parentTypes = args.rest.map(_.fmatch.feature.woeType).sortBy(YahooWoeTypes.getOrdering)
     if (parentTypes.nonEmpty) {
       Some((-1 * YahooWoeTypes.getOrdering(parentTypes(0)), "prefer smaller parent interpretation"))
     } else None
   }
 
-  def penalizeAirports(req: CommonGeocodeRequestParams, parse: Parse[Sorted], primaryFeature: GeocodeServingFeature, rest: Seq[FeatureMatch]): Option[(Int, String)] = {
-    if (primaryFeature.feature.woeType == YahooWoeType.AIRPORT) {
+  def penalizeAirports(args: ScorerArguments): Option[(Int, String)] = {
+    if (args.primaryFeature.feature.woeType == YahooWoeType.AIRPORT) {
       Some((-50000000, "downweight airports in autocomplete"))
     } else {
       None
@@ -255,7 +277,7 @@ class GeocodeParseOrdering(
 
       for {
         scorer <- scorers
-        (value, debugStr) <- scorer.func(req, parse, primaryFeature, rest)
+        (value, debugStr) <- scorer.func(ScorerArguments(req, parse, primaryFeature, rest))
       } {
         modifySignal((value * scorer.multiplier).toInt, debugStr)
       }
