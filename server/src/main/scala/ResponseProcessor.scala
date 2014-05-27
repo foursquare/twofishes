@@ -363,7 +363,6 @@ class ResponseProcessor(
     val tokens = parseParams.tokens
     val originalTokens = parseParams.originalTokens
     val connectorStart = parseParams.connectorStart
-    val connectorEnd = parseParams.connectorEnd
     val hadConnector = parseParams.hadConnector
 
     // sortedParses.foreach(p => {
@@ -401,7 +400,7 @@ class ResponseProcessor(
       val what = if (hadConnector) {
         originalTokens.take(connectorStart).mkString(" ")
       } else {
-        val whatTokens = tokens.take(tokens.size - parseLength)
+        val whatTokens = originalTokens.take(originalTokens.size - parseLength)
       	(if (whatTokens.lastOption.exists(_ == "in")) {
           whatTokens.dropRight(1)
         } else {
