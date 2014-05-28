@@ -2,7 +2,7 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.Identity._
-import com.foursquare.twofishes.util.{GeometryUtils, StoredFeatureId}
+import com.foursquare.twofishes.util.{GeoTools, GeometryUtils, StoredFeatureId}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.twitter.util.Duration
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory, Point => JTSPoint}
@@ -192,8 +192,7 @@ class ReverseGeocoderHelperImpl(
             }
             Stats.time("point_to_shape_distance") {
               scoringFeatures.featureToRequestCenterDistance(
-                // multiply distance in degrees by 100000 so it can be converted to Int
-                100000.0 * GeometryUtils.pointToShapeDistanceInDegrees(otherGeomCentroid, geom))
+                GeoTools.distanceFromPointToGeometry(otherGeomCentroid, geom))
             }
           })
         }
