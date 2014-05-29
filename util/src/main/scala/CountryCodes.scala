@@ -2,6 +2,7 @@
 
 package com.foursquare.twofishes.util
 
+import com.foursquare.twofishes.util.Lists.Implicits._
 import com.ibm.icu.util.ULocale
 import scala.io.Source
 
@@ -94,4 +95,8 @@ object CountryCodes {
   }
   // This only stores lang part, drops locale part
   val bestLang = countryLangMap.keys.flatMap(cc => getLangs(cc).headOption.map(lang => (cc, lang))).toMap
+
+  def isLocalLanguageForCountry(cc: String, lang: String): Boolean = {
+    getLangs(cc).has(lang)
+  }
 }
