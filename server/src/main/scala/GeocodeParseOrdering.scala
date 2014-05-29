@@ -322,6 +322,8 @@ class GeocodeParseOrdering(
     val aFeature = a.primaryFeature
     val bFeature = b.primaryFeature
 
+    // for identically named features that are related, prefer the child if it is a city
+    // and the parent is not a country
     if (aFeature.tokenStart == bFeature.tokenStart &&
         aFeature.tokenEnd == bFeature.tokenEnd &&
         aFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY &&
@@ -334,14 +336,12 @@ class GeocodeParseOrdering(
 
       // if b is a parent of a, prefer a
       if (aFeature.fmatch.scoringFeatures.parentIds.has(bFeature.fmatch.longId) &&
-        (aFeature.fmatch.scoringFeatures.population * 1.0 / bFeature.fmatch.scoringFeatures.population) > 0.05
-      ) {
+          aFeature.fmatch.feature.woeType == YahooWoeType.TOWN) {
         logger.ifDebug("Preferring %s because it's a child of %s", a, b)
         -1
       // if a is a parent of b, prefer b
       } else if (bFeature.fmatch.scoringFeatures.parentIds.has(aFeature.fmatch.longId) &&
-         (bFeature.fmatch.scoringFeatures.population * 1.0 / aFeature.fmatch.scoringFeatures.population) > 0.05
-        ) {
+                 bFeature.fmatch.feature.woeType == YahooWoeType.TOWN) {
         logger.ifDebug("Preferring %s because it's a child of %s", b, a)
         1
       } else {
