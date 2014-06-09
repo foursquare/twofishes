@@ -309,7 +309,7 @@ class GeocoderImpl(
           maybeRetryParsing(parsesToConsider, parseParams)
         } else {
           responseProcessor.buildFinalParses(
-            parsesToConsider, parseParams, getMaxInterpretations, requestGeom)
+            GeocodeParseOrdering.maybeReplaceTopResultWithRelatedCity(parsesToConsider), parseParams, getMaxInterpretations, requestGeom)
         }
       }
     } else {

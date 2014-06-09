@@ -287,7 +287,7 @@ class AutocompleteGeocoderImpl(
       })
     }
 
-    var validParses = parses
+    val validParses = parses
       .filterNot(p =>
         p.headOption.isEmptyOr(f =>
           (f.fmatch.feature.woeType == YahooWoeType.ADMIN1 ||
@@ -299,7 +299,7 @@ class AutocompleteGeocoderImpl(
       .sorted(new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocomplete))
 
     responseProcessor.buildFinalParses(
-      validParses,
+      GeocodeParseOrdering.maybeReplaceTopResultWithRelatedCity(validParses),
       parseParams,
       getMaxInterpretations,
       requestGeom,

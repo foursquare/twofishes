@@ -249,6 +249,31 @@ object GeocodeParseOrdering {
     ScoringTerm(woeTypeOrderForParents),
     ScoringTerm(penalizeAirports)
   )
+
+  def maybeReplaceTopResultWithRelatedCity(parses: Seq[Parse[Sorted]]): Seq[Parse[Sorted]] = {
+    // if top result is not a city and there is an identically named city that is related to it
+    // in the list of parses, move the city to the top
+    val (qualifyingCity, rest) = parses.partition(p => {
+      // this is a city
+      p.primaryFeature.fmatch.feature.woeType == YahooWoeType.TOWN &&
+      parses.headOption.exists(r => {
+        // this and that match same tokens in query
+        r.primaryFeature.tokenStart == p.primaryFeature.tokenStart &&
+        r.primaryFeature.tokenEnd == p.primaryFeature.tokenEnd &&
+        // that is not a country
+        r.primaryFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY &&
+        // this is a parent of that or the other way around
+        (r.primaryFeature.fmatch.scoringFeatures.parentIds.has(p.primaryFeature.fmatch.longId) ||
+         p.primaryFeature.fmatch.scoringFeatures.parentIds.has(r.primaryFeature.fmatch.longId))
+      })
+    })
+
+    if (qualifyingCity.isEmpty) {
+      parses
+    } else {
+      qualifyingCity ++ rest
+    }
+  }
 }
 
 class GeocodeParseOrdering(
@@ -314,7 +339,7 @@ class GeocodeParseOrdering(
     scoreMap.getOrElse(scoreKey, -1)
   }
 
-  def normalCompare(a: Parse[Sorted], b: Parse[Sorted]): Int = {
+  def compare(a: Parse[Sorted], b: Parse[Sorted]): Int = {
     val scoreA = getScore(a)
     val scoreB = getScore(b)
     if (scoreA == scoreB) {
@@ -327,42 +352,6 @@ class GeocodeParseOrdering(
       else { 0 }
     } else {
       scoreB - scoreA
-    }
-  }
-
-  def compare(a: Parse[Sorted], b: Parse[Sorted]): Int = {
-    // logger.ifDebug("Scoring %s vs %s".format(printDebugParse(a), printDebugParse(b)))
-
-    val aFeature = a.primaryFeature
-    val bFeature = b.primaryFeature
-
-    // for identically named features that are related, prefer the child if it is a city
-    // and the parent is not a country
-    if (aFeature.tokenStart == bFeature.tokenStart &&
-        aFeature.tokenEnd == bFeature.tokenEnd &&
-        aFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY &&
-        bFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY &&
-        // if we have a hint that we want one of the types, then let the
-        // scoring happen naturally
-        !req.woeHint.has(aFeature.fmatch.feature.woeType) &&
-        !req.woeHint.has(bFeature.fmatch.feature.woeType)
-    ) {
-
-      // if b is a parent of a, prefer a
-      if (aFeature.fmatch.scoringFeatures.parentIds.has(bFeature.fmatch.longId) &&
-          aFeature.fmatch.feature.woeType == YahooWoeType.TOWN) {
-        logger.ifDebug("Preferring %s because it's a child of %s", a, b)
-        -1
-      // if a is a parent of b, prefer b
-      } else if (bFeature.fmatch.scoringFeatures.parentIds.has(aFeature.fmatch.longId) &&
-                 bFeature.fmatch.feature.woeType == YahooWoeType.TOWN) {
-        logger.ifDebug("Preferring %s because it's a child of %s", b, a)
-        1
-      } else {
-        normalCompare(a, b)
-      }
-    } else {
-      normalCompare(a, b)
     }
   }
 }
