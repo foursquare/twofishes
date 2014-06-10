@@ -262,6 +262,17 @@ enum ResponseIncludes {
   WKT_GEOMETRY_SIMPLIFIED,
 }
 
+enum AutocompleteBias {
+  // use default ranking
+  NONE = 0,
+  // mix local and globally relevant results
+  BALANCED = 1,
+  // prefer locally relevant results
+  LOCAL = 2,
+  // prefer globally relevant results
+  GLOBAL = 3
+}
+
 struct GeocodeRequest {
   1: optional string query,
 
@@ -311,6 +322,9 @@ struct GeocodeRequest {
 
   // in geocoding mode, requires all results to fall within the bounds/radius specified
   19: optional bool strict = 0
+
+  // in autocomplete mode, specifies how strongly locally relevant results are preferred
+  20: optional AutocompleteBias autocompleteBias = AutocompleteBias.BALANCED
 }
 
 // I'd like to replace most of the params in geocoderequest with one instance of this,

@@ -93,80 +93,100 @@ object GeocodeParseOrdering {
     }
   }
 
-  val distanceToBoundsOrLatLngHint: ScoringFunc = {
-    case args => {
-      def distanceBoostForPoint(ll: GeocodePoint): ScorerResponse = {
-        val distance = if (args.primaryFeature.feature.geometry.boundsOption.nonEmpty) {
-          GeoTools.distanceFromPointToBounds(ll, args.primaryFeature.feature.geometry.boundsOrThrow)
+  def distanceBoostForPoint(args: ScorerArguments, ll: GeocodePoint, clampPenalty: Boolean): ScorerResponse = {
+    val distance = if (args.primaryFeature.feature.geometry.boundsOption.nonEmpty) {
+      GeoTools.distanceFromPointToBounds(ll, args.primaryFeature.feature.geometry.boundsOrThrow)
+    } else {
+      GeoTools.getDistance(ll.lat, ll.lng,
+        args.primaryFeature.feature.geometry.center.lat,
+        args.primaryFeature.feature.geometry.center.lng)
+    }
+
+    val (bucketName, distanceBoost, woeTypeBoost) = if (distance < 5000) {
+      ("<5km boost", 4000000, if (args.primaryFeature.feature.woeType =? YahooWoeType.SUBURB) 6000000 else 0)
+    } else if (distance < 10000) {
+      ("5-10km boost", 2000000, if (args.primaryFeature.feature.woeType =? YahooWoeType.SUBURB) 3000000 else 0)
+    } else if (distance < 20000) {
+      ("10-20km boost", 1000000, if (args.primaryFeature.feature.woeType =? YahooWoeType.SUBURB) 2000000 else 0)
+    } else if (distance < 100000) {
+      ("20-100km boost", -10000, 0)
+    } else {
+      (">=100km penalty",
+        if (clampPenalty) {
+          -100000
         } else {
-          GeoTools.getDistance(ll.lat, ll.lng,
-            args.primaryFeature.feature.geometry.center.lat,
-            args.primaryFeature.feature.geometry.center.lng)
-        }
+          -(distance.toInt)
+        },
+        0)
+    }
 
-        val (bucketName, distanceBoost, woeTypeBoost) = if (distance < 5000) {
-          ("<5km boost", 4000000, if (args.primaryFeature.feature.woeType =? YahooWoeType.SUBURB) 6000000 else 0)
-        } else if (distance < 10000) {
-          ("5-10km boost", 2000000, if (args.primaryFeature.feature.woeType =? YahooWoeType.SUBURB) 3000000 else 0)
-        } else if (distance < 20000) {
-          ("10-20km boost", 1000000, if (args.primaryFeature.feature.woeType =? YahooWoeType.SUBURB) 2000000 else 0)
-        } else if (distance < 100000) {
-          ("20-100km boost", -10000, 0)
-        } else {
-          (">=100km penalty", -100000, 0)
-        }
-
-        val debugString = if (args.req.debug > 0) {
-          val woeTypeBoostString = if (woeTypeBoost > 0) {
-            " (BONUS %s for woeType=%s)".format(woeTypeBoost, args.primaryFeature.feature.woeType.stringValue)
-          } else {
-            ""
-          }
-          "%s : %s for being %s meters away.%s".format(
-            bucketName,
-            distanceBoost,
-            distance.toString,
-            woeTypeBoostString)
-        } else {
-          ""
-        }
-        ScorerResponseWithScoreAndMessage(distanceBoost + woeTypeBoost, debugString)
-      }
-
-      val llHint = args.req.llHintOption
-      val boundsHint = args.req.boundsOption
-      if (boundsHint.isDefined) {
-        boundsHint.flatMap(bounds => {
-          // if you're in the bounds and the bounds are some small enough size
-          // you get a uniform boost
-          val bbox = GeoTools.boundingBoxToS2Rect(bounds)
-          // distance in meters of the hypotenuse
-          // if it's smaller than looking at 1/4 of new york state, then
-          // boost everything in it by a lot
-          val bboxContainsCenter =
-            GeoTools.boundsContains(bounds, args.primaryFeature.feature.geometry.center)
-          val bboxesIntersect =
-            args.primaryFeature.feature.geometry.boundsOption.map(fBounds =>
-              GeoTools.boundsIntersect(bounds, fBounds)).getOrElse(false)
-
-          if (bbox.lo().getEarthDistance(bbox.hi()) < 200 * 1000 &&
-            (bboxContainsCenter || bboxesIntersect)) {
-            if (args.primaryFeature.feature.woeType =? YahooWoeType.SUBURB) {
-              Some(ScorerResponseWithScoreAndMessage(5000000, "200km bbox neighborhood intersection BONUS"))
-            } else {
-              Some(ScorerResponseWithScoreAndMessage(2000000, "200km bbox intersection BONUS"))
-            }
-          } else {
-            // fall back to basic distance-from-center logic
-            Some(distanceBoostForPoint(GeoTools.S2LatLngToPoint(bbox.getCenter)))
-          }
-        }).getOrElse(ScorerResponse.Empty)
+    val debugString = if (args.req.debug > 0) {
+      val woeTypeBoostString = if (woeTypeBoost > 0) {
+        " (BONUS %s for woeType=%s)".format(woeTypeBoost, args.primaryFeature.feature.woeType.stringValue)
       } else {
-        // Penalize far-away things
-        llHint.flatMap(ll =>
-          Some(distanceBoostForPoint(ll))
-        ).getOrElse(ScorerResponse.Empty)
+        ""
       }
+      "%s : %s for being %s meters away.%s".format(
+        bucketName,
+        distanceBoost,
+        distance.toString,
+        woeTypeBoostString)
+    } else {
+      ""
+    }
+    ScorerResponseWithScoreAndMessage(distanceBoost + woeTypeBoost, debugString)
+  }
+
+  def distanceBoostForBounds(args: ScorerArguments, bounds: GeocodeBoundingBox, clampPenalty: Boolean): ScorerResponse = {
+    // if you're in the bounds and the bounds are some small enough size
+    // you get a uniform boost
+    val bbox = GeoTools.boundingBoxToS2Rect(bounds)
+    // distance in meters of the hypotenuse
+    // if it's smaller than looking at 1/4 of new york state, then
+    // boost everything in it by a lot
+    val bboxContainsCenter =
+      GeoTools.boundsContains(bounds, args.primaryFeature.feature.geometry.center)
+    val bboxesIntersect =
+      args.primaryFeature.feature.geometry.boundsOption.map(fBounds =>
+        GeoTools.boundsIntersect(bounds, fBounds)).getOrElse(false)
+
+    if (bbox.lo().getEarthDistance(bbox.hi()) < 200 * 1000 &&
+      (bboxContainsCenter || bboxesIntersect)) {
+      if (args.primaryFeature.feature.woeType =? YahooWoeType.SUBURB) {
+        ScorerResponseWithScoreAndMessage(5000000, "200km bbox neighborhood intersection BONUS")
+      } else {
+        ScorerResponseWithScoreAndMessage(2000000, "200km bbox intersection BONUS")
+      }
+    } else {
+      // fall back to basic distance-from-center logic
+      distanceBoostForPoint(args, GeoTools.S2LatLngToPoint(bbox.getCenter), clampPenalty)
+    }
+  }
+
+  def distanceToBoundsOrLatLngHint(args: ScorerArguments, clampPenalty: Boolean): ScorerResponse = {
+    val llHint = args.req.llHintOption
+    val boundsHint = args.req.boundsOption
+    if (boundsHint.isDefined) {
+      boundsHint.flatMap(bounds => {
+        Some(distanceBoostForBounds(args, bounds, clampPenalty))
+      }).getOrElse(ScorerResponse.Empty)
+    } else {
+      // Penalize far-away things
+      llHint.flatMap(ll =>
+        Some(distanceBoostForPoint(args, ll, clampPenalty))
+      ).getOrElse(ScorerResponse.Empty)
+    }
+  }
+
+  val distanceToBoundsOrLatLngHintClampedPenalty: ScoringFunc = {
+    case args => {
+      distanceToBoundsOrLatLngHint(args, true)
+    }
+  }
+
+  val distanceToBoundsOrLatLngHintUnclampedPenalty: ScoringFunc = {
+    case args => {
+      distanceToBoundsOrLatLngHint(args, false)
     }
   }
 
@@ -225,7 +245,7 @@ object GeocodeParseOrdering {
     ScoringTerm(penalizeIrrelevantLanguageNameMatches),
     ScoringTerm(penalizeLongParses),
     ScoringTerm(promoteCountryHintMatch),
-    ScoringTerm(distanceToBoundsOrLatLngHint),
+    ScoringTerm(distanceToBoundsOrLatLngHintClampedPenalty),
     ScoringTerm(manualBoost),
     ScoringTerm(usTieBreak),
     ScoringTerm(penalizeCounties),
@@ -233,7 +253,9 @@ object GeocodeParseOrdering {
     ScoringTerm(woeTypeOrderForParents)
   )
 
-  val scorersForAutocomplete: List[ScoringTerm] = List(
+  val scorersForAutocompleteBasic: List[ScoringTerm] = scorersForGeocode :+ ScoringTerm(penalizeAirports)
+
+  val scorersForAutocompleteDefault: List[ScoringTerm] = List(
     ScoringTerm(populationBoost, 0.1),
     ScoringTerm(penalizeRepeatedFeatures),
     ScoringTerm(promoteFeatureWithBounds),
@@ -241,8 +263,42 @@ object GeocodeParseOrdering {
     ScoringTerm(penalizeIrrelevantLanguageNameMatches),
     ScoringTerm(penalizeLongParses),
     ScoringTerm(promoteCountryHintMatch, 10.0),
-    ScoringTerm(distanceToBoundsOrLatLngHint),
+    ScoringTerm(distanceToBoundsOrLatLngHintClampedPenalty),
     ScoringTerm(manualBoost, 0.001),
+    ScoringTerm(usTieBreak),
+    ScoringTerm(penalizeCounties),
+    ScoringTerm(woeTypeOrderForFeature),
+    ScoringTerm(woeTypeOrderForParents),
+    ScoringTerm(penalizeAirports)
+  )
+
+  val scorersForAutocompleteLocalBias: List[ScoringTerm] = List(
+    ScoringTerm(populationBoost, 0.001),
+    ScoringTerm(penalizeRepeatedFeatures),
+    ScoringTerm(promoteFeatureWithBounds),
+    ScoringTerm(promoteWoeHintMatch),
+    ScoringTerm(penalizeIrrelevantLanguageNameMatches),
+    ScoringTerm(penalizeLongParses),
+    ScoringTerm(promoteCountryHintMatch, 10.0),
+    ScoringTerm(distanceToBoundsOrLatLngHintUnclampedPenalty),
+    ScoringTerm(manualBoost, 0.00001),
+    ScoringTerm(usTieBreak),
+    ScoringTerm(penalizeCounties),
+    ScoringTerm(woeTypeOrderForFeature),
+    ScoringTerm(woeTypeOrderForParents),
+    ScoringTerm(penalizeAirports)
+  )
+
+  val scorersForAutocompleteGlobalBias: List[ScoringTerm] = List(
+    ScoringTerm(populationBoost),
+    ScoringTerm(penalizeRepeatedFeatures),
+    ScoringTerm(promoteFeatureWithBounds),
+    ScoringTerm(promoteWoeHintMatch),
+    ScoringTerm(penalizeIrrelevantLanguageNameMatches),
+    ScoringTerm(penalizeLongParses),
+    ScoringTerm(promoteCountryHintMatch, 0.001),
+    ScoringTerm(distanceToBoundsOrLatLngHintClampedPenalty, 0.0001),
+    ScoringTerm(manualBoost),
     ScoringTerm(usTieBreak),
     ScoringTerm(penalizeCounties),
     ScoringTerm(woeTypeOrderForFeature),
@@ -323,8 +379,8 @@ class GeocodeParseOrdering(
 
       if (req.debug > 0) {
         logger.ifDebug("final score %s", signal)
-        parse.setFinalScore(signal)
       }
+      parse.setFinalScore(signal)
       signal
     }).getOrElse(0)
   }

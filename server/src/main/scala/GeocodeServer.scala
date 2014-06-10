@@ -307,6 +307,14 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
       })
     })
 
+    val autocompleteBias = getOpt("autocompleteBias").map(i => {
+      if (Helpers.TryO(i.toInt).isDefined) {
+        AutocompleteBias.findByIdOrNull(i.toInt)
+      } else {
+        AutocompleteBias.findByNameOrNull(i)
+      }
+    })
+
     GeocodeRequest.newBuilder
       .query(getOpt("query"))
       .slug(getOpt("slug"))
@@ -316,6 +324,7 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
       .radius(getOpt("radius").map(_.toInt))
       .strict(getOpt("strict").map(_.toBoolean))
       .autocomplete(getOpt("autocomplete").map(_.toBoolean))
+      .autocompleteBias(autocompleteBias)
       .ll(ll)
       .maxInterpretations(getOpt("maxInterpretations").map(_.toInt))
       .allowedSources(getOpt("allowedSources").toList.flatMap(_.split(",")))

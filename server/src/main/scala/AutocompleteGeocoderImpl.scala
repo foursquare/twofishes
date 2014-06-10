@@ -270,7 +270,7 @@ class AutocompleteGeocoderImpl(
     generateAutoParsesHelper(tokens, 0, Nil, spaceAtEnd).map(_.getSorted)
   }
 
-  def getMaxInterpretations = {
+  val getMaxInterpretations = {
     // TODO: remove once clients are filling this
     if (req.maxInterpretations <= 0) {
       3
@@ -296,10 +296,31 @@ class AutocompleteGeocoderImpl(
           (!commonParams.woeRestrict.has(f.fmatch.feature.woeType))
         )
       )
-      .sorted(new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocomplete))
+
+    val sortedParses = (req.autocompleteBias match {
+      case AutocompleteBias.NONE => validParses.sorted(
+        new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteDefault))
+
+      case AutocompleteBias.BALANCED =>
+        val localResultCount = math.min(3, math.max(getMaxInterpretations / 2, 2))
+        val localResults = validParses.sorted(
+          new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteLocalBias)
+        ).filter(_.finalScore >= 0).take(localResultCount)
+        val localResultIds = localResults.map(_.primaryFeature.fmatch.longId).toSet
+        val globalResults = validParses.sorted(
+          new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteGlobalBias))
+        localResults ++ globalResults.filterNot(r => localResultIds.has(r.primaryFeature.fmatch.longId))
+
+      case AutocompleteBias.LOCAL => validParses.sorted(
+        new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteLocalBias))
+
+      case AutocompleteBias.GLOBAL => validParses.sorted(
+        new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteGlobalBias))
+    }).toSeq
+
 
     responseProcessor.buildFinalParses(
-      GeocodeParseOrdering.maybeReplaceTopResultWithRelatedCity(validParses),
+      GeocodeParseOrdering.maybeReplaceTopResultWithRelatedCity(sortedParses),
       parseParams,
       getMaxInterpretations,
       requestGeom,

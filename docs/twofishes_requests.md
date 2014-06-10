@@ -54,8 +54,12 @@ These queries also work as parameters to the debug interface either after the ? 
     
 ### Geocoder Only Paramters
 - autocomplete=[true/false] -- Defaults to false, whether or not to return partial-  matches as if powering an autocompleter
+- autocompleteBias=[AutocompleteBias integer or enum name] - i.e. autocompleteBias=BALANCED - influences how locally (relative to ll hint, if specified) and globally relevant results are mixed in autocomplete geocoding mode. Defaults to BALANCED.
+    - NONE - use default ranking
+    - BALANCED - mix locally and globally relevant results
+    - LOCAL - prefer locally relevant results
+    - GLOBAL - prefer globally relevant results
 - strict=[true/false] -- Defaults to false, if true, only returns results within the cc, bounds and ll+radius specified
-
 
 ### Bulk Revgeo Requests
 - method=bulkrevgeo - in this mode, ll is allowed to occur multiple times, each one is reverse geocoded. This method gains some efficiency in the response size if the points are closely clustered, but the server work happens in serial, so it is slower than executing a number of requests in parallel client-side. Working on it. ex <http://demo.twofishes.net/?ll=41.793252,12.48729&ll=40.74,-74&method=bulkrevgeo>
