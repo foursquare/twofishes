@@ -307,12 +307,9 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
       })
     })
 
-    val autocompleteBias = getOpt("autocompleteBias").map(i => {
-      if (Helpers.TryO(i.toInt).isDefined) {
-        AutocompleteBias.findByIdOrNull(i.toInt)
-      } else {
-        AutocompleteBias.findByNameOrNull(i)
-      }
+    val autocompleteBias: Option[AutocompleteBias] = getOpt("autocompleteBias").flatMap(i => {
+      Helpers.TryO(i.toInt).flatMap(AutocompleteBias.findById _)
+        .orElse(AutocompleteBias.findByName(i))
     })
 
     GeocodeRequest.newBuilder
