@@ -55,8 +55,8 @@ These queries also work as parameters to the debug interface either after the ? 
 ### Geocoder Only Paramters
 - autocomplete=[true/false] -- Defaults to false, whether or not to return partial-  matches as if powering an autocompleter
 - autocompleteBias=[AutocompleteBias integer or enum name] - i.e. autocompleteBias=BALANCED - influences how locally (relative to ll hint, if specified) and globally relevant results are mixed in autocomplete geocoding mode. Defaults to BALANCED.
-    - NONE - use default ranking
-    - BALANCED - mix locally and globally relevant results
+    - NONE - no bias
+    - BALANCED - mix locally and globally relevant results (DEFAULT)
     - LOCAL - prefer locally relevant results
     - GLOBAL - prefer globally relevant results
 - strict=[true/false] -- Defaults to false, if true, only returns results within the cc, bounds and ll+radius specified

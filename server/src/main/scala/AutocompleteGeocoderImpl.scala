@@ -270,7 +270,7 @@ class AutocompleteGeocoderImpl(
     generateAutoParsesHelper(tokens, 0, Nil, spaceAtEnd).map(_.getSorted)
   }
 
-  val getMaxInterpretations = {
+  val maxInterpretations = {
     // TODO: remove once clients are filling this
     if (req.maxInterpretations <= 0) {
       3
@@ -302,7 +302,7 @@ class AutocompleteGeocoderImpl(
         new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteDefault))
 
       case AutocompleteBias.BALANCED =>
-        val localResultCount = math.min(3, math.max(getMaxInterpretations / 2, 2))
+        val localResultCount = math.min(3, math.max(maxInterpretations / 2, 2))
         val localResults = validParses.sorted(
           new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteLocalBias)
         ).filter(_.finalScore >= 0).take(localResultCount)
@@ -322,7 +322,7 @@ class AutocompleteGeocoderImpl(
     responseProcessor.buildFinalParses(
       GeocodeParseOrdering.maybeReplaceTopResultWithRelatedCity(sortedParses),
       parseParams,
-      getMaxInterpretations,
+      maxInterpretations,
       requestGeom,
       dedupByMatchedName = true)
   }

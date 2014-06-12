@@ -263,7 +263,7 @@ enum ResponseIncludes {
 }
 
 enum AutocompleteBias {
-  // use default ranking
+  // no bias
   NONE = 0,
   // mix local and globally relevant results
   BALANCED = 1,
