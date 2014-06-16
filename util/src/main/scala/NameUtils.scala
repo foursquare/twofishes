@@ -207,8 +207,18 @@ trait NameUtils {
       var score = 0.0
 
       lang match {
-        case Some(l) if name.lang == l =>
-          score += 40
+        case Some(l) => {
+          if (name.lang == l) {
+            score += 40
+          } else if (name.lang == "en") {
+            // since non-english names are filtered at index time if they're identical to the
+            // preferred english name, boost english names so they still rank highest, thereby
+            // also making english the most likely fallback in all other cases
+            score += 20
+          } else {
+            score += -20
+          }
+        }
         case _ =>
           ()
       }
