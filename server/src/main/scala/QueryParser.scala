@@ -1,11 +1,8 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
-import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.{NameNormalizer, TwofishesLogger}
-import com.foursquare.twofishes.util.Lists.Implicits._
 import com.twitter.ostrich.stats.Stats
-import scalaj.collection.Implicits._
 
 case class ParseParams(
   tokens: List[String] = Nil,
@@ -24,7 +21,7 @@ class QueryParser(logger: TwofishesLogger) {
     var originalTokens = NameNormalizer.tokenize(normalizedQuery)
     parseQueryTokens(
       originalTokens,
-      spaceAtEnd = query.takeRight(1) == " "
+      spaceAtEnd = query.endsWith(" ")
     )
   }
 
