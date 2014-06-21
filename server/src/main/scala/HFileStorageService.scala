@@ -66,7 +66,7 @@ class HFileStorageService(originalBasepath: String, shouldPreload: Boolean) exte
   def getBySlugOrFeatureIds(ids: Seq[String]) = {
     val idMap = (for {
       id <- ids
-      fid <- StoredFeatureId.fromUserInputString(id).orElse(slugFidMap.flatMap(_.get(id)))
+      fid <- slugFidMap.flatMap(_.get(id)).orElse(StoredFeatureId.fromUserInputString(id))
     } yield { (fid, id) }).toMap
 
     getByFeatureIds(idMap.keys.toVector).map({
@@ -320,11 +320,7 @@ class SlugFidMapFileInput(basepath: String, shouldPreload: Boolean) {
   val idMappingIndex = new MapFileInput(basepath, Indexes.IdMappingIndex, shouldPreload)
 
   def get(s: String): Option[StoredFeatureId] = {
-    if (s.contains(":")) {
-      StoredFeatureId.fromHumanReadableString(s)
-    } else {
-      idMappingIndex.lookup(s)
-    }
+    idMappingIndex.lookup(s)
   }
 }
 
