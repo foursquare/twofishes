@@ -205,6 +205,7 @@ class PolygonLoader(
     val polygons =
       PolygonIndexDAO.find(MongoDBObject())
         .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
+    polygons.option = Bytes.QUERYOPTION_NOTIMEOUT
 
     val wkbReader = new WKBReader()
     for {
