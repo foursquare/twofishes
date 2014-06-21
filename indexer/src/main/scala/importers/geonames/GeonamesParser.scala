@@ -195,9 +195,11 @@ class GeonamesParser(
     .getLines.toList.filterNot(_.startsWith("#")).map(l => GeonamesId(l.toLong))
 
   // extra parents
-  lazy val extraRelationsList = new GeoIdTsvHelperFileParser(GeonamesNamespace, "data/custom/extra-relations.txt")
+  lazy val extraRelationsList = new GeoIdTsvHelperFileParser(GeonamesNamespace,"data/custom/extra-relations.txt")
 
-  lazy val concordanceMap = new GeoIdTsvHelperFileParser(GeonamesNamespace, "data/computed/concordances.txt")
+  lazy val concordanceMap = new GeoIdTsvHelperFileParser(GeonamesNamespace,
+    "data/computed/concordances.txt",
+    "data/private/concordances.txt")
 
   val bboxDirs = List(
     new File("data/computed/bboxes/"),
