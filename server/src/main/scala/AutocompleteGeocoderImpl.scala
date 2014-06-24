@@ -297,7 +297,7 @@ class AutocompleteGeocoderImpl(
         )
       )
 
-    val sortedParses = (req.autocompleteBias match {
+    val sortedParses = (req.autocompleteBiasOrDefault match {
       case AutocompleteBias.NONE => validParses.sorted(
         new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteDefault))
 
