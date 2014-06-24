@@ -2,7 +2,7 @@
 package com.foursquare.twofishes
 
 import com.foursquare.twofishes.Identity._
-import com.foursquare.twofishes.util.{CountryCodes, GeoTools, StoredFeatureId, TwofishesLogger}
+import com.foursquare.twofishes.util.{CountryUtils, GeoTools, StoredFeatureId, TwofishesLogger}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import scala.collection.mutable.HashMap
 import scalaj.collection.Implicits._
@@ -67,7 +67,7 @@ object GeocodeParseOrdering {
           primaryMatchLangs.has("icao") ||
           primaryMatchLangs.has("") || // a lot of aliases tend to be names without a language
           args.req.langOption.exists(lang => primaryMatchLangs.has(lang)) ||
-          primaryMatchLangs.exists(lang => CountryCodes.isLocalLanguageForCountry(args.primaryFeature.feature.cc, lang))) {
+          primaryMatchLangs.exists(lang => CountryUtils.isLocalLanguageForCountry(args.primaryFeature.feature.cc, lang))) {
         ScorerResponse.Empty
       } else {
         ScorerResponseWithScoreAndMessage(-100000000, "penalizing  name match in irrelevant language")
