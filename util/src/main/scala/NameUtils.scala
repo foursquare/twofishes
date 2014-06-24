@@ -249,6 +249,7 @@ trait NameUtils {
             }
             case FeatureNameFlags.ALT_NAME => -1
             case FeatureNameFlags.LOCAL_LANG => 5
+            case _ => 0
           })
         }
       }
