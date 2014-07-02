@@ -269,9 +269,6 @@ class GeocoderImpl(
 
   def doGeocodeForQuery(parseParams: ParseParams) = {
     val tokens = parseParams.tokens
-    val originalTokens = parseParams.originalTokens
-    val connectorStart = parseParams.connectorStart
-    val connectorEnd = parseParams.connectorEnd
     val hadConnector = parseParams.hadConnector
 
     val cache = generateParses(tokens)

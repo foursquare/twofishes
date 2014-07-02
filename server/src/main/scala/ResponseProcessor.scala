@@ -567,11 +567,6 @@ class ResponseProcessor(
     requestGeom: Option[Geometry],
     dedupByMatchedName: Boolean = false
   ) = {
-    val tokens = parseParams.tokens
-    val originalTokens = parseParams.originalTokens
-    val connectorStart = parseParams.connectorStart
-    val connectorEnd = parseParams.connectorEnd
-
     // filter out parses that are really the same feature
     // this code is gross gross gross
 
