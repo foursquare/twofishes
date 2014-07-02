@@ -6,6 +6,8 @@ from optparse import OptionParser
 
 usage = "usage: %prog [options] hfile_directory"
 parser = OptionParser(usage = usage)
+parser.add_option("--host", dest="host",  default="0.0.0.0", type='string',
+  help="host")
 parser.add_option("-p", "--port", dest="port",  default=8080, type='int',
   help="port")
 parser.add_option("--warmup", dest="warmup",  default=False, action='store_true',
@@ -33,7 +35,7 @@ if options.rebel:
 args = ' --preload %s --warmup %s ' % (options.preload, options.warmup)
 
 
-cmd = '%s "server/run-main com.foursquare.twofishes.GeocodeFinagleServer %s --port %d --hfile_basepath %s"' % (sbt, args, options.port, basepath)
+cmd = '%s "server/run-main com.foursquare.twofishes.GeocodeFinagleServer %s --host %s --port %d --hfile_basepath %s"' % (sbt, args, options.host, options.port, basepath)
 print(cmd)
 os.system(cmd)
 
