@@ -17,6 +17,9 @@ import scalaj.collection.Implicits._
 
 object PrefixIndexer {
   val MaxPrefixLength = 5
+  val MaxNameRecordsToFetchFromMongo = 1000
+  val MaxFidsToStorePerPrefix = 50
+  val MaxFidsWithPreferredNamesBeforeConsideringNonPreferred = 3
   val index = Indexes.PrefixIndex
 }
 
@@ -35,6 +38,10 @@ class PrefixIndexer(
     lists.toList.flatMap(l => {
       l.sortBy(_.pop * -1)
     })
+  }
+
+  private def roundRobinByCountryCode(records: List[NameIndex]): List[NameIndex] = {
+    records.groupBy(_.cc).values.toList.flatMap(_.zipWithIndex).groupBy(_._2).toList.sortBy(_._1).flatMap(_._2.map(_._1))
   }
 
   def sortRecordsByNames(records: List[NameIndex]) = {
@@ -61,10 +68,16 @@ class PrefixIndexer(
   def getRecordsByPrefix(prefix: String, limit: Int) = {
     val nameCursor = NameIndexDAO.find(
       MongoDBObject(
-        "name" -> MongoDBObject("$regex" -> "^%s".format(prefix)))
+        "name" -> prefix)
     ).sort(orderBy = MongoDBObject("pop" -> -1)).limit(limit)
     nameCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
-    nameCursor
+    val prefixCursor = NameIndexDAO.find(
+      MongoDBObject(
+        "name" -> MongoDBObject("$regex" -> "^%s".format(prefix)),
+        "noPrefix" -> false)
+    ).sort(orderBy = MongoDBObject("pop" -> -1)).limit(limit)
+    prefixCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
+    (nameCursor ++ prefixCursor).toSeq.distinct.take(limit)
   }
 
   def writeIndexImpl() {
@@ -94,7 +107,7 @@ class PrefixIndexer(
       if (index % 1000 == 0) {
         logger.info("done with %d of %d prefixes".format(index, numPrefixes))
       }
-      val records = getRecordsByPrefix(prefix, 1000)
+      val records = getRecordsByPrefix(prefix, PrefixIndexer.MaxNameRecordsToFetchFromMongo)
 
       val (woeMatches, woeMismatches) = records.partition(r =>
         bestWoeTypes.contains(r.woeType))
@@ -103,15 +116,15 @@ class PrefixIndexer(
         sortRecordsByNames(woeMatches.toList)
 
       val fids = new HashSet[StoredFeatureId]
-      prefSortedRecords.foreach(f => {
-        if (fids.size < 50) {
+      roundRobinByCountryCode(prefSortedRecords).foreach(f => {
+        if (fids.size < PrefixIndexer.MaxFidsToStorePerPrefix) {
           fids.add(f.fidAsFeatureId)
         }
       })
 
-      if (fids.size < 3) {
-        unprefSortedRecords.foreach(f => {
-          if (fids.size < 50) {
+      if (fids.size < PrefixIndexer.MaxFidsWithPreferredNamesBeforeConsideringNonPreferred) {
+        roundRobinByCountryCode(unprefSortedRecords).foreach(f => {
+          if (fids.size < PrefixIndexer.MaxFidsToStorePerPrefix) {
             fids.add(f.fidAsFeatureId)
           }
         })

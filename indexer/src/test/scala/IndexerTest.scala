@@ -53,9 +53,14 @@ class MockGeocodeStorageWriteService extends GeocodeStorageWriteService {
     List(getOrCreateEmpty(id)).toIterator
   }
 
+  def getNameIndexByIdLangAndName(id: StoredFeatureId, lang: String, name: String): Iterator[NameIndex] = {
+    List(NameIndex(name, id.longId, "XX", 0, 0, 0, "", false, new ObjectId())).toIterator
+  }
+
   def addNameIndex(name: NameIndex) {}
   def addNameIndexes(names: List[NameIndex]) {}
   def addBoundingBoxToRecord(bbox: BoundingBox, id: StoredFeatureId) {}
+  def updateFlagsOnNameIndexByIdLangAndName(id: StoredFeatureId, lang: String, name: String, flags: Int) {}
 }
 
 class IndexerSpec extends Specification {

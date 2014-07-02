@@ -222,9 +222,9 @@ class AutocompleteGeocoderImpl(
             store.getByFeatureIds(featureIds)
               .filter({case (oid, servingFeature) => isAcceptableFeature(req, servingFeature)})
               .map({case (oid, servingFeature) => {
-              FeatureMatch(offset, offset + i, query, servingFeature,
-                servingFeature.feature.names.filter(n => matchName(n, query, isEnd)))
-            }})
+                FeatureMatch(offset, offset + i, query, servingFeature,
+                  servingFeature.feature.names.filter(n => matchName(n, query, isEnd)))
+              }})
             .filter(featureMatch => featureMatch.possibleNameHits.nonEmpty)
             .toSeq
           } else {

@@ -343,12 +343,13 @@ class GeonamesParser(
 
   def createNameIndexRecord(dn: DisplayName, fid: StoredFeatureId, record: Option[GeocodeRecord]) = {
     val name = NameNormalizer.normalize(dn.name)
-
+    val cc: String = record.map(_.cc).getOrElse("")
     val pop: Int =
       record.flatMap(_.population).getOrElse(0) + record.flatMap(_.boost).getOrElse(0)
     val woeType: Int =
       record.map(_._woeType).getOrElse(0)
-    NameIndex(name, fid.longId, pop, woeType, dn.flags, dn.lang, dn._id)
+    val noPrefix = ((dn.flags & (FeatureNameFlags.NEVER_DISPLAY.getValue | FeatureNameFlags.LOW_QUALITY.getValue)) != 0)
+    NameIndex(name, fid.longId, cc, pop, woeType, dn.flags, dn.lang, noPrefix, dn._id)
   }
 
   def rewriteNames(names: List[String]): (List[String], List[String]) = {
@@ -450,7 +451,7 @@ class GeonamesParser(
     // same short name for the admin area that is actually used in the country
     def isAllDigits(x: String) = x forall Character.isDigit
 
-    if (feature.featureClass.isAdmin1 || feature.featureClass.isAdmin2) {
+    if (feature.featureClass.isAdmin1 || feature.featureClass.isAdmin2 || feature.featureClass.isAdmin3) {
       displayNames ++= feature.adminCode.toList.flatMap(code => {
         if (!isAllDigits(code)) {
           Some(DisplayName("abbr", code, FeatureNameFlags.ABBREVIATION.getValue))
@@ -571,6 +572,13 @@ class GeonamesParser(
       polygonOpt.map(poly => PolygonRecord(poly))
     }
 
+    // combine flags of duplicate names in the same language
+    val finalDisplayNames = displayNames.groupBy(dn => (dn.lang, dn.name)).toList
+      .map(group => DisplayName(
+        lang = group._1._1,
+        name = group._1._2,
+        flags = group._2.foldLeft(0)((f, dn) => f | dn.flags)))
+
     val record = GeocodeRecord(
       _id = geonameId.longId,
       names = Nil,
@@ -580,7 +588,7 @@ class GeonamesParser(
       lng = lng,
       parents = allParents.map(_.longId),
       population = feature.population,
-      displayNames = displayNames,
+      displayNames = finalDisplayNames,
       boost = boost,
       boundingbox = bbox,
       displayBounds = displayBboxTable.get(geonameId),
@@ -838,14 +846,37 @@ class GeonamesParser(
         case Nil => logger.error("no match for id %s".format(gid))
         case record :: Nil => {
           val newName = DisplayName(lang, name, flagsMask)
-          var foundName = record.displayNames.exists(dn =>
-            dn.lang =? lang && dn.name =? name
-          )
-          if (!foundName) {
+          // combine flags of new name with existing dupes, if any
+          // first for display names on feature
+          var merged = false
+          val mergedNames = record.displayNames.map(dn => {
+            if (dn.lang =? lang && dn.name =? name) {
+              logger.info("merged display name %s with name transform: id %s, lang %s, name %s, flags %d".format(dn, gid, lang, name, flagsMask))
+              merged = true
+              DisplayName(dn.lang, dn.name, dn.flags | flagsMask)
+            } else {
+              dn
+            }
+          })
+
+          // repeat for names in name index
+          if (merged) {
+            val normalizedName = NameNormalizer.normalize(name)
+            val nameRecords = store.getNameIndexByIdLangAndName(geonameId, lang, normalizedName).toList
+            nameRecords match {
+              case Nil => logger.error("display names and name index out of sync for id %s, lang %s, name %s".format(gid, lang, name))
+              case nameRecord :: Nil => {
+                val newFlags = nameRecord.flags | flagsMask
+                store.updateFlagsOnNameIndexByIdLangAndName(geonameId, lang, normalizedName, newFlags)
+              }
+              case list => logger.error("multiple name index matches for id %s, lang %s, name %s -- %s".format(gid, lang, name, list))
+            }
+          } else {
             addDisplayNameToNameIndex(newName, geonameId, Some(record))
           }
-          val modifiedNames: List[DisplayName] = record.displayNames.map(dn => {
-            // if we're trying to put in a new preferred name, kill all the other preferred names in the same language
+
+          // if we're trying to put in a new preferred name, kill all the other preferred names in the same language
+          val modifiedNames: List[DisplayName] = mergedNames.map(dn => {
             if (dn.lang =? lang &&
                 dn.name !=? name &&
                 (flagsMask & FeatureNameFlags.PREFERRED.getValue) != 0
@@ -856,8 +887,12 @@ class GeonamesParser(
             }
           })
 
-          // logic in GeocodeStorage will dedup this
-          val newNames = modifiedNames ++ List(newName)
+          val newNames = modifiedNames ++
+            (if (merged) {
+              Nil
+            } else {
+              List(newName)
+            })
           store.setRecordNames(GeonamesId(gid.toLong), newNames)
         }
         case list => logger.error("multiple matches for id %s -- %s".format(gid, list))
