@@ -430,7 +430,7 @@ object GeocodeFinagleServer extends Logging {
     logger.info("serving slow query http/json on port %d".format(config.thriftServerPort + 3))
 
     val server: Server = ServerBuilder()
-      .bindTo(new InetSocketAddress(config.thriftServerPort))
+      .bindTo(new InetSocketAddress(config.host, config.thriftServerPort))
       .codec(ThriftServerFramedCodec())
       .reportTo(new FoursquareStatsReceiver)
       .name("geocoder")
@@ -447,7 +447,7 @@ object GeocodeFinagleServer extends Logging {
 
     if (config.runHttpServer) {
       ServerBuilder()
-        .bindTo(new InetSocketAddress(config.thriftServerPort + 1))
+        .bindTo(new InetSocketAddress(config.host, config.thriftServerPort + 1))
         .codec(Http())
         .name("geocoder-http")
         .reportTo(new FoursquareStatsReceiver)
@@ -455,7 +455,7 @@ object GeocodeFinagleServer extends Logging {
     }
 
     ServerBuilder()
-      .bindTo(new InetSocketAddress(config.thriftServerPort + 3))
+      .bindTo(new InetSocketAddress(config.host, config.thriftServerPort + 3))
       .codec(Http())
       .name("geocoder-slow-query-http")
       .reportTo(new FoursquareStatsReceiver)

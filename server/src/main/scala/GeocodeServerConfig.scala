@@ -4,6 +4,7 @@ package com.foursquare.twofishes
 case class GeocodeServerConfig(
   runHttpServer: Boolean = true,
   thriftServerPort: Int = 8080,
+  host: String = "0.0.0.0",
   hfileBasePath: String = "",
   shouldPreload: Boolean = true,
   shouldWarmup: Boolean = false,
