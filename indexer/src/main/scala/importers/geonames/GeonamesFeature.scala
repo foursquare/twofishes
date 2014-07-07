@@ -69,7 +69,14 @@ object GeonamesFeature extends Logging {
         Some(in ++ List(
           (GeonamesFeatureColumns.FEATURE_CLASS -> "Z"),
           (GeonamesFeatureColumns.GEONAMEID ->
-            (new GeonamesZip(in(COUNTRY_CODE), in(NAME))).humanReadableString)
+            (new GeonamesZip(in(COUNTRY_CODE), in(NAME))).humanReadableString),
+           // hack to ensure US postal codes are always in prefix index
+          (GeonamesFeatureColumns.POPULATION ->
+            (if (in(COUNTRY_CODE) =? "US") {
+              1000
+            } else {
+              0
+            }).toString)
         ))
       } catch {
         case e: Exception =>
