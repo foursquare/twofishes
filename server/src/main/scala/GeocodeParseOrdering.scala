@@ -93,6 +93,12 @@ object GeocodeParseOrdering {
     }
   }
 
+  val penalizeCountryHintMismatch: ScoringFunc = {
+    case args if (args.req.ccOption.exists(_ != args.primaryFeature.feature.cc)) => {
+      ScorerResponseWithScoreAndMessage(-100000000, "country code mismatch")
+    }
+  }
+
   def distanceBoostForPoint(args: ScorerArguments, ll: GeocodePoint, clampPenalty: Boolean): ScorerResponse = {
     val distance = if (args.primaryFeature.feature.geometry.boundsOption.nonEmpty) {
       GeoTools.distanceFromPointToBounds(ll, args.primaryFeature.feature.geometry.boundsOrThrow)
@@ -305,6 +311,40 @@ object GeocodeParseOrdering {
     ScoringTerm(woeTypeOrderForParents),
     ScoringTerm(penalizeAirports)
   )
+  
+  val scorersForAutocompleteStrictLocal: List[ScoringTerm] = List(
+    ScoringTerm(populationBoost, 0.0),
+    ScoringTerm(penalizeRepeatedFeatures),
+    ScoringTerm(promoteFeatureWithBounds),
+    ScoringTerm(promoteWoeHintMatch),
+    ScoringTerm(penalizeIrrelevantLanguageNameMatches),
+    ScoringTerm(penalizeLongParses),
+    ScoringTerm(promoteCountryHintMatch, 0.0),
+    ScoringTerm(distanceToBoundsOrLatLngHintClampedPenalty),
+    ScoringTerm(manualBoost, 0.0),
+    ScoringTerm(usTieBreak, 0.0),
+    ScoringTerm(penalizeCounties),
+    ScoringTerm(woeTypeOrderForFeature),
+    ScoringTerm(woeTypeOrderForParents),
+    ScoringTerm(penalizeAirports)
+  )
+
+  val scorersForAutocompleteStrictInCountryGlobal: List[ScoringTerm] = List(
+    ScoringTerm(populationBoost),
+    ScoringTerm(penalizeRepeatedFeatures),
+    ScoringTerm(promoteFeatureWithBounds),
+    ScoringTerm(promoteWoeHintMatch),
+    ScoringTerm(penalizeIrrelevantLanguageNameMatches),
+    ScoringTerm(penalizeLongParses),
+    ScoringTerm(penalizeCountryHintMismatch),
+    ScoringTerm(distanceToBoundsOrLatLngHintClampedPenalty, 0.0),
+    ScoringTerm(manualBoost),
+    ScoringTerm(usTieBreak, 0.0),
+    ScoringTerm(penalizeCounties),
+    ScoringTerm(woeTypeOrderForFeature),
+    ScoringTerm(woeTypeOrderForParents),
+    ScoringTerm(penalizeAirports)
+  )
 
   def maybeReplaceTopResultWithRelatedCity(parses: Seq[Parse[Sorted]]): Seq[Parse[Sorted]] = {
     // if top result is not a city and there is an identically named city that is related to it
@@ -336,7 +376,8 @@ class GeocodeParseOrdering(
     store: GeocodeStorageReadService,
     req: CommonGeocodeRequestParams,
     logger: TwofishesLogger,
-    scorers: List[ScoringTerm] = Nil
+    scorers: List[ScoringTerm] = Nil,
+    scorersName: String = ""
   ) extends Ordering[Parse[Sorted]] {
   // Higher is better
   def scoreParse(parse: Parse[Sorted]): Int = {
@@ -356,7 +397,7 @@ class GeocodeParseOrdering(
       }
 
       if (req.debug > 0) {
-        logger.ifDebug("Scoring %s", parse)
+        logger.ifDebug("Scorer %s scoring %s", scorersName, parse)
       }
 
       StoredFeatureId.fromLong(primaryFeature.longId).foreach(fid =>
