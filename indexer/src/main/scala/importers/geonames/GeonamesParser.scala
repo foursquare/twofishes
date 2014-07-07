@@ -341,6 +341,15 @@ class GeonamesParser(
     store.addNameIndexes(List(createNameIndexRecord(dn, fid, record)))
   }
 
+  private def isAllDigits(x: String) = x forall Character.isDigit
+
+  private def shouldExcludeFromPrefixIndex(dn: DisplayName, woeType: YahooWoeType): Boolean = {
+    // exclude because of flags
+    ((dn.flags & (FeatureNameFlags.NEVER_DISPLAY.getValue | FeatureNameFlags.LOW_QUALITY.getValue)) != 0) ||
+    // exclude purely numeric names of non-postalcode features
+    (woeType !=? YahooWoeType.POSTAL_CODE && isAllDigits(dn.name))
+  }
+
   def createNameIndexRecord(dn: DisplayName, fid: StoredFeatureId, record: Option[GeocodeRecord]) = {
     val name = NameNormalizer.normalize(dn.name)
     val cc: String = record.map(_.cc).getOrElse("")
@@ -348,7 +357,7 @@ class GeonamesParser(
       record.flatMap(_.population).getOrElse(0) + record.flatMap(_.boost).getOrElse(0)
     val woeType: Int =
       record.map(_._woeType).getOrElse(0)
-    val noPrefix = ((dn.flags & (FeatureNameFlags.NEVER_DISPLAY.getValue | FeatureNameFlags.LOW_QUALITY.getValue)) != 0)
+    val noPrefix = shouldExcludeFromPrefixIndex(dn, YahooWoeType.findByIdOrNull(woeType))
     NameIndex(name, fid.longId, cc, pop, woeType, dn.flags, dn.lang, noPrefix, dn._id)
   }
 
@@ -449,8 +458,6 @@ class GeonamesParser(
 
     // the admincode is the internal geonames admin code, but is very often the
     // same short name for the admin area that is actually used in the country
-    def isAllDigits(x: String) = x forall Character.isDigit
-
     if (feature.featureClass.isAdmin1 || feature.featureClass.isAdmin2 || feature.featureClass.isAdmin3) {
       displayNames ++= feature.adminCode.toList.flatMap(code => {
         if (!isAllDigits(code)) {
