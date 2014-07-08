@@ -68,7 +68,8 @@ class PrefixIndexer(
   def getRecordsByPrefix(prefix: String, limit: Int) = {
     val nameCursor = NameIndexDAO.find(
       MongoDBObject(
-        "name" -> prefix)
+        "name" -> prefix,
+        "noPrefix" -> false)
     ).sort(orderBy = MongoDBObject("pop" -> -1)).limit(limit)
     nameCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
     val prefixCursor = NameIndexDAO.find(

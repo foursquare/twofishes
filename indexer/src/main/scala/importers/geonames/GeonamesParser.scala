@@ -872,11 +872,13 @@ class GeonamesParser(
             val nameRecords = store.getNameIndexByIdLangAndName(geonameId, lang, normalizedName).toList
             nameRecords match {
               case Nil => logger.error("display names and name index out of sync for id %s, lang %s, name %s".format(gid, lang, name))
-              case nameRecord :: Nil => {
+              case nameRecord :: dupes => {
+                // dupes can rarely creep into the name index when display names are not exact dupes
+                // but their normalized forms are, e.g. "LA", "L.A." both normalize to "la"
+                // in this case, use the first name's flags to update all names
                 val newFlags = nameRecord.flags | flagsMask
                 store.updateFlagsOnNameIndexByIdLangAndName(geonameId, lang, normalizedName, newFlags)
               }
-              case list => logger.error("multiple name index matches for id %s, lang %s, name %s -- %s".format(gid, lang, name, list))
             }
           } else {
             addDisplayNameToNameIndex(newName, geonameId, Some(record))
