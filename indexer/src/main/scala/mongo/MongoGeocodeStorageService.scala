@@ -54,7 +54,8 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
 
   def updateFlagsOnNameIndexByIdLangAndName(id: StoredFeatureId, lang: String, name: String, flags: Int) {
     NameIndexDAO.update(MongoDBObject("fid" -> id.longId, "lang" -> lang, "name" -> name),
-      MongoDBObject("$set" -> MongoDBObject("flags" -> flags)))
+      MongoDBObject("$set" -> MongoDBObject("flags" -> flags)),
+      upsert = false, multi = true)
   }
 
   def addPolygonToRecord(id: StoredFeatureId, polyId: ObjectId) {
