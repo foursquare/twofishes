@@ -342,17 +342,36 @@ trait NameUtils {
         logger.ifDebug("name candidates: %s", nameCandidates)
         logger.ifDebug("best name match: %s", bestNameMatch)
       }
-      bestNameMatch.map(name =>
-          (name,
-            Some("<b>" + name.name.take(matchedString.size) + "</b>" + name.name.drop(matchedString.size))
-      )) orElse {bestName(f, lang, preferAbbrev).map(name => {
+      bestNameMatch.map(name => {
+        // matchedString might be shorter than part of the display name it matches due to normalization
+        var i = 0
+        val matchedDisplayString = name.name.takeWhile(s => {
+          i += 1
+          matchedString.startsWith(NameNormalizer.normalize(name.name.take(i)))
+        })
+        (name,
+          Some("<b>" + name.name.take(matchedDisplayString.size) + "</b>" + name.name.drop(matchedDisplayString.size)))
+      }) orElse {bestName(f, lang, preferAbbrev).map(name => {
         val normalizedName = NameNormalizer.normalize(name.name)
         val index = normalizedName.indexOf(matchedString)
         if (index > -1) {
           val before = name.name.take(index)
-          val matched = name.name.drop(index).take(matchedString.size)
-          val after = name.name.drop(index + matchedString.size)
-          (name, Some("%s<b>%s</b>%s".format(before, matched, after)))
+          // before might be shorter than part of the display name it matches due to normalization
+          var i = 0
+          val rest = name.name.drop(index)
+          val beforeExtra = rest.takeWhile(s => {
+            i += 1
+            normalizedName.take(index).startsWith(NameNormalizer.normalize(before + rest.take(i)))
+          })
+          val realBefore = before + beforeExtra
+          val realRest = name.name.drop(realBefore.size)
+          i = 0
+          val matched = realRest.takeWhile(s => {
+            i += 1
+            matchedString.startsWith(NameNormalizer.normalize(realRest.take(i)))
+          })
+          val after = name.name.drop(realBefore.size + matched.size)
+          (name, Some("%s<b>%s</b>%s".format(realBefore, matched, after)))
         } else {
           (name, None)
         }
