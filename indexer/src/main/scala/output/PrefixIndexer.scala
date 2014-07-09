@@ -41,7 +41,15 @@ class PrefixIndexer(
   }
 
   private def roundRobinByCountryCode(records: List[NameIndex]): List[NameIndex] = {
-    records.groupBy(_.cc).values.toList.flatMap(_.zipWithIndex).groupBy(_._2).toList.sortBy(_._1).flatMap(_._2.map(_._1))
+    // to ensure global distribution of features from all countries, group by cc
+    // and then pick the top from each group by turn and cycle through
+    // input: a (US), b (US), c (CN), d (US), e (AU), f (AU), g (CN)
+    // desired output: a (US), c (CN), e (AU), b (US), g (CN), f (AU), d (US)
+    records.groupBy(_.cc)                   // (US -> a, b, d), (CN -> c, g), (AU -> e, f)
+      .values.toList                        // (a, b, d), (c, g), (e, f)
+      .flatMap(_.zipWithIndex)              // (a, 0), (b, 1), (d, 2), (c, 0), (g, 1), (e, 0), (f, 1)
+      .groupBy(_._2).toList                 // (0 -> a, c, e), (1 -> b, g, f), (2 -> d)
+      .sortBy(_._1).flatMap(_._2.map(_._1)) // a, c, e, b, g, f, d
   }
 
   def sortRecordsByNames(records: List[NameIndex]) = {
@@ -69,13 +77,13 @@ class PrefixIndexer(
     val nameCursor = NameIndexDAO.find(
       MongoDBObject(
         "name" -> prefix,
-        "noPrefix" -> false)
+        "excludeFromPrefixIndex" -> false)
     ).sort(orderBy = MongoDBObject("pop" -> -1)).limit(limit)
     nameCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
     val prefixCursor = NameIndexDAO.find(
       MongoDBObject(
         "name" -> MongoDBObject("$regex" -> "^%s".format(prefix)),
-        "noPrefix" -> false)
+        "excludeFromPrefixIndex" -> false)
     ).sort(orderBy = MongoDBObject("pop" -> -1)).limit(limit)
     prefixCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
     (nameCursor ++ prefixCursor).toSeq.distinct.take(limit)

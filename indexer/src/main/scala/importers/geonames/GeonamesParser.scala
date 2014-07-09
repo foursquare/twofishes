@@ -357,8 +357,8 @@ class GeonamesParser(
       record.flatMap(_.population).getOrElse(0) + record.flatMap(_.boost).getOrElse(0)
     val woeType: Int =
       record.map(_._woeType).getOrElse(0)
-    val noPrefix = shouldExcludeFromPrefixIndex(dn, YahooWoeType.findByIdOrNull(woeType))
-    NameIndex(name, fid.longId, cc, pop, woeType, dn.flags, dn.lang, noPrefix, dn._id)
+    val excludeFromPrefixIndex = shouldExcludeFromPrefixIndex(dn, YahooWoeType.findByIdOrNull(woeType))
+    NameIndex(name, fid.longId, cc, pop, woeType, dn.flags, dn.lang, excludeFromPrefixIndex, dn._id)
   }
 
   def rewriteNames(names: List[String]): (List[String], List[String]) = {
@@ -581,10 +581,10 @@ class GeonamesParser(
 
     // combine flags of duplicate names in the same language
     val finalDisplayNames = displayNames.groupBy(dn => (dn.lang, dn.name)).toList
-      .map(group => DisplayName(
-        lang = group._1._1,
-        name = group._1._2,
-        flags = group._2.foldLeft(0)((f, dn) => f | dn.flags)))
+      .map({case ((lang, name), displayNames) => DisplayName(
+        lang = lang,
+        name = name,
+        flags = displayNames.foldLeft(0)((f, dn) => f | dn.flags))})
 
     val record = GeocodeRecord(
       _id = geonameId.longId,
@@ -853,8 +853,9 @@ class GeonamesParser(
         case Nil => logger.error("no match for id %s".format(gid))
         case record :: Nil => {
           val newName = DisplayName(lang, name, flagsMask)
-          // combine flags of new name with existing dupes, if any
-          // first for display names on feature
+          // all display names have already been deduped and their flags combined
+          // name transform can therefore have at most one display name dupe
+          // combine flags with that dupe, if it exists
           var merged = false
           val mergedNames = record.displayNames.map(dn => {
             if (dn.lang =? lang && dn.name =? name) {
@@ -866,7 +867,7 @@ class GeonamesParser(
             }
           })
 
-          // repeat for names in name index
+          // repeat merge for names in name index
           if (merged) {
             val normalizedName = NameNormalizer.normalize(name)
             val nameRecords = store.getNameIndexByIdLangAndName(geonameId, lang, normalizedName).toList

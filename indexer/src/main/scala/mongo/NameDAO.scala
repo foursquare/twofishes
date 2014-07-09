@@ -18,7 +18,7 @@ case class NameIndex(
   woeType: Int,
   flags: Int,
   lang: String,
-  noPrefix: Boolean,
+  excludeFromPrefixIndex: Boolean,
   @Key("_id") _id: ObjectId
 ) {
 
@@ -29,6 +29,6 @@ case class NameIndex(
 object NameIndexDAO extends SalatDAO[NameIndex, String](
   collection = MongoConnection()("geocoder")("name_index")) {
   def makeIndexes() {
-    collection.ensureIndex(DBObject("name" -> -1, "pop" -> -1, "fid" -> 1, "noPrefix" -> 1))
+    collection.ensureIndex(DBObject("name" -> -1, "pop" -> -1, "fid" -> 1, "excludeFromPrefixIndex" -> 1))
   }
 }
