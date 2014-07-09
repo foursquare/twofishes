@@ -243,107 +243,60 @@ object GeocodeParseOrdering {
     }
   }
 
-  val scorersForGeocode: List[ScoringTerm] = List(
-    ScoringTerm(populationBoost),
+  val commonScorers: List[ScoringTerm] = List(
     ScoringTerm(penalizeRepeatedFeatures),
     ScoringTerm(promoteFeatureWithBounds),
     ScoringTerm(promoteWoeHintMatch),
     ScoringTerm(penalizeIrrelevantLanguageNameMatches),
     ScoringTerm(penalizeLongParses),
-    ScoringTerm(promoteCountryHintMatch),
-    ScoringTerm(distanceToBoundsOrLatLngHintClampedPenalty),
-    ScoringTerm(manualBoost),
     ScoringTerm(usTieBreak),
     ScoringTerm(penalizeCounties),
     ScoringTerm(woeTypeOrderForFeature),
     ScoringTerm(woeTypeOrderForParents)
   )
 
-  val scorersForAutocompleteBasic: List[ScoringTerm] = scorersForGeocode :+ ScoringTerm(penalizeAirports)
-
-  val scorersForAutocompleteDefault: List[ScoringTerm] = List(
-    ScoringTerm(populationBoost, 0.1),
-    ScoringTerm(penalizeRepeatedFeatures),
-    ScoringTerm(promoteFeatureWithBounds),
-    ScoringTerm(promoteWoeHintMatch),
-    ScoringTerm(penalizeIrrelevantLanguageNameMatches),
-    ScoringTerm(penalizeLongParses),
-    ScoringTerm(promoteCountryHintMatch, 10.0),
+  val scorersForGeocode: List[ScoringTerm] = commonScorers ++ List(
+    ScoringTerm(populationBoost),
+    ScoringTerm(promoteCountryHintMatch),
     ScoringTerm(distanceToBoundsOrLatLngHintClampedPenalty),
-    ScoringTerm(manualBoost, 0.001),
-    ScoringTerm(usTieBreak),
-    ScoringTerm(penalizeCounties),
-    ScoringTerm(woeTypeOrderForFeature),
-    ScoringTerm(woeTypeOrderForParents),
-    ScoringTerm(penalizeAirports)
+    ScoringTerm(manualBoost)
   )
 
-  val scorersForAutocompleteLocalBias: List[ScoringTerm] = List(
+  val commonScorersForAutocomplete: List[ScoringTerm] = commonScorers :+ ScoringTerm(penalizeAirports)
+
+  val scorersForAutocompleteDefault: List[ScoringTerm] = commonScorersForAutocomplete ++ List(
+    ScoringTerm(populationBoost, 0.1),
+    ScoringTerm(promoteCountryHintMatch, 10.0),
+    ScoringTerm(distanceToBoundsOrLatLngHintClampedPenalty),
+    ScoringTerm(manualBoost, 0.001)
+  )
+
+  val scorersForAutocompleteLocalBias: List[ScoringTerm] = commonScorersForAutocomplete ++ List(
     ScoringTerm(populationBoost, 0.001),
-    ScoringTerm(penalizeRepeatedFeatures),
-    ScoringTerm(promoteFeatureWithBounds),
-    ScoringTerm(promoteWoeHintMatch),
-    ScoringTerm(penalizeIrrelevantLanguageNameMatches),
-    ScoringTerm(penalizeLongParses),
     ScoringTerm(promoteCountryHintMatch, 10.0),
     ScoringTerm(distanceToBoundsOrLatLngHintUnclampedPenalty),
-    ScoringTerm(manualBoost, 0.00001),
-    ScoringTerm(usTieBreak),
-    ScoringTerm(penalizeCounties),
-    ScoringTerm(woeTypeOrderForFeature),
-    ScoringTerm(woeTypeOrderForParents),
-    ScoringTerm(penalizeAirports)
+    ScoringTerm(manualBoost, 0.00001)
   )
 
-  val scorersForAutocompleteGlobalBias: List[ScoringTerm] = List(
+  val scorersForAutocompleteGlobalBias: List[ScoringTerm] = commonScorersForAutocomplete ++ List(
     ScoringTerm(populationBoost),
-    ScoringTerm(penalizeRepeatedFeatures),
-    ScoringTerm(promoteFeatureWithBounds),
-    ScoringTerm(promoteWoeHintMatch),
-    ScoringTerm(penalizeIrrelevantLanguageNameMatches),
-    ScoringTerm(penalizeLongParses),
     ScoringTerm(promoteCountryHintMatch, 0.001),
     ScoringTerm(distanceToBoundsOrLatLngHintClampedPenalty, 0.0001),
-    ScoringTerm(manualBoost),
-    ScoringTerm(usTieBreak),
-    ScoringTerm(penalizeCounties),
-    ScoringTerm(woeTypeOrderForFeature),
-    ScoringTerm(woeTypeOrderForParents),
-    ScoringTerm(penalizeAirports)
+    ScoringTerm(manualBoost)
   )
   
-  val scorersForAutocompleteStrictLocal: List[ScoringTerm] = List(
+  val scorersForAutocompleteStrictLocal: List[ScoringTerm] = commonScorersForAutocomplete ++ List(
     ScoringTerm(populationBoost, 0.0),
-    ScoringTerm(penalizeRepeatedFeatures),
-    ScoringTerm(promoteFeatureWithBounds),
-    ScoringTerm(promoteWoeHintMatch),
-    ScoringTerm(penalizeIrrelevantLanguageNameMatches),
-    ScoringTerm(penalizeLongParses),
     ScoringTerm(promoteCountryHintMatch, 0.0),
     ScoringTerm(distanceToBoundsOrLatLngHintClampedPenalty),
-    ScoringTerm(manualBoost, 0.0),
-    ScoringTerm(usTieBreak, 0.0),
-    ScoringTerm(penalizeCounties),
-    ScoringTerm(woeTypeOrderForFeature),
-    ScoringTerm(woeTypeOrderForParents),
-    ScoringTerm(penalizeAirports)
+    ScoringTerm(manualBoost, 0.0)
   )
 
-  val scorersForAutocompleteStrictInCountryGlobal: List[ScoringTerm] = List(
+  val scorersForAutocompleteStrictInCountryGlobal: List[ScoringTerm] = commonScorersForAutocomplete ++ List(
     ScoringTerm(populationBoost),
-    ScoringTerm(penalizeRepeatedFeatures),
-    ScoringTerm(promoteFeatureWithBounds),
-    ScoringTerm(promoteWoeHintMatch),
-    ScoringTerm(penalizeIrrelevantLanguageNameMatches),
-    ScoringTerm(penalizeLongParses),
     ScoringTerm(penalizeCountryHintMismatch),
     ScoringTerm(distanceToBoundsOrLatLngHintClampedPenalty, 0.0),
-    ScoringTerm(manualBoost),
-    ScoringTerm(usTieBreak, 0.0),
-    ScoringTerm(penalizeCounties),
-    ScoringTerm(woeTypeOrderForFeature),
-    ScoringTerm(woeTypeOrderForParents),
-    ScoringTerm(penalizeAirports)
+    ScoringTerm(manualBoost)
   )
 
   def maybeReplaceTopResultWithRelatedCity(parses: Seq[Parse[Sorted]]): Seq[Parse[Sorted]] = {
