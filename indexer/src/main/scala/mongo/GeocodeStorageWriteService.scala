@@ -15,4 +15,6 @@ trait GeocodeStorageWriteService {
   def addPolygonToRecord(id: StoredFeatureId, polyId: ObjectId)
   def addSlugToRecord(id: StoredFeatureId, slug: String)
   def getById(id: StoredFeatureId): Iterator[GeocodeRecord]
+  def getNameIndexByIdLangAndName(id: StoredFeatureId, lang: String, name: String): Iterator[NameIndex]
+  def updateFlagsOnNameIndexByIdLangAndName(id: StoredFeatureId, lang: String, name: String, flags: Int)
 }

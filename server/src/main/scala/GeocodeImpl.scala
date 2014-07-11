@@ -298,7 +298,7 @@ class GeocoderImpl(
           (size, parses) <- validParseCaches.find(_._1 == length)
         } {
           parsesToConsider.appendAll(
-            parses.sorted(new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForGeocode))
+            parses.sorted(new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForGeocode, "default"))
           )
         }
 

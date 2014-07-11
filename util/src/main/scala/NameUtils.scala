@@ -332,6 +332,14 @@ trait NameUtils {
         exactMatchNameCandidates
       }
 
+      def matchNormalizedStringToPrefixOfOriginal(normalized: String, original: String): String = {
+        var i = 0
+        original.takeWhile(s => {
+          i += 1
+          normalized.startsWith(NameNormalizer.normalize(original.take(i)))
+        })
+      }
+
       val modifiedPreferAbbrev = preferAbbrev &&
         f.woeTypeOption.exists(_ =? YahooWoeType.ADMIN1) &&
         countryUsesStateAbbrev(f.cc)
@@ -342,16 +350,19 @@ trait NameUtils {
         logger.ifDebug("name candidates: %s", nameCandidates)
         logger.ifDebug("best name match: %s", bestNameMatch)
       }
-      bestNameMatch.map(name =>
-          (name,
-            Some("<b>" + name.name.take(matchedString.size) + "</b>" + name.name.drop(matchedString.size))
-      )) orElse {bestName(f, lang, preferAbbrev).map(name => {
+      bestNameMatch.map(name => {
+        // matchedString might be shorter than part of the display name it matches due to normalization
+        val matchedDisplayString = matchNormalizedStringToPrefixOfOriginal(matchedString, name.name)
+        (name,
+          Some("<b>" + name.name.take(matchedDisplayString.size) + "</b>" + name.name.drop(matchedDisplayString.size)))
+      }) orElse {bestName(f, lang, preferAbbrev).map(name => {
         val normalizedName = NameNormalizer.normalize(name.name)
         val index = normalizedName.indexOf(matchedString)
         if (index > -1) {
-          val before = name.name.take(index)
-          val matched = name.name.drop(index).take(matchedString.size)
-          val after = name.name.drop(index + matchedString.size)
+          // account for normalization before and inside match
+          val before = matchNormalizedStringToPrefixOfOriginal(normalizedName.take(index), name.name)
+          val matched = matchNormalizedStringToPrefixOfOriginal(matchedString, name.name.drop(before.size))
+          val after = name.name.drop(before.size + matched.size)
           (name, Some("%s<b>%s</b>%s".format(before, matched, after)))
         } else {
           (name, None)
