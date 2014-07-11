@@ -835,12 +835,8 @@ class GeonamesParser(
       (line, lineIndex) <- lines.zipWithIndex
       if (!line.startsWith("#") && line.nonEmpty)
       parts = line.split("[\t ]").toList
-      gid <- parts.lift(0)
-      geonameId = (try {
-        GeonamesId(gid.toLong)
-      } catch {
-        case e: Exception => throw new Exception("failed to parse %s -- line: %s".format(filename, line))
-      })
+      idString <- parts.lift(0)
+      featureId <- StoredFeatureId.fromHumanReadableString(idString, Some(GeonamesNamespace))
       rest = parts.drop(1).mkString(" ")
       lang <- rest.split("\\|").lift(0)
       name <- rest.split("\\|").lift(1)
@@ -848,9 +844,9 @@ class GeonamesParser(
     } {
       val flagsMask = parseFeatureNameFlags(originalFlags, List(FeatureNameFlags.PREFERRED))
 
-      val records = store.getById(geonameId).toList
+      val records = store.getById(featureId).toList
       records match {
-        case Nil => logger.error("no match for id %s".format(gid))
+        case Nil => logger.error("no match for id %s".format(idString))
         case record :: Nil => {
           val newName = DisplayName(lang, name, flagsMask)
           // all display names have already been deduped and their flags combined
@@ -859,7 +855,7 @@ class GeonamesParser(
           var merged = false
           val mergedNames = record.displayNames.map(dn => {
             if (dn.lang =? lang && dn.name =? name) {
-              logger.info("merged display name %s with name transform: id %s, lang %s, name %s, flags %d".format(dn, gid, lang, name, flagsMask))
+              logger.info("merged display name %s with name transform: id %s, lang %s, name %s, flags %d".format(dn, idString, lang, name, flagsMask))
               merged = true
               DisplayName(dn.lang, dn.name, dn.flags | flagsMask)
             } else {
@@ -870,19 +866,19 @@ class GeonamesParser(
           // repeat merge for names in name index
           if (merged) {
             val normalizedName = NameNormalizer.normalize(name)
-            val nameRecords = store.getNameIndexByIdLangAndName(geonameId, lang, normalizedName).toList
+            val nameRecords = store.getNameIndexByIdLangAndName(featureId, lang, normalizedName).toList
             nameRecords match {
-              case Nil => logger.error("display names and name index out of sync for id %s, lang %s, name %s".format(gid, lang, name))
+              case Nil => logger.error("display names and name index out of sync for id %s, lang %s, name %s".format(idString, lang, name))
               case nameRecord :: dupes => {
                 // dupes can rarely creep into the name index when display names are not exact dupes
                 // but their normalized forms are, e.g. "LA", "L.A." both normalize to "la"
                 // in this case, use the first name's flags to update all names
                 val newFlags = nameRecord.flags | flagsMask
-                store.updateFlagsOnNameIndexByIdLangAndName(geonameId, lang, normalizedName, newFlags)
+                store.updateFlagsOnNameIndexByIdLangAndName(featureId, lang, normalizedName, newFlags)
               }
             }
           } else {
-            addDisplayNameToNameIndex(newName, geonameId, Some(record))
+            addDisplayNameToNameIndex(newName, featureId, Some(record))
           }
 
           // if we're trying to put in a new preferred name, kill all the other preferred names in the same language
@@ -903,9 +899,9 @@ class GeonamesParser(
             } else {
               List(newName)
             })
-          store.setRecordNames(GeonamesId(gid.toLong), newNames)
+          store.setRecordNames(featureId, newNames)
         }
-        case list => logger.error("multiple matches for id %s -- %s".format(gid, list))
+        case list => logger.error("multiple matches for id %s -- %s".format(idString, list))
       }
     }
   }
