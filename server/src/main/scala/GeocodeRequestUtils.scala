@@ -10,7 +10,7 @@ import com.twitter.ostrich.stats.Stats
 import com.foursquare.geo.quadtree.CountryRevGeo
 
 object GeocodeRequestUtils {
-  val maxRadius = 5000 // km
+  val maxRadius = 5000 // 5 km
 
   def responseIncludes(req: CommonGeocodeRequestParams, include: ResponseIncludes): Boolean = {
     req.responseIncludes.has(include) ||
