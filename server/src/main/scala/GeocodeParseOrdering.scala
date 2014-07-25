@@ -70,7 +70,23 @@ object GeocodeParseOrdering {
           primaryMatchLangs.exists(lang => CountryUtils.isLocalLanguageForCountry(args.primaryFeature.feature.cc, lang))) {
         ScorerResponse.Empty
       } else {
-        ScorerResponseWithScoreAndMessage(-100000000, "penalizing  name match in irrelevant language")
+        ScorerResponseWithScoreAndMessage(-100000000, "penalizing name match in irrelevant language")
+      }
+    }
+  }
+
+  val penalizeBadNameMatches: ScoringFunc = {
+    case args => {
+      val flags = (for {
+        fmatch <- args.parse.headOption.toList
+        nameHit <- fmatch.possibleNameHits
+        flag <- nameHit.flags
+      } yield flag).toList
+
+      if (flags.forall(f => f =? FeatureNameFlags.NEVER_DISPLAY || f =? FeatureNameFlags.LOW_QUALITY)) {
+        ScorerResponseWithScoreAndMessage(-100000000, "penalizing name match with bad flags")
+      } else {
+        ScorerResponse.Empty
       }
     }
   }
@@ -248,6 +264,7 @@ object GeocodeParseOrdering {
     ScoringTerm(promoteFeatureWithBounds),
     ScoringTerm(promoteWoeHintMatch),
     ScoringTerm(penalizeIrrelevantLanguageNameMatches),
+    ScoringTerm(penalizeBadNameMatches),
     ScoringTerm(penalizeLongParses),
     ScoringTerm(usTieBreak),
     ScoringTerm(penalizeCounties),
