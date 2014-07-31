@@ -5,7 +5,7 @@ import com.foursquare.geo.shapes.{FsqSimpleFeature, GeoJsonIterator, ShapeIterat
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes._
 import com.foursquare.twofishes.mongo.{GeocodeStorageWriteService, PolygonIndex, PolygonIndexDAO, MongoGeocodeDAO, RevGeoIndexDAO}
-import com.foursquare.twofishes.util.{AdHocId, CountryCodes, DurationUtils, FeatureNamespace, Helpers, NameNormalizer, StoredFeatureId}
+import com.foursquare.twofishes.util.{AdHocId, CountryCodes, DurationUtils, FeatureNamespace, GeonamesNamespace, Helpers, NameNormalizer, StoredFeatureId}
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.ibm.icu.text.Transliterator
@@ -638,10 +638,26 @@ class PolygonLoader(
       val source = polygonMappingConfig.flatMap(_.source).getOrElse(features.file.getName())
       val sourceKey = "polygonMatching." + source
 
-      val geoidColumns = List("geonameid", "qs_gn_id", "gn_id")
-      val geoidsFromFile = geoidColumns.flatMap(feature.propMap.get)
+      val geoidColumnNameToNamespaceMapping =
+        List(
+          "qs_gn_id" -> GeonamesNamespace,
+          "gn_id" -> GeonamesNamespace) ++
+        FeatureNamespace.values.map(namespace => (namespace.name -> namespace))
+      val geoidsFromFile = for {
+          (columnName, namespace) <- geoidColumnNameToNamespaceMapping
+          values <- feature.propMap.get(columnName).toList
+          value <- values.split(",")
+          if value.nonEmpty
+        } yield {
+          // if value already contains ':' it was human-readable to begin with
+          if (value.indexOf(':') != -1) {
+            value
+          } else {
+            "%s:%s".format(namespace.name, value)
+          }
+        }
       val fidsFromFile = geoidsFromFile
-        .filterNot(_.isEmpty).flatMap(_.split(",")).map(_.replace(".0", ""))
+        .filterNot(_.isEmpty).map(_.replace(".0", ""))
         .flatMap(i => StoredFeatureId.fromHumanReadableString(i, Some(defaultNamespace)))
 
       val fids: List[StoredFeatureId] = if (fidsFromFileName.nonEmpty) {
