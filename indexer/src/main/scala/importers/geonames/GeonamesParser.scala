@@ -732,6 +732,9 @@ class GeonamesParser(
     }
   }
 
+  def isLocalLang(lang: String, cc: String) =
+    countryLangMap.getOrElse(cc, Nil).contains(lang)
+
   def processFeatureName(
     fid: StoredFeatureId,
     cc: String,
@@ -752,13 +755,10 @@ class GeonamesParser(
         DisplayName(lang, name, flags)
       }
 
-      def isLocalLang(lang: String) =
-        countryLangMap.getOrElse(cc, Nil).contains(lang)
-
       def processNameList(names: List[String], flags: Int): List[DisplayName] = {
         names.map(n => {
           var finalFlags = flags
-          if (isLocalLang(lang)) {
+          if (isLocalLang(lang, cc)) {
             finalFlags |= FeatureNameFlags.LOCAL_LANG.getValue
           }
           if (isHistoric) {
@@ -848,16 +848,22 @@ class GeonamesParser(
       records match {
         case Nil => logger.error("no match for id %s".format(idString))
         case record :: Nil => {
-          val newName = DisplayName(lang, name, flagsMask)
+          val flagsMaskComputed = flagsMask | (if (isLocalLang(lang, record.cc)) {
+            FeatureNameFlags.LOCAL_LANG.getValue
+          } else {
+            0
+          })
+          val newName = DisplayName(lang, name, flagsMaskComputed)
+
           // all display names have already been deduped and their flags combined
           // name transform can therefore have at most one display name dupe
           // combine flags with that dupe, if it exists
           var merged = false
           val mergedNames = record.displayNames.map(dn => {
             if (dn.lang =? lang && dn.name =? name) {
-              logger.info("merged display name %s with name transform: id %s, lang %s, name %s, flags %d".format(dn, idString, lang, name, flagsMask))
+              logger.info("merged display name %s with name transform: id %s, lang %s, name %s, flags %d".format(dn, idString, lang, name, flagsMaskComputed))
               merged = true
-              DisplayName(dn.lang, dn.name, dn.flags | flagsMask)
+              DisplayName(dn.lang, dn.name, dn.flags | flagsMaskComputed)
             } else {
               dn
             }
@@ -873,7 +879,7 @@ class GeonamesParser(
                 // dupes can rarely creep into the name index when display names are not exact dupes
                 // but their normalized forms are, e.g. "LA", "L.A." both normalize to "la"
                 // in this case, use the first name's flags to update all names
-                val newFlags = nameRecord.flags | flagsMask
+                val newFlags = nameRecord.flags | flagsMaskComputed
                 store.updateFlagsOnNameIndexByIdLangAndName(featureId, lang, normalizedName, newFlags)
               }
             }
@@ -885,7 +891,7 @@ class GeonamesParser(
           val modifiedNames: List[DisplayName] = mergedNames.map(dn => {
             if (dn.lang =? lang &&
                 dn.name !=? name &&
-                (flagsMask & FeatureNameFlags.PREFERRED.getValue) != 0
+                (flagsMaskComputed & FeatureNameFlags.PREFERRED.getValue) != 0
             ) {
               DisplayName(dn.lang, dn.name, dn.flags & ~FeatureNameFlags.PREFERRED.getValue())
             } else {
