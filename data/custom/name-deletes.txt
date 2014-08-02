@@ -13,3 +13,4 @@
 1527747|키르기스 confirm deletion
 3371123|부베 confirm deletion
 3448439|São Paolo
+3448439|Sao Paolo
