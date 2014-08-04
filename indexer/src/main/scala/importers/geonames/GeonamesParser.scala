@@ -350,6 +350,10 @@ class GeonamesParser(
     (woeType !=? YahooWoeType.POSTAL_CODE && isAllDigits(dn.name))
   }
 
+  private def isNameDeleted(name: String, fid: StoredFeatureId): Boolean = {
+    nameDeleteTable.get(fid).exists(_ =? name)
+  }
+
   def createNameIndexRecord(dn: DisplayName, fid: StoredFeatureId, record: Option[GeocodeRecord]) = {
     val name = NameNormalizer.normalize(dn.name)
     val cc: String = record.map(_.cc).getOrElse("")
@@ -424,7 +428,13 @@ class GeonamesParser(
     }
 
     feature.asciiname.foreach(asciiname => {
-      if (feature.name != asciiname && asciiname.nonEmpty) {
+      val (deaccentedPrimary, _) = rewriteNames(List(feature.name))
+      if (feature.name != asciiname &&
+          asciiname.nonEmpty &&
+          // do not add if this name has been deleted
+          !isNameDeleted(asciiname, geonameId) &&
+          // or if this is the same as the primary name deaccented and the primary name has been deleted
+          !(deaccentedPrimary.has(asciiname) && isNameDeleted(feature.name, geonameId))) {
         displayNames ::=
           DisplayName("en", asciiname,
             FeatureNameFlags.DEACCENT.getValue)
@@ -745,7 +755,7 @@ class GeonamesParser(
     isColloquial: Boolean = false,
     isHistoric: Boolean = false,
     woeType: YahooWoeType): List[DisplayName] = {
-    if (lang != "post" && !nameDeleteTable.get(fid).exists(_ =? name)) {
+    if (lang != "post" && !isNameDeleted(name, fid)) {
       val originalNames = List(name)
       val hackedNames = hackName(lang, name, cc, woeType)
       val (deaccentedNames, allModifiedNames) = rewriteNames(originalNames)
