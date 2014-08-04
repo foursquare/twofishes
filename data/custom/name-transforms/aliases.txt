@@ -7,6 +7,7 @@
 3530597 en|DF|ALT_NAME
 5391959 en|SF|ALT_NAME
 1642911 en|Jakarta Capital Region|ALT_NAME
+1642911 en|Jakarta
 4994358 en|Grand Rapids Charter Township|ALT_NAME
 4560349 en|Phila|ALT_NAME
 4544349 en|OKC|ALT_NAME
@@ -35,8 +36,6 @@
 4929023 en|Amherst|ALT_NAME
 4930396 en|The Berkshires|ALT_NAME
 4930396 en|Berkshires|ALT_NAME
-# this first one is the city and probably wrong
-# 1642903|DKI Jakarta
 1642907 en|DKI Jakarta|ALT_NAME
 1642903 en|Jakarta Capital Region|ALT_NAME
 498817 ru|город Санкт-Петербург|ALT_NAME
