@@ -83,7 +83,7 @@ object GeocodeParseOrdering {
         flag <- nameHit.flags
       } yield flag).toList
 
-      if (flags.forall(f => f =? FeatureNameFlags.NEVER_DISPLAY || f =? FeatureNameFlags.LOW_QUALITY)) {
+      if (flags.nonEmpty && flags.forall(f => f =? FeatureNameFlags.NEVER_DISPLAY || f =? FeatureNameFlags.LOW_QUALITY)) {
         ScorerResponseWithScoreAndMessage(-100000000, "penalizing name match with bad flags")
       } else {
         ScorerResponse.Empty
