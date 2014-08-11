@@ -242,6 +242,7 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
         var fixedJson = """"longId":(\d+)""".r.replaceAllIn(json, m => "\"longId\":\"%s\"".format(m.group(1)))
         fixedJson = fixLongArray("parentIds", fixedJson)
         fixedJson = fixLongArray("longIds", fixedJson)
+        fixedJson = fixLongArray("s2Covering", fixedJson)
 
         callback.map(cb => {
           val sb = new StringBuilder(fixedJson.size + cb.size + 10)

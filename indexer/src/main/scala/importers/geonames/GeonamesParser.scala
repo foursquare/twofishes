@@ -99,8 +99,9 @@ object GeonamesParser extends DurationUtils {
       NameIndexDAO.collection.drop()
       PolygonIndexDAO.collection.drop()
       RevGeoIndexDAO.collection.drop()
+      S2CoveringIndexDAO.collection.drop()
       parser.loadIntoMongo()
-      writeIndexes(parser.revGeoLatch)
+      writeIndexes(parser.s2CoveringLatch)
     } else {
       writeIndexes(None)
     }
@@ -119,6 +120,7 @@ object GeonamesParser extends DurationUtils {
       NameIndexDAO.makeIndexes()
       PolygonIndexDAO.makeIndexes()
       RevGeoIndexDAO.makeIndexes()
+      S2CoveringIndexDAO.makeIndexes()
     }
   }
 
@@ -130,15 +132,16 @@ object GeonamesParser extends DurationUtils {
   // TODO(blackmad): if we aren't redoing mongo indexing
   // then add some code to see if the s2 index is 'done'
   // We should also add an option to skip reloading polys
-  def writeIndexes(revGeoLatch: Option[CountDownLatch]) {
+  def writeIndexes(s2CoveringLatch: Option[CountDownLatch]) {
     makeFinalIndexes()
     val outputter = new OutputIndexes(
       config.hfileBasePath,
       config.outputPrefixIndex,
       GeonamesParser.slugIndexer.slugEntryMap,
-      config.outputRevgeo
+      config.outputRevgeo,
+      config.outputS2Covering
     )
-    outputter.buildIndexes(revGeoLatch)
+    outputter.buildIndexes(s2CoveringLatch)
   }
 }
 
@@ -221,11 +224,11 @@ class GeonamesParser(
 
   val helperTables = List(boostTable)
 
-  val system = ActorSystem("RevGeoSystem")
+  val system = ActorSystem("S2CoveringSystem")
 
-  val (revGeoMaster, revGeoLatch) = if (config != null && config.outputRevgeo) {
+  val (s2CoveringMaster, s2CoveringLatch) = if (config != null && (config.outputRevgeo || config.outputS2Covering)) {
     val latch = new CountDownLatch(1)
-    (Some(system.actorOf(Props(new RevGeoMaster(latch)), name = "master")), Some(latch))
+    (Some(system.actorOf(Props(new S2CoveringMaster(latch)), name = "master")), Some(latch))
    } else {
     (None, None)
   }

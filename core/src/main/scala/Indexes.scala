@@ -127,6 +127,9 @@ object Indexes {
   case object GeometryIndex extends Index[StoredFeatureId, Geometry](
     "geometry", Serde.StoredFeatureIdSerde, Serde.GeometrySerde)
 
+  case object S2CoveringIndex extends Index[StoredFeatureId, Seq[Long]](
+    "s2_covering", Serde.StoredFeatureIdSerde, Serde.LongListSerde)
+
   case object FeatureIndex extends Index[StoredFeatureId, GeocodeServingFeature](
     "features", Serde.StoredFeatureIdSerde, Serde.ThriftSerde(Unit => new RawGeocodeServingFeature))
 

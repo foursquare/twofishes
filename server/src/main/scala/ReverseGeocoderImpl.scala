@@ -164,6 +164,15 @@ class ReverseGeocoderHelperImpl(
       }
     )
 
+    val s2CoveringMap: Map[StoredFeatureId, Seq[Long]] = (
+      if (GeocodeRequestUtils.responseIncludes(req, ResponseIncludes.S2_COVERING)) {
+        Stats.incr("s2_coverings_fetched")
+        store.getS2CoveringByFeatureIds(matchedIds)
+      } else {
+        Map.empty
+      }
+    )
+
     val parseParams = ParseParams()
     val responseProcessor = new ResponseProcessor(req, store, queryLogger)
     val parsesAndOtherGeomToFids: Seq[(SortedParseSeq, (Geometry, Seq[StoredFeatureId]))] = (for {
@@ -214,7 +223,7 @@ class ReverseGeocoderHelperImpl(
     val sortedParses = parsesAndOtherGeomToFids.flatMap(_._1)
     val otherGeomToFids = parsesAndOtherGeomToFids.map(_._2).toMap
 
-    val interpretations = responseProcessor.hydrateParses(sortedParses, parseParams, polygonMap,
+    val interpretations = responseProcessor.hydrateParses(sortedParses, parseParams, polygonMap, s2CoveringMap,
       fixAmbiguousNames = false)
 
     makeBulkReply[Geometry](otherGeoms, otherGeomToFids, interpretations)

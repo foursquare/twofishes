@@ -26,9 +26,9 @@ class RevGeoIndexer(
   lazy val writer = buildMapFileWriter(
     index,
     Map(
-      "minS2Level" -> minS2Level.toString,
-      "maxS2Level" -> maxS2Level.toString,
-      "levelMod" -> defaultLevelMod.toString
+      "minS2Level" -> minS2LevelForRevGeo.toString,
+      "maxS2Level" -> maxS2LevelForRevGeo.toString,
+      "levelMod" -> defaultLevelModForRevGeo.toString
     )
   )
 

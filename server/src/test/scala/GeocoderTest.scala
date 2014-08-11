@@ -82,6 +82,9 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
   def getPolygonByFeatureId(id: StoredFeatureId): Option[Geometry] = None
   def getPolygonByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, Geometry] = Map.empty
 
+  def getS2CoveringByFeatureId(id: StoredFeatureId): Option[Seq[Long]] = None
+  def getS2CoveringByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, Seq[Long]] = Map.empty
+
   def getLevelMod: Int = 2
   def getMinS2Level: Int = 8
   def getMaxS2Level: Int = 12

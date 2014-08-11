@@ -162,6 +162,7 @@ class ResponseProcessor(
       parents: Seq[GeocodeServingFeature],
       parse: Option[Parse[Sorted]],
       polygonMap: Map[StoredFeatureId, Geometry],
+      s2CoveringMap: Map[StoredFeatureId, Seq[Long]],
       numExtraParentsRequired: Int = 0,
       fillHighlightedName: Boolean = false,
       includeAllNames: Boolean,
@@ -169,7 +170,7 @@ class ResponseProcessor(
     ): GeocodeFeature.Mutable = {
     // set name
     val mutableFeature = f.mutableCopy
-    fixFeatureMutable(mutableFeature, parents, parse, polygonMap, numExtraParentsRequired,
+    fixFeatureMutable(mutableFeature, parents, parse, polygonMap, s2CoveringMap, numExtraParentsRequired,
       fillHighlightedName, includeAllNames, parentIds)
   }
 
@@ -178,6 +179,7 @@ class ResponseProcessor(
     parents: Seq[GeocodeServingFeature],
     parse: Option[Parse[Sorted]],
     polygonMap: Map[StoredFeatureId, Geometry],
+    s2CoveringMap: Map[StoredFeatureId, Seq[Long]],
     numExtraParentsRequired: Int = 0,
     fillHighlightedName: Boolean = false,
     includeAllNames: Boolean = false,
@@ -347,6 +349,18 @@ class ResponseProcessor(
       }
     }
 
+    if (responseIncludes(ResponseIncludes.S2_COVERING)) {
+      for {
+        longId <- mutableFeature.longIdOption
+        fid <- StoredFeatureId.fromLong(longId)
+        s2Covering <- s2CoveringMap.get(fid)
+      } {
+        val mutableGeometry = mutableFeature.geometry.mutableCopy
+        mutableGeometry.s2Covering_=(s2Covering.toList)
+        mutableFeature.geometry_=(mutableGeometry)
+      }
+    }
+
     mutableFeature
   }
 
@@ -357,6 +371,7 @@ class ResponseProcessor(
     sortedParsesIn: SortedParseSeq,
     parseParams: ParseParams,
     polygonMap: Map[StoredFeatureId, Geometry],
+    s2CoveringMap: Map[StoredFeatureId, Seq[Long]],
     fixAmbiguousNames: Boolean,
     dedupByMatchedName: Boolean = false
   ): Seq[GeocodeInterpretation] = {
@@ -428,7 +443,7 @@ class ResponseProcessor(
         Nil
       }
 
-      val fixedFeature = fixFeature(feature, sortedParents, Some(p), polygonMap,
+      val fixedFeature = fixFeature(feature, sortedParents, Some(p), polygonMap, s2CoveringMap,
         fillHighlightedName=parseParams.tokens.size > 0,
         includeAllNames=responseIncludes(ResponseIncludes.ALL_NAMES),
         parentIds=p(0).fmatch.scoringFeatures.parentIds)
@@ -450,7 +465,7 @@ class ResponseProcessor(
             .flatMap(StoredFeatureId.fromLong _)
             .flatMap(parentFid => parentMap.get(parentFid)).sorted
           // parents don't need polygons, what is wrong with me?
-          fixFeature(parentFeature.feature, sortedParentParents, None, Map.empty,
+          fixFeature(parentFeature.feature, sortedParentParents, None, Map.empty, Map.empty,
             fillHighlightedName=parseParams.tokens.size > 0,
             includeAllNames=responseIncludes(ResponseIncludes.PARENT_ALL_NAMES),
             parentIds=parentFeature.scoringFeatures.parentIds)
@@ -494,7 +509,7 @@ class ResponseProcessor(
             val sortedParents = p(0).fmatch.scoringFeatures.parentIds
               .flatMap(id => StoredFeatureId.fromLong(id).flatMap(parentMap.get))
               .sorted(GeocodeServingFeatureOrdering)
-            fixFeatureMutable(interp.feature.mutable, sortedParents, Some(p), polygonMap,
+            fixFeatureMutable(interp.feature.mutable, sortedParents, Some(p), polygonMap, s2CoveringMap,
               numExtraParentsRequired=1, fillHighlightedName=parseParams.tokens.size > 0,
               includeAllNames=responseIncludes(ResponseIncludes.PARENT_ALL_NAMES))
           })
@@ -624,8 +639,14 @@ class ResponseProcessor(
     } else {
       Map.empty
     }
+    val s2CoveringMap: Map[StoredFeatureId, Seq[Long]] = if (GeocodeRequestUtils.responseIncludes(req, ResponseIncludes.S2_COVERING)) {
+      store.getS2CoveringByFeatureIds(sortedDedupedParses.flatMap(p =>
+        StoredFeatureId.fromLong(p(0).fmatch.longId)))
+    } else {
+      Map.empty
+    }
     generateResponse(hydrateParses(
-      sortedDedupedParses, parseParams, polygonMap, fixAmbiguousNames = true,
+      sortedDedupedParses, parseParams, polygonMap, s2CoveringMap, fixAmbiguousNames = true,
       dedupByMatchedName = dedupByMatchedName),
       requestGeom
     )

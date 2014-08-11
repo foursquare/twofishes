@@ -131,6 +131,8 @@ struct FeatureGeometry {
   7: optional GeocodeBoundingBox displayBounds
 
   8: optional string source
+
+  9: optional list<i64> s2Covering
 }
 
 enum GeocodeRelationType {
@@ -276,6 +278,8 @@ enum ResponseIncludes {
   // make display in json much more pleasant
   WKB_GEOMETRY_SIMPLIFIED
   WKT_GEOMETRY_SIMPLIFIED
+  // include s2 covering of geometry as a list of s2 cell ids
+  S2_COVERING
 }
 
 enum AutocompleteBias {

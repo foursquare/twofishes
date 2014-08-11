@@ -8,9 +8,15 @@ import java.io.{ByteArrayInputStream, ByteArrayOutputStream, DataInputStream, Da
 import scalaj.collection.Implicits._
 
 trait RevGeoConstants {
-  val minS2Level = 8
-  val maxS2Level = 12
-  val defaultLevelMod = 2
+  val minS2LevelForRevGeo = 8
+  val maxS2LevelForRevGeo = 12
+  val defaultLevelModForRevGeo = 2
+}
+
+trait S2CoveringConstants {
+  val minS2LevelForS2Covering = 4
+  val maxS2LevelForS2Covering = 20
+  val defaultLevelModForS2Covering = 1
 }
 
 object RevGeoConstants extends RevGeoConstants
@@ -101,10 +107,10 @@ object GeometryUtils extends RevGeoConstants {
   }
 
   def s2PolygonCovering(geomCollection: Geometry,
-    minS2Level: Int = minS2Level,
-    maxS2Level: Int = maxS2Level,
+    minS2Level: Int = minS2LevelForRevGeo,
+    maxS2Level: Int = maxS2LevelForRevGeo,
     maxCellsHintWhichMightBeIgnored: Option[Int] = None,
-    levelMod: Option[Int] = Some(defaultLevelMod)
+    levelMod: Option[Int] = Some(defaultLevelModForRevGeo)
   ): Seq[S2CellId] = {
     if (geomCollection.isInstanceOf[Point]) {
       val point = geomCollection.asInstanceOf[Point]

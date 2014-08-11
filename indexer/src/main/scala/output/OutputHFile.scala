@@ -21,16 +21,17 @@ class OutputIndexes(
   basepath: String,
   outputPrefixIndex: Boolean = true,
   slugEntryMap: SlugEntryMap.SlugEntryMap = HashMap.empty,
-  outputRevgeo: Boolean = true
+  outputRevgeo: Boolean = true,
+  outputS2Covering: Boolean = true
 ) extends DurationUtils {
-  def buildIndexes(revgeoLatch: Option[CountDownLatch]) {
+  def buildIndexes(s2CoveringLatch: Option[CountDownLatch]) {
     val fidMap = logPhase("preload fid map") { new FidMap(preload = true) }
 
     // This one wastes a lot of ram, so do it on it's own
     (new NameIndexer(basepath, fidMap, outputPrefixIndex)).writeIndex()
 
     // this should really really be done by now
-    revgeoLatch.foreach(_.await())
+    s2CoveringLatch.foreach(_.await())
 
     val hasPolyCursor =
       MongoGeocodeDAO.find(MongoDBObject("hasPoly" -> true))
@@ -48,6 +49,8 @@ class OutputIndexes(
       new PolygonIndexer(basepath, fidMap)
     ) ++ (if (outputRevgeo) {
       List(new RevGeoIndexer(basepath, fidMap, polygonMap))
+    } else { Nil }) ++ (if (outputS2Covering) {
+      List(new S2CoveringIndexer(basepath, fidMap))
     } else { Nil })
 
     val diskIoFuturePool = FuturePool(Executors.newFixedThreadPool(4))

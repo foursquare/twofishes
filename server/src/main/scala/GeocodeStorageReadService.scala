@@ -18,6 +18,8 @@ trait GeocodeStorageReadService {
   def getByS2CellId(id: Long): Seq[CellGeometry]
   def getPolygonByFeatureId(id: StoredFeatureId): Option[Geometry]
   def getPolygonByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, Geometry]
+  def getS2CoveringByFeatureId(id: StoredFeatureId): Option[Seq[Long]]
+  def getS2CoveringByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, Seq[Long]]
 
   def hotfixesDeletes: Seq[StoredFeatureId] = Nil
   def hotfixesBoosts: Map[StoredFeatureId, Int] = Map.empty

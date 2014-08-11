@@ -111,6 +111,8 @@ class PolygonLoader(
 
   val matchExtension = ".match.tsv"
 
+  val coverOptions = CoverOptions(parserConfig.outputS2Covering, parserConfig.outputRevgeo)
+
   def getMatchingForFile(
     f: File,
     defaultNamespace: FeatureNamespace
@@ -157,7 +159,7 @@ class PolygonLoader(
     Stats.incr("PolygonLoader.indexPolygon")
     val geomBytes = wkbWriter.write(geom)
     PolygonIndexDAO.save(PolygonIndex(polyId, geomBytes, source))
-    parser.revGeoMaster.foreach(_ ! CalculateCover(polyId, geomBytes))
+    parser.s2CoveringMaster.foreach(_ ! CalculateCover(polyId, geomBytes, coverOptions))
   }
 
   def updateRecord(
@@ -231,7 +233,7 @@ class PolygonLoader(
       }
     }
     logger.info("done reading in polys")
-    parser.revGeoMaster.foreach(_ ! Done())
+    parser.s2CoveringMaster.foreach(_ ! Done())
   }
 
   private def getFeaturesByPolyId(id: ObjectId) = {
@@ -244,10 +246,10 @@ class PolygonLoader(
     RevGeoIndexDAO.collection.drop()
     PolygonIndexDAO.primitiveProjections[ObjectId](MongoDBObject(), "_id")
       .grouped(1000).foreach(group => {
-        parser.revGeoMaster.foreach(_ ! CalculateCoverFromMongo(group.toList))
+        parser.s2CoveringMaster.foreach(_ ! CalculateCoverFromMongo(group.toList, coverOptions))
       })
     logger.info("done reading in polys")
-    parser.revGeoMaster.foreach(_ ! Done())
+    parser.s2CoveringMaster.foreach(_ ! Done())
   }
 
   def buildQuery(geometry: Geometry, woeTypes: List[YahooWoeType]) = {
