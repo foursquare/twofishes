@@ -195,7 +195,7 @@ class MapFileInput[K, V](basepath: String, index: Index[K, V], shouldPreload: Bo
     val (rv, duration) = Duration.inMilliseconds {
       val keyBytes = index.keySerde.toBytes(key)
       if (reader.get(new BytesWritable(keyBytes), valueBytes) != null) {
-        Some(index.valueSerde.fromBytes(valueBytes.getBytes))
+        Some(index.valueSerde.fromBytes(valueBytes.copyBytes))
       } else {
         None
       }
