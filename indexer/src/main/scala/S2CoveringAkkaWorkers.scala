@@ -71,7 +71,7 @@ class S2CoveringWorker extends Actor with DurationUtils with RevGeoConstants wit
           GeometryUtils.s2PolygonCovering(
             geom, minS2LevelForS2Covering, maxS2LevelForS2Covering,
             levelMod = Some(defaultLevelModForS2Covering),
-            maxCellsHintWhichMightBeIgnored = Some(50)
+            maxCellsHintWhichMightBeIgnored = Some(200)
           ).toList
         }
 
