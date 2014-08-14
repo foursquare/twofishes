@@ -115,6 +115,21 @@ object GeocodeParseOrdering {
     }
   }
 
+  private def isWorldCity(feature: GeocodeFeature): Boolean = {
+    (for {
+      attributes <- feature.attributesOption
+      worldcity <- attributes.worldcityOption
+    } yield {
+      worldcity
+    }).has(true)
+  }
+
+  val penalizeNonWorldCities: ScoringFunc = {
+    case args if (!isWorldCity(args.primaryFeature.feature)) => {
+      ScorerResponseWithScoreAndMessage(-100000000, "not a world city")
+    }
+  }
+
   def distanceBoostForPoint(args: ScorerArguments, ll: GeocodePoint, clampPenalty: Boolean): ScorerResponse = {
     val distance = if (args.primaryFeature.feature.geometry.boundsOption.nonEmpty) {
       GeoTools.distanceFromPointToBounds(ll, args.primaryFeature.feature.geometry.boundsOrThrow)
@@ -285,6 +300,14 @@ object GeocodeParseOrdering {
     ScoringTerm(populationBoost, 0.1),
     ScoringTerm(promoteCountryHintMatch, 10.0),
     ScoringTerm(distanceToBoundsOrLatLngHintClampedPenalty),
+    ScoringTerm(manualBoost, 0.001)
+  )
+
+  val scorersForAutocompleteWorldCityBias: List[ScoringTerm] = commonScorersForAutocomplete ++ List(
+    ScoringTerm(populationBoost, 0.1),
+    ScoringTerm(penalizeNonWorldCities),
+    ScoringTerm(promoteCountryHintMatch, 10.0),
+    ScoringTerm(distanceToBoundsOrLatLngHintClampedPenalty, 0.0),
     ScoringTerm(manualBoost, 0.001)
   )
 

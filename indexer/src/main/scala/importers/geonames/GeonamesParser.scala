@@ -547,6 +547,9 @@ class GeonamesParser(
       sfeature.propMap.get("adm0cap").foreach(v =>
         attributesBuilder.adm0cap(v.toDouble.toInt == 1)
       )
+      sfeature.propMap.get("worldcity").foreach(v =>
+        attributesBuilder.worldcity(v.toDouble.toInt == 1)
+      )
       sfeature.propMap.get("scalerank").foreach(v =>
         attributesBuilder.scalerank(v.toInt)
       )

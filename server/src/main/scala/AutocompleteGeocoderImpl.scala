@@ -306,9 +306,18 @@ class AutocompleteGeocoderImpl(
           new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteGlobalBias, "globalBias"))
         val globalRelevanceCutoff = 1000000
 
+        val worldCities = validParses.sorted(
+          new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteWorldCityBias, "worldCity"))
+          .filter(_.finalScore >= 0)
+          .take(1)
+        val worldCityIds = worldCities.map(_.primaryFeature.fmatch.longId).toSet
+
         val locallyRelevant = validParses.sorted(
           new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteStrictLocal, "strictLocal"))
-          .filter(_.finalScore >= 0)
+          .filter(r => {
+            val id = r.primaryFeature.fmatch.longId
+            r.finalScore >= 0 &&
+            !worldCityIds.has(id)})
           .take(1)
         val locallyRelevantIds = locallyRelevant.map(_.primaryFeature.fmatch.longId).toSet
 
@@ -317,6 +326,7 @@ class AutocompleteGeocoderImpl(
           .filter(r => {
             val id = r.primaryFeature.fmatch.longId
             r.finalScore >= globalRelevanceCutoff &&
+            !worldCityIds.has(id) &&
             !locallyRelevantIds.has(id)})
           .take(1)
         val inCountryGloballyRelevantIds = inCountryGloballyRelevant.map(_.primaryFeature.fmatch.longId).toSet
@@ -325,6 +335,7 @@ class AutocompleteGeocoderImpl(
           .filter(r => {
             val id = r.primaryFeature.fmatch.longId
             r.finalScore >= globalRelevanceCutoff &&
+            !worldCityIds.has(id) &&
             !locallyRelevantIds.has(id) &&
             !inCountryGloballyRelevantIds.has(id)})
           .take(1)
@@ -335,15 +346,17 @@ class AutocompleteGeocoderImpl(
           .filter(r => {
             val id = r.primaryFeature.fmatch.longId
             r.finalScore >= 0 &&
+            !worldCityIds.has(id) &&
             !locallyRelevantIds.has(id) &&
             !inCountryGloballyRelevantIds.has(id) &&
             !globallyRelevantIds.has(id)})
           .take(1)
         val inCountryIds = inCountry.map(_.primaryFeature.fmatch.longId).toSet
 
-        val mergedResults = locallyRelevant ++ inCountryGloballyRelevant ++ globallyRelevant ++ inCountry ++
+        val mergedResults = worldCities ++ locallyRelevant ++ inCountryGloballyRelevant ++ globallyRelevant ++ inCountry ++
           globalResults.filter(r => {
             val id = r.primaryFeature.fmatch.longId
+            !worldCityIds.has(id) &&
             !locallyRelevantIds.has(id) &&
             !inCountryGloballyRelevantIds.has(id) &&
             !globallyRelevantIds.has(id) &&

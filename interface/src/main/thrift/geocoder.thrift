@@ -164,6 +164,7 @@ struct GeocodeFeatureAttributes {
   7: optional bool sociallyRelevant = 0
   8: optional NeighborhoodType neighborhoodType
   9: optional list<string> urls
+  10: optional bool worldcity = 0
 }
 
 // index-only data structure
