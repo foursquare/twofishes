@@ -574,6 +574,8 @@ class GeonamesParser(
       attributesBuilder.neighborhoodType(NeighborhoodType.findByNameOrNull(v))
     )
 
+    attributesBuilder.urls(displayNames.filter(_.lang =? "link").map(_.name))
+
     val extraRelations = extraRelationsList.get(geonameId).map(_.split(",").toList.map(_.toLong)).flatten
 
     case class PolygonRecord(geom: Geometry) {

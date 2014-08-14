@@ -251,6 +251,18 @@ function success(data, bulkInputs) {
         sectionDiv.append(
           '<div class="highlightedName">For input indexes: ' + inputsForThisInterp.join(',') + '</div>');
       }
+
+      var links = []
+      _(feature.attributes.urls).each(function(url) {
+        var parser = document.createElement('a');
+        parser.href = url;
+        var link = '[<a href="' + url + '">' + parser.hostname + '</a>]';
+        links.push(link)
+      });
+      if (links.length > 0) {
+        sectionDiv.append('<div class="urls">' + links.join(' ') + '</div>');
+      }
+
       sectionDiv.append(jsonDiv);
       sectionDiv.append(mapDiv);
 
