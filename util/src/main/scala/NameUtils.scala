@@ -211,9 +211,7 @@ trait NameUtils {
           if (name.lang == l) {
             score += 40
           } else if (name.lang == "en") {
-            // since non-english names are filtered at index time if they're identical to the
-            // preferred english name, boost english names so they still rank highest, thereby
-            // also making english the most likely fallback in all other cases
+            // make english the most likely fallback if name does not exist in requested language
             score += 20
           } else {
             score += -20

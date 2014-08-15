@@ -449,10 +449,7 @@ class GeonamesParser(
     }
 
     // Build names
-    val englishName = preferredEnglishAltName.getOrElse(feature.name)
-    val alternateNames = alternateNamesMap.getOrElse(geonameId, Nil).filterNot(n =>
-      (n.name == englishName) && (n.lang != "en")
-    )
+    val alternateNames = alternateNamesMap.getOrElse(geonameId, Nil)
 
     val altNames = alternateNames.flatMap(altName => {
       processFeatureName(geonameId,
