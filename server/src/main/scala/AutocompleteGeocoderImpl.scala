@@ -302,20 +302,24 @@ class AutocompleteGeocoderImpl(
         new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteDefault, "default"))
 
       case AutocompleteBias.BALANCED => {
-        val worldCityRanker = new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteWorldCityBias, "worldCity")
-        val strictLocalRanker = new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteStrictLocal, "strictLocal")
-        val inCountryGlobalRanker = new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteStrictInCountryGlobal, "inCountryGlobal")
-        val globalBiasRanker = new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteGlobalBias, "globalBias")
-        val localBiasRanker = new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteLocalBias, "localBias")
-
         val globalRelevanceCutoff = 1000000
         val defaultCutoff = 0
 
+        val worldCityRanker = new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteWorldCityBias, "worldCity")
         val worldCities = OrderedParseGroup(worldCityRanker, Some(defaultCutoff), Some(1))
+
+        val strictLocalRanker = new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteStrictLocal, "strictLocal")
         val locallyRelevant = OrderedParseGroup(strictLocalRanker, Some(defaultCutoff), Some(1))
+
+        val inCountryGlobalRanker = new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteStrictInCountryGlobal, "inCountryGlobal")
         val inCountryGloballyRelevant = OrderedParseGroup(inCountryGlobalRanker, Some(globalRelevanceCutoff), Some(1))
+
+        val globalBiasRanker = new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteGlobalBias, "globalBias")
         val globallyRelevant = OrderedParseGroup(globalBiasRanker, Some(globalRelevanceCutoff), Some(1))
+
+        val localBiasRanker = new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteLocalBias, "localBias")
         val inCountry = OrderedParseGroup(localBiasRanker, Some(defaultCutoff), Some(1))
+
         val rest = OrderedParseGroup(globalBiasRanker, None, None)
 
         val merger = new OrderedParseGroupMerger(
