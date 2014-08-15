@@ -621,7 +621,7 @@ class ResponseProcessor(
       if (req.debug > 0) {
         logger.ifDebug("%d parses after deduping", dedupedParses.size)
         dedupedParses.zipWithIndex.foreach({case (parse, index) =>
-          logger.ifDebug("%d: deduped parse ids: %s (score: %f)", index, parse.map(f =>
+          logger.ifDebug("%d: deduped parse ids: %s (score: %d)", index, parse.map(f =>
             StoredFeatureId.fromLong(f.fmatch.longId).get), parse.finalScore)
         })
       }

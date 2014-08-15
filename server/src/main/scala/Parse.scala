@@ -42,7 +42,7 @@ case class Parse[T <: MaybeSorted](
   def primaryFeature = fmatches(0)
 
   val debugLines = new ListBuffer[DebugScoreComponent]
-  var finalScore = 0.0
+  var finalScore = 0
   var scoringFeaturesOption: Option[InterpretationScoringFeatures] = None
   var allLongIds: Seq[Long] = Nil
   lazy val extraLongIds: Seq[Long] = allLongIds.filterNot(_ =? featureId.longId)
@@ -51,7 +51,7 @@ case class Parse[T <: MaybeSorted](
     debugLines.append(component)
   }
 
-  def setFinalScore(score: Double) { finalScore = score }
+  def setFinalScore(score: Int) { finalScore = score }
 
   def setScoringFeatures(scoringFeaturesIn: Option[InterpretationScoringFeatures]) {
     scoringFeaturesOption = scoringFeaturesIn

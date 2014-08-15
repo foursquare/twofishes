@@ -301,68 +301,35 @@ class AutocompleteGeocoderImpl(
       case AutocompleteBias.NONE => validParses.sorted(
         new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteDefault, "default"))
 
-      case AutocompleteBias.BALANCED =>
-        val globalResults = validParses.sorted(
-          new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteGlobalBias, "globalBias"))
+      case AutocompleteBias.BALANCED => {
+        val worldCityRanker = new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteWorldCityBias, "worldCity")
+        val strictLocalRanker = new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteStrictLocal, "strictLocal")
+        val inCountryGlobalRanker = new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteStrictInCountryGlobal, "inCountryGlobal")
+        val globalBiasRanker = new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteGlobalBias, "globalBias")
+        val localBiasRanker = new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteLocalBias, "localBias")
+
         val globalRelevanceCutoff = 1000000
+        val defaultCutoff = 0
 
-        val worldCities = validParses.sorted(
-          new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteWorldCityBias, "worldCity"))
-          .filter(_.finalScore >= 0)
-          .take(1)
-        val worldCityIds = worldCities.map(_.primaryFeature.fmatch.longId).toSet
+        val worldCities = OrderedParseGroup(worldCityRanker, Some(defaultCutoff), Some(1))
+        val locallyRelevant = OrderedParseGroup(strictLocalRanker, Some(defaultCutoff), Some(1))
+        val inCountryGloballyRelevant = OrderedParseGroup(inCountryGlobalRanker, Some(globalRelevanceCutoff), Some(1))
+        val globallyRelevant = OrderedParseGroup(globalBiasRanker, Some(globalRelevanceCutoff), Some(1))
+        val inCountry = OrderedParseGroup(localBiasRanker, Some(defaultCutoff), Some(1))
+        val rest = OrderedParseGroup(globalBiasRanker, None, None)
 
-        val locallyRelevant = validParses.sorted(
-          new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteStrictLocal, "strictLocal"))
-          .filter(r => {
-            val id = r.primaryFeature.fmatch.longId
-            r.finalScore >= 0 &&
-            !worldCityIds.has(id)})
-          .take(1)
-        val locallyRelevantIds = locallyRelevant.map(_.primaryFeature.fmatch.longId).toSet
+        val merger = new OrderedParseGroupMerger(
+          validParses,
+          Seq(
+            worldCities,
+            locallyRelevant,
+            inCountryGloballyRelevant,
+            globallyRelevant,
+            inCountry,
+            rest))
 
-        val inCountryGloballyRelevant = validParses.sorted(
-          new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteStrictInCountryGlobal, "inCountryGlobal"))
-          .filter(r => {
-            val id = r.primaryFeature.fmatch.longId
-            r.finalScore >= globalRelevanceCutoff &&
-            !worldCityIds.has(id) &&
-            !locallyRelevantIds.has(id)})
-          .take(1)
-        val inCountryGloballyRelevantIds = inCountryGloballyRelevant.map(_.primaryFeature.fmatch.longId).toSet
-
-        val globallyRelevant = globalResults
-          .filter(r => {
-            val id = r.primaryFeature.fmatch.longId
-            r.finalScore >= globalRelevanceCutoff &&
-            !worldCityIds.has(id) &&
-            !locallyRelevantIds.has(id) &&
-            !inCountryGloballyRelevantIds.has(id)})
-          .take(1)
-        val globallyRelevantIds = globallyRelevant.map(_.primaryFeature.fmatch.longId).toSet
-
-        val inCountry = validParses.sorted(
-          new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteLocalBias, "localBias"))
-          .filter(r => {
-            val id = r.primaryFeature.fmatch.longId
-            r.finalScore >= 0 &&
-            !worldCityIds.has(id) &&
-            !locallyRelevantIds.has(id) &&
-            !inCountryGloballyRelevantIds.has(id) &&
-            !globallyRelevantIds.has(id)})
-          .take(1)
-        val inCountryIds = inCountry.map(_.primaryFeature.fmatch.longId).toSet
-
-        val mergedResults = worldCities ++ locallyRelevant ++ inCountryGloballyRelevant ++ globallyRelevant ++ inCountry ++
-          globalResults.filter(r => {
-            val id = r.primaryFeature.fmatch.longId
-            !worldCityIds.has(id) &&
-            !locallyRelevantIds.has(id) &&
-            !inCountryGloballyRelevantIds.has(id) &&
-            !globallyRelevantIds.has(id) &&
-            !inCountryIds.has(id)})
-
-        mergedResults
+        merger.merge()
+      }
 
       case AutocompleteBias.LOCAL => validParses.sorted(
         new GeocodeParseOrdering(store, commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteLocalBias, "localBias"))
