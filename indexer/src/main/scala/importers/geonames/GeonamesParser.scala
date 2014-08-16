@@ -117,7 +117,6 @@ object GeonamesParser extends DurationUtils {
 
   def makeFinalIndexes() {
     logPhase("making indexes before generating output") {
-      NameIndexDAO.makeIndexes()
       PolygonIndexDAO.makeIndexes()
       RevGeoIndexDAO.makeIndexes()
       S2CoveringIndexDAO.makeIndexes()
@@ -286,6 +285,10 @@ class GeonamesParser(
         })
       }
     )
+
+    logPhase("building name indexes pre parseNameTransforms") {
+      NameIndexDAO.makeIndexes()
+    }
 
     logPhase("parseNameTransforms") {
       parseNameTransforms()

@@ -29,6 +29,7 @@ case class NameIndex(
 object NameIndexDAO extends SalatDAO[NameIndex, String](
   collection = MongoConnection()("geocoder")("name_index")) {
   def makeIndexes() {
-    collection.ensureIndex(DBObject("name" -> -1, "pop" -> -1, "fid" -> 1, "excludeFromPrefixIndex" -> 1))
+    collection.ensureIndex(DBObject("name" -> -1, "excludeFromPrefixIndex" -> 1, "pop" -> -1))
+    collection.ensureIndex(DBObject("fid" -> 1, "lang" -> 1, "name" -> 1))
   }
 }
