@@ -16,7 +16,7 @@ The Data
 - [Twofishes Input Data File Documentation](docs/twofishes_inputs.md)
 
 
-Geonames is great, but not perfect. Southeast Asia doesn't have the most comprehensive coverage. Geonames doesn't have bounding boxes, so we add some of those from http://code.flickr.com/blog/2011/01/08/flickr-shapefiles-public-dataset-2-0/ where possible. 
+Geonames is great, but not perfect. Southeast Asia doesn't have the most comprehensive coverage. Geonames doesn't have bounding boxes, so we add some of those from http://code.flickr.com/blog/2011/01/08/flickr-shapefiles-public-dataset-2-0/ where possible.
 
 Geonames is licensed under CC-BY http://www.geonames.org/. They take a pretty liberal interpretation of this and just ask for about page attribution if you make use of the data.
 Flickr shapefiles are public domain
@@ -39,7 +39,7 @@ US county data -- ftp://ftp2.census.gov/geo/tiger/TIGER2010/COUNTY/2010/
 ../shputils/shape-gn-matchr.py --dbname=gis --shp_name_keys=NAME10 --allowed_gn_classes='' --allowed_gn_codes=ADM2 --fallback_allowed_gn_classes='' --fallback_allowed_gn_codes='' tl_2010_us_county10.shp gn-us-adm2.shp
 
 MX locality data -- http://blog.diegovalle.net/2013/02/download-shapefiles-of-mexico.html
-ogr2ogr -t_srs EPSG:4326  mx-4326.shp MUNICIPIOS.shp 
+ogr2ogr -t_srs EPSG:4326  mx-4326.shp MUNICIPIOS.shp
 ./shputils/shape-gn-matchr.py --dbname=gis --shp_name_keys=NOM_MUN mx-4326.shp gn-mx-localities.shp
 
 Requirements
@@ -66,8 +66,9 @@ Data import
 Serving
 =======
 *   ./serve.py -p 8080 /output/dir – Where /output/dir will contain a subdirectory whose name will be the date of the most recent build, for example `2013-02-25-01-08-23.803740`. You need to point to this subdirectory or to a folder called `latest` which is created during the build process (in the twofishes directory) and is a symlink to the most recent dated subdirectory.
-*   server should be responding to finagle-thrift on the port specified (8080 by default), and responding to http requests at the next port up: <http://localhost:8081/?query=rego+park+ny> <http://localhost:8081/static/geocoder.html#rego+park>
-*   if you want to run vanilla thrift-rpc (not finagle). use ./sbt "server/run-main com.foursquare.twofishes.GeocodeThriftServer --port 8080 --hfile_basepath ." instead
+*   server should be responding to thrift (both vanilla and finagle flavors) on the port specified (8080 by default), and responding to http requests at the next port up: <http://localhost:8081/?query=rego+park+ny> <http://localhost:8081/static/geocoder.html#rego+park>
+
+
 NOTE: mongod is not required for serving, only index building.
 
 A better option is to run "./sbt server/assembly" and then use the resulting server/target/server-assembly-VERSION.jar. Serve that with java -jar JARFILE --hfile_basepath /directory
