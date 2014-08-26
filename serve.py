@@ -2,6 +2,7 @@
 
 import os
 import sys
+import locale
 from optparse import OptionParser
 
 usage = "usage: %prog [options] hfile_directory"
@@ -24,6 +25,11 @@ if len(args) != 1:
   parser.print_usage()
   sys.exit(1)
 
+if locale.getdefaultlocale()[1] != 'UTF-8':
+  print "locale is not UTF-8, unsure if this will work"
+  print "see: http://perlgeek.de/en/article/set-up-a-clean-utf8-environment for details"
+  sys.exit(1)
+
 basepath = os.path.abspath(args[0])
 
 sbt = './sbt'
@@ -31,7 +37,6 @@ if options.rebel:
   sbt = './sbt-rebel'
 
 args = ' --preload %s --warmup %s ' % (options.preload, options.warmup)
-
 
 cmd = '%s "server/run-main com.foursquare.twofishes.GeocodeFinagleServer %s --port %d --hfile_basepath %s"' % (sbt, args, options.port, basepath)
 print(cmd)
