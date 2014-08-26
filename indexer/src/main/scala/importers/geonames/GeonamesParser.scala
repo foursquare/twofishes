@@ -149,7 +149,7 @@ class GeonamesParser(
   store: GeocodeStorageWriteService,
   slugIndexer: SlugIndexer
 ) extends Logging {
-  val polygonLoader = new PolygonLoader(this, store, config)
+  lazy val polygonLoader = new PolygonLoader(this, store, config)
   lazy val hierarchyTable = HierarchyParser.parseHierarchy(List(
     "data/downloaded/hierarchy.txt",
     "data/private/hierarchy.txt",
