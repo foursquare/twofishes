@@ -16,6 +16,7 @@ import com.twitter.util.{Await, Future, FuturePool, RingBuffer}
 import com.weiglewilczek.slf4s.Logging
 import java.io.InputStream
 import java.net.InetSocketAddress
+import java.nio.charset.Charset
 import java.util.Date
 import java.util.concurrent.{ConcurrentHashMap, Executors}
 import org.apache.thrift.{TBase, TDeserializer, TFieldIdEnum, TSerializer}
@@ -67,6 +68,10 @@ class QueryLogHttpHandler(
 }
 
 class QueryLoggingGeocodeServerImpl(service: Geocoder.ServiceIface) extends Geocoder.ServiceIface with Logging {
+  if (Charset.defaultCharset() != "UTF-8") {
+    throw new Exception("Default charset is not utf-8, this server probably won't work. see: http://perlgeek.de/en/article/set-up-a-clean-utf8-environment")
+  }
+
   val queryMap = new ConcurrentHashMap[ObjectId, (TBase[_, _], Long)]
 
   val recentQueries = new RingBuffer[(TBase[_, _], Long, Long)](1000)
