@@ -313,7 +313,7 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) extends
   override def parents: List[String] = {
     AdminLevel.values.filter(_ < featureClass.adminLevel).flatMap(l =>
       makeAdminId(l)
-    ).toList.filterNot(_.contains(".00"))
+    ).toList.filterNot(_.endsWith(".00"))
   }
 
   override def population: Option[Int] = flatTryO {values.get(POPULATION).map(_.toInt)}
