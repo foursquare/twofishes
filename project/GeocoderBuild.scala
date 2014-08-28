@@ -144,6 +144,14 @@ object GeocoderBuild extends Build {
   lazy val server = Project(id = "server",
       settings = graphSettings ++ scoptSettings ++ defaultSettings ++ assemblySettings ++ specsSettings ++ Seq(
         mainClass in assembly := Some("com.foursquare.twofishes.GeocodeFinagleServer"),
+        initialCommands := """
+        import com.foursquare.twofishes._
+        import com.foursquare.twofishes.util._
+        
+        val config: GeocodeServerConfig = GeocodeServerConfigSingleton.init(args)
+        val store = ServerStore.getStore(config)
+        val server = new GeocodeServerImpl(store, false)
+        """,
         baseDirectory in run := file("."),
         publishArtifact := true,
         libraryDependencies ++= Seq(

@@ -17,6 +17,8 @@ parser.add_option("--nopreload", dest="preload",  default=False, action='store_f
   help="don't preload index to prevent coldstart, decrease startup time, increases intial latency")
 parser.add_option("-r", "--rebel", dest="rebel",  default=False, action='store_true',
   help="rebel")
+parser.add_option("-c", "--console", dest="console",  default=False, action='store_true',
+  help="console, not server")
 
 
 (options, args) = parser.parse_args()
@@ -38,7 +40,12 @@ if options.rebel:
 
 args = ' --preload %s --warmup %s ' % (options.preload, options.warmup)
 
-cmd = '%s "server/run-main com.foursquare.twofishes.GeocodeFinagleServer %s --port %d --hfile_basepath %s"' % (sbt, args, options.port, basepath)
+if options.console:
+  target = 'console'
+else:
+  target = 'run-main'
+
+cmd = '%s "server/%s com.foursquare.twofishes.GeocodeFinagleServer %s --port %d --hfile_basepath %s"' % (sbt, target, args, options.port, basepath)
 print(cmd)
 os.system(cmd)
 
