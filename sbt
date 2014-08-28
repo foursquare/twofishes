@@ -1,4 +1,4 @@
-#!/bin/sh
+
 echo $JAVA_HOME
 if [ -z $JAVA_HOME ]
 then
@@ -9,8 +9,8 @@ else
   echo running java at $JAVA_BINARY
 fi
 
-$JAVA_BINARY -version | grep '1.8' &> /dev/null
-if [ $? -eq 1 ]; then
+$JAVA_BINARY -version 2>&1 | grep -q '1.8'
+if [ $? == "0" ]; then
   echo "You are running java 1.8, scala 2.10 requires java 1.7"
   if [ "$(uname)" == "Darwin" ]; then
     echo "On mac, looking for 1.7"
