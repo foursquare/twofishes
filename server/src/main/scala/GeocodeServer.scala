@@ -68,7 +68,6 @@ class QueryLogHttpHandler(
 }
 
 class QueryLoggingGeocodeServerImpl(service: Geocoder.ServiceIface) extends Geocoder.ServiceIface with Logging {
-  println("Current default charset is: " + Charset.defaultCharset())
   if (Charset.defaultCharset() != Charset.forName("UTF-8")) {
     throw new Exception("Default charset is not utf-8, this server probably won't work. see: http://perlgeek.de/en/article/set-up-a-clean-utf8-environment")
   }
