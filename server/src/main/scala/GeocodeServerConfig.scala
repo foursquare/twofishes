@@ -4,6 +4,7 @@ package com.foursquare.twofishes
 case class GeocodeServerConfig(
   runHttpServer: Boolean = true,
   thriftServerPort: Int = 8080,
+  host: String = "0.0.0.0",
   hfileBasePath: String = "",
   shouldPreload: Boolean = true,
   shouldWarmup: Boolean = false,
@@ -24,6 +25,9 @@ object GeocodeServerConfigParser {
   def parse(args: Array[String]): GeocodeServerConfig = {
     val parser =
       new scopt.OptionParser[GeocodeServerConfig]("twofishes") {
+        opt[String]("host")
+          .text("bind to specified host (default 0.0.0.0)")
+          .action { (x, c) => c.copy(host = x) }
         opt[Int]('p', "port")
           .action { (x, c) => c.copy(thriftServerPort = x) }
           .text("port to run thrift server on")
