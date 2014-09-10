@@ -29,7 +29,8 @@ if len(args) != 1:
   parser.print_usage()
   sys.exit(1)
 
-if locale.getdefaultlocale()[1] != 'UTF-8':
+if (locale.getdefaultlocale()[1] != 'UTF-8' and
+    locale.getdefaultlocale()[1] != 'UTF8'):
   print "locale is not UTF-8, unsure if this will work"
   print "see: http://perlgeek.de/en/article/set-up-a-clean-utf8-environment for details"
   sys.exit(1)
