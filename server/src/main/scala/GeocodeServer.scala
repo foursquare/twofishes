@@ -408,7 +408,10 @@ object ServerStore {
   }
 
   def getStore(path: String, shouldPreload: Boolean): GeocodeStorageReadService = {
-    new HFileStorageService(path, shouldPreload)
+    val underlying = new HFileStorageService(path, shouldPreload)
+    new HotfixableGeocodeStorageService(
+      underlying,
+      new ConcreteHotfixStorageService(new JsonHotfixSource("/home/rahul/data/twofishes/hotfixes.json"), underlying))
   }
 }
 

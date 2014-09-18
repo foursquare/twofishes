@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorSystem, PoisonPill, Props}
 import akka.routing.{Broadcast, RoundRobinRouter}
 import com.mongodb.Bytes
 import com.foursquare.geo.shapes.ShapefileS2Util
-import com.foursquare.twofishes.util.{DurationUtils, GeometryUtils, RevGeoConstants, S2CoveringConstants}
+import com.foursquare.twofishes.util.{DurationUtils, GeometryCleanupUtils, GeometryUtils, RevGeoConstants, S2CoveringConstants}
 import com.foursquare.twofishes.mongo.{PolygonIndexDAO, RevGeoIndexDAO, RevGeoIndex, S2CoveringIndexDAO, S2CoveringIndex}
 import com.google.common.geometry.S2CellId
 import com.mongodb.casbah.Imports._
@@ -15,7 +15,6 @@ import com.vividsolutions.jts.io.{WKBReader, WKBWriter}
 import com.weiglewilczek.slf4s.Logging
 import java.util.concurrent.CountDownLatch
 import org.bson.types.ObjectId
-import scala.collection.JavaConverters._
 import scalaj.collection.Implicits._
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -71,7 +70,7 @@ class S2CoveringWorker extends Actor with DurationUtils with RevGeoConstants wit
           GeometryUtils.s2PolygonCovering(
             geom, minS2LevelForS2Covering, maxS2LevelForS2Covering,
             levelMod = Some(defaultLevelModForS2Covering),
-            maxCellsHintWhichMightBeIgnored = Some(50)
+            maxCellsHintWhichMightBeIgnored = Some(defaultMaxCellsHintForS2Covering)
           ).toList
         }
 
@@ -85,7 +84,7 @@ class S2CoveringWorker extends Actor with DurationUtils with RevGeoConstants wit
           GeometryUtils.s2PolygonCovering(
             geom, minS2LevelForRevGeo, maxS2LevelForRevGeo,
             levelMod = Some(defaultLevelModForRevGeo),
-            maxCellsHintWhichMightBeIgnored = Some(1000)
+            maxCellsHintWhichMightBeIgnored = Some(defaultMaxCellsHintForRevGeo)
           )
         }
 
@@ -106,7 +105,7 @@ class S2CoveringWorker extends Actor with DurationUtils with RevGeoConstants wit
               } else {
                 val intersection = s2shape.intersection(recordShape)
                 val geomToIndex = if (intersection.getGeometryType == "GeometryCollection") {
-                  cleanupGeometryCollection(intersection)
+                  GeometryCleanupUtils.cleanupGeometryCollection(intersection)
                 } else {
                   intersection
                 }
@@ -122,17 +121,6 @@ class S2CoveringWorker extends Actor with DurationUtils with RevGeoConstants wit
         }
       }
     }
-  }
-
-  private def cleanupGeometryCollection(geom: Geometry): Geometry = {
-    val geometryCount = geom.getNumGeometries
-    val polygons = for {
-      i <- 0 to geometryCount - 1
-      geometry = geom.getGeometryN(i)
-      if (geometry.getGeometryType == "Polygon" ||
-          geometry.getGeometryType == "MultiPolygon")
-    } yield geometry
-    geom.getFactory.buildGeometry(polygons.asJavaCollection)
   }
 
   def receive = {
