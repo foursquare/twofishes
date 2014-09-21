@@ -85,7 +85,7 @@ if options.reload_data and not options.yes_i_am_sure:
     print "re-run with --noreload if you want to keep your mongo data around instead of rebuilding it"
     sys.exit(1)
 
-cmd = './sbt %s "indexer/run-main com.foursquare.twofishes.importers.geonames.GeonamesParser %s --hfile_basepath %s %s"' % (' '.join(jvm_args), cmd_opts, basepath, ' '.join(args))
+cmd = './sbt %s "indexer/run-main com.foursquare.twofishes.indexer.IndexRunner %s --hfile_basepath %s %s"' % (' '.join(jvm_args), cmd_opts, basepath, ' '.join(args))
 print(cmd)
 
 version_file = open(os.path.join(basepath, 'index-gen-info-%s' % now_str), 'w')

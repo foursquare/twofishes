@@ -22,15 +22,10 @@ case class GeonamesImporterConfig(
   boundingBoxDirectory: String = "./data/computed/bboxes/",
 
   buildMissingSlugs: Boolean = false,
-  hfileBasePath: String = null,
-  outputPrefixIndex: Boolean = true,
-  outputRevgeo: Boolean = false,
-  outputS2Covering: Boolean = false,
-  reloadData: Boolean = true,
+
+  createUnmatchedFeatures: Boolean = false,
   redoPolygonMatching: Boolean = false,
-  skipPolygonMatching: Boolean = false,
-  revgeoIndexPoints: Boolean = false,
-  createUnmatchedFeatures: Boolean = false
+  skipPolygonMatching: Boolean = false
 )
 
 object GeonamesImporterConfigParser {
@@ -46,37 +41,18 @@ object GeonamesImporterConfigParser {
         opt[Boolean]("parse_postal_codes")
           .text("parse postal codes")
           .action{ (v, c) => c.copy(importPostalCodes = v) }
-        opt[String]("hfile_basepath")
-          .text("directory to output hfiles to")
-          .action{ (v, c) => c.copy(hfileBasePath = v )}
-          .required()
         opt[Boolean]("parse_alternate_names")
           .text("parse alternate names")
           .action{ (v, c) => c.copy(importAlternateNames = v ) }
-        opt[Boolean]("output_prefix_index")
-          .text("wheter or not to output autocomplete acceleration index")
-          .action{ (v, c) => c.copy(outputPrefixIndex = v) }
         opt[Boolean]("build_missing_slugs")
           .text("build pretty hopefully stable slugs per feature")
           .action{ (v, c) => c.copy(buildMissingSlugs = v ) }
-        opt[Boolean]("output_revgeo_index")
-          .text("whether or not to output s2 revgeo index")
-          .action{ (v, c) => c.copy(outputRevgeo = v) }
-        opt[Boolean]("output_s2_covering_index")
-          .text("whether or not to output s2 covering index")
-          .action{ (v, c) => c.copy(outputS2Covering = v) }
-        opt[Boolean]("reload_data")
-          .text("reload data into mongo")
-          .action{ (v, c) => c.copy(reloadData = v) }
         opt[Boolean]("redo_polygon_matching")
           .text("redo polygon matches for files which have a mapping.json")
           .action{ (v, c) => c.copy(redoPolygonMatching = v) }
         opt[Boolean]("skip_polygon_matching")
           .text("don't try to match polygons to geonames features for which we don't have a mapping")
           .action{ (v, c) => c.copy(skipPolygonMatching = v) }
-        opt[Boolean]("revgeo_index_points")
-          .text("index point features for radius queries")
-          .action{ (v, c) => c.copy(revgeoIndexPoints = v) }
         opt[Boolean]("create_unmatched_features")
           .text("create features for unmatched polygons")
           .action{ (v, c) => c.copy(createUnmatchedFeatures = v) }

@@ -1,6 +1,7 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.importers.geonames
 
+import com.foursquare.twofishes.indexer.IndexRunner
 import com.foursquare.geo.shapes.{FsqSimpleFeature, GeoJsonIterator, ShapeIterator, ShapefileIterator}
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes._
@@ -111,7 +112,7 @@ class PolygonLoader(
 
   val matchExtension = ".match.tsv"
 
-  val coverOptions = CoverOptions(parserConfig.outputS2Covering, parserConfig.outputRevgeo)
+  val coverOptions = CoverOptions(IndexRunner.config.outputS2Covering, IndexRunner.config.outputRevgeo)
 
   def getMatchingForFile(
     f: File,
@@ -159,7 +160,7 @@ class PolygonLoader(
     Stats.incr("PolygonLoader.indexPolygon")
     val geomBytes = wkbWriter.write(geom)
     PolygonIndexDAO.save(PolygonIndex(polyId, geomBytes, source))
-    parser.s2CoveringMaster.foreach(_ ! CalculateCover(polyId, geomBytes, coverOptions))
+    IndexRunner.s2CoveringMaster.foreach(_ ! CalculateCover(polyId, geomBytes, coverOptions))
   }
 
   def updateRecord(
@@ -233,7 +234,7 @@ class PolygonLoader(
       }
     }
     logger.info("done reading in polys")
-    parser.s2CoveringMaster.foreach(_ ! Done())
+    IndexRunner.s2CoveringMaster.foreach(_ ! Done())
   }
 
   private def getFeaturesByPolyId(id: ObjectId) = {
@@ -246,10 +247,10 @@ class PolygonLoader(
     RevGeoIndexDAO.collection.drop()
     PolygonIndexDAO.primitiveProjections[ObjectId](MongoDBObject(), "_id")
       .grouped(1000).foreach(group => {
-        parser.s2CoveringMaster.foreach(_ ! CalculateCoverFromMongo(group.toList, coverOptions))
+        IndexRunner.s2CoveringMaster.foreach(_ ! CalculateCoverFromMongo(group.toList, coverOptions))
       })
     logger.info("done reading in polys")
-    parser.s2CoveringMaster.foreach(_ ! Done())
+    IndexRunner.s2CoveringMaster.foreach(_ ! Done())
   }
 
   def buildQuery(geometry: Geometry, woeTypes: List[YahooWoeType]) = {
