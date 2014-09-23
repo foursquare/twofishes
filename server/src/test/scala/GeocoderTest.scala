@@ -89,6 +89,8 @@ class MockGeocodeStorageReadService extends GeocodeStorageReadService {
   def getMinS2Level: Int = 8
   def getMaxS2Level: Int = 12
 
+  def refresh() { }
+
   var idCounter = 0
   def addGeocode(
     name: String,

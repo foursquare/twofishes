@@ -83,6 +83,7 @@ object DummyHotfixSource {
 
 class DummyHotfixSource extends HotfixSource {
   def getEdits(): Seq[GeocodeServingFeatureEdit] = DummyHotfixSource.edits
+  def refresh() { }
 }
 
 class ConcreteHotfixStorageService(
@@ -488,6 +489,7 @@ class ConcreteHotfixStorageService(
     s2CoveringIndex = Map.empty[Long, Seq[Long]]
     s2Index = Map.empty[Long, Seq[CellGeometry]]
 
+    source.refresh()
     init()
   }
 

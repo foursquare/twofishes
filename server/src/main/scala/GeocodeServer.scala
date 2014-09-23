@@ -404,14 +404,20 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
 
 object ServerStore {
   def getStore(config: GeocodeServerConfig): GeocodeStorageReadService = {
-    getStore(config.hfileBasePath, config.shouldPreload)
+    getStore(config.hfileBasePath, config.shouldPreload, config.hotfixFilePath)
   }
 
-  def getStore(path: String, shouldPreload: Boolean): GeocodeStorageReadService = {
-    val underlying = new HFileStorageService(path, shouldPreload)
+  def getStore(hfileBasePath: String, shouldPreload: Boolean, hotfixFilePath: String): GeocodeStorageReadService = {
+    val underlying = new HFileStorageService(hfileBasePath, shouldPreload)
+    val hotfixSource = if (hotfixFilePath.nonEmpty) {
+      new JsonHotfixSource(hotfixFilePath)
+    } else {
+      new EmptyHotfixSource
+    }
+
     new HotfixableGeocodeStorageService(
       underlying,
-      new ConcreteHotfixStorageService(new JsonHotfixSource("/home/rahul/data/twofishes/hotfixes.json"), underlying))
+      new ConcreteHotfixStorageService(hotfixSource, underlying))
   }
 }
 

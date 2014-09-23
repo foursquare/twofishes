@@ -115,4 +115,10 @@ class HotfixableGeocodeStorageService(
       (id -> covering)
     }).toMap
   }
+
+  def refresh() {
+    // refresh underlying first so hotfixes are applied on top of latest data
+    underlying.refresh()
+    hotfix.refresh()
+  }
 }
