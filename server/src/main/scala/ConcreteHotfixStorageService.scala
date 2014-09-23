@@ -1,15 +1,15 @@
 // Copyright 2014 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes
 
+import com.foursquare.geo.shapes.ShapefileS2Util
 import com.foursquare.twofishes.util._
 import com.google.common.geometry.S2CellId
 import com.vividsolutions.jts.geom.{Point, Geometry}
-import com.weiglewilczek.slf4s.Logging
-import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
-import org.geotools.geojson.geom.GeometryJSON
 import com.vividsolutions.jts.geom.prep.PreparedGeometryFactory
-import com.foursquare.geo.shapes.ShapefileS2Util
+import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
+import com.weiglewilczek.slf4s.Logging
 import java.nio.ByteBuffer
+import org.geotools.geojson.geom.GeometryJSON
 
 object DummyHotfixSource {
   val edits: List[GeocodeServingFeatureEdit] = List(
