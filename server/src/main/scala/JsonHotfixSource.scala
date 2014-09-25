@@ -8,16 +8,21 @@ import org.apache.thrift.TDeserializer
 class JsonHotfixSource(originalPath: String) extends HotfixSource {
   val deserializer = new TDeserializer(new TReadableJSONProtocol.Factory())
   var path = ""
-  var edits = new RawGeocodeServingFeatureEdits
+  var allEdits: Seq[GeocodeServingFeatureEdit] = Seq()
 
   def init() {
     // reread canonical path in case symlink was modified between refreshes
     path = new File(originalPath).getCanonicalPath()
-    edits = new RawGeocodeServingFeatureEdits
-    deserializer.deserialize(edits, scala.io.Source.fromFile(path).getLines.toList.mkString("").getBytes)
+    val dir = new File(path)
+    allEdits = dir.listFiles.filter(f => f.getName.endsWith(".json")).flatMap(file => {
+      val edits = new RawGeocodeServingFeatureEdits
+      deserializer.deserialize(edits, scala.io.Source.fromFile(file).getLines.toList.mkString("").getBytes)
+      edits.edits
+    })
+
   }
 
-  def getEdits(): Seq[GeocodeServingFeatureEdit] = edits.edits
+  def getEdits(): Seq[GeocodeServingFeatureEdit] = allEdits
 
   def refresh() {
     init()

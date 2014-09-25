@@ -21,6 +21,8 @@ parser.add_option("-r", "--rebel", dest="rebel",  default=False, action='store_t
   help="rebel")
 parser.add_option("-c", "--console", dest="console",  default=False, action='store_true',
   help="console, not server")
+parser.add_option("--hotfix_basepath", dest="hotfix", default="", type='string',
+  help="path to hotfixes")
 
 
 (options, args) = parser.parse_args()
@@ -42,6 +44,8 @@ if options.rebel:
   sbt = './sbt-rebel'
 
 args = ' --preload %s --warmup %s ' % (options.preload, options.warmup)
+if (len(options.hotfix) > 0):
+  args += '--hotfix_basepath %s ' % options.hotfix
 
 if options.console:
   target = 'console'

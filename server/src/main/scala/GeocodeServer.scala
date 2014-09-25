@@ -117,6 +117,10 @@ class QueryLoggingGeocodeServerImpl(service: Geocoder.ServiceIface) extends Geoc
   def bulkSlugLookup(r: BulkSlugLookupRequest): Future[BulkSlugLookupResponse] = {
     queryLogProcessor(r, service.bulkSlugLookup)
   }
+
+  def refreshStore(r: RefreshStoreRequest): Future[RefreshStoreResponse] = {
+    queryLogProcessor(r, service.refreshStore)
+  }
 }
 
 class GeocodeServerImpl(store: GeocodeStorageReadService, doWarmup: Boolean) extends Geocoder.ServiceIface with Logging {
@@ -174,6 +178,16 @@ class GeocodeServerImpl(store: GeocodeStorageReadService, doWarmup: Boolean) ext
 
   def bulkSlugLookup(r: BulkSlugLookupRequest): Future[BulkSlugLookupResponse] = queryFuturePool {
     new BulkSlugLookupImpl(store, r).doGeocode()
+  }
+
+  def refreshStore(r: RefreshStoreRequest): Future[RefreshStoreResponse] = {
+    var success = true
+    try {
+      store.refresh
+    } catch {
+      case e: Exception => success = false
+    }
+    Future.value(RefreshStoreResponse(success))
   }
 }
 
@@ -377,6 +391,8 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
       handleQuery(getJsonRequest(BulkReverseGeocodeRequest), geocoder.bulkReverseGeocode, callback)
     } else if (path.startsWith("/search/bulkSlugLookup")) {
       handleQuery(getJsonRequest(BulkSlugLookupRequest), geocoder.bulkSlugLookup, callback)
+    } else if (path.startsWith("/private/refreshStore")) {
+      handleQuery(getJsonRequest(RefreshStoreRequest), geocoder.refreshStore, callback)
     } else if (params.size > 0) {
       val request = parseGeocodeRequest(params.toMap)
 
@@ -404,13 +420,13 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
 
 object ServerStore {
   def getStore(config: GeocodeServerConfig): GeocodeStorageReadService = {
-    getStore(config.hfileBasePath, config.shouldPreload, config.hotfixFilePath)
+    getStore(config.hfileBasePath, config.shouldPreload, config.hotfixBasePath)
   }
 
-  def getStore(hfileBasePath: String, shouldPreload: Boolean, hotfixFilePath: String): GeocodeStorageReadService = {
+  def getStore(hfileBasePath: String, shouldPreload: Boolean, hotfixBasePath: String): GeocodeStorageReadService = {
     val underlying = new HFileStorageService(hfileBasePath, shouldPreload)
-    val hotfixSource = if (hotfixFilePath.nonEmpty) {
-      new JsonHotfixSource(hotfixFilePath)
+    val hotfixSource = if (hotfixBasePath.nonEmpty) {
+      new JsonHotfixSource(hotfixBasePath)
     } else {
       new EmptyHotfixSource
     }

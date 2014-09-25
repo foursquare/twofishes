@@ -10,7 +10,7 @@ case class GeocodeServerConfig(
   shouldWarmup: Boolean = false,
   maxTokens: Int = 10,
   reload: Boolean = false,
-  hotfixFilePath: String = ""
+  hotfixBasePath: String = ""
 )
 
 object GeocodeServerConfigSingleton {
@@ -48,9 +48,9 @@ object GeocodeServerConfigParser {
         opt[Int]("max_tokens")
           .action { (x, c) => c.copy(maxTokens = x) }
           .text("maximum number of tokens to allow geocoding")
-        opt[String]("hotfix_filepath")
-          .text("path to file containing hotfixes")
-          .action { (x, c) => c.copy(hotfixFilePath = x) }
+        opt[String]("hotfix_basepath")
+          .text("directory containing hotfix files")
+          .action { (x, c) => c.copy(hotfixBasePath = x) }
         }
 
     // parser.parse returns Option[C]

@@ -425,9 +425,18 @@ struct BulkSlugLookupResponse {
   3: optional list<string> debugLines
 }
 
+struct RefreshStoreRequest {
+  1: optional string token
+}
+
+struct RefreshStoreResponse {
+  1: optional bool success
+}
+
 service Geocoder {
   GeocodeResponse geocode(1: GeocodeRequest r)
   GeocodeResponse reverseGeocode(1: GeocodeRequest r)
   BulkReverseGeocodeResponse bulkReverseGeocode(1: BulkReverseGeocodeRequest r)
   BulkSlugLookupResponse bulkSlugLookup(1: BulkSlugLookupRequest r)
+  RefreshStoreResponse refreshStore(1: RefreshStoreRequest r)
 }
