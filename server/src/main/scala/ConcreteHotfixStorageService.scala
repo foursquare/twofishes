@@ -260,7 +260,8 @@ class ConcreteHotfixStorageService(
           case EditType.Add => Some(
             GeocodeServingFeature.newBuilder
               .longId(edit.longId)
-              .scoringFeatures(ScoringFeatures.newBuilder.result)
+              // set canGeocode to true otherwise it defeats the purpose of adding a feature
+              .scoringFeatures(ScoringFeatures.newBuilder.canGeocode(true).result)
               .feature(
                 GeocodeFeature.newBuilder
                   .longId(edit.longId)
@@ -381,9 +382,18 @@ class ConcreteHotfixStorageService(
 
           // wktGeometry or geojsonGeometry
           if (edit.wktGeometryIsSet || edit.geojsonGeometryIsSet) {
+            def setHasPolyRankingFeature(hasPoly: Boolean) {
+              servingFeatureMutable.scoringFeatures_=({
+                servingFeatureMutable.scoringFeatures.toBuilder
+                  .hasPoly(hasPoly)
+                  .result
+              })
+            }
+
             if ((edit.wktGeometryIsSet && edit.wktGeometryOrThrow.isEmpty) ||
                 (edit.geojsonGeometryIsSet && edit.geojsonGeometryOrThrow.isEmpty)) {
               deletedPolygonFeatureLongIds += edit.longId
+              setHasPolyRankingFeature(false)
             } else {
               val geometry = if (edit.wktGeometryIsSet) {
                 wktReader.read(edit.wktGeometryOrThrow)
@@ -392,6 +402,7 @@ class ConcreteHotfixStorageService(
               }
               addedOrModifiedPolygonFeatureLongIds += edit.longId
               polygonIndex = polygonIndex + (edit.longId -> geometry)
+              setHasPolyRankingFeature(true)
               geometryMutable.source_=("hotfix")
 
               val s2Covering = GeometryUtils.s2PolygonCovering(
