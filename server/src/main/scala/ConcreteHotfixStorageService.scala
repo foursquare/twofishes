@@ -48,7 +48,7 @@ object DummyHotfixSource {
     GeocodeServingFeatureEdit.newBuilder
       .editType(EditType.Add)
       .longId(72057594039182724L)
-      .scoringFeaturesCreateOrMerge(ScoringFeatures.newBuilder.population(35286757).canGeocode(true).hasPoly(true).result)
+      .scoringFeaturesCreateOrMerge(ScoringFeatures.newBuilder.population(35286757).result)
       .cc("IN")
       .center(GeocodePoint(17.38405,78.45636))
       .bounds(GeocodeBoundingBox(GeocodePoint(20.262197124246534,81.89208984375), GeocodePoint(16.25686733062344,76.22314453125)))
