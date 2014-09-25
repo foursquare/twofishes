@@ -123,7 +123,11 @@ class QueryLoggingGeocodeServerImpl(service: Geocoder.ServiceIface) extends Geoc
   }
 }
 
-class GeocodeServerImpl(store: GeocodeStorageReadService, doWarmup: Boolean) extends Geocoder.ServiceIface with Logging {
+class GeocodeServerImpl(
+  store: GeocodeStorageReadService,
+  doWarmup: Boolean,
+  enableRefreshStoreEndpoint: Boolean = false
+) extends Geocoder.ServiceIface with Logging {
   val queryFuturePool = FuturePool(StatsWrappedExecutors.create(24, 100, "geocoder"))
 
   if (doWarmup) {
@@ -182,12 +186,14 @@ class GeocodeServerImpl(store: GeocodeStorageReadService, doWarmup: Boolean) ext
 
   def refreshStore(r: RefreshStoreRequest): Future[RefreshStoreResponse] = {
     var success = true
-    try {
-      store.refresh
-    } catch {
-      case e: Exception => success = false
+    if (enableRefreshStoreEndpoint) {
+      try {
+        store.refresh
+      } catch {
+        case e: Exception => success = false
+      }
     }
-    Future.value(RefreshStoreResponse(success))
+    Future.value(RefreshStoreResponse(enableRefreshStoreEndpoint && success))
   }
 }
 
@@ -450,7 +456,7 @@ object GeocodeFinagleServer extends Logging {
     val config: GeocodeServerConfig = GeocodeServerConfigSingleton.init(args)
 
     // Implement the Thrift Interface
-    val processor = new QueryLoggingGeocodeServerImpl(new GeocodeServerImpl(ServerStore.getStore(config), config.shouldWarmup))
+    val processor = new QueryLoggingGeocodeServerImpl(new GeocodeServerImpl(ServerStore.getStore(config), config.shouldWarmup, config.enableRefreshStoreEndpoint))
 
     // Convert the Thrift Processor to a Finagle Service
     val service = new Geocoder.Service(processor, new TBinaryProtocol.Factory())
