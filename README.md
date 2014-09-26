@@ -73,11 +73,23 @@ NOTE: mongod is not required for serving, only index building.
 
 A better option is to run "./sbt server/assembly" and then use the resulting server/target/server-assembly-VERSION.jar. Serve that with java -jar JARFILE --hfile_basepath /directory
 
+Hotfixes
+========
+NOTE: The legacy hotfix infrastructure only supports deleting features and modifying their boosts (via hotfixes\_deletes.txt and hotfixes\_boosts.txt respectively). This will be deprecated soon.
+
+Hotfixes are expressed as fine-grained edits on top of features in the index. Features can be quickly added, removed or modified on a live server without requiring a full index rebuild and redeploy. Most fields on a [GeocodeServingFeature](https://github.com/foursquare/twofishes/blob/master/interface/src/main/thrift/geocoder.thrift#L216) and fields on its nested structs can be edited via a [GeocodeServingFeatureEdit](https://github.com/foursquare/twofishes/blob/master/interface/src/main/thrift/hotfix_edits.thrift#L35) object.
+
+To enable hotfix support, the server can be pointed to a hotfix directory at startup via the --hotfix\_basepath param. Any .json files found in this directory will be deserialized from JSON to Thrift.
+
+There is only basic tooling to build these JSON hotfix files at present. In [JsonHotfixFileBuilder.scala](https://github.com/foursquare/twofishes/blob/master/server/src/main/scala/JsonHotfixFileBuilder.scala), use `GeocodeServingFeatureEdit.newBuilder` to build up individual hotfixes in code. Then run build-hotfix-file.py specifying an output file. I will provide a better way shortly.
+
+The server can reload hotfixes on-demand via the /refreshStore endpoint. There is no authentication on this endpoint (or any other private endpoints), so it is disabled by default. Use the --enable\_private\_endpoints param to enable at your own risk, only if your servers are not publicly accessible. When enabled, calling this endpoint on an individual server will cause it to re-scan the hotfix_basepath directory. Use the helper script refresh-store.py.
+
 Troubleshooting
 ===============
 If you see a java OutOfMemory error at start, you may need to up your # of mapped files
 
-on linux: sysctl -w vm.max_map_count = 131072
+on linux: sysctl -w vm.max\_map\_count = 131072
 
 Talking to the Server
 =====================

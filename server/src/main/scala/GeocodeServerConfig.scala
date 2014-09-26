@@ -11,7 +11,7 @@ case class GeocodeServerConfig(
   maxTokens: Int = 10,
   reload: Boolean = false,
   hotfixBasePath: String = "",
-  enableRefreshStoreEndpoint: Boolean = false
+  enablePrivateEndpoints: Boolean = false
 )
 
 object GeocodeServerConfigSingleton {
@@ -52,9 +52,9 @@ object GeocodeServerConfigParser {
         opt[String]("hotfix_basepath")
           .text("directory containing hotfix files")
           .action { (x, c) => c.copy(hotfixBasePath = x) }
-        opt[Boolean]("enable_refresh_store_endpoint")
-          .text("enable the refreshStore endpoint on server")
-          .action { (x, c) => c.copy(enableRefreshStoreEndpoint = x)}
+        opt[Boolean]("enable_private_endpoints")
+          .text("enable private endpoints on server")
+          .action { (x, c) => c.copy(enablePrivateEndpoints = x)}
         }
 
     // parser.parse returns Option[C]

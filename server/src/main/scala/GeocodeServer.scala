@@ -456,7 +456,7 @@ object GeocodeFinagleServer extends Logging {
     val config: GeocodeServerConfig = GeocodeServerConfigSingleton.init(args)
 
     // Implement the Thrift Interface
-    val processor = new QueryLoggingGeocodeServerImpl(new GeocodeServerImpl(ServerStore.getStore(config), config.shouldWarmup, config.enableRefreshStoreEndpoint))
+    val processor = new QueryLoggingGeocodeServerImpl(new GeocodeServerImpl(ServerStore.getStore(config), config.shouldWarmup, config.enablePrivateEndpoints))
 
     // Convert the Thrift Processor to a Finagle Service
     val service = new Geocoder.Service(processor, new TBinaryProtocol.Factory())

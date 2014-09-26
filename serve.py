@@ -23,8 +23,8 @@ parser.add_option("-c", "--console", dest="console",  default=False, action='sto
   help="console, not server")
 parser.add_option("--hotfix_basepath", dest="hotfix", default="", type='string',
   help="path to hotfixes")
-parser.add_option("--enable_refresh_store_endpoint", dest="enableRefresh", default=False, action='store_true',
-  help="enable refreshStore endpoint on server")
+parser.add_option("--enable_private_endpoints", dest="enablePrivate", default=False, action='store_true',
+  help="enable private endpoints on server")
 
 
 (options, args) = parser.parse_args()
@@ -45,7 +45,7 @@ sbt = './sbt'
 if options.rebel:
   sbt = './sbt-rebel'
 
-args = ' --preload %s --warmup %s --enable_refresh_store_endpoint %s ' % (options.preload, options.warmup, options.enableRefresh)
+args = ' --preload %s --warmup %s --enable_private_endpoints %s ' % (options.preload, options.warmup, options.enablePrivate)
 if (len(options.hotfix) > 0):
   args += '--hotfix_basepath %s ' % options.hotfix
 
