@@ -109,6 +109,10 @@ class HFileStorageService(originalBasepath: String, shouldPreload: Boolean) exte
   def getMaxS2Level: Int = s2map.maxS2Level
   override def getLevelMod: Int = s2map.levelMod
 
+  def refresh() {
+    // no-op: do not refresh hfiles on-demand
+  }
+
   override val hotfixesDeletes: Seq[StoredFeatureId] = {
     val file = new File(basepath, "hotfixes_deletes.txt")
     if (file.exists()) {

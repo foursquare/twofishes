@@ -9,7 +9,9 @@ case class GeocodeServerConfig(
   shouldPreload: Boolean = true,
   shouldWarmup: Boolean = false,
   maxTokens: Int = 10,
-  reload: Boolean = false
+  reload: Boolean = false,
+  hotfixBasePath: String = "",
+  enablePrivateEndpoints: Boolean = false
 )
 
 object GeocodeServerConfigSingleton {
@@ -47,6 +49,12 @@ object GeocodeServerConfigParser {
         opt[Int]("max_tokens")
           .action { (x, c) => c.copy(maxTokens = x) }
           .text("maximum number of tokens to allow geocoding")
+        opt[String]("hotfix_basepath")
+          .text("directory containing hotfix files")
+          .action { (x, c) => c.copy(hotfixBasePath = x) }
+        opt[Boolean]("enable_private_endpoints")
+          .text("enable private endpoints on server")
+          .action { (x, c) => c.copy(enablePrivateEndpoints = x)}
         }
 
     // parser.parse returns Option[C]
