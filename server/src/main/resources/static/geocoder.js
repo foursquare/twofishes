@@ -328,6 +328,17 @@ function success(data, bulkInputs) {
         map.addLayer(wkt.toObject({color: 'blue'}));
       }
 
+      var s2Covering = feature.geometry.s2Covering;
+      if (s2Covering) {
+        var req = { "cellIdsAsStrings": s2Covering };
+        var s2InfoUrl = 'http://' + window.location.host + '/private/getS2CellInfos?json=' + JSON.stringify(req);
+        $.getJSON(s2InfoUrl,
+            function(data) {
+              return successS2Info(data, map)
+            }
+          );
+      }
+
       var myIcon = L.icon({
         iconAnchor: [8, 8],
         iconUrl: '/static/leaflet/images/red_dot.png',
@@ -347,4 +358,14 @@ function success(data, bulkInputs) {
 
 function failure() {
   window.alert('something failed');
+}
+
+function successS2Info(data, map) {
+  if (data.cellInfos) {
+    _(data.cellInfos).each(function(cellInfo) {
+      var wkt = new Wkt.Wkt();
+      wkt.read(cellInfo.wktGeometry)
+      map.addLayer(wkt.toObject({color: 'yellow'}));
+    });
+  }
 }
