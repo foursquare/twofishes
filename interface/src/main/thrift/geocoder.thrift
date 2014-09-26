@@ -433,10 +433,25 @@ struct RefreshStoreResponse {
   1: optional bool success
 }
 
+struct S2CellInfoRequest {
+  1: optional list<string> cellIdsAsStrings
+}
+
+struct S2CellIdInfo {
+  1: optional i64 id
+  2: optional i32 level
+  3: optional string wktGeometry
+}
+
+struct S2CellInfoResponse {
+  1: optional list<S2CellIdInfo> cellInfos = []
+}
+
 service Geocoder {
   GeocodeResponse geocode(1: GeocodeRequest r)
   GeocodeResponse reverseGeocode(1: GeocodeRequest r)
   BulkReverseGeocodeResponse bulkReverseGeocode(1: BulkReverseGeocodeRequest r)
   BulkSlugLookupResponse bulkSlugLookup(1: BulkSlugLookupRequest r)
   RefreshStoreResponse refreshStore(1: RefreshStoreRequest r)
+  S2CellInfoResponse getS2CellInfos(1: S2CellInfoRequest r)
 }

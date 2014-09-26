@@ -5,6 +5,7 @@ import com.foursquare.common.thrift.json.TReadableJSONProtocol
 import com.foursquare.spindle.{MetaRecord, Record}
 import com.foursquare.twofishes.util.Helpers
 import com.foursquare.twofishes.util.Lists.Implicits._
+import com.google.common.geometry.S2CellId
 import com.twitter.finagle.{Service, SimpleFilter}
 import com.twitter.finagle.builder.{Server, ServerBuilder}
 import com.twitter.finagle.http.Http
@@ -28,6 +29,8 @@ import org.jboss.netty.util.CharsetUtil
 import scala.collection.mutable.ListBuffer
 import scala.io.BufferedSource
 import scalaj.collection.Implicits._
+import com.foursquare.geo.shapes.ShapefileS2Util
+import com.vividsolutions.jts.io.WKTWriter
 
 class QueryLogHttpHandler(
   queryMap: ConcurrentHashMap[ObjectId, (TBase[_, _], Long)],
@@ -121,12 +124,16 @@ class QueryLoggingGeocodeServerImpl(service: Geocoder.ServiceIface) extends Geoc
   def refreshStore(r: RefreshStoreRequest): Future[RefreshStoreResponse] = {
     queryLogProcessor(r, service.refreshStore)
   }
+
+  def getS2CellInfos(r: S2CellInfoRequest): Future[S2CellInfoResponse] = {
+    queryLogProcessor(r, service.getS2CellInfos)
+  }
 }
 
 class GeocodeServerImpl(
   store: GeocodeStorageReadService,
   doWarmup: Boolean,
-  enableRefreshStoreEndpoint: Boolean = false
+  enablePrivateEndpoints: Boolean = false
 ) extends Geocoder.ServiceIface with Logging {
   val queryFuturePool = FuturePool(StatsWrappedExecutors.create(24, 100, "geocoder"))
 
@@ -186,14 +193,31 @@ class GeocodeServerImpl(
 
   def refreshStore(r: RefreshStoreRequest): Future[RefreshStoreResponse] = {
     var success = true
-    if (enableRefreshStoreEndpoint) {
+    if (enablePrivateEndpoints) {
       try {
         store.refresh
       } catch {
         case e: Exception => success = false
       }
     }
-    Future.value(RefreshStoreResponse(enableRefreshStoreEndpoint && success))
+    Future.value(RefreshStoreResponse(enablePrivateEndpoints && success))
+  }
+
+  def getS2CellInfos(r: S2CellInfoRequest): Future[S2CellInfoResponse] = {
+    if (enablePrivateEndpoints) {
+      val wktWriter = new WKTWriter
+      val cellInfos = (for {
+        idString <- r.cellIdsAsStrings
+        id <- Helpers.TryO(idString.toLong).toList
+        s2CellId = new S2CellId(id)
+      } yield {
+        val wkt = wktWriter.write(ShapefileS2Util.fullGeometryForCell(s2CellId))
+        S2CellIdInfo(id, s2CellId.level(), wkt)
+      }).toList
+      Future.value(S2CellInfoResponse(cellInfos))
+    } else {
+      Future.value(S2CellInfoResponse.newBuilder.result)
+    }
   }
 }
 
@@ -399,6 +423,8 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
       handleQuery(getJsonRequest(BulkSlugLookupRequest), geocoder.bulkSlugLookup, callback)
     } else if (path.startsWith("/private/refreshStore")) {
       handleQuery(getJsonRequest(RefreshStoreRequest), geocoder.refreshStore, callback)
+    } else if (path.startsWith("/private/getS2CellInfos")) {
+      handleQuery(getJsonRequest(S2CellInfoRequest), geocoder.getS2CellInfos, callback)
     } else if (params.size > 0) {
       val request = parseGeocodeRequest(params.toMap)
 
