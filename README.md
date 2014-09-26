@@ -76,7 +76,7 @@ A better option is to run "./sbt server/assembly" and then use the resulting ser
 
 Hotfixes
 ========
-<a name="hotfixes></a>
+<a name="hotfixes"></a>
 NOTE: The legacy hotfix infrastructure only supports deleting features and modifying their boosts (via hotfixes\_deletes.txt and hotfixes\_boosts.txt respectively). This will be deprecated soon.
 
 Hotfixes are expressed as fine-grained edits on top of features in the index. Features can be quickly added, removed or modified on a live server without requiring a full index rebuild and redeploy. Most fields on a [GeocodeServingFeature](https://github.com/foursquare/twofishes/blob/master/interface/src/main/thrift/geocoder.thrift#L216) and fields on its nested structs can be edited via a [GeocodeServingFeatureEdit](https://github.com/foursquare/twofishes/blob/master/interface/src/main/thrift/hotfix_edits.thrift#L35) object.
