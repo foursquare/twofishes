@@ -10,6 +10,7 @@ import com.twitter.finagle.{Service, SimpleFilter}
 import com.twitter.finagle.builder.{Server, ServerBuilder}
 import com.twitter.finagle.http.Http
 import com.twitter.finagle.thrift.ThriftServerFramedCodec
+import com.twitter.json.Json
 import com.twitter.ostrich.admin._
 import com.twitter.ostrich.admin.config._
 import com.twitter.ostrich.stats.Stats
@@ -230,7 +231,11 @@ class HandleExceptions extends SimpleFilter[HttpRequest, HttpResponse] with Logg
         error.printStackTrace
         val statusCode = HttpResponseStatus.INTERNAL_SERVER_ERROR
         val errorResponse = new DefaultHttpResponse(HttpVersion.HTTP_1_1, statusCode)
-        errorResponse.setContent(ChannelBuffers.copiedBuffer(error.toString + "\n" + error.getStackTraceString, CharsetUtil.UTF_8))
+        errorResponse.setHeader("Content-Type", "application/json; charset=utf-8")
+        val errorMap = Map(
+          "exception" -> error.toString,
+          "stacktrace" -> error.getStackTraceString)
+        errorResponse.setContent(ChannelBuffers.copiedBuffer(Json.build(errorMap).toString, CharsetUtil.UTF_8))
         errorResponse
     }
   }
