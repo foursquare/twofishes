@@ -85,15 +85,15 @@ Twofishes requires a relatively beefy box to build an index from scratch. For th
 All indexes contain data from <a href="http://geonames.wordpress.com/about/">geonames.org (light cc-by)</a>, <a href="http://code.flickr.net/2009/05/21/flickr-shapefiles-public-dataset-10/">flickr (public domain)</a>, and <a href="http://www.naturalearthdata.com/about/terms-of-use/">natural earth (public domain)</a>.
 
 <p/>
-<a href="/binaries/server-assembly-0.80.5k.jar">Download server binary</a> (version 0.80.5k, 2013-12-12)
+<a href="/binaries/server-assembly-0.83.5.jar">Download server binary</a> (version 0.83.5, 2013-08-04)
 <p/>
-<a href="/indexes/revgeo/2013-12-12.zip">Download latest index</a> (updated 2013-12-12)<br/>
+<a href="/indexes/revgeo/2014-08-13.zip">Download latest index</a> (updated 2014-08-13)<br/>
 <span style="font-weight: bold">License: CC-BY as required by geonames, please link to geonames.org somewhere on your site. For more information, see:  <a href="http://geonames.wordpress.com/about/">geonames.org (light cc-by)</a></span>
 <b><a href="https://github.com/foursquare/quattroshapes/blob/master/LICENSE.md">License for this data. You are required to include this information on your site if you use the twofishes index</a></b>
 
 <h5>Serving a prebuilt index</h5>
 Download and unzip one of the indexes, download the server binary.
-<pre><code>java -jar server-assembly-0.80.5k.jar --hfile_basepath INDEX_DIRECTORY</pre></code>
+<pre><code>java -jar server-assembly-0.81.9.jar --hfile_basepath INDEX_DIRECTORY</pre></code>
 The server's debug/json inteface will be accessible at http://localhost:8081/static/geocoder.html You can also serve a prebuilt binary by following the instructions below and skipping the index build step -- run serve.py with an argument of the index directory.
 <p/>
 
@@ -102,7 +102,6 @@ See the <a href="https://github.com/foursquare/twofishes">documentation on githu
 but, very very quickly:
 <pre><code> git clone https://github.com/foursquare/twofishes.git
 cd twofishes
-./init.sh
 ./download-country.sh [COUNTRY_CODE] or ./download-world.sh
 ./parse.py -c [COUNTRY_CODE] or ./parse.py -w 
 # maybe you also want --output_prefix_index and/or --output_revgeo_index
