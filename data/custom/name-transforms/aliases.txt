@@ -107,3 +107,4 @@
 3527646 en|Federal District
 3448439 en|São Paulo
 4140963 en|DC|ALT_NAME
+8347347 en|Bojanala|ALT_NAME
