@@ -37,19 +37,23 @@ class QueryParser(logger: TwofishesLogger) {
       originalTokens.drop(connectorEnd + 1)
     } else { originalTokens }
 
-    // Need to tune the algorithm to not explode on > 10 tokens
-    // in the meantime, reject.
+    // if there're too many tokens, take as many as are allowed and continue
     Stats.addMetric("query_length", originalTokens.size)
-    if (originalTokens.size > GeocodeServerConfigSingleton.config.maxTokens) {
+    if (hadConnector) {
+      Stats.addMetric("query_length_after_connector_parsing", tokens.size)
+    }
+    val finalTokens = if (tokens.size > GeocodeServerConfigSingleton.config.maxTokens) {
       Stats.incr("too_many_tokens", 1)
-      throw new Exception("too many tokens")
+      tokens.take(GeocodeServerConfigSingleton.config.maxTokens)
+    } else {
+      tokens
     }
     if (originalTokens.exists(_ == "http")) {
       throw new Exception("don't support url queries")
     }
 
     ParseParams(
-      tokens = tokens,
+      tokens = finalTokens,
       originalTokens = originalTokens,
       connectorStart = connectorStart,
       connectorEnd = connectorEnd,
