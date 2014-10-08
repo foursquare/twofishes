@@ -348,8 +348,7 @@ function success(data, bulkInputs) {
         var wkt = new Wkt.Wkt();
         wkt.read(data.requestWktGeometry)
         map.addLayer(wkt.toObject({
-          color: '#ff0000',
-          fillColor: '#ff0000',
+          color: 'green',
           icon: myIcon}));
       }
     }
@@ -365,7 +364,7 @@ function successS2Info(data, map) {
     _(data.cellInfos).each(function(cellInfo) {
       var wkt = new Wkt.Wkt();
       wkt.read(cellInfo.wktGeometry)
-      map.addLayer(wkt.toObject({color: 'yellow'}).bindPopup('id: ' + cellInfo.id + '<br>level: ' + cellInfo.level));
+      map.addLayer(wkt.toObject({color: 'red', weight: 1}).bindPopup('id: ' + cellInfo.id + '<br>level: ' + cellInfo.level));
     });
   }
 }
