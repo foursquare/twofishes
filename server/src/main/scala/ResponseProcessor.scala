@@ -12,6 +12,7 @@ import java.nio.ByteBuffer
 import scala.collection.mutable.{HashSet, ListBuffer}
 import scalaj.collection.Implicits._
 import com.twitter.ostrich.stats.Stats
+import GeocodeServerConfigSingleton._
 
 // Sort a list of features, smallest to biggest
 object GeocodeServingFeatureOrdering extends Ordering[GeocodeServingFeature] {
@@ -550,14 +551,16 @@ class ResponseProcessor(
 
     logger.ifDebug("have %d parses after filtering from delete hotfixes", goodParses.size)
 
-    goodParses = goodParses.filter(p => {
-      val parseLength = p.tokenLength
+    if (config.removeLowRankingParses) {
+      goodParses = goodParses.filter(p => {
+        val parseLength = p.tokenLength
         parseLength == parseParams.tokens.size || parseLength != 1 ||
           p.headOption.exists(m => {
-            m.fmatch.scoringFeatures.population > 50000 || p.length > 1
+            m.fmatch.scoringFeatures.population > config.minPopulation || p.length > 1
           })
-    })
-    logger.ifDebug("have %d parses after removeLowRankingParses", goodParses.size)
+      })
+      logger.ifDebug("have %d parses after removeLowRankingParses", goodParses.size)
+    }
 
     goodParses = goodParses.filter(p => p.headOption.exists(m => {
       !m.fmatch.scoringFeatures.canGeocodeIsSet || m.fmatch.scoringFeatures.canGeocode

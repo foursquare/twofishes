@@ -11,7 +11,9 @@ case class GeocodeServerConfig(
   maxTokens: Int = 10,
   reload: Boolean = false,
   hotfixBasePath: String = "",
-  enablePrivateEndpoints: Boolean = false
+  enablePrivateEndpoints: Boolean = false,
+  removeLowRankingParses: Boolean = true,
+  minPopulation: Int = 50000
 )
 
 object GeocodeServerConfigSingleton {
@@ -55,6 +57,12 @@ object GeocodeServerConfigParser {
         opt[Boolean]("enable_private_endpoints")
           .text("enable private endpoints on server")
           .action { (x, c) => c.copy(enablePrivateEndpoints = x)}
+        opt[Boolean]("remove_low_ranking_parses")
+          .text("whether to remove low ranking parses")
+          .action { (x, c) => c.copy(removeLowRankingParses = x)}
+        opt[Int]("min_population")
+          .text("the minimum population to be considered a low ranking parse")
+          .action { (x, c) => c.copy(minPopulation = x)}
         }
 
     // parser.parse returns Option[C]
