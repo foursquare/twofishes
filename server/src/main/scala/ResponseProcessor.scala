@@ -556,7 +556,7 @@ class ResponseProcessor(
         val parseLength = p.tokenLength
         parseLength == parseParams.tokens.size || parseLength != 1 ||
           p.headOption.exists(m => {
-            m.fmatch.scoringFeatures.population > config.minPopulation || p.length > 1
+            m.fmatch.scoringFeatures.population > config.minPopulationForLowRankingParse || p.length > 1
           })
       })
       logger.ifDebug("have %d parses after removeLowRankingParses", goodParses.size)

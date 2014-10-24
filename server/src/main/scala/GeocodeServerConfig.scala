@@ -13,7 +13,7 @@ case class GeocodeServerConfig(
   hotfixBasePath: String = "",
   enablePrivateEndpoints: Boolean = false,
   removeLowRankingParses: Boolean = true,
-  minPopulation: Int = 50000
+  minPopulationForLowRankingParse: Int = 50000
 )
 
 object GeocodeServerConfigSingleton {
@@ -60,9 +60,9 @@ object GeocodeServerConfigParser {
         opt[Boolean]("remove_low_ranking_parses")
           .text("whether to remove low ranking parses")
           .action { (x, c) => c.copy(removeLowRankingParses = x)}
-        opt[Int]("min_population")
+        opt[Int]("min_population_for_low_ranking_parse")
           .text("the minimum population to be considered a low ranking parse")
-          .action { (x, c) => c.copy(minPopulation = x)}
+          .action { (x, c) => c.copy(minPopulationForLowRankingParse = x)}
         }
 
     // parser.parse returns Option[C]
