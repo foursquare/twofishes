@@ -59,7 +59,6 @@ First time setup
 Data import
 ===========
 *   mongod --dbpath /local/directory/for/output/
-*   ./init-database.sh # drops existing table and creates indexes
 *   If you want to import countries: ./parse.py -c US /output/dir (Note that you can specify list of countries separating them by comma: US,GB,RU)
 *   If you want to import world: ./parse.py -w /output/dir
 
