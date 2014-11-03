@@ -112,31 +112,6 @@ class HFileStorageService(originalBasepath: String, shouldPreload: Boolean) exte
   def refresh() {
     // no-op: do not refresh hfiles on-demand
   }
-
-  override val hotfixesDeletes: Seq[StoredFeatureId] = {
-    val file = new File(basepath, "hotfixes_deletes.txt")
-    if (file.exists()) {
-      scala.io.Source.fromFile(file).getLines.toVector.flatMap(i => StoredFeatureId.fromLegacyObjectId(new ObjectId(i)))
-    } else {
-      Nil
-    }
-  }
-
-  override val hotfixesBoosts: Map[StoredFeatureId, Int] = {
-    val file = new File(basepath, "hotfixes_boosts.txt")
-    if (file.exists()) {
-      scala.io.Source.fromFile(file).getLines.toVector.map(l => {
-        val parts = l.split("[\\|\t, ]")
-        try {
-          (StoredFeatureId.fromLegacyObjectId(new ObjectId(parts(0))).get, parts(1).toInt)
-        } catch {
-          case _: Exception => throw new Exception("malformed boost line: %s --> %s".format(l, parts.toList))
-        }
-      }).toMap
-    } else {
-      Map.empty
-    }
-  }
 }
 
 class HFileInput[V](basepath: String, index: Index[String, V], shouldPreload: Boolean) extends Logging {

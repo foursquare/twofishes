@@ -366,7 +366,6 @@ object GeocodeParseOrdering {
 }
 
 class GeocodeParseOrdering(
-    store: GeocodeStorageReadService,
     req: CommonGeocodeRequestParams,
     logger: TwofishesLogger,
     scorers: List[ScoringTerm] = Nil,
@@ -392,11 +391,6 @@ class GeocodeParseOrdering(
       if (req.debug > 0) {
         logger.ifDebug("Scorer %s scoring %s", scorersName, parse)
       }
-
-      StoredFeatureId.fromLong(primaryFeature.longId).foreach(fid =>
-        store.hotfixesBoosts.get(fid).foreach(boost =>
-          modifySignal(boost, "hotfix boost"))
-      )
 
       val scorerArguments = ScorerArguments(req, parse, primaryFeature, rest)
       for {

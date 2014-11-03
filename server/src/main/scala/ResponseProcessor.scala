@@ -543,13 +543,6 @@ class ResponseProcessor(
     }
     logger.ifDebug("have %d parses after filtering types/woes/restricts", goodParses.size)
 
-    goodParses = goodParses.filterNot(p => {
-      p.headOption.exists(f =>
-        StoredFeatureId.fromLong(f.fmatch.longId).exists(fid => store.hotfixesDeletes.has(fid)))
-    })
-
-    logger.ifDebug("have %d parses after filtering from delete hotfixes", goodParses.size)
-
     goodParses = goodParses.filter(p => {
       val parseLength = p.tokenLength
         parseLength == parseParams.tokens.size || parseLength != 1 ||
