@@ -396,12 +396,12 @@ class ConcreteHotfixStorageService(
   def getIdsToAddByNamePrefix(name: String): Seq[StoredFeatureId] = idsToAddByNamePrefix.getOrElse(name, Nil)
   def getIdsToRemoveByNamePrefix(name: String): Seq[StoredFeatureId] = idsToRemoveByNamePrefix.getOrElse(name, Nil)
 
-  lazy val getAddedOrModifiedFeatureLongIds: Seq[Long] = addedOrModifiedFeatureLongIds.toSeq
-  lazy val getDeletedFeatureLongIds: Seq[Long] = deletedFeatureLongIds.toSeq
+  def getAddedOrModifiedFeatureLongIds: Seq[Long] = addedOrModifiedFeatureLongIds.toSeq
+  def getDeletedFeatureLongIds: Seq[Long] = deletedFeatureLongIds.toSeq
 
   def getByFeatureId(id: StoredFeatureId): Option[GeocodeServingFeature] = featureIndex.get(id.longId)
 
-  lazy val getAddedOrModifiedPolygonFeatureLongIds: Seq[Long] = addedOrModifiedPolygonFeatureLongIds.toSeq
+  def getAddedOrModifiedPolygonFeatureLongIds: Seq[Long] = addedOrModifiedPolygonFeatureLongIds.toSeq
   def getDeletedPolygonFeatureLongIds(): Seq[Long] = deletedPolygonFeatureLongIds.toSeq
 
   def getCellGeometriesByS2CellId(id: Long): Seq[CellGeometry] = s2Index.getOrElse(id, Nil)
