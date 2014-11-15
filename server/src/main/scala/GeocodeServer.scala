@@ -396,7 +396,7 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
     val path = queryString.getPath()
     val callback = params.get("callback").flatMap(_.headOption)
 
-    def getJsonRequest[R <: TBase[_ <: TBase[_, _], _ <: TFieldIdEnum] with Record[R]](meta: MetaRecord[R]): R = {
+    def getJsonRequest[R <: TBase[_ <: TBase[_, _], _ <: TFieldIdEnum] with Record[R]](meta: MetaRecord[R, _]): R = {
       var json: Option[String] = params.get("json").map(a => a(0))
 
       val content = request.getContent()
@@ -404,7 +404,7 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
         json = Some(content.toString(CharsetUtil.UTF_8))
       }
       val deserializer = new TDeserializer(new TReadableJSONProtocol.Factory(false))
-      val thriftRequest = meta.createRawRecord
+      val thriftRequest = meta.createRecord
       deserializer.deserialize(thriftRequest, json.get.getBytes("UTF-8"))
       thriftRequest
     }

@@ -7,6 +7,7 @@ import com.foursquare.twofishes.util.Lists.Implicits._
 import com.foursquare.twofishes.util.NameUtils.BestNameMatch
 import scala.collection.mutable.HashMap
 import scalaj.collection.Implicits._
+import com.foursquare.twofishes.AutocompleteBias.UnknownWireValue
 
 trait GeocoderUtils {
   def req: GeocodeRequest
@@ -301,7 +302,7 @@ class AutocompleteGeocoderImpl(
       case AutocompleteBias.NONE => validParses.sorted(
         new GeocodeParseOrdering(commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteDefault, "default"))
 
-      case AutocompleteBias.BALANCED => {
+      case AutocompleteBias.BALANCED | AutocompleteBias.UnknownWireValue(_) => {
         val globalRelevanceCutoff = 1000000
         val defaultCutoff = 0
 

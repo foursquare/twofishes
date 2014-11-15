@@ -167,7 +167,7 @@ class ResponseProcessor(
       fillHighlightedName: Boolean = false,
       includeAllNames: Boolean,
       parentIds: Seq[Long] = Nil
-    ): GeocodeFeature.Mutable = {
+    ): MutableGeocodeFeature = {
     // set name
     val mutableFeature = f.mutableCopy
     fixFeatureMutable(mutableFeature, parents, parse, polygonMap, s2CoveringMap, numExtraParentsRequired,
@@ -175,7 +175,7 @@ class ResponseProcessor(
   }
 
   def fixFeatureMutable(
-    mutableFeature: GeocodeFeature.Mutable,
+    mutableFeature: MutableGeocodeFeature,
     parents: Seq[GeocodeServingFeature],
     parse: Option[Parse[Sorted]],
     polygonMap: Map[StoredFeatureId, Geometry],
@@ -184,7 +184,7 @@ class ResponseProcessor(
     fillHighlightedName: Boolean = false,
     includeAllNames: Boolean = false,
     parentIds: Seq[Long] = Nil
-  ): GeocodeFeature.Mutable = {
+  ): MutableGeocodeFeature = {
     val f = mutableFeature
     val name = NameUtils.bestName(f, Some(req.lang), false).map(_.name).getOrElse("")
     mutableFeature.name_=(name)
