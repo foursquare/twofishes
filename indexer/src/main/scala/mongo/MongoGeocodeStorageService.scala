@@ -18,12 +18,18 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
     geocodeCursor
   }
 
+  def getNameIndexByIdLangAndName(id: StoredFeatureId, lang: String, name: String): Iterator[NameIndex] = {
+    val nameCursor = NameIndexDAO.find(MongoDBObject("fid" -> id.longId, "lang" -> lang, "name" -> name))
+    nameCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
+    nameCursor
+  }
+
   def insert(record: GeocodeRecord) {
     MongoGeocodeDAO.insert(record)
   }
 
   def insert(records: List[GeocodeRecord]) {
-    MongoGeocodeDAO.insert(records)
+    records.foreach(record => insert(record))
   }
 
   def addBoundingBoxToRecord(bbox: BoundingBox, id: StoredFeatureId) {
@@ -44,6 +50,12 @@ class MongoGeocodeStorageService extends GeocodeStorageWriteService {
 
   def addNameIndexes(names: List[NameIndex]) {
     NameIndexDAO.insert(names)
+  }
+
+  def updateFlagsOnNameIndexByIdLangAndName(id: StoredFeatureId, lang: String, name: String, flags: Int) {
+    NameIndexDAO.update(MongoDBObject("fid" -> id.longId, "lang" -> lang, "name" -> name),
+      MongoDBObject("$set" -> MongoDBObject("flags" -> flags)),
+      upsert = false, multi = true)
   }
 
   def addPolygonToRecord(id: StoredFeatureId, polyId: ObjectId) {

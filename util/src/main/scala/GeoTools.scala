@@ -74,24 +74,37 @@ object GeoTools {
   def boundsToGeometry(bounds: GeocodeBoundingBox): Geometry = {
     val s2rect = GeoTools.boundingBoxToS2Rect(bounds)
     val geomFactory = new GeometryFactory()
+    val lngLo = math.toDegrees(s2rect.lng.lo)
+    val latLo = math.toDegrees(s2rect.lat.lo)
+    val lngHi = math.toDegrees(s2rect.lng.hi)
+    val latHi = math.toDegrees(s2rect.lat.hi)
     geomFactory.createLinearRing(Array(
-      new Coordinate(s2rect.lng.lo, s2rect.lat.lo),
-      new Coordinate(s2rect.lng.hi, s2rect.lat.lo),
-      new Coordinate(s2rect.lng.hi, s2rect.lat.hi),
-      new Coordinate(s2rect.lng.hi, s2rect.lat.lo),
-      new Coordinate(s2rect.lng.lo, s2rect.lat.lo)
+      new Coordinate(lngLo, latLo),
+      new Coordinate(lngHi, latLo),
+      new Coordinate(lngHi, latHi),
+      new Coordinate(lngLo, latHi),
+      new Coordinate(lngLo, latLo)
     ))
   }
 
   def distanceFromPointToBounds(p: GeocodePoint, bounds: GeocodeBoundingBox): Double = {
     val point = pointToGeometry(p)
     val geom = boundsToGeometry(bounds)
-    DistanceOp.distance(point, geom) * MetersPerDegreeLatitude
+    distanceFromPointToGeometry(point, geom)
   }
 
+  def distanceFromPointToGeometry(point: Geometry, geom: Geometry): Double = {
+    val nearestPoints = DistanceOp.nearestPoints(point, geom)
+    getDistance(nearestPoints(0), nearestPoints(1))
+  }
+ 
   /**
    * @return distance in meters
    */
+  def getDistance(ll1: Coordinate, ll2: Coordinate): Double = {
+    getDistance(ll1.y, ll1.x, ll2.y, ll2.x)
+  }
+
   def getDistance(geolat1: Double, geolong1: Double, geolat2: Double, geolong2: Double): Int = {
     val theta = geolong1 - geolong2
     val dist = math.sin(math.toRadians(geolat1)) * math.sin(math.toRadians(geolat2)) +

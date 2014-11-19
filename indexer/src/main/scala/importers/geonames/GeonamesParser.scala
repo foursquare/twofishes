@@ -26,6 +26,9 @@ import scalaj.collection.Implicits._
 import com.twitter.ostrich.stats.Stats
 import com.twitter.ostrich.admin.{RuntimeEnvironment, ServiceTracker}
 import com.twitter.ostrich.admin.config.AdminServiceConfig
+import org.json4s.NoTypeHints
+import org.json4s.jackson.JsonMethods
+import org.json4s.jackson.Serialization
 
 object GeonamesParser extends DurationUtils {
   var config: GeonamesImporterConfig = null
@@ -47,7 +50,6 @@ object GeonamesParser extends DurationUtils {
       })
     }).toMap
   }
-
 
   def parseCountryInfo() {
     val fileSource = scala.io.Source.fromFile(new File("data/downloaded/countryInfo.txt"))
@@ -97,12 +99,17 @@ object GeonamesParser extends DurationUtils {
       NameIndexDAO.collection.drop()
       PolygonIndexDAO.collection.drop()
       RevGeoIndexDAO.collection.drop()
+      S2CoveringIndexDAO.collection.drop()
       parser.loadIntoMongo()
-      writeIndexes(parser.revGeoLatch)
+      writeIndexes(parser.s2CoveringLatch)
     } else {
       writeIndexes(None)
     }
 
+
+    implicit val formats = Serialization.formats(NoTypeHints)
+    val prettyJsonStats = Serialization.writePretty(JsonMethods.parse(Stats.get().toJson))
+    logger.info(prettyJsonStats)
     logger.info("all done with parse, trying to shutdown admin server and exit")
     admin.foreach(_.shutdown())
     System.exit(0)
@@ -110,9 +117,9 @@ object GeonamesParser extends DurationUtils {
 
   def makeFinalIndexes() {
     logPhase("making indexes before generating output") {
-      NameIndexDAO.makeIndexes()
       PolygonIndexDAO.makeIndexes()
       RevGeoIndexDAO.makeIndexes()
+      S2CoveringIndexDAO.makeIndexes()
     }
   }
 
@@ -124,15 +131,16 @@ object GeonamesParser extends DurationUtils {
   // TODO(blackmad): if we aren't redoing mongo indexing
   // then add some code to see if the s2 index is 'done'
   // We should also add an option to skip reloading polys
-  def writeIndexes(revGeoLatch: Option[CountDownLatch]) {
+  def writeIndexes(s2CoveringLatch: Option[CountDownLatch]) {
     makeFinalIndexes()
     val outputter = new OutputIndexes(
       config.hfileBasePath,
       config.outputPrefixIndex,
       GeonamesParser.slugIndexer.slugEntryMap,
-      config.outputRevgeo
+      config.outputRevgeo,
+      config.outputS2Covering
     )
-    outputter.buildIndexes(revGeoLatch)
+    outputter.buildIndexes(s2CoveringLatch)
   }
 }
 
@@ -141,7 +149,7 @@ class GeonamesParser(
   store: GeocodeStorageWriteService,
   slugIndexer: SlugIndexer
 ) extends Logging {
-  val polygonLoader = new PolygonLoader(this, store, config)
+  lazy val polygonLoader = new PolygonLoader(this, store, config)
   lazy val hierarchyTable = HierarchyParser.parseHierarchy(List(
     "data/downloaded/hierarchy.txt",
     "data/private/hierarchy.txt",
@@ -157,17 +165,18 @@ class GeonamesParser(
   }})
 
   // (country -> tokenlist)
-  case class ShortenPattern(from: Regex, to: String)
+  case class ShortenInfo(from: Regex, to: String, flags: Int)
 
-  lazy val shortensList: Map[String, List[ShortenPattern]] = {
+  lazy val shortensList: Map[String, List[ShortenInfo]] = {
     scala.io.Source.fromFile(new File("data/custom/shortens.txt"))
       .getLines.toList.filterNot(_.startsWith("#")).flatMap(l => {
         val parts = l.split("[\\|\t]").toList
         val countries = parts(0).split(",").toList
-        val shortenParts = parts(1).split("\\|")
-        val toShortenFrom = shortenParts(0)
+        val shortenParts = parts.drop(1)
+        val toShortenFrom = shortenParts(0) + "\\b"
         val toShortenTo = shortenParts.lift(1).getOrElse("")
-        countries.map(cc => (cc -> ShortenPattern(toShortenFrom.r, toShortenTo)))
+        val shortenFlags = parseFeatureNameFlags(shortenParts.lift(2))
+        countries.map(cc => (cc -> ShortenInfo(toShortenFrom.r, toShortenTo, shortenFlags)))
       }).groupBy(_._1).mapValues(_.map(_._2)).toList.toMap
     }
   // geonameid -> boost value
@@ -188,9 +197,11 @@ class GeonamesParser(
     .getLines.toList.filterNot(_.startsWith("#")).map(l => GeonamesId(l.toLong))
 
   // extra parents
-  lazy val extraRelationsList = new GeoIdTsvHelperFileParser(GeonamesNamespace, "data/custom/extra-relations.txt")
+  lazy val extraRelationsList = new GeoIdTsvHelperFileParser(GeonamesNamespace,"data/custom/extra-relations.txt")
 
-  lazy val concordanceMap = new GeoIdTsvHelperFileParser(GeonamesNamespace, "data/computed/concordances.txt")
+  lazy val concordanceMap = new GeoIdTsvHelperFileParser(GeonamesNamespace,
+    "data/computed/concordances.txt",
+    "data/private/concordances.txt")
 
   val bboxDirs = List(
     new File("data/computed/bboxes/"),
@@ -212,11 +223,11 @@ class GeonamesParser(
 
   val helperTables = List(boostTable)
 
-  val system = ActorSystem("RevGeoSystem")
+  val system = ActorSystem("S2CoveringSystem")
 
-  val (revGeoMaster, revGeoLatch) = if (config != null && config.outputRevgeo) {
+  val (s2CoveringMaster, s2CoveringLatch) = if (config != null && (config.outputRevgeo || config.outputS2Covering)) {
     val latch = new CountDownLatch(1)
-    (Some(system.actorOf(Props(new RevGeoMaster(latch)), name = "master")), Some(latch))
+    (Some(system.actorOf(Props(new S2CoveringMaster(latch)), name = "master")), Some(latch))
    } else {
     (None, None)
   }
@@ -275,6 +286,10 @@ class GeonamesParser(
       }
     )
 
+    logPhase("building name indexes pre parseNameTransforms") {
+      NameIndexDAO.makeIndexes()
+    }
+
     logPhase("parseNameTransforms") {
       parseNameTransforms()
     }
@@ -332,14 +347,28 @@ class GeonamesParser(
     store.addNameIndexes(List(createNameIndexRecord(dn, fid, record)))
   }
 
+  private def isAllDigits(x: String) = x forall Character.isDigit
+
+  private def shouldExcludeFromPrefixIndex(dn: DisplayName, woeType: YahooWoeType): Boolean = {
+    // exclude because of flags
+    ((dn.flags & (FeatureNameFlags.NEVER_DISPLAY.getValue | FeatureNameFlags.LOW_QUALITY.getValue)) != 0) ||
+    // exclude purely numeric names of non-postalcode features
+    (woeType !=? YahooWoeType.POSTAL_CODE && isAllDigits(dn.name))
+  }
+
+  private def isNameDeleted(name: String, fid: StoredFeatureId): Boolean = {
+    nameDeleteTable.get(fid).exists(_ =? name)
+  }
+
   def createNameIndexRecord(dn: DisplayName, fid: StoredFeatureId, record: Option[GeocodeRecord]) = {
     val name = NameNormalizer.normalize(dn.name)
-
+    val cc: String = record.map(_.cc).getOrElse("")
     val pop: Int =
       record.flatMap(_.population).getOrElse(0) + record.flatMap(_.boost).getOrElse(0)
     val woeType: Int =
       record.map(_._woeType).getOrElse(0)
-    NameIndex(name, fid.longId, pop, woeType, dn.flags, dn.lang, dn._id)
+    val excludeFromPrefixIndex = shouldExcludeFromPrefixIndex(dn, YahooWoeType.findByIdOrNull(woeType))
+    NameIndex(name, fid.longId, cc, pop, woeType, dn.flags, dn.lang, excludeFromPrefixIndex, dn._id)
   }
 
   def rewriteNames(names: List[String]): (List[String], List[String]) = {
@@ -370,19 +399,28 @@ class GeonamesParser(
     })
 
     val preferredEnglishAltName = alternateNamesMap.getOrElse(geonameId, Nil).find(altName =>
-      altName.lang == "en" // && altName.isPrefName
+      altName.lang == "en" && altName.isPrefName
     )
 
+    val hasEnglishAltName = alternateNamesMap.getOrElse(geonameId, Nil).exists(_.lang == "en")
     val hasPreferredEnglishAltName = preferredEnglishAltName.isDefined
+    val hasNonPreferredEnglishAltNameIdenticalToFeatureName = alternateNamesMap.getOrElse(geonameId, Nil).exists(altName =>
+      altName.lang == "en" && !altName.isPrefName && altName.name =? feature.name
+    )
 
-    // If we don't have an altname with lang=en marked as preferred, then assume that
-    // the primary name geonames gives us is english preferred
     var displayNames: List[DisplayName] = Nil
 
+    // consider using the primary feature name from geonames as an english name:
+    // skip: if an identical preferred english alt name exists
+    // add as preferred:
+    //    if no english alt name exists OR
+    //    no preferred english alt name exists BUT an identical non-preferred english name exists
+    // add as non-preferred otherwise
     if (!preferredEnglishAltName.exists(_.name =? feature.name)) {
       displayNames ++= processFeatureName(geonameId,
         feature.countryCode, "en", feature.name,
-        isPrefName = !hasPreferredEnglishAltName,
+        isPrefName = !hasEnglishAltName ||
+          (!hasPreferredEnglishAltName && hasNonPreferredEnglishAltNameIdenticalToFeatureName),
         isShortName = false,
         woeType = feature.featureClass.woeType
       )
@@ -396,7 +434,13 @@ class GeonamesParser(
     }
 
     feature.asciiname.foreach(asciiname => {
-      if (feature.name != asciiname && asciiname.nonEmpty) {
+      val (deaccentedPrimary, _) = rewriteNames(List(feature.name))
+      if (feature.name != asciiname &&
+          asciiname.nonEmpty &&
+          // do not add if this name has been deleted
+          !isNameDeleted(asciiname, geonameId) &&
+          // or if this is the same as the primary name deaccented and the primary name has been deleted
+          !(deaccentedPrimary.has(asciiname) && isNameDeleted(feature.name, geonameId))) {
         displayNames ::=
           DisplayName("en", asciiname,
             FeatureNameFlags.DEACCENT.getValue)
@@ -408,10 +452,7 @@ class GeonamesParser(
     }
 
     // Build names
-    val englishName = preferredEnglishAltName.getOrElse(feature.name)
-    val alternateNames = alternateNamesMap.getOrElse(geonameId, Nil).filterNot(n =>
-      (n.name == englishName) && (n.lang != "en")
-    )
+    val alternateNames = alternateNamesMap.getOrElse(geonameId, Nil)
 
     val altNames = alternateNames.flatMap(altName => {
       processFeatureName(geonameId,
@@ -430,9 +471,7 @@ class GeonamesParser(
 
     // the admincode is the internal geonames admin code, but is very often the
     // same short name for the admin area that is actually used in the country
-    def isAllDigits(x: String) = x forall Character.isDigit
-
-    if (feature.featureClass.isAdmin1 || feature.featureClass.isAdmin2) {
+    if (feature.featureClass.isAdmin1 || feature.featureClass.isAdmin2 || feature.featureClass.isAdmin3) {
       displayNames ++= feature.adminCode.toList.flatMap(code => {
         if (!isAllDigits(code)) {
           Some(DisplayName("abbr", code, FeatureNameFlags.ABBREVIATION.getValue))
@@ -508,6 +547,9 @@ class GeonamesParser(
       sfeature.propMap.get("adm0cap").foreach(v =>
         attributesBuilder.adm0cap(v.toDouble.toInt == 1)
       )
+      sfeature.propMap.get("worldcity").foreach(v =>
+        attributesBuilder.worldcity(v.toDouble.toInt == 1)
+      )
       sfeature.propMap.get("scalerank").foreach(v =>
         attributesBuilder.scalerank(v.toInt)
       )
@@ -535,10 +577,12 @@ class GeonamesParser(
       attributesBuilder.neighborhoodType(NeighborhoodType.findByNameOrNull(v))
     )
 
+    attributesBuilder.urls(displayNames.filter(_.lang =? "link").map(_.name))
+
     val extraRelations = extraRelationsList.get(geonameId).map(_.split(",").toList.map(_.toLong)).flatten
 
     case class PolygonRecord(geom: Geometry) {
-      def id = new ObjectId()
+      val id = new ObjectId()
     }
 
     // I hate this code, let's please deprecate this codepath
@@ -553,6 +597,13 @@ class GeonamesParser(
       polygonOpt.map(poly => PolygonRecord(poly))
     }
 
+    // combine flags of duplicate names in the same language
+    val finalDisplayNames = displayNames.groupBy(dn => (dn.lang, dn.name)).toList
+      .map({case ((lang, name), displayNames) => DisplayName(
+        lang = lang,
+        name = name,
+        flags = displayNames.foldLeft(0)((f, dn) => f | dn.flags))})
+
     val record = GeocodeRecord(
       _id = geonameId.longId,
       names = Nil,
@@ -562,7 +613,7 @@ class GeonamesParser(
       lng = lng,
       parents = allParents.map(_.longId),
       population = feature.population,
-      displayNames = displayNames,
+      displayNames = finalDisplayNames,
       boost = boost,
       boundingbox = bbox,
       displayBounds = displayBboxTable.get(geonameId),
@@ -663,6 +714,7 @@ class GeonamesParser(
   val spaceRe = " +".r
   def fixName(s: String) = spaceRe.replaceAllIn(s, " ").trim
 
+  // TODO(rahul): actually use flags
   def doShorten(cc: String, name: String): List[String] = {
     val shortens = shortensList.getOrElse("*", Nil) ++
       shortensList.getOrElse(cc, Nil)
@@ -698,6 +750,9 @@ class GeonamesParser(
     }
   }
 
+  def isLocalLang(lang: String, cc: String) =
+    countryLangMap.getOrElse(cc, Nil).contains(lang)
+
   def processFeatureName(
     fid: StoredFeatureId,
     cc: String,
@@ -708,7 +763,7 @@ class GeonamesParser(
     isColloquial: Boolean = false,
     isHistoric: Boolean = false,
     woeType: YahooWoeType): List[DisplayName] = {
-    if (lang != "post" && !nameDeleteTable.get(fid).exists(_ =? name)) {
+    if (lang != "post" && !isNameDeleted(name, fid)) {
       val originalNames = List(name)
       val hackedNames = hackName(lang, name, cc, woeType)
       val (deaccentedNames, allModifiedNames) = rewriteNames(originalNames)
@@ -718,13 +773,10 @@ class GeonamesParser(
         DisplayName(lang, name, flags)
       }
 
-      def isLocalLang(lang: String) =
-        countryLangMap.getOrElse(cc, Nil).contains(lang)
-
       def processNameList(names: List[String], flags: Int): List[DisplayName] = {
         names.map(n => {
           var finalFlags = flags
-          if (isLocalLang(lang)) {
+          if (isLocalLang(lang, cc)) {
             finalFlags |= FeatureNameFlags.LOCAL_LANG.getValue
           }
           if (isHistoric) {
@@ -779,49 +831,85 @@ class GeonamesParser(
     })
   }
 
+  private def parseFeatureNameFlags(
+    flagsString: Option[String],
+    default: List[FeatureNameFlags] = Nil
+  ): Int = {
+    val flags: List[FeatureNameFlags] = if (flagsString.isEmpty) {
+      default
+    } else {
+      flagsString.getOrElse("").split(",").map(f => FeatureNameFlags.unapply(f).getOrElse(
+        throw new Exception("couldn't parse name flag: %s".format(f))
+      )).toList
+    }
+
+    var flagsMask = 0
+    flags.foreach(f => flagsMask = flagsMask | f.getValue())
+    flagsMask
+  }
+
   def parseNameTransforms(lines: Iterator[String], filename: String = "n/a"): Unit =  {
     for {
       (line, lineIndex) <- lines.zipWithIndex
       if (!line.startsWith("#") && line.nonEmpty)
-      val parts = line.split("[\t ]").toList
-      gid <- parts.lift(0)
-      val geonameId = (try {
-        GeonamesId(gid.toLong)
-      } catch {
-        case e: Exception => throw new Exception("failed to parse %s -- line: %s".format(filename, line))
-      })
-      val rest = parts.drop(1).mkString(" ")
+      parts = line.split("[\t ]").toList
+      idString <- parts.lift(0)
+      featureId <- StoredFeatureId.fromHumanReadableString(idString, Some(GeonamesNamespace))
+      rest = parts.drop(1).mkString(" ")
       lang <- rest.split("\\|").lift(0)
       name <- rest.split("\\|").lift(1)
-      val originalFlags = rest.split("\\|").lift(2)
+      originalFlags = rest.split("\\|").lift(2)
     } {
-      val flags: List[FeatureNameFlags] =
-        if (originalFlags.isEmpty) {
-          List(FeatureNameFlags.PREFERRED)
-        } else {
-          originalFlags.getOrElse("").split(",").map(f => FeatureNameFlags.unapply(f).getOrElse(
-            throw new Exception("couldn't parse name flag: %s on line %s: %s".format(f, lineIndex, line))
-          )).toList
-        }
-      var flagsMask = 0
-      flags.foreach(f => flagsMask = flagsMask | f.getValue())
+      val flagsMask = parseFeatureNameFlags(originalFlags, List(FeatureNameFlags.PREFERRED))
 
-      val records = store.getById(geonameId).toList
+      val records = store.getById(featureId).toList
       records match {
-        case Nil => logger.error("no match for id %s".format(gid))
+        case Nil => logger.error("no match for id %s".format(idString))
         case record :: Nil => {
-          val newName = DisplayName(lang, name, flagsMask)
-          var foundName = record.displayNames.exists(dn =>
-            dn.lang =? lang && dn.name =? name
-          )
-          if (!foundName) {
-            addDisplayNameToNameIndex(newName, geonameId, Some(record))
+          val flagsMaskComputed = flagsMask | (if (isLocalLang(lang, record.cc)) {
+            FeatureNameFlags.LOCAL_LANG.getValue
+          } else {
+            0
+          })
+          val newName = DisplayName(lang, name, flagsMaskComputed)
+
+          // all display names have already been deduped and their flags combined
+          // name transform can therefore have at most one display name dupe
+          // combine flags with that dupe, if it exists
+          var merged = false
+          val mergedNames = record.displayNames.map(dn => {
+            if (dn.lang =? lang && dn.name =? name) {
+              logger.info("merged display name %s with name transform: id %s, lang %s, name %s, flags %d".format(dn, idString, lang, name, flagsMaskComputed))
+              merged = true
+              DisplayName(dn.lang, dn.name, dn.flags | flagsMaskComputed)
+            } else {
+              dn
+            }
+          })
+
+          // repeat merge for names in name index
+          if (merged) {
+            val normalizedName = NameNormalizer.normalize(name)
+            val nameRecords = store.getNameIndexByIdLangAndName(featureId, lang, normalizedName).toList
+            nameRecords match {
+              case Nil => logger.error("display names and name index out of sync for id %s, lang %s, name %s".format(idString, lang, name))
+              case nameRecord :: dupes => {
+                // dupes can rarely creep into the name index when display names are not exact dupes
+                // but their normalized forms are, e.g. "LA", "L.A." both normalize to "la"
+                // in this case, use the first name's flags to update all names
+                val newFlags = nameRecord.flags | flagsMaskComputed
+                store.updateFlagsOnNameIndexByIdLangAndName(featureId, lang, normalizedName, newFlags)
+              }
+            }
+          } else {
+            addDisplayNameToNameIndex(newName, featureId, Some(record))
           }
-          val modifiedNames: List[DisplayName] = record.displayNames.map(dn => {
-            // if we're trying to put in a new preferred name, kill all the other preferred names in the same language
+
+          // if we're trying to put in a new preferred name, kill all the other preferred names in the same language
+          val modifiedNames: List[DisplayName] = mergedNames.map(dn => {
             if (dn.lang =? lang &&
                 dn.name !=? name &&
-                flags.has(FeatureNameFlags.PREFERRED)
+                (flagsMaskComputed & FeatureNameFlags.PREFERRED.getValue) != 0
             ) {
               DisplayName(dn.lang, dn.name, dn.flags & ~FeatureNameFlags.PREFERRED.getValue())
             } else {
@@ -829,11 +917,15 @@ class GeonamesParser(
             }
           })
 
-          // logic in GeocodeStorage will dedup this
-          val newNames = modifiedNames ++ List(newName)
-          store.setRecordNames(GeonamesId(gid.toLong), newNames)
+          val newNames = modifiedNames ++
+            (if (merged) {
+              Nil
+            } else {
+              List(newName)
+            })
+          store.setRecordNames(featureId, newNames)
         }
-        case list => logger.error("multiple matches for id %s -- %s".format(gid, list))
+        case list => logger.error("multiple matches for id %s -- %s".format(idString, list))
       }
     }
   }

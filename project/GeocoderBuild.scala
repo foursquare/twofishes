@@ -9,7 +9,7 @@ object GeocoderBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.foursquare.twofishes",
     name := "twofishes",
-    version      := "0.82.1",
+    version      := "0.84.3",
     scalaVersion := "2.10.2",
     javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
     javacOptions in doc := Seq("-source", "1.6")
@@ -145,11 +145,20 @@ object GeocoderBuild extends Build {
   lazy val server = Project(id = "server",
       settings = graphSettings ++ scoptSettings ++ defaultSettings ++ assemblySettings ++ specsSettings ++ Seq(
         mainClass in assembly := Some("com.foursquare.twofishes.GeocodeFinagleServer"),
+        initialCommands := """
+        import com.foursquare.twofishes._
+        import com.foursquare.twofishes.util._
+        
+        val config: GeocodeServerConfig = GeocodeServerConfigSingleton.init(args)
+        val store = ServerStore.getStore(config)
+        val server = new GeocodeServerImpl(store, false)
+        """,
         baseDirectory in run := file("."),
         publishArtifact := true,
         libraryDependencies ++= Seq(
           "com.twitter" %% "ostrich" % "9.1.0",
-          "com.twitter" %% "finagle-http" % "6.3.0"
+          "com.twitter" %% "finagle-http" % "6.3.0",
+          "com.vividsolutions" % "jts" % "1.13"
         ),
         ivyXML := (
           <dependencies>

@@ -7,3 +7,9 @@
 5125125|Long Island
 2511174|Santa Cruz
 3940917|Miraflores
+3632191|Caracas
+163843|Surie confirm deletion
+250441|Philadelphia confirm deletion
+1527747|키르기스 confirm deletion
+3371123|부베 confirm deletion
+3448439|São Paolo

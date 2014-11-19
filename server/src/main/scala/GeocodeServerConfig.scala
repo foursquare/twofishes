@@ -4,11 +4,14 @@ package com.foursquare.twofishes
 case class GeocodeServerConfig(
   runHttpServer: Boolean = true,
   thriftServerPort: Int = 8080,
+  host: String = "0.0.0.0",
   hfileBasePath: String = "",
   shouldPreload: Boolean = true,
   shouldWarmup: Boolean = false,
   maxTokens: Int = 10,
-  reload: Boolean = false
+  reload: Boolean = false,
+  hotfixBasePath: String = "",
+  enablePrivateEndpoints: Boolean = false
 )
 
 object GeocodeServerConfigSingleton {
@@ -24,6 +27,9 @@ object GeocodeServerConfigParser {
   def parse(args: Array[String]): GeocodeServerConfig = {
     val parser =
       new scopt.OptionParser[GeocodeServerConfig]("twofishes") {
+        opt[String]("host")
+          .text("bind to specified host (default 0.0.0.0)")
+          .action { (x, c) => c.copy(host = x) }
         opt[Int]('p', "port")
           .action { (x, c) => c.copy(thriftServerPort = x) }
           .text("port to run thrift server on")
@@ -43,6 +49,12 @@ object GeocodeServerConfigParser {
         opt[Int]("max_tokens")
           .action { (x, c) => c.copy(maxTokens = x) }
           .text("maximum number of tokens to allow geocoding")
+        opt[String]("hotfix_basepath")
+          .text("directory containing hotfix files")
+          .action { (x, c) => c.copy(hotfixBasePath = x) }
+        opt[Boolean]("enable_private_endpoints")
+          .text("enable private endpoints on server")
+          .action { (x, c) => c.copy(enablePrivateEndpoints = x)}
         }
 
     // parser.parse returns Option[C]

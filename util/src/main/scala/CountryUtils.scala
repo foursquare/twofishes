@@ -33,7 +33,7 @@ object CountryUtils {
     new BufferedSource(getClass.getResourceAsStream("/countryInfo.txt"))
       .getLines.filterNot(_.startsWith("#"))
       .map(line => {
-          var parts = line.split("\t")
+          val parts = line.split("\t")
           try { 
             (parts(ISO2.id) -> parts(GEONAMEID.id).toLong)
           } catch {
@@ -41,9 +41,27 @@ object CountryUtils {
               (parts(ISO2.id) -> -1.toLong)
             }
           }
-          
         })
       .toMap
+
+  private val countryCodeToLocalLangMap: Map[String, Set[String]] =
+    new BufferedSource(getClass.getResourceAsStream("/countryInfo.txt"))
+      .getLines.filterNot(_.startsWith("#"))
+      .map(line => {
+      val parts = line.split("\t")
+      val langs = parts(LANGUAGES.id).split(",").map(l => l.split("-")(0)).toSet
+      try {
+        (parts(ISO2.id) -> langs)
+      } catch {
+        case e: Exception => {
+          (parts(ISO2.id) -> Set.empty[String])
+        }
+      }
+    })
+      .toMap
+  def isLocalLanguageForCountry(cc: String, lang: String): Boolean = {
+    countryCodeToLocalLangMap.getOrElse(cc, Set.empty[String]).contains(lang)
+  }
 
   private val dependentCountryRelationships =
     new BufferedSource(getClass.getResourceAsStream("/dependent_countries.txt"))

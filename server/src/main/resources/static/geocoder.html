@@ -37,6 +37,11 @@
       float: left;
     }
 
+    div.lookupForm {
+      padding-left: 20px;
+      overflow: hidden;
+    }
+
     #debugInfo { width: 1000px; white-space: nowrap; overflow: scroll;}
 
   </style>
@@ -44,12 +49,17 @@
 <body>
 
   <form id="searchForm" style="float:left">
-    <input name="query" id="query"/><input type="button" id="search" name="Search" value="Search" placeholder="Search Geocoder" width="200"/></br>
+    query: <input name="query" id="query" placeholder="Geocoder Query" size="50"/>
+    ll hint/revgeo: <input name="ll" id="ll" placeholder="lat,lng" size="20"/>
+    <input type="button" id="search" name="Search" value="Search" /></br>
   </form>
 
-  <form id="lookupForm" style="padding-left: 20px">
-    <input name="lookup" id="lookup"/><input type="button" id="lookupButton" name="Lookup slug or id" value="Lookup slug/id" placeholder="Lookup slug or id" width="100"/></br>
-  </form>
+  <div class="lookupForm">
+    <form id="lookupForm">
+      slug: <input name="slug" id="lookup" placeholder="longId or slug" size="20"/>
+      <input type="button" id="lookupButton" name="Lookup slug or id" value="Lookup slug/id" placeholder="Lookup slug or id" width="100"/></br>
+    </form>
+  </div>
 
   <div id="geocodes"></div>
 

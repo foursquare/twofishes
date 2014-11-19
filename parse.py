@@ -20,6 +20,8 @@ parser.add_option("--nooutput_prefix_index", dest="output_prefix_index",  action
   help="don't output prefix hfile index to speed up autocomplete (optional)")
 parser.add_option("-r", "--output_revgeo_index", dest="output_revgeo_index",  action="store_true", default=False,
   help="output s2 revgeo index (optional)")
+parser.add_option("-s", "--output_s2_covering_index", dest="output_s2_covering_index",  action="store_true", default=False,
+  help="output s2 covering index (optional)")
 parser.add_option("-n", "--dry_run", dest="dry_run",  action="store_true", default=False)
 parser.add_option("--reload", dest="reload_data",  action="store_true", default=True, help="reload data into mongo")
 parser.add_option("--noreload", dest="reload_data",  action="store_false", help="don't reload data into mongo")
@@ -68,6 +70,7 @@ else:
   cmd_opts += ' --parse_world true'
 
 passBoolOpt('output_revgeo_index', options.output_revgeo_index)
+passBoolOpt('output_s2_covering_index', options.output_s2_covering_index)
 passBoolOpt('output_prefix_index', options.output_prefix_index)
 passBoolOpt('reload_data', options.reload_data)
 

@@ -165,11 +165,10 @@ object NameFormatter {
   }
 }
 
-trait NameUtils {
-  def countryUsesStateAbbrev(cc: String) =
-    Set("US", "CA", "BR", "AU", "MX").has(cc)
+object CountryConstants {
+  val countryUsesStateAbbrev = Set("US", "CA", "BR", "AU", "MX")
 
-  def countryUsesState(cc: String) =
+  val countryUsesState =
     Set("GR", "CO", "MY", "TV", "IT", "MX", "PW",
       "KI", "GU", "CA", "TH", "PH", "IE", "PA",
       "AM", "BS", "MP", "AU", "CV", "KN", "VE",
@@ -178,10 +177,20 @@ trait NameUtils {
       "HM", "ID", "FM", "KY", "PF", "MN", "KR",
       "GB", "UY", "SC", "BR", "TW", "CX", "AR",
       "NR", "CL", "IQ", "SV", "NF", "IN", "VI",
-      "US", "UM", "JM", "SR", "AD", "UZ", "HK").has(cc)
+      "US", "UM", "JM", "SR", "AD", "UZ", "HK")
+
+  val countryUsesCountyAsState = Set("TW", "IE", "BE", "GB")
+}
+
+trait NameUtils {
+  def countryUsesStateAbbrev(cc: String) =
+    CountryConstants.countryUsesStateAbbrev.has(cc)
+
+  def countryUsesState(cc: String) =
+    CountryConstants.countryUsesState.has(cc)
 
   def countryUsesCountyAsState(cc: String) =
-    Set("TW", "IE", "BE", "GB").has(cc)
+    CountryConstants.countryUsesCountyAsState.has(cc)
 
   private val blacklistedParentIds =
     new BufferedSource(getClass.getResourceAsStream("/blacklist_parents.txt"))
@@ -198,8 +207,16 @@ trait NameUtils {
       var score = 0.0
 
       lang match {
-        case Some(l) if name.lang == l =>
-          score += 40
+        case Some(l) => {
+          if (name.lang == l) {
+            score += 40
+          } else if (name.lang == "en") {
+            // make english the most likely fallback if name does not exist in requested language
+            score += 20
+          } else {
+            score += -20
+          }
+        }
         case _ =>
           ()
       }
@@ -230,6 +247,7 @@ trait NameUtils {
             }
             case FeatureNameFlags.ALT_NAME => -1
             case FeatureNameFlags.LOCAL_LANG => 5
+            case _ => 0
           })
         }
       }
@@ -282,15 +300,19 @@ trait NameUtils {
     preferAbbrev: Boolean,
     matchedStringOpt: Option[String],
     debugLevel: Int,
-    logger: TwofishesLogger
+    logger: TwofishesLogger,
+    treatPrefixMatchesEqualToExact: Boolean = false
   ): Option[BestNameMatch] = {
     val ret = matchedStringOpt.flatMap(matchedString => {
       val namesNormalized = f.names.map(n => {
         (n, NameNormalizer.normalize(n.name))
       })
 
-      val exactMatchNameCandidates = namesNormalized.filter(_._2 == matchedString).map(_._1)
       val prefixMatchNameCandidates = namesNormalized.filter(_._2.startsWith(matchedString)).map(_._1)
+      val exactMatchNameCandidates = namesNormalized.filter(_._2 == matchedString).map(_._1) ++
+        (if(treatPrefixMatchesEqualToExact) {
+          prefixMatchNameCandidates
+        } else Nil)
       val exactMatchesWithoutAirports =
         if (!f.woeTypeOption.exists(_ =? YahooWoeType.AIRPORT)) {
           exactMatchNameCandidates.filterNot(n => (n.lang == "iata" || n.lang == "icao"))
@@ -308,6 +330,14 @@ trait NameUtils {
         exactMatchNameCandidates
       }
 
+      def matchNormalizedStringToPrefixOfOriginal(normalized: String, original: String): String = {
+        var i = 0
+        original.takeWhile(s => {
+          i += 1
+          normalized.startsWith(NameNormalizer.normalize(original.take(i)))
+        })
+      }
+
       val modifiedPreferAbbrev = preferAbbrev &&
         f.woeTypeOption.exists(_ =? YahooWoeType.ADMIN1) &&
         countryUsesStateAbbrev(f.cc)
@@ -318,16 +348,19 @@ trait NameUtils {
         logger.ifDebug("name candidates: %s", nameCandidates)
         logger.ifDebug("best name match: %s", bestNameMatch)
       }
-      bestNameMatch.map(name =>
-          (name,
-            Some("<b>" + name.name.take(matchedString.size) + "</b>" + name.name.drop(matchedString.size))
-      )) orElse {bestName(f, lang, preferAbbrev).map(name => {
+      bestNameMatch.map(name => {
+        // matchedString might be shorter than part of the display name it matches due to normalization
+        val matchedDisplayString = matchNormalizedStringToPrefixOfOriginal(matchedString, name.name)
+        (name,
+          Some("<b>" + name.name.take(matchedDisplayString.size) + "</b>" + name.name.drop(matchedDisplayString.size)))
+      }) orElse {bestName(f, lang, preferAbbrev).map(name => {
         val normalizedName = NameNormalizer.normalize(name.name)
         val index = normalizedName.indexOf(matchedString)
         if (index > -1) {
-          val before = name.name.take(index)
-          val matched = name.name.drop(index).take(matchedString.size)
-          val after = name.name.drop(index + matchedString.size)
+          // account for normalization before and inside match
+          val before = matchNormalizedStringToPrefixOfOriginal(normalizedName.take(index), name.name)
+          val matched = matchNormalizedStringToPrefixOfOriginal(matchedString, name.name.drop(before.size))
+          val after = name.name.drop(before.size + matched.size)
           (name, Some("%s<b>%s</b>%s".format(before, matched, after)))
         } else {
           (name, None)

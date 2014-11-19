@@ -13,10 +13,12 @@ import com.novus.salat.global._
 case class NameIndex(
   name: String,
   fid: Long,
+  cc: String,
   pop: Int,
   woeType: Int,
   flags: Int,
   lang: String,
+  excludeFromPrefixIndex: Boolean,
   @Key("_id") _id: ObjectId
 ) {
 
@@ -27,6 +29,7 @@ case class NameIndex(
 object NameIndexDAO extends SalatDAO[NameIndex, String](
   collection = MongoConnection()("geocoder")("name_index")) {
   def makeIndexes() {
-    collection.ensureIndex(DBObject("name" -> -1, "pop" -> -1))
+    collection.ensureIndex(DBObject("name" -> -1, "excludeFromPrefixIndex" -> 1, "pop" -> -1))
+    collection.ensureIndex(DBObject("fid" -> 1, "lang" -> 1, "name" -> 1))
   }
 }

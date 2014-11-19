@@ -5,17 +5,20 @@ import com.foursquare.common.thrift.json.TReadableJSONProtocol
 import com.foursquare.spindle.{MetaRecord, Record}
 import com.foursquare.twofishes.util.Helpers
 import com.foursquare.twofishes.util.Lists.Implicits._
+import com.google.common.geometry.S2CellId
 import com.twitter.finagle.{Service, SimpleFilter}
 import com.twitter.finagle.builder.{Server, ServerBuilder}
 import com.twitter.finagle.http.Http
 import com.twitter.finagle.thrift.ThriftServerFramedCodec
+import com.twitter.json.Json
 import com.twitter.ostrich.admin._
 import com.twitter.ostrich.admin.config._
 import com.twitter.ostrich.stats.Stats
-import com.twitter.util.{Future, FuturePool, RingBuffer}
+import com.twitter.util.{Await, Future, FuturePool, RingBuffer}
 import com.weiglewilczek.slf4s.Logging
 import java.io.InputStream
 import java.net.InetSocketAddress
+import java.nio.charset.Charset
 import java.util.Date
 import java.util.concurrent.{ConcurrentHashMap, Executors}
 import org.apache.thrift.{TBase, TDeserializer, TFieldIdEnum, TSerializer}
@@ -27,6 +30,8 @@ import org.jboss.netty.util.CharsetUtil
 import scala.collection.mutable.ListBuffer
 import scala.io.BufferedSource
 import scalaj.collection.Implicits._
+import com.foursquare.geo.shapes.ShapefileS2Util
+import com.vividsolutions.jts.io.WKTWriter
 
 class QueryLogHttpHandler(
   queryMap: ConcurrentHashMap[ObjectId, (TBase[_, _], Long)],
@@ -67,6 +72,14 @@ class QueryLogHttpHandler(
 }
 
 class QueryLoggingGeocodeServerImpl(service: Geocoder.ServiceIface) extends Geocoder.ServiceIface with Logging {
+  if (Charset.defaultCharset() != Charset.forName("UTF-8")) {
+    throw new Exception(
+      "Default charset (%s) is not UTF-8, which can cause problems.\n".format(
+        Charset.defaultCharset().name()) +
+      "See: http://perlgeek.de/en/article/set-up-a-clean-utf8-environment"
+    )
+  }
+
   val queryMap = new ConcurrentHashMap[ObjectId, (TBase[_, _], Long)]
 
   val recentQueries = new RingBuffer[(TBase[_, _], Long, Long)](1000)
@@ -112,9 +125,23 @@ class QueryLoggingGeocodeServerImpl(service: Geocoder.ServiceIface) extends Geoc
   def bulkSlugLookup(r: BulkSlugLookupRequest): Future[BulkSlugLookupResponse] = {
     queryLogProcessor(r, service.bulkSlugLookup)
   }
+
+  def refreshStore(r: RefreshStoreRequest): Future[RefreshStoreResponse] = {
+    queryLogProcessor(r, service.refreshStore)
+  }
+
+  def getS2CellInfos(r: S2CellInfoRequest): Future[S2CellInfoResponse] = {
+    queryLogProcessor(r, service.getS2CellInfos)
+  }
 }
 
-class GeocodeServerImpl(store: GeocodeStorageReadService, doWarmup: Boolean) extends Geocoder.ServiceIface with Logging {
+class GeocodeServerImpl(
+  store: GeocodeStorageReadService,
+  doWarmup: Boolean,
+  enablePrivateEndpoints: Boolean = false
+) extends Geocoder.ServiceIface with Logging {
+  val queryFuturePool = FuturePool(StatsWrappedExecutors.create(24, 100, "geocoder"))
+
   if (doWarmup) {
     for {
       time <- 0.to(2)
@@ -122,48 +149,80 @@ class GeocodeServerImpl(store: GeocodeStorageReadService, doWarmup: Boolean) ext
       var lines = new BufferedSource(getClass.getResourceAsStream("/warmup/geocodes.txt")).getLines.take(10000).toList
 
       logger.info("Warming up by geocoding %d queries".format(lines.size))
-      lines.zipWithIndex.foreach({ case (line, index) => {
+      Await.result(Future.collect(lines.zipWithIndex.map({ case (line, index) => {
         if (index % 1000 == 0) {
           logger.info("finished %d queries".format(index))
         }
-        new GeocodeRequestDispatcher(store).geocode(GeocodeRequest.newBuilder.query(line).result)
-        new GeocodeRequestDispatcher(store).geocode(GeocodeRequest.newBuilder.query(line).autocomplete(true).result)
-      }})
+        queryFuturePool {
+          new GeocodeRequestDispatcher(store).geocode(GeocodeRequest.newBuilder.query(line).result)
+          new GeocodeRequestDispatcher(store).geocode(GeocodeRequest.newBuilder.query(line).autocomplete(true).result)
+        }
+      }}).toSeq))
       logger.info("done")
 
       val revgeoLines = new BufferedSource(getClass.getResourceAsStream("/warmup/revgeo.txt")).getLines.take(10000).toList
       logger.info("Warming up by reverse geocoding %d queries".format(lines.size))
-      revgeoLines.zipWithIndex.foreach({ case (line, index) => {
+      Await.result(Future.collect(revgeoLines.zipWithIndex.map({ case (line, index) => {
         if (index % 1000 == 0) {
           logger.info("finished %d queries".format(index))
         }
         val parts = line.split(",")
-        new ReverseGeocoderImpl(store, GeocodeRequest.newBuilder.ll(GeocodePoint(parts(0).toDouble, parts(1).toDouble)).result).reverseGeocode()
-        new ReverseGeocoderImpl(store, GeocodeRequest.newBuilder.ll(GeocodePoint(parts(0).toDouble, parts(1).toDouble)).radius(300).result).reverseGeocode()
-      }})
+        queryFuturePool {
+          new ReverseGeocoderImpl(store, GeocodeRequest.newBuilder.ll(GeocodePoint(parts(0).toDouble, parts(1).toDouble)).result).doGeocode()
+          new ReverseGeocoderImpl(store, GeocodeRequest.newBuilder.ll(GeocodePoint(parts(0).toDouble, parts(1).toDouble)).radius(300).result).doGeocode()
+        }
+      }}).toSeq))
     }
     logger.info("done")
     val labels = Stats.getLabels()
     Stats.clearAll()
     labels.foreach({case (k, v) => Stats.setLabel(k, v)})
+    System.gc()
   }
-
-  val queryFuturePool = FuturePool(StatsWrappedExecutors.create(24, 100, "geocoder"))
 
   def geocode(r: GeocodeRequest): Future[GeocodeResponse] = queryFuturePool {
     new GeocodeRequestDispatcher(store).geocode(r)
   }
 
   def reverseGeocode(r: GeocodeRequest): Future[GeocodeResponse] = queryFuturePool {
-    new ReverseGeocoderImpl(store, r).reverseGeocode()
+    new ReverseGeocoderImpl(store, r).doGeocode()
   }
 
   def bulkReverseGeocode(r: BulkReverseGeocodeRequest): Future[BulkReverseGeocodeResponse] = queryFuturePool {
-    new BulkReverseGeocoderImpl(store, r).reverseGeocode()
+    new BulkReverseGeocoderImpl(store, r).doGeocode()
   }
 
   def bulkSlugLookup(r: BulkSlugLookupRequest): Future[BulkSlugLookupResponse] = queryFuturePool {
-    new BulkSlugLookupImpl(store, r).slugLookup()
+    new BulkSlugLookupImpl(store, r).doGeocode()
+  }
+
+  def refreshStore(r: RefreshStoreRequest): Future[RefreshStoreResponse] = {
+    var success = true
+    if (enablePrivateEndpoints) {
+      try {
+        store.refresh
+      } catch {
+        case e: Exception => success = false
+      }
+    }
+    Future.value(RefreshStoreResponse(enablePrivateEndpoints && success))
+  }
+
+  def getS2CellInfos(r: S2CellInfoRequest): Future[S2CellInfoResponse] = {
+    if (enablePrivateEndpoints) {
+      val wktWriter = new WKTWriter
+      val cellInfos = (for {
+        idString <- r.cellIdsAsStrings
+        id <- Helpers.TryO(idString.toLong).toList
+        s2CellId = new S2CellId(id)
+      } yield {
+        val wkt = wktWriter.write(ShapefileS2Util.fullGeometryForCell(s2CellId))
+        S2CellIdInfo(id, s2CellId.level(), wkt)
+      }).toList
+      Future.value(S2CellInfoResponse(cellInfos))
+    } else {
+      Future.value(S2CellInfoResponse.newBuilder.result)
+    }
   }
 }
 
@@ -176,7 +235,11 @@ class HandleExceptions extends SimpleFilter[HttpRequest, HttpResponse] with Logg
         error.printStackTrace
         val statusCode = HttpResponseStatus.INTERNAL_SERVER_ERROR
         val errorResponse = new DefaultHttpResponse(HttpVersion.HTTP_1_1, statusCode)
-        errorResponse.setContent(ChannelBuffers.copiedBuffer(error.toString + "\n" + error.getStackTraceString, CharsetUtil.UTF_8))
+        errorResponse.setHeader("Content-Type", "application/json; charset=utf-8")
+        val errorMap = Map(
+          "exception" -> error.toString,
+          "stacktrace" -> error.getStackTraceString)
+        errorResponse.setContent(ChannelBuffers.copiedBuffer(Json.build(errorMap).toString, CharsetUtil.UTF_8))
         errorResponse
     }
   }
@@ -237,6 +300,7 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
         var fixedJson = """"longId":(\d+)""".r.replaceAllIn(json, m => "\"longId\":\"%s\"".format(m.group(1)))
         fixedJson = fixLongArray("parentIds", fixedJson)
         fixedJson = fixLongArray("longIds", fixedJson)
+        fixedJson = fixLongArray("s2Covering", fixedJson)
 
         callback.map(cb => {
           val sb = new StringBuilder(fixedJson.size + cb.size + 10)
@@ -302,6 +366,11 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
       })
     })
 
+    val autocompleteBias: Option[AutocompleteBias] = getOpt("autocompleteBias").flatMap(i => {
+      Helpers.TryO(i.toInt).flatMap(AutocompleteBias.findById _)
+        .orElse(AutocompleteBias.findByName(i))
+    })
+
     GeocodeRequest.newBuilder
       .query(getOpt("query"))
       .slug(getOpt("slug"))
@@ -311,6 +380,7 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
       .radius(getOpt("radius").map(_.toInt))
       .strict(getOpt("strict").map(_.toBoolean))
       .autocomplete(getOpt("autocomplete").map(_.toBoolean))
+      .autocompleteBias(autocompleteBias)
       .ll(ll)
       .maxInterpretations(getOpt("maxInterpretations").map(_.toInt))
       .allowedSources(getOpt("allowedSources").toList.flatMap(_.split(",")))
@@ -326,7 +396,7 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
     val path = queryString.getPath()
     val callback = params.get("callback").flatMap(_.headOption)
 
-    def getJsonRequest[R <: TBase[_ <: TBase[_, _], _ <: TFieldIdEnum] with Record[R]](meta: MetaRecord[R]): R = {
+    def getJsonRequest[R <: TBase[_ <: TBase[_, _], _ <: TFieldIdEnum] with Record[R]](meta: MetaRecord[R, _]): R = {
       var json: Option[String] = params.get("json").map(a => a(0))
 
       val content = request.getContent()
@@ -334,7 +404,7 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
         json = Some(content.toString(CharsetUtil.UTF_8))
       }
       val deserializer = new TDeserializer(new TReadableJSONProtocol.Factory(false))
-      val thriftRequest = meta.createRawRecord
+      val thriftRequest = meta.createRecord
       deserializer.deserialize(thriftRequest, json.get.getBytes("UTF-8"))
       thriftRequest
     }
@@ -360,6 +430,10 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
       handleQuery(getJsonRequest(BulkReverseGeocodeRequest), geocoder.bulkReverseGeocode, callback)
     } else if (path.startsWith("/search/bulkSlugLookup")) {
       handleQuery(getJsonRequest(BulkSlugLookupRequest), geocoder.bulkSlugLookup, callback)
+    } else if (path.startsWith("/private/refreshStore")) {
+      handleQuery(getJsonRequest(RefreshStoreRequest), geocoder.refreshStore, callback)
+    } else if (path.startsWith("/private/getS2CellInfos")) {
+      handleQuery(getJsonRequest(S2CellInfoRequest), geocoder.getS2CellInfos, callback)
     } else if (params.size > 0) {
       val request = parseGeocodeRequest(params.toMap)
 
@@ -387,11 +461,20 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
 
 object ServerStore {
   def getStore(config: GeocodeServerConfig): GeocodeStorageReadService = {
-    getStore(config.hfileBasePath, config.shouldPreload)
+    getStore(config.hfileBasePath, config.shouldPreload, config.hotfixBasePath)
   }
 
-  def getStore(path: String, shouldPreload: Boolean): GeocodeStorageReadService = {
-    new HFileStorageService(path, shouldPreload)
+  def getStore(hfileBasePath: String, shouldPreload: Boolean, hotfixBasePath: String): GeocodeStorageReadService = {
+    val underlying = new HFileStorageService(hfileBasePath, shouldPreload)
+    val hotfixSource = if (hotfixBasePath.nonEmpty) {
+      new JsonHotfixSource(hotfixBasePath)
+    } else {
+      new EmptyHotfixSource
+    }
+
+    new HotfixableGeocodeStorageService(
+      underlying,
+      new ConcreteHotfixStorageService(hotfixSource, underlying))
   }
 }
 
@@ -399,10 +482,16 @@ object GeocodeFinagleServer extends Logging {
   def main(args: Array[String]) {
     val handleExceptions = new HandleExceptions
 
+    val version = getClass.getPackage.getImplementationVersion
+    if (version != null) {
+      logger.info("starting version %s".format(version))
+      Stats.setLabel("version", version)
+    }
+
     val config: GeocodeServerConfig = GeocodeServerConfigSingleton.init(args)
 
     // Implement the Thrift Interface
-    val processor = new QueryLoggingGeocodeServerImpl(new GeocodeServerImpl(ServerStore.getStore(config), config.shouldWarmup))
+    val processor = new QueryLoggingGeocodeServerImpl(new GeocodeServerImpl(ServerStore.getStore(config), config.shouldWarmup, config.enablePrivateEndpoints))
 
     // Convert the Thrift Processor to a Finagle Service
     val service = new Geocoder.Service(processor, new TBinaryProtocol.Factory())
@@ -413,7 +502,7 @@ object GeocodeFinagleServer extends Logging {
     logger.info("serving slow query http/json on port %d".format(config.thriftServerPort + 3))
 
     val server: Server = ServerBuilder()
-      .bindTo(new InetSocketAddress(config.thriftServerPort))
+      .bindTo(new InetSocketAddress(config.host, config.thriftServerPort))
       .codec(ThriftServerFramedCodec())
       .reportTo(new FoursquareStatsReceiver)
       .name("geocoder")
@@ -430,7 +519,7 @@ object GeocodeFinagleServer extends Logging {
 
     if (config.runHttpServer) {
       ServerBuilder()
-        .bindTo(new InetSocketAddress(config.thriftServerPort + 1))
+        .bindTo(new InetSocketAddress(config.host, config.thriftServerPort + 1))
         .codec(Http())
         .name("geocoder-http")
         .reportTo(new FoursquareStatsReceiver)
@@ -438,7 +527,7 @@ object GeocodeFinagleServer extends Logging {
     }
 
     ServerBuilder()
-      .bindTo(new InetSocketAddress(config.thriftServerPort + 3))
+      .bindTo(new InetSocketAddress(config.host, config.thriftServerPort + 3))
       .codec(Http())
       .name("geocoder-slow-query-http")
       .reportTo(new FoursquareStatsReceiver)

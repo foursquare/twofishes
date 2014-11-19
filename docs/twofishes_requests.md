@@ -48,14 +48,21 @@ These queries also work as parameters to the debug interface either after the ? 
     - PARENT_ALL_NAMES - same, but for parents
     - WKB_GEOMETRY - include polygon boundary geometry in WKB format if available
     - WKT_GEOMETRY - include polygon boundary geometry in WKT format if available
+    - WKB_GEOMETRY_SIMPLIFIED - include simplified polygon boundary geometry in WKB format if available
+    - WKT_GEOMETRY_SIMPLIFIED - include simplified polygon boundary geometry in WKT format if available
+    - S2_COVERING - include S2 covering of polygon boundary as a list of S2 cell ids if available
     - REVGEO_COVERAGE - for ll+radius revgeo queries, turns on computing the percentage overlap between the circle query and the feature polygon. slow-ish
     - DISPLAY_NAME -  controls if we should fetch parents to construct a string like "New York, New York, US" for legacy reasons, this is automatically turned on for geocode queries for now. It's mainly here because reverse geocode clients often don't need it
 - radius=[radius in meters as an integer] -- defaults to 0 (point reverse geocode). If specified along with ll, will return all polygons touched by the circle defined by ll+radius. In strict geocoding mode, used for determining containment.
     
 ### Geocoder Only Paramters
 - autocomplete=[true/false] -- Defaults to false, whether or not to return partial-  matches as if powering an autocompleter
+- autocompleteBias=[AutocompleteBias integer or enum name] - i.e. autocompleteBias=BALANCED - influences how locally (relative to ll hint, if specified) and globally relevant results are mixed in autocomplete geocoding mode. Defaults to BALANCED.
+    - NONE - no bias
+    - BALANCED - mix locally and globally relevant results (DEFAULT)
+    - LOCAL - prefer locally relevant results
+    - GLOBAL - prefer globally relevant results
 - strict=[true/false] -- Defaults to false, if true, only returns results within the cc, bounds and ll+radius specified
-
 
 ### Bulk Revgeo Requests
 - method=bulkrevgeo - in this mode, ll is allowed to occur multiple times, each one is reverse geocoded. This method gains some efficiency in the response size if the points are closely clustered, but the server work happens in serial, so it is slower than executing a number of requests in parallel client-side. Working on it. ex <http://demo.twofishes.net/?ll=41.793252,12.48729&ll=40.74,-74&method=bulkrevgeo>

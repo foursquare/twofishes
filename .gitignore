@@ -42,3 +42,4 @@ eval*html
 indexes/*
 *.swp
 *.swo
+*.log

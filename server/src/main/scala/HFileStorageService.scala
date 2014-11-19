@@ -24,6 +24,7 @@ class HFileStorageService(originalBasepath: String, shouldPreload: Boolean) exte
   val nameMap = new NameIndexHFileInput(basepath, shouldPreload)
   val oidMap = new GeocodeRecordMapFileInput(basepath, shouldPreload)
   val geomMapOpt = GeometryMapFileInput.readInput(basepath, shouldPreload)
+  val s2CoveringMapOpt = S2CoveringMapFileInput.readInput(basepath, shouldPreload)
   val s2mapOpt = ReverseGeocodeMapFileInput.readInput(basepath, shouldPreload)
   val slugFidMap = SlugFidMapFileInput.readInput(basepath, shouldPreload)
 
@@ -66,10 +67,10 @@ class HFileStorageService(originalBasepath: String, shouldPreload: Boolean) exte
   def getBySlugOrFeatureIds(ids: Seq[String]) = {
     val idMap = (for {
       id <- ids
-      fid <- StoredFeatureId.fromUserInputString(id).orElse(slugFidMap.flatMap(_.get(id)))
+      fid <- slugFidMap.flatMap(_.get(id)).orElse(StoredFeatureId.fromUserInputString(id))
     } yield { (fid, id) }).toMap
 
-    getByFeatureIds(idMap.keys.toList).map({
+    getByFeatureIds(idMap.keys.toVector).map({
       case (k, v) => (idMap(k), v)
     })
   }
@@ -91,33 +92,25 @@ class HFileStorageService(originalBasepath: String, shouldPreload: Boolean) exte
     }).toMap
   }
 
+  def getS2CoveringByFeatureId(id: StoredFeatureId): Option[Seq[Long]] = {
+    s2CoveringMapOpt.flatMap(_.get(id))
+  }
+
+  def getS2CoveringByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, Seq[Long]] = {
+    (for {
+      id <- ids
+      covering <- getS2CoveringByFeatureId(id)
+    } yield {
+      (id -> covering)
+    }).toMap
+  }
+
   def getMinS2Level: Int = s2map.minS2Level
   def getMaxS2Level: Int = s2map.maxS2Level
   override def getLevelMod: Int = s2map.levelMod
 
-  override val hotfixesDeletes: Seq[StoredFeatureId] = {
-    val file = new File(basepath, "hotfixes_deletes.txt")
-    if (file.exists()) {
-      scala.io.Source.fromFile(file).getLines.toList.flatMap(i => StoredFeatureId.fromLegacyObjectId(new ObjectId(i)))
-    } else {
-      Nil
-    }
-  }
-
-  override val hotfixesBoosts: Map[StoredFeatureId, Int] = {
-    val file = new File(basepath, "hotfixes_boosts.txt")
-    if (file.exists()) {
-      scala.io.Source.fromFile(file).getLines.toList.map(l => {
-        val parts = l.split("[\\|\t, ]")
-        try {
-          (StoredFeatureId.fromLegacyObjectId(new ObjectId(parts(0))).get, parts(1).toInt)
-        } catch {
-          case _: Exception => throw new Exception("malformed boost line: %s --> %s".format(l, parts.toList))
-        }
-      }).toMap
-    } else {
-      Map.empty
-    }
+  def refresh() {
+    // no-op: do not refresh hfiles on-demand
   }
 }
 
@@ -195,13 +188,13 @@ class MapFileInput[K, V](basepath: String, index: Index[K, V], shouldPreload: Bo
     val (rv, duration) = Duration.inMilliseconds {
       val keyBytes = index.keySerde.toBytes(key)
       if (reader.get(new BytesWritable(keyBytes), valueBytes) != null) {
-        Some(index.valueSerde.fromBytes(valueBytes.getBytes))
+        Some(index.valueSerde.fromBytes(valueBytes.copyBytes))
       } else {
         None
       }
     }
 
-    Stats.addMetric(lookupMetricKey, duration.inMilliseconds.toInt)
+    // Stats.addMetric(lookupMetricKey, duration.inMilliseconds.toInt)
     // This might just end up logging GC pauses, but it's possible we have
     // degenerate keys/values as well.
     if (duration.inMilliseconds > 100) {
@@ -217,8 +210,8 @@ class NameIndexHFileInput(basepath: String, shouldPreload: Boolean) {
   val nameIndex = new HFileInput(basepath, Indexes.NameIndex, shouldPreload)
   val prefixMapOpt = PrefixIndexMapFileInput.readInput(basepath, shouldPreload)
 
-  def get(name: String): List[StoredFeatureId] = {
-    nameIndex.lookup(name).toList.flatten
+  def get(name: String): Seq[StoredFeatureId] = {
+    nameIndex.lookup(name).toVector.flatten
   }
 
   def getPrefix(name: String): Seq[StoredFeatureId] = {
@@ -228,8 +221,8 @@ class NameIndexHFileInput(basepath: String, shouldPreload: Boolean) {
       case _  =>
         nameIndex.lookupPrefix(name).flatten
     }
-    if (seq.size > 2000) {
-      throw new Exception("too many matches")
+    if (seq.size > 2500) {
+      throw new Exception("too many matches for %s: %s".format(name, seq.size))
     }
     seq
   }
@@ -252,8 +245,8 @@ class PrefixIndexMapFileInput(basepath: String, shouldPreload: Boolean) {
     "MAX_PREFIX_LENGTH",
     throw new Exception("missing MAX_PREFIX_LENGTH")).toInt
 
-  def get(name: String): List[StoredFeatureId] = {
-    prefixIndex.lookup(name).toList.flatten
+  def get(name: String): Seq[StoredFeatureId] = {
+    prefixIndex.lookup(name).toVector.flatten
   }
 }
 
@@ -283,8 +276,8 @@ class ReverseGeocodeMapFileInput(basepath: String, shouldPreload: Boolean) {
     "levelMod",
     throw new Exception("missing levelMod")).toInt
 
-  def get(cellid: Long): List[CellGeometry] = {
-    s2Index.lookup(cellid).toList.flatMap(_.cells)
+  def get(cellid: Long): Seq[CellGeometry] = {
+    s2Index.lookup(cellid).toVector.flatMap(_.cells)
   }
 }
 
@@ -306,6 +299,24 @@ class GeometryMapFileInput(basepath: String, shouldPreload: Boolean) {
   }
 }
 
+object S2CoveringMapFileInput {
+  def readInput(basepath: String, shouldPreload: Boolean) = {
+    if (new File(basepath, "s2_covering").exists()) {
+      Some(new S2CoveringMapFileInput(basepath, shouldPreload))
+    } else {
+      None
+    }
+  }
+}
+
+class S2CoveringMapFileInput(basepath: String, shouldPreload: Boolean) {
+  val s2CoveringIndex = new MapFileInput(basepath, Indexes.S2CoveringIndex, shouldPreload)
+
+  def get(id: StoredFeatureId): Option[Seq[Long]] = {
+    s2CoveringIndex.lookup(id)
+  }
+}
+
 object SlugFidMapFileInput {
   def readInput(basepath: String, shouldPreload: Boolean) = {
     if (new File(basepath, "id-mapping").exists()) {
@@ -320,11 +331,7 @@ class SlugFidMapFileInput(basepath: String, shouldPreload: Boolean) {
   val idMappingIndex = new MapFileInput(basepath, Indexes.IdMappingIndex, shouldPreload)
 
   def get(s: String): Option[StoredFeatureId] = {
-    if (s.contains(":")) {
-      StoredFeatureId.fromHumanReadableString(s)
-    } else {
-      idMappingIndex.lookup(s)
-    }
+    idMappingIndex.lookup(s)
   }
 }
 

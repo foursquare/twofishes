@@ -34,11 +34,10 @@ class IdIndexer(
     val featureCursor = MongoGeocodeDAO.find(MongoDBObject())
     featureCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
     val extraIds: List[(String, StoredFeatureId)]  = featureCursor.flatMap(f => {
-      f.ids.filterNot(_ =? f._id).flatMap(id => {
-        for {
-          extraId <- StoredFeatureId.fromLong(id)
-        } yield { (extraId.humanReadableString -> f.featureId) }
-      })
+      (for {
+        id <- f.ids.filterNot(_ =? f._id)
+        extraId <- StoredFeatureId.fromLong(id)
+      } yield { List((id.toString -> f.featureId), (extraId.humanReadableString -> f.featureId)) }).flatten
     }).toList
 
     val writer = buildMapFileWriter(index)

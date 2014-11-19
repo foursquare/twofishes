@@ -5,18 +5,21 @@ import java.text.Normalizer
 import java.util.regex.Pattern
 
 object NameNormalizer {
+  val splitTokenRegex = "[ ,]"
   def tokenize(s: String): List[String] = {
-    s.split(" ").filterNot(_.isEmpty).toList
+    s.split(splitTokenRegex).filterNot(_.isEmpty).toList
   }
 
   val spaceRegexp = " +".r
   val punctRegexp = "\\p{Punct}".r
   val dotsAndOtherRegexp = "['\u2018\u2019\\.\u2013]".r
 
+  val useJavaSevenDottedIHack = System.getProperty("javaSevenDottedIHack") != null
+
   def normalize(s: String): String = {
     var n: String = null
 
-    if (System.getProperty("javaSevenDottedIHack") != null) {
+    if (useJavaSevenDottedIHack) {
       // change uppercase dotted I to uppercase I
       // java7 does something weird when it lowercases this that isn't
       // backwards compatible with an index generated in 6

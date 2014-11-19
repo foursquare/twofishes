@@ -3,15 +3,22 @@
 package com.foursquare.twofishes.util
 
 import com.google.common.geometry.{S2CellId, S2LatLng, S2LatLngRect, S2Polygon, S2PolygonBuilder, S2RegionCoverer}
-import com.vividsolutions.jts.geom.{Geometry, Polygon, Point}
+import com.vividsolutions.jts.geom.{Coordinate, Geometry, Polygon, Point}
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, DataInputStream, DataOutputStream}
 import scalaj.collection.Implicits._
 
 trait RevGeoConstants {
-  val minS2Level = 8
-  val maxS2Level = 12
-  val maxCells = 10000
-  val defaultLevelMod = 2
+  val minS2LevelForRevGeo = 8
+  val maxS2LevelForRevGeo = 12
+  val defaultLevelModForRevGeo = 2
+  val defaultMaxCellsHintForRevGeo = 1000
+}
+
+trait S2CoveringConstants {
+  val minS2LevelForS2Covering = 4
+  val maxS2LevelForS2Covering = 20
+  val defaultLevelModForS2Covering = 1
+  val defaultMaxCellsHintForS2Covering = 50
 }
 
 object RevGeoConstants extends RevGeoConstants
@@ -102,10 +109,10 @@ object GeometryUtils extends RevGeoConstants {
   }
 
   def s2PolygonCovering(geomCollection: Geometry,
-    minS2Level: Int = minS2Level,
-    maxS2Level: Int = maxS2Level,
-    maxCellsHintWhichMightBeIgnored: Option[Int] = Some(maxCells),
-    levelMod: Option[Int] = Some(defaultLevelMod)
+    minS2Level: Int = minS2LevelForRevGeo,
+    maxS2Level: Int = maxS2LevelForRevGeo,
+    maxCellsHintWhichMightBeIgnored: Option[Int] = None,
+    levelMod: Option[Int] = Some(defaultLevelModForRevGeo)
   ): Seq[S2CellId] = {
     if (geomCollection.isInstanceOf[Point]) {
       val point = geomCollection.asInstanceOf[Point]
@@ -160,37 +167,5 @@ object GeometryUtils extends RevGeoConstants {
     })
 
     allCells.result.toSeq
-  }
-
-  val EarthRadiusInMeters: Int = 6378100 // Approximately a little less than the Earth's equatorial radius
-
-  def getDistanceAccurate(geolat1: Double, geolong1: Double, geolat2: Double, geolong2: Double): Double = {
-    val theta = geolong1 - geolong2
-    val dist = math.sin(math.toRadians(geolat1)) * math.sin(math.toRadians(geolat2)) +
-               math.cos(math.toRadians(geolat1)) * math.cos(math.toRadians(geolat2)) * math.cos(math.toRadians(theta))
-    // Clamp dist to [-1, 1] since that's the defined range of outputs of cosine.
-    (EarthRadiusInMeters * math.acos(math.min(math.max(dist, -1.0), 1.0)))
-  }
-
-  def pointToShapeDistance(point: Point, shape: Geometry): Double = {
-    // 1. compute linear distance
-    // 2. buffer point by distance plus epsilon
-    // 3. intersect buffered point with shape
-    // 4. get centroid for intersection
-    // 5. compute real distance from point to centroid
-    val dist = point.distance(shape)
-    if (dist == 0.0) {
-      dist
-    } else {
-      var epsilon = 0.0000001
-      var bufferedPoint = point.buffer(dist + epsilon)
-      while (!bufferedPoint.intersects(shape)) {
-        epsilon = epsilon * 10
-        bufferedPoint = point.buffer(dist + epsilon)
-      }
-
-      val centroid = bufferedPoint.intersection(shape).getCentroid()
-      getDistanceAccurate(point.getY(), point.getX(), centroid.getY(), centroid.getX())
-    }
   }
 }

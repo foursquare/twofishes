@@ -16,7 +16,7 @@ The Data
 - [Twofishes Input Data File Documentation](docs/twofishes_inputs.md)
 
 
-Geonames is great, but not perfect. Southeast Asia doesn't have the most comprehensive coverage. Geonames doesn't have bounding boxes, so we add some of those from http://code.flickr.com/blog/2011/01/08/flickr-shapefiles-public-dataset-2-0/ where possible. 
+Geonames is great, but not perfect. Southeast Asia doesn't have the most comprehensive coverage. Geonames doesn't have bounding boxes, so we add some of those from http://code.flickr.com/blog/2011/01/08/flickr-shapefiles-public-dataset-2-0/ where possible.
 
 Geonames is licensed under CC-BY http://www.geonames.org/. They take a pretty liberal interpretation of this and just ask for about page attribution if you make use of the data.
 Flickr shapefiles are public domain
@@ -39,7 +39,7 @@ US county data -- ftp://ftp2.census.gov/geo/tiger/TIGER2010/COUNTY/2010/
 ../shputils/shape-gn-matchr.py --dbname=gis --shp_name_keys=NAME10 --allowed_gn_classes='' --allowed_gn_codes=ADM2 --fallback_allowed_gn_classes='' --fallback_allowed_gn_codes='' tl_2010_us_county10.shp gn-us-adm2.shp
 
 MX locality data -- http://blog.diegovalle.net/2013/02/download-shapefiles-of-mexico.html
-ogr2ogr -t_srs EPSG:4326  mx-4326.shp MUNICIPIOS.shp 
+ogr2ogr -t_srs EPSG:4326  mx-4326.shp MUNICIPIOS.shp
 ./shputils/shape-gn-matchr.py --dbname=gis --shp_name_keys=NOM_MUN mx-4326.shp gn-mx-localities.shp
 
 Requirements
@@ -67,16 +67,29 @@ Serving
 =======
 *   ./serve.py -p 8080 /output/dir – Where /output/dir will contain a subdirectory whose name will be the date of the most recent build, for example `2013-02-25-01-08-23.803740`. You need to point to this subdirectory or to a folder called `latest` which is created during the build process (in the twofishes directory) and is a symlink to the most recent dated subdirectory.
 *   server should be responding to finagle-thrift on the port specified (8080 by default), and responding to http requests at the next port up: <http://localhost:8081/?query=rego+park+ny> <http://localhost:8081/static/geocoder.html#rego+park>
-*   if you want to run vanilla thrift-rpc (not finagle). use ./sbt "server/run-main com.foursquare.twofishes.GeocodeThriftServer --port 8080 --hfile_basepath ." instead
+*   use the --host flag to specify a bind address (defaults to 0.0.0.0)
+*   to enable hotfixes and allow refreshing, use the --hotfix\_basepath and --enable\_private\_endpoints params as detailed under [Hotfixes](#hotfixes) below 
+
 NOTE: mongod is not required for serving, only index building.
 
 A better option is to run "./sbt server/assembly" and then use the resulting server/target/server-assembly-VERSION.jar. Serve that with java -jar JARFILE --hfile_basepath /directory
+
+Hotfixes
+========
+<a name="hotfixes"></a>
+Hotfixes are expressed as fine-grained edits on top of features in the index. Features can be quickly added, removed or modified on a live server without requiring a full index rebuild and redeploy. Most fields on a [GeocodeServingFeature](https://github.com/foursquare/twofishes/blob/master/interface/src/main/thrift/geocoder.thrift#L216) and fields on its nested structs can be edited via a [GeocodeServingFeatureEdit](https://github.com/foursquare/twofishes/blob/master/interface/src/main/thrift/hotfix_edits.thrift#L35) object.
+
+To enable hotfix support, the server can be pointed to a hotfix directory at startup via the --hotfix\_basepath param. Any .json files found in this directory will be deserialized from JSON to Thrift.
+
+There is only basic tooling to build these JSON hotfix files at present. In [JsonHotfixFileBuilder.scala](https://github.com/foursquare/twofishes/blob/master/server/src/main/scala/JsonHotfixFileBuilder.scala), use `GeocodeServingFeatureEdit.newBuilder` to build up individual hotfixes in code. Then run build-hotfix-file.py specifying an output file. I will provide a better way shortly.
+
+The server can reload hotfixes on-demand via the /refreshStore endpoint. There is no authentication on this endpoint (or any other private endpoints), so it is disabled by default. Use the --enable\_private\_endpoints param to enable at your own risk, only if your servers are not publicly accessible. When enabled, calling this endpoint on an individual server will cause it to re-scan the hotfix_basepath directory. Use the helper script refresh-store.py.
 
 Troubleshooting
 ===============
 If you see a java OutOfMemory error at start, you may need to up your # of mapped files
 
-on linux: sysctl -w vm.max_map_count = 131072
+on linux: sysctl -w vm.max\_map\_count = 131072
 
 Talking to the Server
 =====================

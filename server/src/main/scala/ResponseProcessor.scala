@@ -11,6 +11,7 @@ import com.vividsolutions.jts.simplify.DouglasPeuckerSimplifier
 import java.nio.ByteBuffer
 import scala.collection.mutable.{HashSet, ListBuffer}
 import scalaj.collection.Implicits._
+import com.twitter.ostrich.stats.Stats
 
 // Sort a list of features, smallest to biggest
 object GeocodeServingFeatureOrdering extends Ordering[GeocodeServingFeature] {
@@ -19,32 +20,14 @@ object GeocodeServingFeatureOrdering extends Ordering[GeocodeServingFeature] {
   }
 }
 
-object ResponseProcessor {
-  def generateResponse(
-    debugLevel: Int,
-    logger: MemoryLogger,
-    interpretations: Seq[GeocodeInterpretation],
-    requestGeom: Option[Geometry] = None): GeocodeResponse = {
-    val responseBuilder = GeocodeResponse.newBuilder
-      .interpretations(interpretations)
-    if (debugLevel > 0) {
-      responseBuilder.debugLines(logger.getLines)
-      requestGeom.foreach(geom => {
-        val wktWriter = new WKTWriter
-        responseBuilder.requestWktGeometry(wktWriter.write(geom))
-      })
-    }
-    responseBuilder.result
-  }
-}
-
 // After generating parses, the code in this class is called to clean that up into
 // GeocodeResponse/GeocodeInterpretation to return to the client
 class ResponseProcessor(
   req: CommonGeocodeRequestParams,
   store: GeocodeStorageReadService,
-  logger: MemoryLogger
-) extends GeocoderImplTypes {
+  logger: MemoryLogger,
+  pickBestNamesForAutocomplete: Boolean = false
+) extends GeocoderTypes {
   def responseIncludes(include: ResponseIncludes): Boolean = GeocodeRequestUtils.responseIncludes(req, include)
 
   def dedupeParses(parses: SortedParseSeq): SortedParseSeq = {
@@ -149,6 +132,9 @@ class ResponseProcessor(
       return bucketKey
     }
 
+    Stats.addMetric("responseProcessor.interpretations_to_dedup", parseMap.size)
+    Stats.addMetric("responseProcessor.dedup_buckets", buckets.size)
+
     val dedupedMap: Seq[(Parse[Sorted], Int)] = for {
       (textKey, parsePairs) <- parseMap.toSeq
       // bucket into 0.1 degree buckets (= 11km)
@@ -176,27 +162,29 @@ class ResponseProcessor(
       parents: Seq[GeocodeServingFeature],
       parse: Option[Parse[Sorted]],
       polygonMap: Map[StoredFeatureId, Geometry],
+      s2CoveringMap: Map[StoredFeatureId, Seq[Long]],
       numExtraParentsRequired: Int = 0,
       fillHighlightedName: Boolean = false,
       includeAllNames: Boolean,
       parentIds: Seq[Long] = Nil
-    ): GeocodeFeature.Mutable = {
+    ): MutableGeocodeFeature = {
     // set name
     val mutableFeature = f.mutableCopy
-    fixFeatureMutable(mutableFeature, parents, parse, polygonMap, numExtraParentsRequired,
+    fixFeatureMutable(mutableFeature, parents, parse, polygonMap, s2CoveringMap, numExtraParentsRequired,
       fillHighlightedName, includeAllNames, parentIds)
   }
 
   def fixFeatureMutable(
-    mutableFeature: GeocodeFeature.Mutable,
+    mutableFeature: MutableGeocodeFeature,
     parents: Seq[GeocodeServingFeature],
     parse: Option[Parse[Sorted]],
     polygonMap: Map[StoredFeatureId, Geometry],
+    s2CoveringMap: Map[StoredFeatureId, Seq[Long]],
     numExtraParentsRequired: Int = 0,
     fillHighlightedName: Boolean = false,
     includeAllNames: Boolean = false,
     parentIds: Seq[Long] = Nil
-  ): GeocodeFeature.Mutable = {
+  ): MutableGeocodeFeature = {
     val f = mutableFeature
     val name = NameUtils.bestName(f, Some(req.lang), false).map(_.name).getOrElse("")
     mutableFeature.name_=(name)
@@ -361,6 +349,18 @@ class ResponseProcessor(
       }
     }
 
+    if (responseIncludes(ResponseIncludes.S2_COVERING)) {
+      for {
+        longId <- mutableFeature.longIdOption
+        fid <- StoredFeatureId.fromLong(longId)
+        s2Covering <- s2CoveringMap.get(fid)
+      } {
+        val mutableGeometry = mutableFeature.geometry.mutableCopy
+        mutableGeometry.s2Covering_=(s2Covering.toList)
+        mutableFeature.geometry_=(mutableGeometry)
+      }
+    }
+
     mutableFeature
   }
 
@@ -371,13 +371,13 @@ class ResponseProcessor(
     sortedParsesIn: SortedParseSeq,
     parseParams: ParseParams,
     polygonMap: Map[StoredFeatureId, Geometry],
+    s2CoveringMap: Map[StoredFeatureId, Seq[Long]],
     fixAmbiguousNames: Boolean,
     dedupByMatchedName: Boolean = false
   ): Seq[GeocodeInterpretation] = {
     val tokens = parseParams.tokens
     val originalTokens = parseParams.originalTokens
     val connectorStart = parseParams.connectorStart
-    val connectorEnd = parseParams.connectorEnd
     val hadConnector = parseParams.hadConnector
 
     // sortedParses.foreach(p => {
@@ -415,7 +415,7 @@ class ResponseProcessor(
       val what = if (hadConnector) {
         originalTokens.take(connectorStart).mkString(" ")
       } else {
-        val whatTokens = tokens.take(tokens.size - parseLength)
+        val whatTokens = originalTokens.take(originalTokens.size - parseLength)
       	(if (whatTokens.lastOption.exists(_ == "in")) {
           whatTokens.dropRight(1)
         } else {
@@ -443,7 +443,7 @@ class ResponseProcessor(
         Nil
       }
 
-      val fixedFeature = fixFeature(feature, sortedParents, Some(p), polygonMap,
+      val fixedFeature = fixFeature(feature, sortedParents, Some(p), polygonMap, s2CoveringMap,
         fillHighlightedName=parseParams.tokens.size > 0,
         includeAllNames=responseIncludes(ResponseIncludes.ALL_NAMES),
         parentIds=p(0).fmatch.scoringFeatures.parentIds)
@@ -465,7 +465,7 @@ class ResponseProcessor(
             .flatMap(StoredFeatureId.fromLong _)
             .flatMap(parentFid => parentMap.get(parentFid)).sorted
           // parents don't need polygons, what is wrong with me?
-          fixFeature(parentFeature.feature, sortedParentParents, None, Map.empty,
+          fixFeature(parentFeature.feature, sortedParentParents, None, Map.empty, Map.empty,
             fillHighlightedName=parseParams.tokens.size > 0,
             includeAllNames=responseIncludes(ResponseIncludes.PARENT_ALL_NAMES),
             parentIds=parentFeature.scoringFeatures.parentIds)
@@ -509,7 +509,7 @@ class ResponseProcessor(
             val sortedParents = p(0).fmatch.scoringFeatures.parentIds
               .flatMap(id => StoredFeatureId.fromLong(id).flatMap(parentMap.get))
               .sorted(GeocodeServingFeatureOrdering)
-            fixFeatureMutable(interp.feature.mutable, sortedParents, Some(p), polygonMap,
+            fixFeatureMutable(interp.feature.mutable, sortedParents, Some(p), polygonMap, s2CoveringMap,
               numExtraParentsRequired=1, fillHighlightedName=parseParams.tokens.size > 0,
               includeAllNames=responseIncludes(ResponseIncludes.PARENT_ALL_NAMES))
           })
@@ -525,7 +525,7 @@ class ResponseProcessor(
     preferAbbrev: Boolean,
     matchedStringOpt: Option[String]
   ): Option[BestNameMatch] = {
-    NameUtils.bestName(f, lang, preferAbbrev, matchedStringOpt, req.debug, logger)
+    NameUtils.bestName(f, lang, preferAbbrev, matchedStringOpt, req.debug, logger, pickBestNamesForAutocomplete)
   }
 
   def filterParses(parses: SortedParseSeq, parseParams: ParseParams): SortedParseSeq = {
@@ -542,13 +542,6 @@ class ResponseProcessor(
       parses
     }
     logger.ifDebug("have %d parses after filtering types/woes/restricts", goodParses.size)
-
-    goodParses = goodParses.filterNot(p => {
-      p.headOption.exists(f =>
-        StoredFeatureId.fromLong(f.fmatch.longId).exists(fid => store.hotfixesDeletes.has(fid)))
-    })
-
-    logger.ifDebug("have %d parses after filtering from delete hotfixes", goodParses.size)
 
     goodParses = goodParses.filter(p => {
       val parseLength = p.tokenLength
@@ -579,13 +572,9 @@ class ResponseProcessor(
     parses: SortedParseSeq,
     parseParams: ParseParams,
     originalMaxInterpretations: Int,
+    requestGeom: Option[Geometry],
     dedupByMatchedName: Boolean = false
   ) = {
-    val tokens = parseParams.tokens
-    val originalTokens = parseParams.originalTokens
-    val connectorStart = parseParams.connectorStart
-    val connectorEnd = parseParams.connectorEnd
-
     // filter out parses that are really the same feature
     // this code is gross gross gross
 
@@ -625,7 +614,7 @@ class ResponseProcessor(
       if (req.debug > 0) {
         logger.ifDebug("%d parses after deduping", dedupedParses.size)
         dedupedParses.zipWithIndex.foreach({case (parse, index) =>
-          logger.ifDebug("%d: deduped parse ids: %s (score: %f)", index, parse.map(f =>
+          logger.ifDebug("%d: deduped parse ids: %s (score: %d)", index, parse.map(f =>
             StoredFeatureId.fromLong(f.fmatch.longId).get), parse.finalScore)
         })
       }
@@ -643,7 +632,32 @@ class ResponseProcessor(
     } else {
       Map.empty
     }
-    ResponseProcessor.generateResponse(req.debug, logger, hydrateParses(
-      sortedDedupedParses, parseParams, polygonMap, fixAmbiguousNames = true, dedupByMatchedName = dedupByMatchedName))
+    val s2CoveringMap: Map[StoredFeatureId, Seq[Long]] = if (GeocodeRequestUtils.responseIncludes(req, ResponseIncludes.S2_COVERING)) {
+      store.getS2CoveringByFeatureIds(sortedDedupedParses.flatMap(p =>
+        StoredFeatureId.fromLong(p(0).fmatch.longId)))
+    } else {
+      Map.empty
+    }
+    generateResponse(hydrateParses(
+      sortedDedupedParses, parseParams, polygonMap, s2CoveringMap, fixAmbiguousNames = true,
+      dedupByMatchedName = dedupByMatchedName),
+      requestGeom
+    )
+  }
+
+  def generateResponse(
+    interpretations: Seq[GeocodeInterpretation],
+    requestGeom: Option[Geometry]
+  ): GeocodeResponse = {
+    val responseBuilder = GeocodeResponse.newBuilder
+      .interpretations(interpretations)
+    if (req.debug > 0) {
+      responseBuilder.debugLines(logger.getLines)
+      requestGeom.foreach(geom => {
+        val wktWriter = new WKTWriter
+        responseBuilder.requestWktGeometry(wktWriter.write(geom))
+      })
+    }
+    responseBuilder.result
   }
 }

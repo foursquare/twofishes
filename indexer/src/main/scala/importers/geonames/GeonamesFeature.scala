@@ -69,7 +69,14 @@ object GeonamesFeature extends Logging {
         Some(in ++ List(
           (GeonamesFeatureColumns.FEATURE_CLASS -> "Z"),
           (GeonamesFeatureColumns.GEONAMEID ->
-            (new GeonamesZip(in(COUNTRY_CODE), in(NAME))).humanReadableString)
+            (new GeonamesZip(in(COUNTRY_CODE), in(NAME))).humanReadableString),
+           // hack to ensure US postal codes are always in prefix index
+          (GeonamesFeatureColumns.POPULATION ->
+            (if (in(COUNTRY_CODE) =? "US") {
+              1000
+            } else {
+              0
+            }).toString)
         ))
       } catch {
         case e: Exception =>
@@ -306,7 +313,7 @@ class GeonamesFeature(values: Map[GeonamesFeatureColumns.Value, String]) extends
   override def parents: List[String] = {
     AdminLevel.values.filter(_ < featureClass.adminLevel).flatMap(l =>
       makeAdminId(l)
-    ).toList.filterNot(_.contains(".00"))
+    ).toList.filterNot(_.endsWith(".00"))
   }
 
   override def population: Option[Int] = flatTryO {values.get(POPULATION).map(_.toInt)}

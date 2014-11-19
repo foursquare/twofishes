@@ -18,7 +18,7 @@ import scalaj.collection.Implicits._
 class RevGeoIndexer(
   override val basepath: String,
   override val fidMap: FidMap,
-  polygonMap: Map[ObjectId, (Long, YahooWoeType)]
+  polygonMap: Map[ObjectId, List[(Long, YahooWoeType)]]
 ) extends Indexer with RevGeoConstants{
   val index = Indexes.S2Index
   override val outputs = Seq(index)
@@ -26,9 +26,9 @@ class RevGeoIndexer(
   lazy val writer = buildMapFileWriter(
     index,
     Map(
-      "minS2Level" -> minS2Level.toString,
-      "maxS2Level" -> maxS2Level.toString,
-      "levelMod" -> defaultLevelMod.toString
+      "minS2Level" -> minS2LevelForRevGeo.toString,
+      "maxS2Level" -> maxS2LevelForRevGeo.toString,
+      "levelMod" -> defaultLevelModForRevGeo.toString
     )
   )
 
@@ -45,7 +45,7 @@ class RevGeoIndexer(
     var currentCells = new ListBuffer[CellGeometry]
     for {
       (revgeoIndexRecord, index) <- revGeoCursor.zipWithIndex
-      (geoid, woeType) <- polygonMap.get(revgeoIndexRecord.polyId)
+      (geoid, woeType) <- polygonMap.getOrElse(revgeoIndexRecord.polyId, Nil)
     } {
       if (index % 10000 == 0) {
         logger.info("processed %d of %d revgeo entries for %s".format(index, total, restrict))

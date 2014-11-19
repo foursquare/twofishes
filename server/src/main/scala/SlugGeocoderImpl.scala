@@ -12,15 +12,18 @@ class SlugGeocoderImpl(
   store: GeocodeStorageReadService,
   req: GeocodeRequest,
   logger: MemoryLogger
-) extends GeocoderImplTypes {
+) extends AbstractGeocoderImpl[GeocodeResponse] {
+  override val implName = "slug"
+
   val commonParams = GeocodeRequestUtils.geocodeRequestToCommonRequestParams(req)
   val responseProcessor = new ResponseProcessor(
     commonParams,
     store,
     logger)
 
-  def doSlugGeocode(slug: String): GeocodeResponse = {
-    Stats.incr("slug-lookup-requests", 1)
+  def doGeocodeImpl(): GeocodeResponse = {
+    val slug = req.slugOption.getOrElse("")
+
     val parseParams = ParseParams()
 
     val featureMap: Map[String, GeocodeServingFeature] = store.getBySlugOrFeatureIds(List(slug))
@@ -30,21 +33,22 @@ class SlugGeocoderImpl(
       FeatureMatch(0, 0, "", servingFeature)
     }).toList)
 
-    responseProcessor.buildFinalParses(List(parse), parseParams, 0)
+    responseProcessor.buildFinalParses(List(parse), parseParams, 0, requestGeom = None)
   }
 }
 
 class BulkSlugLookupImpl(
   store: GeocodeStorageReadService,
   req: BulkSlugLookupRequest
-) extends GeocoderImplTypes with BulkImplHelpers {
+) extends AbstractGeocoderImpl[BulkSlugLookupResponse] with BulkImplHelpers {
+  override val implName = "bulk_slug"
+
   val params = req.paramsOption.getOrElse(CommonGeocodeRequestParams.newBuilder.result)
   val logger = new MemoryLogger(params)
 
   val responseProcessor = new ResponseProcessor(params, store, logger)
 
-  def slugLookup(): BulkSlugLookupResponse = {
-    Stats.incr("bulk-slug-lookup-requests", 1)
+  def doGeocodeImpl(): BulkSlugLookupResponse = {
     val parseParams = ParseParams()
 
     val featureMap: Map[String, GeocodeServingFeature] = store.getBySlugOrFeatureIds(req.slugs)
@@ -56,16 +60,22 @@ class BulkSlugLookupImpl(
       Map.empty
     }
 
+    val s2CoveringMap: Map[StoredFeatureId, Seq[Long]] = if (GeocodeRequestUtils.responseIncludes(params, ResponseIncludes.S2_COVERING)) {
+      store.getS2CoveringByFeatureIds(featureMap.values.flatMap(f => StoredFeatureId.fromLong(f.longId)).toSeq)
+    } else {
+      Map.empty
+    }
+
     val parses = featureMap.values.map(servingFeature =>
       Parse[Sorted](Seq(FeatureMatch(0, 0, "", servingFeature)))).toSeq
 
     val interps: Seq[GeocodeInterpretation] = responseProcessor.hydrateParses(parses,
-      parseParams, polygonMap, fixAmbiguousNames = true, dedupByMatchedName = false)
+      parseParams, polygonMap, s2CoveringMap, fixAmbiguousNames = true, dedupByMatchedName = false)
 
     val (interpIdxs, retInterps, parents) = makeBulkReply(
       req.slugs,
       featureMap.mapValues(servingFeature => StoredFeatureId.fromLong(servingFeature.feature.longId).toList),
-      interps) 
+      interps)
 
     val respBuilder = BulkSlugLookupResponse.newBuilder
       .interpretations(interps)

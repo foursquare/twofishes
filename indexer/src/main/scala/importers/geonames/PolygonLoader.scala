@@ -5,7 +5,7 @@ import com.foursquare.geo.shapes.{FsqSimpleFeature, GeoJsonIterator, ShapeIterat
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes._
 import com.foursquare.twofishes.mongo.{GeocodeStorageWriteService, PolygonIndex, PolygonIndexDAO, MongoGeocodeDAO, RevGeoIndexDAO}
-import com.foursquare.twofishes.util.{AdHocId, CountryCodes, DurationUtils, FeatureNamespace, Helpers, NameNormalizer, StoredFeatureId}
+import com.foursquare.twofishes.util.{AdHocId, CountryCodes, DurationUtils, FeatureNamespace, GeonamesNamespace, Helpers, NameNormalizer, StoredFeatureId}
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.ibm.icu.text.Transliterator
@@ -15,6 +15,7 @@ import com.mongodb.MongoException
 import com.rockymadden.stringmetric.phonetic.MetaphoneMetric
 import com.rockymadden.stringmetric.similarity.JaroWinklerMetric
 import com.rockymadden.stringmetric.transform._
+import com.twitter.ostrich.stats.Stats
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTReader}
 import com.weiglewilczek.slf4s.Logging
@@ -110,6 +111,8 @@ class PolygonLoader(
 
   val matchExtension = ".match.tsv"
 
+  val coverOptions = CoverOptions(parserConfig.outputS2Covering, parserConfig.outputRevgeo)
+
   def getMatchingForFile(
     f: File,
     defaultNamespace: FeatureNamespace
@@ -153,9 +156,10 @@ class PolygonLoader(
     geom: Geometry,
     source: String
   ) {
+    Stats.incr("PolygonLoader.indexPolygon")
     val geomBytes = wkbWriter.write(geom)
     PolygonIndexDAO.save(PolygonIndex(polyId, geomBytes, source))
-    parser.revGeoMaster.foreach(_ ! CalculateCover(polyId, geomBytes))
+    parser.s2CoveringMaster.foreach(_ ! CalculateCover(polyId, geomBytes, coverOptions))
   }
 
   def updateRecord(
@@ -203,11 +207,12 @@ class PolygonLoader(
     val polygons =
       PolygonIndexDAO.find(MongoDBObject())
         .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
+    polygons.option = Bytes.QUERYOPTION_NOTIMEOUT
 
     val wkbReader = new WKBReader()
     for {
       (polyRecord, index) <- polygons.zipWithIndex
-      featureRecord <- MongoGeocodeDAO.find(MongoDBObject("_id" -> polyRecord._id))
+      featureRecord <- getFeaturesByPolyId(polyRecord._id)
       polyData = polyRecord.polygon
     } {
       val polygon = wkbReader.read(polyData)
@@ -219,27 +224,32 @@ class PolygonLoader(
           MongoGeocodeDAO.update(MongoDBObject("_id" -> featureRecord.featureId.longId),
             MongoDBObject("$set" ->
               MongoDBObject(
-                "polygon" -> None,
                 "hasPoly" -> false
               )
             ),
             false, false)
 
-          PolygonIndexDAO.remove(polyRecord)
+          Stats.incr("PolygonLoader.removeBadPolygon")
       }
     }
     logger.info("done reading in polys")
-    parser.revGeoMaster.foreach(_ ! Done())
+    parser.s2CoveringMaster.foreach(_ ! Done())
+  }
+
+  private def getFeaturesByPolyId(id: ObjectId) = {
+    val featureCursor = MongoGeocodeDAO.find(MongoDBObject("polyId" -> id))
+    featureCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
+    featureCursor.toList
   }
 
   def rebuildRevGeoIndex {
     RevGeoIndexDAO.collection.drop()
     PolygonIndexDAO.primitiveProjections[ObjectId](MongoDBObject(), "_id")
       .grouped(1000).foreach(group => {
-        parser.revGeoMaster.foreach(_ ! CalculateCoverFromMongo(group.toList))
+        parser.s2CoveringMaster.foreach(_ ! CalculateCoverFromMongo(group.toList, coverOptions))
       })
     logger.info("done reading in polys")
-    parser.revGeoMaster.foreach(_ ! Done())
+    parser.s2CoveringMaster.foreach(_ ! Done())
   }
 
   def buildQuery(geometry: Geometry, woeTypes: List[YahooWoeType]) = {
@@ -630,10 +640,26 @@ class PolygonLoader(
       val source = polygonMappingConfig.flatMap(_.source).getOrElse(features.file.getName())
       val sourceKey = "polygonMatching." + source
 
-      val geoidColumns = List("geonameid", "qs_gn_id", "gn_id")
-      val geoidsFromFile = geoidColumns.flatMap(feature.propMap.get)
+      val geoidColumnNameToNamespaceMapping =
+        List(
+          "qs_gn_id" -> GeonamesNamespace,
+          "gn_id" -> GeonamesNamespace) ++
+        FeatureNamespace.values.map(namespace => (namespace.name -> namespace))
+      val geoidsFromFile = for {
+          (columnName, namespace) <- geoidColumnNameToNamespaceMapping
+          values <- feature.propMap.get(columnName).toList
+          value <- values.split(",")
+          if value.nonEmpty
+        } yield {
+          // if value already contains ':' it was human-readable to begin with
+          if (value.indexOf(':') != -1) {
+            value
+          } else {
+            "%s:%s".format(namespace.name, value)
+          }
+        }
       val fidsFromFile = geoidsFromFile
-        .filterNot(_.isEmpty).flatMap(_.split(",")).map(_.replace(".0", ""))
+        .filterNot(_.isEmpty).map(_.replace(".0", ""))
         .flatMap(i => StoredFeatureId.fromHumanReadableString(i, Some(defaultNamespace)))
 
       val fids: List[StoredFeatureId] = if (fidsFromFileName.nonEmpty) {

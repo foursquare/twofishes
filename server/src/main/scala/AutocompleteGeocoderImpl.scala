@@ -7,8 +7,11 @@ import com.foursquare.twofishes.util.Lists.Implicits._
 import com.foursquare.twofishes.util.NameUtils.BestNameMatch
 import scala.collection.mutable.HashMap
 import scalaj.collection.Implicits._
+import com.foursquare.twofishes.AutocompleteBias.UnknownWireValue
 
-class GeocoderUtils(req: GeocodeRequest) {
+trait GeocoderUtils {
+  def req: GeocodeRequest
+
   lazy val requestGeom = GeocodeRequestUtils.getRequestGeometry(req)
 
   def isAcceptableFeature(req: GeocodeRequest, servingFeature: GeocodeServingFeature): Boolean = {
@@ -24,14 +27,20 @@ class GeocoderUtils(req: GeocodeRequest) {
 
 class AutocompleteGeocoderImpl(
   store: GeocodeStorageReadService,
-  req: GeocodeRequest,
+  val req: GeocodeRequest,
   logger: MemoryLogger
-) extends GeocoderUtils(req) with GeocoderImplTypes {
+) extends AbstractGeocoderImpl[GeocodeResponse] with GeocoderUtils {
+  val query = req.queryOption.getOrElse("")
+  val parseParams = new QueryParser(logger).parseQuery(query)
+
+  override val implName = "autocomplete"
+
   val commonParams = GeocodeRequestUtils.geocodeRequestToCommonRequestParams(req)
   val responseProcessor = new ResponseProcessor(
     commonParams,
     store,
-    logger)
+    logger,
+    pickBestNamesForAutocomplete = true)
 
   // Another delightful hack. We don't save a pointer to the specific name we matched
   // in our inverted index, instead, if we know which tokens matched this feature,
@@ -112,7 +121,7 @@ class AutocompleteGeocoderImpl(
           _.possibleNameHits.filter(_.flags.contains(FeatureNameFlags.PREFERRED))
           .map(_.lang))
 
-        val allowedLanguages = 
+        val allowedLanguages =
           Set("en", "abbr") ++ Set(req.lang) ++
           (if (preferredNameLanguages.nonEmpty) {
             preferredNameLanguages
@@ -130,15 +139,15 @@ class AutocompleteGeocoderImpl(
 
           val featureIsParent = parse.exists(_.fmatch.scoringFeatures.parentIds.has(fid))
           val featureIsExtraRelation = parse.exists(_.fmatch.scoringFeatures.extraRelationIds.has(fid))
-          val featureHasDependentCountryRelation = 
+          val featureHasDependentCountryRelation =
             featureMatch.fmatch.feature.woeType == YahooWoeType.COUNTRY &&
             parse.exists(p =>
                 CountryUtils.isCountryDependentOnCountry(p.fmatch.feature.cc, fcc))
-          
+
           val featureIsNotRepeat = !parse.exists(_.fmatch.longId.toString == fid)
           val featureNameHitsInAllowedLanguage =
             featureMatch.possibleNameHits.exists(n => allowedLanguages.has(n.lang))
-          
+
           val isValid = (featureIsParent || featureIsExtraRelation || featureHasDependentCountryRelation) &&
              featureIsNotRepeat && featureNameHitsInAllowedLanguage
 
@@ -160,7 +169,14 @@ class AutocompleteGeocoderImpl(
     if (name.flags.contains(FeatureNameFlags.PREFERRED) ||
         name.flags.contains(FeatureNameFlags.ABBREVIATION) ||
         name.flags.contains(FeatureNameFlags.LOCAL_LANG) ||
-        name.flags.contains(FeatureNameFlags.ALT_NAME)) {
+        name.flags.contains(FeatureNameFlags.ALT_NAME) ||
+        name.flags.contains(FeatureNameFlags.DEACCENT) ||
+        name.flags.contains(FeatureNameFlags.HISTORIC) ||
+        name.flags.contains(FeatureNameFlags.SHORT_NAME) ||
+        name.flags.contains(FeatureNameFlags.ALIAS) ||
+        // a lot of aliases tend to be names without a language
+        name.lang.isEmpty)
+    {
       val normalizedName = NameNormalizer.normalize(name.name)
       if (isEnd) {
         normalizedName.startsWith(query)
@@ -207,9 +223,11 @@ class AutocompleteGeocoderImpl(
             store.getByFeatureIds(featureIds)
               .filter({case (oid, servingFeature) => isAcceptableFeature(req, servingFeature)})
               .map({case (oid, servingFeature) => {
-              FeatureMatch(offset, offset + i, query, servingFeature,
-                servingFeature.feature.names.filter(n => matchName(n, query, isEnd)))
-            }}).toSeq
+                FeatureMatch(offset, offset + i, query, servingFeature,
+                  servingFeature.feature.names.filter(n => matchName(n, query, isEnd)))
+              }})
+            .filter(featureMatch => featureMatch.possibleNameHits.nonEmpty)
+            .toSeq
           } else {
             val parents = store.getByFeatureIds(possibleParents).toSeq
             val countriesOnWhichParentsAreDependent =
@@ -253,7 +271,7 @@ class AutocompleteGeocoderImpl(
     generateAutoParsesHelper(tokens, 0, Nil, spaceAtEnd).map(_.getSorted)
   }
 
-  def getMaxInterpretations = {
+  val maxInterpretations = {
     // TODO: remove once clients are filling this
     if (req.maxInterpretations <= 0) {
       3
@@ -262,17 +280,7 @@ class AutocompleteGeocoderImpl(
     }
   }
 
-  def downrankAirports(req: CommonGeocodeRequestParams, parse: Parse[Sorted], primaryFeature: GeocodeServingFeature, rest: Seq[FeatureMatch]): Option[(Int, String)] = {
-    if (primaryFeature.feature.woeType == YahooWoeType.AIRPORT) {
-      Some((-50000000, "downweight airports in autocomplete"))
-    } else {
-      None
-    }
-  }
-
-  def doAutocompleteGeocode(
-    parseParams: ParseParams
-  ) = {
+  def doGeocodeImpl(): GeocodeResponse = {
     val parses = generateAutoParses(parseParams.tokens, parseParams.spaceAtEnd)
     if (req.debug > 0) {
       parses.foreach(p => {
@@ -280,21 +288,67 @@ class AutocompleteGeocoderImpl(
       })
     }
 
-    var validParses = parses
+    val validParses = parses
       .filterNot(p =>
-        p.headOption.exists(f =>
+        p.headOption.isEmptyOr(f =>
           (f.fmatch.feature.woeType == YahooWoeType.ADMIN1 ||
            f.fmatch.feature.woeType == YahooWoeType.CONTINENT ||
            f.fmatch.feature.woeType == YahooWoeType.COUNTRY) &&
           (!commonParams.woeRestrict.has(f.fmatch.feature.woeType))
         )
       )
-      .sorted(new GeocodeParseOrdering(store, commonParams, logger, List(downrankAirports)))
+
+    val sortedParses = (req.autocompleteBiasOrDefault match {
+      case AutocompleteBias.NONE => validParses.sorted(
+        new GeocodeParseOrdering(commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteDefault, "default"))
+
+      case AutocompleteBias.BALANCED | AutocompleteBias.UnknownWireValue(_) => {
+        val globalRelevanceCutoff = 1000000
+        val defaultCutoff = 0
+
+        val worldCityRanker = new GeocodeParseOrdering(commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteWorldCityBias, "worldCity")
+        val worldCities = OrderedParseGroup(worldCityRanker, Some(defaultCutoff), Some(1))
+
+        val strictLocalRanker = new GeocodeParseOrdering(commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteStrictLocal, "strictLocal")
+        val locallyRelevant = OrderedParseGroup(strictLocalRanker, Some(defaultCutoff), Some(1))
+
+        val inCountryGlobalRanker = new GeocodeParseOrdering(commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteStrictInCountryGlobal, "inCountryGlobal")
+        val inCountryGloballyRelevant = OrderedParseGroup(inCountryGlobalRanker, Some(globalRelevanceCutoff), Some(1))
+
+        val globalBiasRanker = new GeocodeParseOrdering(commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteGlobalBias, "globalBias")
+        val globallyRelevant = OrderedParseGroup(globalBiasRanker, Some(globalRelevanceCutoff), Some(1))
+
+        val localBiasRanker = new GeocodeParseOrdering(commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteLocalBias, "localBias")
+        val inCountry = OrderedParseGroup(localBiasRanker, Some(defaultCutoff), Some(1))
+
+        val rest = OrderedParseGroup(globalBiasRanker, None, None)
+
+        val merger = new OrderedParseGroupMerger(
+          validParses,
+          Seq(
+            worldCities,
+            locallyRelevant,
+            inCountryGloballyRelevant,
+            globallyRelevant,
+            inCountry,
+            rest))
+
+        merger.merge()
+      }
+
+      case AutocompleteBias.LOCAL => validParses.sorted(
+        new GeocodeParseOrdering(commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteLocalBias, "localBias"))
+
+      case AutocompleteBias.GLOBAL => validParses.sorted(
+        new GeocodeParseOrdering(commonParams, logger, GeocodeParseOrdering.scorersForAutocompleteGlobalBias, "globalBias"))
+    }).toSeq
+
 
     responseProcessor.buildFinalParses(
-      validParses,
+      GeocodeParseOrdering.maybeReplaceTopResultWithRelatedCity(sortedParses),
       parseParams,
-      getMaxInterpretations,
+      maxInterpretations,
+      requestGeom,
       dedupByMatchedName = true)
   }
 }

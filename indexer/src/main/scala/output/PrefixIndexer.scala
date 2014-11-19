@@ -17,6 +17,9 @@ import scalaj.collection.Implicits._
 
 object PrefixIndexer {
   val MaxPrefixLength = 5
+  val MaxNameRecordsToFetchFromMongo = 1000
+  val MaxFidsToStorePerPrefix = 50
+  val MaxFidsWithPreferredNamesBeforeConsideringNonPreferred = 3
   val index = Indexes.PrefixIndex
 }
 
@@ -35,6 +38,18 @@ class PrefixIndexer(
     lists.toList.flatMap(l => {
       l.sortBy(_.pop * -1)
     })
+  }
+
+  private def roundRobinByCountryCode(records: List[NameIndex]): List[NameIndex] = {
+    // to ensure global distribution of features from all countries, group by cc
+    // and then pick the top from each group by turn and cycle through
+    // input: a (US), b (US), c (CN), d (US), e (AU), f (AU), g (CN)
+    // desired output: a (US), c (CN), e (AU), b (US), g (CN), f (AU), d (US)
+    records.groupBy(_.cc)                   // (US -> a, b, d), (CN -> c, g), (AU -> e, f)
+      .values.toList                        // (a, b, d), (c, g), (e, f)
+      .flatMap(_.zipWithIndex)              // (a, 0), (b, 1), (d, 2), (c, 0), (g, 1), (e, 0), (f, 1)
+      .groupBy(_._2).toList                 // (0 -> a, c, e), (1 -> b, g, f), (2 -> d)
+      .sortBy(_._1).flatMap(_._2.map(_._1)) // a, c, e, b, g, f, d
   }
 
   def sortRecordsByNames(records: List[NameIndex]) = {
@@ -61,10 +76,17 @@ class PrefixIndexer(
   def getRecordsByPrefix(prefix: String, limit: Int) = {
     val nameCursor = NameIndexDAO.find(
       MongoDBObject(
-        "name" -> MongoDBObject("$regex" -> "^%s".format(prefix)))
+        "name" -> prefix,
+        "excludeFromPrefixIndex" -> false)
     ).sort(orderBy = MongoDBObject("pop" -> -1)).limit(limit)
     nameCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
-    nameCursor
+    val prefixCursor = NameIndexDAO.find(
+      MongoDBObject(
+        "name" -> MongoDBObject("$regex" -> "^%s".format(prefix)),
+        "excludeFromPrefixIndex" -> false)
+    ).sort(orderBy = MongoDBObject("pop" -> -1)).limit(limit)
+    prefixCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
+    (nameCursor ++ prefixCursor).toSeq.distinct.take(limit)
   }
 
   def writeIndexImpl() {
@@ -94,7 +116,7 @@ class PrefixIndexer(
       if (index % 1000 == 0) {
         logger.info("done with %d of %d prefixes".format(index, numPrefixes))
       }
-      val records = getRecordsByPrefix(prefix, 1000)
+      val records = getRecordsByPrefix(prefix, PrefixIndexer.MaxNameRecordsToFetchFromMongo)
 
       val (woeMatches, woeMismatches) = records.partition(r =>
         bestWoeTypes.contains(r.woeType))
@@ -103,15 +125,15 @@ class PrefixIndexer(
         sortRecordsByNames(woeMatches.toList)
 
       val fids = new HashSet[StoredFeatureId]
-      prefSortedRecords.foreach(f => {
-        if (fids.size < 50) {
+      roundRobinByCountryCode(prefSortedRecords).foreach(f => {
+        if (fids.size < PrefixIndexer.MaxFidsToStorePerPrefix) {
           fids.add(f.fidAsFeatureId)
         }
       })
 
-      if (fids.size < 3) {
-        unprefSortedRecords.foreach(f => {
-          if (fids.size < 50) {
+      if (fids.size < PrefixIndexer.MaxFidsWithPreferredNamesBeforeConsideringNonPreferred) {
+        roundRobinByCountryCode(unprefSortedRecords).foreach(f => {
+          if (fids.size < PrefixIndexer.MaxFidsToStorePerPrefix) {
             fids.add(f.fidAsFeatureId)
           }
         })

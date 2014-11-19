@@ -15,8 +15,16 @@
   <div id="map" style="height: 600px; width: 600px; float: left"></div> <!-- width equals available horizontal space by default -->
   <div id="notmap" style="width: 400px; float: left">
     <form id="searchForm">
-      max interpretations: <input name="maxInterps" id="maxInterps" value="3" autocomplete="off"/></br>
+      max interpretations: <input name="maxInterps" id="maxInterps" value="5" autocomplete="off"/></br>
       latlng hint: <input name="latlng" id="latlng" autocomplete="off"/></br>
+      woeRestrict: <input name="woeRestrict" id="woeRestrict" autocomplete="off"/></br>
+      <label>
+        AutocompleteBias<br>
+        <input type="radio" id="biasNone" name="autocompleteBias" value="NONE">NONE<br>
+        <input type="radio" id="biasBalanced" name="autocompleteBias" value="BALANCED" checked="checked">BALANCED<br>
+        <input type="radio" id="biasLocal" name="autocompleteBias" value="LOCAL">LOCAL<br>
+        <input type="radio" id="biasGlobal" name="autocompleteBias" value="GLOBAL">GLOBAL<br>
+      </label>
       <label>
         Debug
         <input type="checkbox" id="debugButton"/>
@@ -34,6 +42,7 @@
     var queryInput = $('#query');
     var maxInterps = $('#maxInterps');
     var latlngInput = $('#latlng');
+    var woeRestrictInput = $('#woeRestrict');
     var searchForm = $('#searchForm');
     var debugSection = $('#debug');
     var request = null;
@@ -49,9 +58,13 @@
     function buildQueryParams() {
       var query = queryInput.val();
       var url = 'query=' + query;
-      url += '&maxInterpretations=' + maxInterps.val()
+      url += '&maxInterpretations=' + maxInterps.val();
+      url += '&autocompleteBias=' + $('input[name=autocompleteBias]:checked').val();
       if (latlngInput.val()) {
-        url += '&ll=' + latlngInput.val()
+        url += '&ll=' + latlngInput.val();
+      }
+      if (woeRestrictInput.val()) {
+        url += '&woeRestrict=' + woeRestrictInput.val();
       }
 
       if ($('#debugButton').attr('checked')) {
@@ -92,8 +105,36 @@
         debugSection.append($('<br>'));
       });
 
-      var count = 0;
+      var myIcon = L.icon({
+        iconAnchor: [8, 8],
+        iconUrl: '/static/leaflet/images/red_dot.png',
+      });
+
       var boundingBox = null;
+      var llMarker = null;
+      if (latlngInput.val()) {
+        var latlng = latlngInput.val().split(/[\s,]+/);
+        if (latlng.length == 2) {
+          lat = latlng[0];
+          lng = latlng[1];
+          var point = new L.LatLng(lat, lng);
+          boundingBox = new L.LatLngBounds(point, point);
+          llMarker = L.marker(point, {icon: myIcon});
+          map.addLayer(llMarker);
+        }
+      }
+
+      map.on('contextmenu', _.bind(function(e){
+          var ll = e.latlng.lat + ',' + e.latlng.lng;
+          latlngInput.val(ll);
+          map.removeLayer(llMarker);
+          var point = new L.LatLng(e.latlng.lat, e.latlng.lng);
+          llMarker = L.marker(point, {icon: myIcon});
+          map.addLayer(llMarker);
+        }, this));
+
+      var count = 0;
+
       _(data.interpretations).each(function(interp) {
         if (interp.feature) {
           statusArea.append(interp.feature.highlightedName)
