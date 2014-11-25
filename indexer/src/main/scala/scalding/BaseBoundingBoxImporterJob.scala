@@ -8,7 +8,7 @@ import com.foursquare.hadoop.scalding.SpindleSequenceFileSource
 import com.foursquare.twofishes.{GeocodeBoundingBox, GeocodePoint}
 import com.foursquare.twofishes.util.{GeonamesNamespace, StoredFeatureId}
 
-class BoundingBoxParser(
+class BaseBoundingBoxImporterJob(
   name: String,
   inputSpec: TwofishesImporterInputSpec,
   args: Args
@@ -30,10 +30,7 @@ class BoundingBoxParser(
         val n = parts(4).toDouble
         StoredFeatureId.fromHumanReadableString(id, Some(GeonamesNamespace)) match {
           case Some(fid) => {
-            Some((
-              new LongWritable(fid.longId),
-              GeocodeBoundingBox(GeocodePoint(n, e), GeocodePoint(s, w))
-              ))
+            Some((new LongWritable(fid.longId), GeocodeBoundingBox(GeocodePoint(n, e), GeocodePoint(s, w))))
           }
           case None => {
             // logger.error("%s: couldn't parse into StoredFeatureId".format(line))
@@ -49,7 +46,7 @@ class BoundingBoxParser(
   }).write(TypedSink[(LongWritable, GeocodeBoundingBox)](SpindleSequenceFileSource[LongWritable, GeocodeBoundingBox](outputPath)))
 }
 
-class NormalBoundingBoxParser(args: Args) extends BoundingBoxParser(
+class BoundingBoxImporterJob(args: Args) extends BaseBoundingBoxImporterJob(
   name = "bbox_import",
   inputSpec = TwofishesImporterInputSpec(
     relativeFilePaths = Nil,
@@ -59,7 +56,7 @@ class NormalBoundingBoxParser(args: Args) extends BoundingBoxParser(
   args: Args
 )
 
-class DisplayBoundingBoxParser(args: Args) extends BoundingBoxParser(
+class DisplayBoundingBoxImporterJob(args: Args) extends BaseBoundingBoxImporterJob(
   name = "display_bbox_import",
   inputSpec = TwofishesImporterInputSpec(
     relativeFilePaths = Nil,

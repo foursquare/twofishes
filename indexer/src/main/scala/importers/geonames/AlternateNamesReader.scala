@@ -14,7 +14,29 @@ case class AlternateNameEntry(
   isShortName: Boolean,
   isHistoric: Boolean,
   isColloquial: Boolean
-)
+) {
+  def toFeatureName(): FeatureName = {
+    var flags: List[FeatureNameFlags] = Nil
+    if (isPrefName) {
+      flags ::= FeatureNameFlags.PREFERRED
+    }
+    if (isShortName) {
+      flags ::= FeatureNameFlags.SHORT_NAME
+    }
+    if (isHistoric) {
+      flags ::= FeatureNameFlags.HISTORIC
+    }
+    if (isColloquial) {
+      flags ::= FeatureNameFlags.COLLOQUIAL
+    }
+
+    FeatureName.newBuilder
+      .name(name)
+      .lang(lang)
+      .flags(flags.toSeq)
+      .result
+  }
+}
 
 object AlternateNamesReader extends SimplePrintLogger {
   def readAlternateNamesFiles(filenames: List[String]): HashMap[StoredFeatureId, List[AlternateNameEntry]] = {

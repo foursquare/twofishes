@@ -116,6 +116,10 @@ struct FeatureName {
   4: optional string highlightedName
 }
 
+struct FeatureNames {
+  1: optional list<FeatureName> names
+}
+
 struct FeatureGeometry {
   1: GeocodePoint center
   2: optional GeocodeBoundingBox bounds

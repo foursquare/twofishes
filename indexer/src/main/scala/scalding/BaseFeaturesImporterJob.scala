@@ -8,7 +8,7 @@ import com.foursquare.twofishes.{GeocodeRecord, GeocodeServingFeature}
 import com.foursquare.hadoop.scalding.SpindleSequenceFileSource
 import com.foursquare.twofishes.importers.geonames.GeonamesFeature
 
-class FeaturesParser(
+class BaseFeaturesImporterJob(
   name: String,
   allowBuildings: Boolean = false,
   inputSpec: TwofishesImporterInputSpec,
@@ -40,7 +40,7 @@ class FeaturesParser(
   }).write(TypedSink[(LongWritable, GeocodeServingFeature)](SpindleSequenceFileSource[LongWritable, GeocodeServingFeature](outputPath)))
 }
 
-class GeonamesFeaturesParser(args: Args) extends FeaturesParser(
+class GeonamesFeaturesImporterJob(args: Args) extends BaseFeaturesImporterJob(
   name = "geonames_features_import",
   allowBuildings = false,
   inputSpec = TwofishesImporterInputSpec(
@@ -49,7 +49,7 @@ class GeonamesFeaturesParser(args: Args) extends FeaturesParser(
   args = args
 )
 
-class SupplementalFeaturesParser(args: Args) extends FeaturesParser(
+class SupplementalFeaturesImporterJob(args: Args) extends BaseFeaturesImporterJob(
   name = "supplemental_features_import",
   allowBuildings = true,
   inputSpec = TwofishesImporterInputSpec(
