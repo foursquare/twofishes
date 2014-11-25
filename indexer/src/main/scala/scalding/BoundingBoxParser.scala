@@ -8,15 +8,11 @@ import com.foursquare.hadoop.scalding.SpindleSequenceFileSource
 import com.foursquare.twofishes.{GeocodeBoundingBox, GeocodePoint}
 import com.foursquare.twofishes.util.{GeonamesNamespace, StoredFeatureId}
 
-class BoundingBoxParser(args: Args) extends TwofishesJob("bbox_import", args) {
-
-  val files =
-    getFilesInDirectoryByRelativePath("computed/bboxes") ++
-    getFilesInDirectoryByRelativePath("private/bboxes")
-
-  logger.info("Using input files: %s".format(files.toString))
-
-  val lines: TypedPipe[String] = TypedPipe.from(MultipleTextLineFiles(files: _*))
+class BoundingBoxParser(
+  name: String,
+  inputSpec: TwofishesImporterInputSpec,
+  args: Args
+) extends TwofishesImporterJob(name, inputSpec, args) {
 
   lines.filterNot(_.startsWith("#")).flatMap(line => {
     val parts = line.split("[\t ]")
@@ -52,3 +48,23 @@ class BoundingBoxParser(args: Args) extends TwofishesJob("bbox_import", args) {
     }
   }).write(TypedSink[(LongWritable, GeocodeBoundingBox)](SpindleSequenceFileSource[LongWritable, GeocodeBoundingBox](outputPath)))
 }
+
+class NormalBoundingBoxParser(args: Args) extends BoundingBoxParser(
+  name = "bbox_import",
+  inputSpec = TwofishesImporterInputSpec(
+    relativeFilePaths = Nil,
+    directories = Seq(
+      DirectoryEnumerationSpec("custom/bboxes"),
+      DirectoryEnumerationSpec("private/bboxes"))),
+  args: Args
+)
+
+class DisplayBoundingBoxParser(args: Args) extends BoundingBoxParser(
+  name = "display_bbox_import",
+  inputSpec = TwofishesImporterInputSpec(
+    relativeFilePaths = Nil,
+    directories = Seq(
+      DirectoryEnumerationSpec("custom/display_bboxes"),
+      DirectoryEnumerationSpec("private/display_bboxes"))),
+  args = args
+)

@@ -8,20 +8,18 @@ import com.foursquare.twofishes.{GeocodeRecord, GeocodeServingFeature}
 import com.foursquare.hadoop.scalding.SpindleSequenceFileSource
 import com.foursquare.twofishes.importers.geonames.GeonamesFeature
 
-class FeaturesParser(args: Args) extends TwofishesJob("features_import", args) {
-
-  val files =
-    getFilesByRelativePaths(Seq("downloaded/allCountries.txt")) ++
-    getFilesInDirectoryByRelativePath("computed/features") ++
-    getFilesInDirectoryByRelativePath("private/features")
-
-  logger.info("Using input files: %s".format(files.toString))
-
-  val lines: TypedPipe[String] = TypedPipe.from(MultipleTextLineFiles(files: _*))
+class FeaturesParser(
+  name: String,
+  allowBuildings: Boolean = false,
+  inputSpec: TwofishesImporterInputSpec,
+  args: Args
+) extends TwofishesImporterJob(name, inputSpec, args) {
 
   (for {
     line <- lines
     feature <- GeonamesFeature.parseFromAdminLine(0, line)
+    // TODO: support ignore list and maybe config.shouldParseBuildings
+    if feature.shouldIndex && (!feature.featureClass.isBuilding || allowBuildings)
   } yield {
     val geocodeRecord = GeocodeRecord(
       feature.featureId.longId,
@@ -41,3 +39,23 @@ class FeaturesParser(args: Args) extends TwofishesJob("features_import", args) {
     (new LongWritable(servingFeature.longId) -> servingFeature)
   }).write(TypedSink[(LongWritable, GeocodeServingFeature)](SpindleSequenceFileSource[LongWritable, GeocodeServingFeature](outputPath)))
 }
+
+class GeonamesFeaturesParser(args: Args) extends FeaturesParser(
+  name = "geonames_features_import",
+  allowBuildings = false,
+  inputSpec = TwofishesImporterInputSpec(
+    relativeFilePaths = Seq("downloaded/allCountries.txt"),
+    directories = Nil),
+  args = args
+)
+
+class SupplementalFeaturesParser(args: Args) extends FeaturesParser(
+  name = "supplemental_features_import",
+  allowBuildings = true,
+  inputSpec = TwofishesImporterInputSpec(
+    relativeFilePaths = Nil,
+    directories = Seq(
+      DirectoryEnumerationSpec("computed/features"),
+      DirectoryEnumerationSpec("private/features"))),
+  args = args
+)
