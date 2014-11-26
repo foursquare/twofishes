@@ -7,9 +7,8 @@ import com.twitter.scalding.typed.TypedSink
 import com.foursquare.twofishes._
 import com.foursquare.hadoop.scalding.SpindleSequenceFileSource
 import com.foursquare.twofishes.importers.geonames.GeonamesFeature
-import com.foursquare.twofishes.scalding.TwofishesImporterInputSpec
-import com.foursquare.twofishes.scalding.DirectoryEnumerationSpec
-import com.foursquare.twofishes.DisplayName
+import com.foursquare.twofishes.util.StoredFeatureId
+import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
 
 class BaseFeaturesImporterJob(
   name: String,
@@ -32,63 +31,125 @@ class BaseFeaturesImporterJob(
     })
   }
 
+  private def getEmbeddedPolygon(feature: GeonamesFeature): Option[Array[Byte]] = {
+    feature.extraColumns.get("geometry").map(polygon => {
+      val wktReader = new WKTReader()
+      val wkbWriter = new WKBWriter()
+      wkbWriter.write(wktReader.read(polygon))
+    })
+  }
+
+  private def getEmbeddedBoundingBox(feature: GeonamesFeature): Option[BoundingBox] = {
+    feature.extraColumns.get("bbox").flatMap(bboxStr => {
+      // west, south, east, north
+      val parts = bboxStr.split(",").map(_.trim)
+      parts.toList match {
+        case w :: s :: e :: n :: Nil => {
+          Some(BoundingBox(Point(n.toDouble, e.toDouble), Point(s.toDouble, w.toDouble)))
+        }
+        case _ => {
+          // logger.error("malformed bbox: " + bboxStr)
+          None
+        }
+      }
+    })
+  }
+
+  private def getEmbeddedBoost(feature: GeonamesFeature): Option[Int] = {
+    feature.extraColumns.get("boost").map(_.toInt)
+  }
+
+  private def getEmbeddedParents(feature: GeonamesFeature): List[Long] = {
+    for {
+      parentIdStrings <- feature.extraColumns.get("parents").toList
+      fidString <- parentIdStrings.split(",").toList
+      fid <- StoredFeatureId.fromHumanReadableString(fidString)
+    } yield {
+      fid.longId
+    }
+  }
+
+  private def getEmbeddedCanGeocode(feature: GeonamesFeature): Boolean = {
+    feature.extraColumns.get("canGeocode").map(_.toInt).getOrElse(1) > 0
+  }
+
+  private def getEmbeddedAttributes(feature: GeonamesFeature): Option[GeocodeFeatureAttributes] = {
+    var attributesSet = false
+    lazy val attributesBuilder = {
+      attributesSet = true
+      GeocodeFeatureAttributes.newBuilder
+    }
+
+    if (feature.featureClass.isAdmin1Capital) {
+      attributesBuilder.adm1cap(true)
+    }
+
+    feature.population.foreach(pop =>
+      attributesBuilder.population(pop)
+    )
+
+    feature.extraColumns.get("sociallyRelevant").map(v =>
+      attributesBuilder.sociallyRelevant(v.toBoolean)
+    )
+
+    feature.extraColumns.get("neighborhoodType").map(v =>
+      attributesBuilder.neighborhoodType(NeighborhoodType.findByNameOrNull(v))
+    )
+
+    if (attributesSet) {
+      Some(attributesBuilder.result)
+    } else {
+      None
+    }
+  }
+
   (for {
     line <- lines
     feature <- lineProcessor(0, line)
     // TODO: support ignore list and maybe config.shouldParseBuildings
     if feature.shouldIndex && (!feature.featureClass.isBuilding || allowBuildings)
   } yield {
+
+    val polygonOpt = getEmbeddedPolygon(feature)
+    val polygonSource = if (polygonOpt.isDefined) {
+      Some("self_point")
+    } else {
+      None
+    }
+
     val geocodeRecord = GeocodeRecord(
-      feature.featureId.longId,
+      _id = feature.featureId.longId,
       names = Nil,
       cc = feature.countryCode,
       _woeType = feature.featureClass.woeType.getValue,
       lat = feature.latitude,
       lng = feature.longitude,
-      // TODO: populate parents
-      parents = Nil,
-      population = feature.population,
       // add basic minimal set of names from feature which might be removed/demoted later when merging alternate names
       displayNames = getDisplayNamesFromGeonamesFeature(feature),
-      // joins
-      boost = None,
-      boundingbox = None,
-      displayBounds = None
-      // TODO: attributes? geometries?
+      // add embedded polygon which might be replaced when merging external polygons
+      polygon = polygonOpt,
+      hasPoly = polygonOpt.isDefined,
+      polygonSource = polygonSource,
+      // will be supplemented by join with concordances
+      ids = List(feature.featureId.longId),
+      // will be supplemented by join with boosts
+      boost = getEmbeddedBoost(feature),
+      // add embedded parents directly into parents
+      // add admin codes into unresolvedParentCodes in order to resolve and merge on join with hierarchy
+      parents = getEmbeddedParents(feature),
+      unresolvedParentCodes = feature.parents,
+      population = feature.population,
+      canGeocode = getEmbeddedCanGeocode(feature),
+      // add embedded bounding box which might be replaced when merging external bounding boxes/polygons
+      boundingbox = getEmbeddedBoundingBox(feature),
+      // will be populated by subsequent joins
+      displayBounds = None,
+      slug = None,
+      extraRelations = Nil
     )
+    geocodeRecord.setAttributes(getEmbeddedAttributes(feature))
+
     val servingFeature = geocodeRecord.toGeocodeServingFeature()
     (new LongWritable(servingFeature.longId) -> servingFeature)
   }).write(TypedSink[(LongWritable, GeocodeServingFeature)](SpindleSequenceFileSource[LongWritable, GeocodeServingFeature](outputPath)))
 }
-
-class GeonamesFeaturesImporterJob(args: Args) extends BaseFeaturesImporterJob(
-  name = "geonames_features_import",
-  lineProcessor = GeonamesFeature.parseFromAdminLine,
-  allowBuildings = false,
-  inputSpec = TwofishesImporterInputSpec(
-    relativeFilePaths = Seq("downloaded/allCountries.txt"),
-    directories = Nil),
-  args = args
-)
-
-class SupplementalFeaturesImporterJob(args: Args) extends BaseFeaturesImporterJob(
-  name = "supplemental_features_import",
-  lineProcessor = GeonamesFeature.parseFromAdminLine,
-  allowBuildings = true,
-  inputSpec = TwofishesImporterInputSpec(
-    relativeFilePaths = Nil,
-    directories = Seq(
-      DirectoryEnumerationSpec("computed/features"),
-      DirectoryEnumerationSpec("private/features"))),
-  args = args
-)
-
-class PostalCodeFeaturesImporterJob(args: Args) extends BaseFeaturesImporterJob(
-  name = "postcode_features_import",
-  lineProcessor = GeonamesFeature.parseFromPostalCodeLine,
-  allowBuildings = false,
-  inputSpec = TwofishesImporterInputSpec(
-    relativeFilePaths = Seq("downloaded/zip/allCountries.txt"),
-    directories = Nil),
-  args = args
-)

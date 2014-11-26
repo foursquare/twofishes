@@ -45,23 +45,3 @@ class BaseBoundingBoxImporterJob(
     }
   }).write(TypedSink[(LongWritable, GeocodeBoundingBox)](SpindleSequenceFileSource[LongWritable, GeocodeBoundingBox](outputPath)))
 }
-
-class BoundingBoxImporterJob(args: Args) extends BaseBoundingBoxImporterJob(
-  name = "bbox_import",
-  inputSpec = TwofishesImporterInputSpec(
-    relativeFilePaths = Nil,
-    directories = Seq(
-      DirectoryEnumerationSpec("custom/bboxes"),
-      DirectoryEnumerationSpec("private/bboxes"))),
-  args: Args
-)
-
-class DisplayBoundingBoxImporterJob(args: Args) extends BaseBoundingBoxImporterJob(
-  name = "display_bbox_import",
-  inputSpec = TwofishesImporterInputSpec(
-    relativeFilePaths = Nil,
-    directories = Seq(
-      DirectoryEnumerationSpec("custom/display_bboxes"),
-      DirectoryEnumerationSpec("private/display_bboxes"))),
-  args = args
-)

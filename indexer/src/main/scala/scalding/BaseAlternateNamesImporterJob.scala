@@ -54,12 +54,3 @@ class BaseAlternateNamesImporterJob(
     .mapValues({names: List[FeatureName] => FeatureNames(names)})
     .write(TypedSink[(LongWritable, FeatureNames)](SpindleSequenceFileSource[LongWritable, FeatureNames](outputPath)))
 }
-
-class AlternateNamesImporterJob(args: Args) extends BaseAlternateNamesImporterJob(
-  name = "altnames_import",
-  inputSpec = TwofishesImporterInputSpec(
-    relativeFilePaths = Seq("downloaded/alternateNames.txt"),
-    directories = Seq(
-      DirectoryEnumerationSpec("computed/alternateNames"),
-      DirectoryEnumerationSpec("private/alternateNames"))),
-  args = args)

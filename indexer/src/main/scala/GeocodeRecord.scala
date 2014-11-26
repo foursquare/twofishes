@@ -61,13 +61,11 @@ case class GeocodeRecord(
   hasPoly: Boolean = false,
   var attributes: Option[Array[Byte]] = None,
   extraRelations: List[Long] = Nil,
-  var loc: GeoJsonPoint = GeoJsonPoint.NilPoint,
   polyId: ObjectId = GeocodeRecord.dummyOid,
   ids: List[Long] = Nil,
-  polygonSource: Option[String] = None
+  polygonSource: Option[String] = None,
+  unresolvedParentCodes: List[String] = Nil
 ) extends Ordered[GeocodeRecord] {
-  // gross that we overwrite this
-  loc = GeoJsonPoint(lat, lng)
 
   val factory = new TCompactProtocol.Factory()
   val serializer = new TSerializer(factory)
@@ -283,6 +281,7 @@ case class GeocodeRecord(
       .longId(featureId.longId)
       .scoringFeatures(scoring)
       .feature(feature)
+      .unresolvedParentCodes(unresolvedParentCodes)
       .result
 
     servingFeature

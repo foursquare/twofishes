@@ -183,6 +183,16 @@ struct ScoringFeatures {
   3: optional list<string> DEPRECATED_parents = []
 }
 
+// index-only data structure to hold transient data produced by scalding pipeline jobs
+struct IntermediateDataContainer {
+  1: optional i64 longValue
+  2: optional list<i64> longList
+  3: optional string stringValue
+  4: optional list<string> stringList
+  5: optional i32 intValue
+  6: optional list<i32> intList
+}
+
 struct GeocodeFeature {
   // country code
   1: string cc
@@ -222,6 +232,7 @@ struct GeocodeServingFeature {
   2: ScoringFeatures scoringFeatures
   3: GeocodeFeature feature
   4: optional list<GeocodeFeature> parents
+  6: optional list<string> unresolvedParentCodes
 
   1: optional string DEPRECATED_id
 }
