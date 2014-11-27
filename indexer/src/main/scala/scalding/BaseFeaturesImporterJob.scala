@@ -7,7 +7,7 @@ import com.twitter.scalding.typed.TypedSink
 import com.foursquare.twofishes._
 import com.foursquare.hadoop.scalding.SpindleSequenceFileSource
 import com.foursquare.twofishes.importers.geonames.GeonamesFeature
-import com.foursquare.twofishes.util.StoredFeatureId
+import com.foursquare.twofishes.util.{GeonamesNamespace, StoredFeatureId}
 import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
 
 class BaseFeaturesImporterJob(
@@ -59,14 +59,34 @@ class BaseFeaturesImporterJob(
     feature.extraColumns.get("boost").map(_.toInt)
   }
 
+  val countryInfoCachedFile = getCachedFileByRelativePath("downloaded/countryInfo.txt")
+  val adminCodesCachedFile = getCachedFileByRelativePath("downloaded/adminCodes.txt")
+  @transient lazy val adminCodeMap = InMemoryLookupTableHelper.buildAdminCodeMap(
+    countryInfoCachedFile,
+    adminCodesCachedFile)
+
   private def getEmbeddedParents(feature: GeonamesFeature): List[Long] = {
-    for {
+    def lookupAdminCode(p: String): Option[String] = {
+      adminCodeMap.get(p)
+    }
+
+    val explicitParents = for {
       parentIdStrings <- feature.extraColumns.get("parents").toList
       fidString <- parentIdStrings.split(",").toList
-      fid <- StoredFeatureId.fromHumanReadableString(fidString)
+      fid <- StoredFeatureId.fromHumanReadableString(fidString, Some(GeonamesNamespace))
     } yield {
       fid.longId
     }
+
+    val adminCodeParents = for {
+      parentAdminCode <- feature.parents.toList
+      fidString <- lookupAdminCode(parentAdminCode)
+      fid <- StoredFeatureId.fromHumanReadableString(fidString, Some(GeonamesNamespace))
+    } yield {
+      fid.longId
+    }
+
+    explicitParents ++ adminCodeParents
   }
 
   private def getEmbeddedCanGeocode(feature: GeonamesFeature): Boolean = {
@@ -134,10 +154,9 @@ class BaseFeaturesImporterJob(
       ids = List(feature.featureId.longId),
       // will be supplemented by join with boosts
       boost = getEmbeddedBoost(feature),
-      // add embedded parents directly into parents
-      // add admin codes into unresolvedParentCodes in order to resolve and merge on join with hierarchy
+      // will be supplemented by join with hierarchy
       parents = getEmbeddedParents(feature),
-      unresolvedParentCodes = feature.parents,
+      //unresolvedParentCodes = feature.parents,
       population = feature.population,
       canGeocode = getEmbeddedCanGeocode(feature),
       // add embedded bounding box which might be replaced when merging external bounding boxes/polygons

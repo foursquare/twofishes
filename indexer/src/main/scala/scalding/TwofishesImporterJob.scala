@@ -7,6 +7,7 @@ import org.apache.hadoop.conf.Configuration
 import scala.util.matching.Regex
 import scala.collection.mutable.ListBuffer
 import com.twitter.scalding.typed.EmptyTypedPipe
+import com.twitter.scalding.filecache.{DistributedCacheFile, CachedFile}
 
 class TwofishesImporterJob(
   name: String,
@@ -65,5 +66,15 @@ class TwofishesImporterJob(
     TypedPipe.from(MultipleTextLineFiles(inputFiles: _*))
   } else {
     EmptyTypedPipe(flowDef, mode)
+  }
+
+  // make file locally available to mappers/reducers
+  // meant for small info files typically used to populate lookup tables
+  // do not use for large files
+  def getCachedFileByRelativePath(relativePath: String): CachedFile = {
+
+    // will throw if the file doesn't exist
+    val filePath = getFilesByRelativePaths(Seq(relativePath)).head
+    DistributedCacheFile(filePath)
   }
 }

@@ -63,8 +63,7 @@ case class GeocodeRecord(
   extraRelations: List[Long] = Nil,
   polyId: ObjectId = GeocodeRecord.dummyOid,
   ids: List[Long] = Nil,
-  polygonSource: Option[String] = None,
-  unresolvedParentCodes: List[String] = Nil
+  polygonSource: Option[String] = None
 ) extends Ordered[GeocodeRecord] {
 
   val factory = new TCompactProtocol.Factory()
@@ -281,7 +280,6 @@ case class GeocodeRecord(
       .longId(featureId.longId)
       .scoringFeatures(scoring)
       .feature(feature)
-      .unresolvedParentCodes(unresolvedParentCodes)
       .result
 
     servingFeature
