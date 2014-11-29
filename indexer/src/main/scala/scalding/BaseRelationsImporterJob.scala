@@ -8,25 +8,27 @@ import com.foursquare.hadoop.scalding.SpindleSequenceFileSource
 import com.foursquare.twofishes.IntermediateDataContainer
 import com.foursquare.twofishes.util.{GeonamesNamespace, StoredFeatureId}
 
-class BaseHierarchyImporterJob(
+class BaseRelationsImporterJob(
   name: String,
+  fromColumnIndex: Int,
+  toColumnIndex: Int,
+  lineAcceptor: (Array[String]) => Boolean,
   inputSpec: TwofishesImporterInputSpec,
   args: Args
 ) extends TwofishesImporterJob(name, inputSpec, args) {
 
-  lines.flatMap(line => {
-    val parts = line.split("\\t")
-    val parentIdOpt = StoredFeatureId.fromHumanReadableString(parts(0), Some(GeonamesNamespace))
-    val childIdOpt = StoredFeatureId.fromHumanReadableString(parts(1), Some(GeonamesNamespace))
-    val hierarchyType = parts.lift(2).getOrElse("")
+  lines.filterNot(_.startsWith("#")).flatMap(line => {
+    val parts = line.split("[\t|]")
+    val fromOpt = StoredFeatureId.fromHumanReadableString(parts(fromColumnIndex), Some(GeonamesNamespace))
+    val toOpt = StoredFeatureId.fromHumanReadableString(parts(toColumnIndex), Some(GeonamesNamespace))
 
-    if (hierarchyType == "ADM") {
-      (parentIdOpt, childIdOpt) match {
-        case (Some(parentId), Some(childId)) => {
-          Some(new LongWritable(childId.longId), parentId.longId)
+    if (lineAcceptor(parts)) {
+      (fromOpt, toOpt) match {
+        case (Some(fromId), Some(toId)) => {
+          Some(new LongWritable(fromId.longId), toId.longId)
         }
         case _ => {
-          // logger.error("%s: couldn't parse into StoredFeatureId pair".format(line))
+          // logger.error("%s: couldn't parse StoredFeatureId pair".format(line))
           None
         }
       }
@@ -35,6 +37,6 @@ class BaseHierarchyImporterJob(
     }
   }).group
     .toList
-    .mapValues({parents: List[Long] => IntermediateDataContainer.newBuilder.longList(parents).result})
+    .mapValues({ids: List[Long] => IntermediateDataContainer.newBuilder.longList(ids).result})
     .write(TypedSink[(LongWritable, IntermediateDataContainer)](SpindleSequenceFileSource[LongWritable, IntermediateDataContainer](outputPath)))
 }

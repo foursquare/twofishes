@@ -65,12 +65,51 @@ class AlternateNamesImporterJob(args: Args) extends BaseAlternateNamesImporterJo
       DirectoryEnumerationSpec("private/alternateNames"))),
   args = args)
 
-class HierarchyImporterJob(args: Args) extends BaseHierarchyImporterJob(
+class HierarchyImporterJob(args: Args) extends BaseRelationsImporterJob(
   name = "hierarchy_import",
+  // hierarchy is specified as parent, child but aggregated on child so invert from and to
+  fromColumnIndex = 1,
+  toColumnIndex = 0,
+  lineAcceptor = {parts => {
+    val hierarchyType = parts.lift(2).getOrElse("")
+    (hierarchyType == "ADM")
+  }},
   inputSpec = TwofishesImporterInputSpec(
     relativeFilePaths = Seq(
       "downloaded/hierarchy.txt",
       "private/hierarchy.txt",
       "custom/hierarchy.txt"),
+    directories = Nil),
+  args = args)
+
+class ConcordancesImporterJob(args: Args) extends BaseRelationsImporterJob(
+  name = "concordances_import",
+  fromColumnIndex = 0,
+  toColumnIndex = 1,
+  lineAcceptor = { parts => true },
+  inputSpec = TwofishesImporterInputSpec(
+    relativeFilePaths = Seq(
+      "computed/concordances.txt",
+      "private/concordances.txt"),
+    directories = Nil),
+  args = args)
+
+class ExtraRelationsImporterJob(args: Args) extends BaseRelationsImporterJob(
+  name = "extra_relations_import",
+  fromColumnIndex = 0,
+  toColumnIndex = 1,
+  lineAcceptor = { parts => true },
+  inputSpec = TwofishesImporterInputSpec(
+    relativeFilePaths = Seq(
+      "custom/extra-relations.txt"),
+    directories = Nil),
+  args = args)
+
+class BoostsImporterJob(args: Args) extends BaseBoostsImporterJob(
+  name = "boosts_import",
+  inputSpec = TwofishesImporterInputSpec(
+    relativeFilePaths = Seq(
+      "private/boosts.txt",
+      "custom/boosts.txt"),
     directories = Nil),
   args = args)
