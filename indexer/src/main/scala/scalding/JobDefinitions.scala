@@ -113,3 +113,41 @@ class BoostsImporterJob(args: Args) extends BaseBoostsImporterJob(
       "custom/boosts.txt"),
     directories = Nil),
   args = args)
+
+class IgnoresImporterJob(args: Args) extends BaseFeatureEditsImporterJob(
+  name = "ignores_import",
+  lineProcessor = FeatureEditLineProcessors.processIgnoreLine,
+  inputSpec = TwofishesImporterInputSpec(
+    relativeFilePaths = Seq(
+      "custom/ignores.txt"),
+    directories = Nil),
+  args = args)
+
+class MovesImporterJob(args: Args) extends BaseFeatureEditsImporterJob(
+  name = "moves_import",
+  lineProcessor = FeatureEditLineProcessors.processMoveLine,
+  inputSpec = TwofishesImporterInputSpec(
+    relativeFilePaths = Seq(
+      "custom/moves.txt"),
+    directories = Nil),
+  args = args)
+
+class NameDeletesImporterJob(args: Args) extends BaseFeatureEditsImporterJob(
+  name = "name_deletes_import",
+  lineProcessor = FeatureEditLineProcessors.processNameDeleteLine,
+  inputSpec = TwofishesImporterInputSpec(
+    relativeFilePaths = Seq(
+      "custom/name-deletes.txt"),
+    directories = Nil),
+  args = args)
+
+class NameTransformsImporterJob(args: Args) extends BaseFeatureEditsImporterJob(
+  name = "name_transforms_import",
+  lineProcessor = FeatureEditLineProcessors.processNameTransformLine,
+  inputSpec = TwofishesImporterInputSpec(
+    relativeFilePaths = Nil,
+    directories = Seq(
+      DirectoryEnumerationSpec("custom/name-transforms"),
+      DirectoryEnumerationSpec("private/name-transforms")
+    )),
+  args = args)

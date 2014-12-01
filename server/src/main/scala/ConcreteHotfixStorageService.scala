@@ -124,7 +124,8 @@ class ConcreteHotfixStorageService(
           maybeAddToPrefixIndex(id, edit)
         }
         case EditType.Remove => {
-          listCopy = listCopy.filterNot(n => (n.name == edit.name && n.lang == edit.lang))
+          // support the * wildcard for deleting a name in all languages
+          listCopy = listCopy.filterNot(n => (n.name == edit.name && (n.lang == edit.lang || edit.lang == "*")))
 
           // TODO(rahul): handle removing names and prefixes properly?
           // When a name is deleted, the name and prefix indexes should ideally be updated so that

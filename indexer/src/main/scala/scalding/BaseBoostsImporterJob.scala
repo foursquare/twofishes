@@ -5,8 +5,8 @@ import com.twitter.scalding._
 import org.apache.hadoop.io.LongWritable
 import com.twitter.scalding.typed.TypedSink
 import com.foursquare.hadoop.scalding.SpindleSequenceFileSource
-import com.foursquare.twofishes.IntermediateDataContainer
-import com.foursquare.twofishes.util.{Helpers, GeonamesNamespace, StoredFeatureId}
+import com.foursquare.twofishes._
+import com.foursquare.twofishes.util._
 
 class BaseBoostsImporterJob(
   name: String,

@@ -7,7 +7,7 @@ import com.twitter.scalding.typed.TypedSink
 import com.foursquare.twofishes._
 import com.foursquare.hadoop.scalding.SpindleSequenceFileSource
 import com.foursquare.twofishes.importers.geonames.GeonamesFeature
-import com.foursquare.twofishes.util.{GeonamesNamespace, StoredFeatureId}
+import com.foursquare.twofishes.util._
 import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
 
 class BaseFeaturesImporterJob(

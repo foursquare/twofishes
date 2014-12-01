@@ -5,8 +5,8 @@ import com.twitter.scalding._
 import org.apache.hadoop.io.LongWritable
 import com.twitter.scalding.typed.TypedSink
 import com.foursquare.hadoop.scalding.SpindleSequenceFileSource
-import com.foursquare.twofishes.{FeatureName, FeatureNames}
-import com.foursquare.twofishes.util.{GeonamesNamespace, StoredFeatureId}
+import com.foursquare.twofishes._
+import com.foursquare.twofishes.util._
 import com.foursquare.twofishes.importers.geonames.AlternateNameEntry
 
 class BaseAlternateNamesImporterJob(
