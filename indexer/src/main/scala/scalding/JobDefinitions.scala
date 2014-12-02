@@ -114,6 +114,15 @@ class BoostsImporterJob(args: Args) extends BaseBoostsImporterJob(
     directories = Nil),
   args = args)
 
+class SlugsImporterJob(args: Args) extends BaseSlugsImporterJob(
+  name = "slugs_import",
+  inputSpec = TwofishesImporterInputSpec(
+    relativeFilePaths = Seq(
+      "private/slugs.txt",
+      "custom/slugs.txt"),
+    directories = Nil),
+  args = args)
+
 class IgnoresImporterJob(args: Args) extends BaseFeatureEditsImporterJob(
   name = "ignores_import",
   lineProcessor = FeatureEditLineProcessors.processIgnoreLine,
