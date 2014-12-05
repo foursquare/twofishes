@@ -160,3 +160,34 @@ class NameTransformsImporterJob(args: Args) extends BaseFeatureEditsImporterJob(
       DirectoryEnumerationSpec("private/name-transforms")
     )),
   args = args)
+
+class BoundingBoxJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
+  name = "bbox_join_intermediate",
+  leftSources = Seq(
+    "geonames_features_import",
+    "supplemental_features_import",
+    "postcode_features_import"),
+  rightSources = Seq("bbox_import"),
+  joiner = FeatureJoiners.boundingBoxJoiner,
+  args = args)
+
+class DisplayBoundingBoxJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
+  name = "display_bbox_join_intermediate",
+  leftSources = Seq("bbox_join_intermediate"),
+  rightSources = Seq("display_bbox_import"),
+  joiner = FeatureJoiners.displayBoundingBoxJoiner,
+  args = args)
+
+class ExtraRelationsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
+  name = "extra_relations_join_intermediate",
+  leftSources = Seq("display_bbox_join_intermediate"),
+  rightSources = Seq("extra_relations_import"),
+  joiner = FeatureJoiners.extraRelationsJoiner,
+  args = args)
+
+class BoostsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
+  name = "boosts_join_intermediate",
+  leftSources = Seq("extra_relations_join_intermediate"),
+  rightSources = Seq("boosts_import"),
+  joiner = FeatureJoiners.extraRelationsJoiner,
+  args = args)

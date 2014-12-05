@@ -23,11 +23,8 @@ class BaseSlugsImporterJob(
       val deprecatedOpt = Helpers.TryO { parts(3).toBoolean }
 
       (fidOpt, scoreOpt, deprecatedOpt) match {
-        case (Some(fid), Some(score), Some(false)) => {
-          Some(new LongWritable(fid.longId), (slug, score))
-        }
-        case (_, _, Some(true)) => {
-          None
+        case (Some(fid), Some(score), Some(deprecated)) => {
+          Some(new LongWritable(fid.longId), (slug, score, deprecated))
         }
         case _ => {
           // logger.error("%s: couldn't parse slug entry".format(line))
@@ -38,7 +35,14 @@ class BaseSlugsImporterJob(
       None
     }
   }).group
-    .maxBy({case (slug: String, score: Int) => score})
-    .mapValues({case (slug: String, score: Int) => IntermediateDataContainer.newBuilder.stringValue(slug).result})
+    .toList
+    .mapValues({slugs: List[(String, Int, Boolean)] => {
+      val sortedSlugs = slugs.sortBy({case (slug: String, score: Int, deprecated: Boolean) => (deprecated, score * -1)})
+      IntermediateDataContainer.newBuilder
+        .stringList(sortedSlugs.map(_._1))
+        .intList(sortedSlugs.map(_._2))
+        .boolList(sortedSlugs.map(_._3))
+        .result
+    }})
     .write(TypedSink[(LongWritable, IntermediateDataContainer)](SpindleSequenceFileSource[LongWritable, IntermediateDataContainer](outputPath)))
 }

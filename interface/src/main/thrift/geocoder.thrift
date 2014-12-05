@@ -191,6 +191,8 @@ struct IntermediateDataContainer {
   4: optional list<string> stringList
   5: optional i32 intValue
   6: optional list<i32> intList
+  7: optional bool boolValue
+  8: optional list<bool> boolList
 }
 
 struct GeocodeFeature {

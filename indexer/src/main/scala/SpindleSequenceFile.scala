@@ -72,7 +72,8 @@ class SpindleSequenceFile[K <: Writable: Manifest, T <: ThriftConverter.TType](
       val record = context.thriftConverter.deserialize(valueAsBytes.getBytes)
 
       val tupleEntry = sourceCall.getIncomingEntry
-      tupleEntry.setObject(0, record)
+      tupleEntry.setObject(0, key)
+      tupleEntry.setObject(1, record)
 
       true
     } else {
