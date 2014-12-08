@@ -41,25 +41,33 @@ class HotfixableGeocodeStorageService(
   }
 
   def getBySlugOrFeatureIds(ids: Seq[String]): Map[String, GeocodeServingFeature] = {
-    // the slug case is a little complicated since slugs are auto-generated and not meant to change
-    // we do not want to have to deal with assigning slugs to newly created features, so we will only
-    // support looking them up by id
-    // the simplest way to do this is by converting the longIds that come back from the underlying
-    // slug lookup into StoredFeatureIds, adding on any featureIds that are newly added, and then
-    // calling getByFeatureIds
-    val existingIdFidMap = underlying.getBySlugOrFeatureIds(ids)
+    // first resolve newly created/modified slugs, if any
+    val changedSlugFidMap = (for {
+      idString <- ids
+      longId <- hotfix.resolveNewSlugToLongId(idString)
+      fid <- StoredFeatureId.fromLong(longId)
+    } yield {
+      (idString -> Some(fid))
+    }).toMap
+
+    // next, call underlying lookup to resolve any unchanged slugs/ids
+    val existingIdFidMap = underlying.getBySlugOrFeatureIds(ids.filterNot(changedSlugFidMap.contains))
       .map({case (idString, feature) => (idString -> StoredFeatureId.fromLong(feature.longId))})
       .toMap
+
+    // any valid id that is in neither of the above could only be newly created and without a slug
     val newIdFidMap = (for {
       idString <- ids
       id <- StoredFeatureId.fromUserInputString(idString)
       // filter out ids that already exist
-      if !(existingIdFidMap.contains(idString))
+      if !(existingIdFidMap.contains(idString) || changedSlugFidMap.contains(idString))
     } yield {
       (idString -> Some(id))
     }).toMap
+
+    // put them all together
     (for {
-      (idString, featureIdOpt) <- existingIdFidMap ++ newIdFidMap
+      (idString, featureIdOpt) <- changedSlugFidMap ++ existingIdFidMap ++ newIdFidMap
       featureId <- featureIdOpt
       (resultFeatureId, feature) <- getByFeatureIds(Seq(featureId)).headOption
     } yield {

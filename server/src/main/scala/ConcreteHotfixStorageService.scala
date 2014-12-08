@@ -34,6 +34,8 @@ class ConcreteHotfixStorageService(
   var s2CoveringIndex = Map.empty[Long, Seq[Long]]
   var s2Index = Map.empty[Long, Seq[CellGeometry]]
 
+  var newSlugIndex = Map.empty[String, Long]
+
   val wktReader = new WKTReader()
   val wkbWriter = new WKBWriter()
   val geometryJSON = new GeometryJSON()
@@ -290,6 +292,13 @@ class ConcreteHotfixStorageService(
             })
           }
 
+          // slug
+          if (edit.slugIsSet) {
+            val slug = edit.slugOrThrow
+            featureMutable.slug_=(slug)
+            newSlugIndex = newSlugIndex + (slug -> edit.longId)
+          }
+
           val geometryMutable = featureMutable.geometry.mutableCopy
           // center
           if (edit.centerIsSet) {
@@ -409,6 +418,8 @@ class ConcreteHotfixStorageService(
   def getPolygonByFeatureId(id: StoredFeatureId): Option[Geometry] = polygonIndex.get(id.longId)
   def getS2CoveringByFeatureId(id: StoredFeatureId): Option[Seq[Long]] = s2CoveringIndex.get(id.longId)
 
+  def resolveNewSlugToLongId(slug: String): Option[Long] = newSlugIndex.get(slug)
+
   def refresh() {
     idsToAddByName = Map.empty[String, Seq[StoredFeatureId]]
     idsToRemoveByName = Map.empty[String, Seq[StoredFeatureId]]
@@ -425,6 +436,8 @@ class ConcreteHotfixStorageService(
     polygonIndex = Map.empty[Long, Geometry]
     s2CoveringIndex = Map.empty[Long, Seq[Long]]
     s2Index = Map.empty[Long, Seq[CellGeometry]]
+
+    newSlugIndex = Map.empty[String, Long]
 
     source.refresh()
     init()
