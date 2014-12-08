@@ -22,5 +22,7 @@ trait HotfixStorageService {
   def getPolygonByFeatureId(id: StoredFeatureId): Option[Geometry]
   def getS2CoveringByFeatureId(id: StoredFeatureId): Option[Seq[Long]]
 
+  def resolveNewSlugToLongId(slug: String): Option[Long]
+
   def refresh(): Unit
 }

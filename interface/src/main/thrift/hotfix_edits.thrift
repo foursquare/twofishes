@@ -52,6 +52,9 @@ struct GeocodeServingFeatureEdit {
   14: optional geocoder.GeocodeFeatureAttributes attributesCreateOrMerge
   15: optional list<StringListEdit> urlsEdits = []
   16: optional list<LongListEdit> parentIdsEdits = []
+
+  // for backwards compatibility, slugs can only be added, not removed
+  17: optional string slug
 }
 
 struct GeocodeServingFeatureEdits {
