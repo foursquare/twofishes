@@ -191,3 +191,10 @@ class BoostsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJ
   rightSources = Seq("boosts_import"),
   joiner = FeatureJoiners.extraRelationsJoiner,
   args = args)
+
+class ParentsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
+  name = "parents_join_intermediate",
+  leftSources = Seq("boosts_join_intermediate"),
+  rightSources = Seq("hierarchy_import"),
+  joiner = FeatureJoiners.parentsJoiner,
+  args = args)

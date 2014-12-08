@@ -66,4 +66,19 @@ object FeatureJoiners {
       }
     }})
   }
+
+  def parentsJoiner(
+    features: Grouped[LongWritable, GeocodeServingFeature],
+    hierarchy: Grouped[LongWritable, IntermediateDataContainer]
+  ): TypedPipe[(LongWritable, GeocodeServingFeature)] = {
+    features.leftJoin(hierarchy)
+      .map({case (k: LongWritable, (f: GeocodeServingFeature, containerOpt: Option[IntermediateDataContainer])) => {
+      containerOpt match {
+        case Some(container) =>
+          (k -> f.copy(scoringFeatures = f.scoringFeatures.copy(parentIds = (f.scoringFeatures.parentIds ++ container.longList).distinct)))
+        case None =>
+          (k -> f)
+      }
+    }})
+  }
 }

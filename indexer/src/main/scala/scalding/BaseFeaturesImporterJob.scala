@@ -86,7 +86,7 @@ class BaseFeaturesImporterJob(
       fid.longId
     }
 
-    explicitParents ++ adminCodeParents
+    (explicitParents ++ adminCodeParents).distinct
   }
 
   private def getEmbeddedCanGeocode(feature: GeonamesFeature): Boolean = {
