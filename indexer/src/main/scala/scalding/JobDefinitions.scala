@@ -198,3 +198,17 @@ class ParentsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediate
   rightSources = Seq("hierarchy_import"),
   joiner = FeatureJoiners.parentsJoiner,
   args = args)
+
+class ConcordancesJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
+  name = "concordances_join_intermediate",
+  leftSources = Seq("parents_join_intermediate"),
+  rightSources = Seq("concordances_import"),
+  joiner = FeatureJoiners.concordancesJoiner,
+  args = args)
+
+class SlugsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
+  name = "slugs_join_intermediate",
+  leftSources = Seq("concordances_join_intermediate"),
+  rightSources = Seq("slugs_import"),
+  joiner = FeatureJoiners.slugsJoiner,
+  args = args)

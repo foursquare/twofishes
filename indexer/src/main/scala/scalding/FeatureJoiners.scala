@@ -4,6 +4,7 @@ package com.foursquare.twofishes.scalding
 import com.foursquare.twofishes._
 import org.apache.hadoop.io.LongWritable
 import com.twitter.scalding._
+import com.foursquare.twofishes.util.StoredFeatureId
 
 object FeatureJoiners {
 
@@ -74,8 +75,57 @@ object FeatureJoiners {
     features.leftJoin(hierarchy)
       .map({case (k: LongWritable, (f: GeocodeServingFeature, containerOpt: Option[IntermediateDataContainer])) => {
       containerOpt match {
-        case Some(container) =>
-          (k -> f.copy(scoringFeatures = f.scoringFeatures.copy(parentIds = (f.scoringFeatures.parentIds ++ container.longList).distinct)))
+        case Some(container) => {
+          val parentIds = (f.scoringFeatures.parentIds ++ container.longList).distinct
+          (k -> f.copy(scoringFeatures = f.scoringFeatures.copy(parentIds = parentIds)))
+        }
+        case None =>
+          (k -> f)
+      }
+    }})
+  }
+
+  def concordancesJoiner(
+    features: Grouped[LongWritable, GeocodeServingFeature],
+    concordances: Grouped[LongWritable, IntermediateDataContainer]
+  ): TypedPipe[(LongWritable, GeocodeServingFeature)] = {
+    features.leftJoin(concordances)
+      .map({case (k: LongWritable, (f: GeocodeServingFeature, containerOpt: Option[IntermediateDataContainer])) => {
+      containerOpt match {
+        case Some(container) => {
+          val ids = (for {
+            longId <- container.longList
+            fid <- StoredFeatureId.fromLong(longId)
+          } yield {
+            fid.thriftFeatureId
+          }).toSeq
+          (k -> f.copy(feature = f.feature.copy(ids = f.feature.ids ++ ids)))
+        }
+        case None =>
+          (k -> f)
+      }
+    }})
+  }
+
+  def slugsJoiner(
+    features: Grouped[LongWritable, GeocodeServingFeature],
+    slugs: Grouped[LongWritable, IntermediateDataContainer]
+  ): TypedPipe[(LongWritable, GeocodeServingFeature)] = {
+    features.leftJoin(slugs)
+      .map({case (k: LongWritable, (f: GeocodeServingFeature, containerOpt: Option[IntermediateDataContainer])) => {
+      containerOpt match {
+        case Some(container) => {
+          val sortedSlugEntries = (for {
+            (slug, score, deprecated) <- (container.stringList, container.intList, container.boolList).zipped
+          } yield {
+            SlugEntry(slug, score, deprecated, permanent = true)
+          }).toSeq
+          if (sortedSlugEntries.nonEmpty) {
+            (k -> f.copy(slugs = sortedSlugEntries.map(_.id), feature = f.feature.copy(slug = sortedSlugEntries.head.id)))
+          } else {
+            (k -> f)
+          }
+        }
         case None =>
           (k -> f)
       }

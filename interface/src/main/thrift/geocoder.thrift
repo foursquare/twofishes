@@ -234,6 +234,7 @@ struct GeocodeServingFeature {
   2: ScoringFeatures scoringFeatures
   3: GeocodeFeature feature
   4: optional list<GeocodeFeature> parents
+  6: optional list<string> slugs
 
   1: optional string DEPRECATED_id
 }
