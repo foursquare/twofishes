@@ -212,3 +212,9 @@ class SlugsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJo
   rightSources = Seq("slugs_import"),
   joiner = FeatureJoiners.slugsJoiner,
   args = args)
+
+class AlternateNamesJoinIntermediateJob(args: Args) extends BaseAlternateNamesJoinIntermediateJob(
+  name = "altnames_join_intermediate",
+  featureSources = Seq("slugs_join_intermediate"),
+  altNameSources = Seq("altnames_import"),
+  args = args)

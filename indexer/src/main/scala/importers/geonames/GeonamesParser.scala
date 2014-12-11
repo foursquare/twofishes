@@ -144,6 +144,9 @@ object GeonamesParser extends DurationUtils {
   }
 }
 
+// (country -> tokenlist)
+case class ShortenInfo(from: Regex, to: String, flags: Int)
+
 import GeonamesParser._
 class GeonamesParser(
   store: GeocodeStorageWriteService,
@@ -163,9 +166,6 @@ class GeonamesParser(
   ).gidMap.map({case(from, toList) => {
     (from.r, toList)
   }})
-
-  // (country -> tokenlist)
-  case class ShortenInfo(from: Regex, to: String, flags: Int)
 
   lazy val shortensList: Map[String, List[ShortenInfo]] = {
     scala.io.Source.fromFile(new File("data/custom/shortens.txt"))

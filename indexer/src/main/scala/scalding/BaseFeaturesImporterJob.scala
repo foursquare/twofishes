@@ -19,6 +19,8 @@ class BaseFeaturesImporterJob(
 ) extends TwofishesImporterJob(name, inputSpec, args) {
 
   private def getDisplayNamesFromGeonamesFeature(feature: GeonamesFeature): List[DisplayName] = {
+    def isAllDigits(x: String) = x.forall(Character.isDigit)
+
     // add primary name as English PREFERRED
     List(DisplayName("en", feature.name, FeatureNameFlags.PREFERRED.getValue)) ++
     // add ascii name as English DEACCENTED
@@ -26,6 +28,19 @@ class BaseFeaturesImporterJob(
     // add country code as abbreviation if this is a country
     (if (feature.featureClass.woeType.getValue == YahooWoeType.COUNTRY.getValue) {
       List(DisplayName("abbr", feature.countryCode, 0))
+    } else {
+      Nil
+    }) ++
+    // the admincode is the internal geonames admin code, but is very often the
+    // same short name for the admin area that is actually used in the country
+    (if (feature.featureClass.isAdmin1 || feature.featureClass.isAdmin2 || feature.featureClass.isAdmin3) {
+      feature.adminCode.toList.flatMap(code => {
+        if (!isAllDigits(code)) {
+          Some(DisplayName("abbr", code, FeatureNameFlags.ABBREVIATION.getValue))
+        } else {
+          Some(DisplayName("", code, FeatureNameFlags.NEVER_DISPLAY.getValue))
+        }
+      })
     } else {
       Nil
     })
@@ -126,8 +141,8 @@ class BaseFeaturesImporterJob(
   (for {
     line <- lines
     feature <- lineProcessor(0, line)
-    // TODO: support ignore list and maybe config.shouldParseBuildings
-    if feature.shouldIndex && (!feature.featureClass.isBuilding || allowBuildings)
+    // TODO: support config.shouldParseBuildings
+    if feature.isValid && feature.shouldIndex && (!feature.featureClass.isBuilding || allowBuildings)
   } yield {
 
     val polygonOpt = getEmbeddedPolygon(feature)
