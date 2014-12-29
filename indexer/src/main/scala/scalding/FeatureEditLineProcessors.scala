@@ -1,7 +1,6 @@
 // Copyright 2014 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.scalding
 
-import com.twitter.scalding._
 import org.apache.hadoop.io.LongWritable
 import com.foursquare.twofishes._
 import com.foursquare.twofishes.util._

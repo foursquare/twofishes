@@ -224,7 +224,7 @@ class BaseAlternateNamesJoinIntermediateJob(
         val processedAltNames = altNames.flatMap(altName => {
           processFeatureName(cc, woeType, altName)
         })
-        val (deaccentedFeatureNames, nonDeaccentedFeatureNames) = altNames.partition(n => n.flags.contains(FeatureNameFlags.DEACCENT))
+        val (deaccentedFeatureNames, nonDeaccentedFeatureNames) = processedAltNames.partition(n => n.flags.contains(FeatureNameFlags.DEACCENT))
         val nonDeaccentedNames: Set[String] = nonDeaccentedFeatureNames.map(_.name).toSet
         finalNames ++= nonDeaccentedFeatureNames
         finalNames ++= deaccentedFeatureNames.filterNot(n => nonDeaccentedNames.contains(n.name))

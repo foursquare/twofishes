@@ -218,3 +218,33 @@ class AlternateNamesJoinIntermediateJob(args: Args) extends BaseAlternateNamesJo
   featureSources = Seq("slugs_join_intermediate"),
   altNameSources = Seq("altnames_import"),
   args = args)
+
+// TODO(rahul): insert polygon join job here and make left input for IgnoreEditsJoinIntermediateJob
+
+class IgnoreEditsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
+  name = "ignore_edits_join_intermediate",
+  leftSources = Seq("altnames_join_intermediate"),
+  rightSources = Seq("ignores_import"),
+  joiner = FeatureJoiners.featureEditsJoiner,
+  args = args)
+
+class MoveEditsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
+  name = "move_edits_join_intermediate",
+  leftSources = Seq("ignore_edits_join_intermediate"),
+  rightSources = Seq("moves_import"),
+  joiner = FeatureJoiners.featureEditsJoiner,
+  args = args)
+
+class NameDeleteEditsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
+  name = "name_delete_edits_join_intermediate",
+  leftSources = Seq("move_edits_join_intermediate"),
+  rightSources = Seq("name_deletes_import"),
+  joiner = FeatureJoiners.featureEditsJoiner,
+  args = args)
+
+class NameTransformEditsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
+  name = "name_transform_edits_join_intermediate",
+  leftSources = Seq("name_delete_edits_join_intermediate"),
+  rightSources = Seq("name_transforms_import"),
+  joiner = FeatureJoiners.featureEditsJoiner,
+  args = args)
