@@ -185,5 +185,7 @@ class BaseFeaturesImporterJob(
 
     val servingFeature = geocodeRecord.toGeocodeServingFeature()
     (new LongWritable(servingFeature.longId) -> servingFeature)
-  }).write(TypedSink[(LongWritable, GeocodeServingFeature)](SpindleSequenceFileSource[LongWritable, GeocodeServingFeature](outputPath)))
+  }).group
+    .head
+    .write(TypedSink[(LongWritable, GeocodeServingFeature)](SpindleSequenceFileSource[LongWritable, GeocodeServingFeature](outputPath)))
 }

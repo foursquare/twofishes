@@ -161,90 +161,120 @@ class NameTransformsImporterJob(args: Args) extends BaseFeatureEditsImporterJob(
     )),
   args = args)
 
-class BoundingBoxJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
-  name = "bbox_join_intermediate",
-  leftSources = Seq(
+object WorkflowConstants {
+  val postImportAllFeaturesSources = Seq(
     "geonames_features_import",
     "supplemental_features_import",
-    "postcode_features_import"),
+    "postcode_features_import")
+
+  val preEditsMergedFeaturesSources = Seq("pre_edit_features_merge_intermediate")
+}
+
+class BoundingBoxJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
+  name = "bbox_join_intermediate",
+  leftSources = WorkflowConstants.postImportAllFeaturesSources,
   rightSources = Seq("bbox_import"),
   joiner = FeatureJoiners.boundingBoxJoiner,
   args = args)
 
 class DisplayBoundingBoxJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
   name = "display_bbox_join_intermediate",
-  leftSources = Seq("bbox_join_intermediate"),
+  leftSources = WorkflowConstants.postImportAllFeaturesSources,
   rightSources = Seq("display_bbox_import"),
   joiner = FeatureJoiners.displayBoundingBoxJoiner,
   args = args)
 
 class ExtraRelationsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
   name = "extra_relations_join_intermediate",
-  leftSources = Seq("display_bbox_join_intermediate"),
+  leftSources = WorkflowConstants.postImportAllFeaturesSources,
   rightSources = Seq("extra_relations_import"),
   joiner = FeatureJoiners.extraRelationsJoiner,
   args = args)
 
 class BoostsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
   name = "boosts_join_intermediate",
-  leftSources = Seq("extra_relations_join_intermediate"),
+  leftSources = WorkflowConstants.postImportAllFeaturesSources,
   rightSources = Seq("boosts_import"),
-  joiner = FeatureJoiners.extraRelationsJoiner,
+  joiner = FeatureJoiners.boostsJoiner,
   args = args)
 
 class ParentsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
   name = "parents_join_intermediate",
-  leftSources = Seq("boosts_join_intermediate"),
+  leftSources = WorkflowConstants.postImportAllFeaturesSources,
   rightSources = Seq("hierarchy_import"),
   joiner = FeatureJoiners.parentsJoiner,
   args = args)
 
 class ConcordancesJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
   name = "concordances_join_intermediate",
-  leftSources = Seq("parents_join_intermediate"),
+  leftSources = WorkflowConstants.postImportAllFeaturesSources,
   rightSources = Seq("concordances_import"),
   joiner = FeatureJoiners.concordancesJoiner,
   args = args)
 
 class SlugsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
   name = "slugs_join_intermediate",
-  leftSources = Seq("concordances_join_intermediate"),
+  leftSources = WorkflowConstants.postImportAllFeaturesSources,
   rightSources = Seq("slugs_import"),
   joiner = FeatureJoiners.slugsJoiner,
   args = args)
 
 class AlternateNamesJoinIntermediateJob(args: Args) extends BaseAlternateNamesJoinIntermediateJob(
   name = "altnames_join_intermediate",
-  featureSources = Seq("slugs_join_intermediate"),
+  featureSources = WorkflowConstants.postImportAllFeaturesSources,
   altNameSources = Seq("altnames_import"),
   args = args)
 
-// TODO(rahul): insert polygon join job here and make left input for IgnoreEditsJoinIntermediateJob
+// TODO(rahul): insert polygon join job here and include in multijoin sources below
+
+class PreEditFeaturesMergeIntermediateJob(args: Args) extends BaseFeatureMergeIntermediateJob(
+  name = "pre_edit_features_merge_intermediate",
+  sources = Seq(
+    "bbox_join_intermediate",
+    "display_bbox_join_intermediate",
+    "extra_relations_join_intermediate",
+    "boosts_join_intermediate",
+    "parents_join_intermediate",
+    "concordances_join_intermediate",
+    "slugs_join_intermediate",
+    "altnames_join_intermediate"),
+  merger = FeatureMergers.preEditFeaturesMerger,
+  args = args)
 
 class IgnoreEditsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
   name = "ignore_edits_join_intermediate",
-  leftSources = Seq("altnames_join_intermediate"),
+  leftSources = WorkflowConstants.preEditsMergedFeaturesSources,
   rightSources = Seq("ignores_import"),
   joiner = FeatureJoiners.featureEditsJoiner,
   args = args)
 
 class MoveEditsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
   name = "move_edits_join_intermediate",
-  leftSources = Seq("ignore_edits_join_intermediate"),
+  leftSources = WorkflowConstants.preEditsMergedFeaturesSources,
   rightSources = Seq("moves_import"),
+  joiner = FeatureJoiners.featureEditsJoiner,
+  args = args)
+
+// run name edits in sequence rather than in parallel to simplify merging
+class NameTransformEditsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
+  name = "name_transform_edits_join_intermediate",
+  leftSources = WorkflowConstants.preEditsMergedFeaturesSources,
+  rightSources = Seq("name_transforms_import"),
   joiner = FeatureJoiners.featureEditsJoiner,
   args = args)
 
 class NameDeleteEditsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
   name = "name_delete_edits_join_intermediate",
-  leftSources = Seq("move_edits_join_intermediate"),
+  leftSources = Seq("name_transform_edits_join_intermediate"),
   rightSources = Seq("name_deletes_import"),
   joiner = FeatureJoiners.featureEditsJoiner,
   args = args)
 
-class NameTransformEditsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
-  name = "name_transform_edits_join_intermediate",
-  leftSources = Seq("name_delete_edits_join_intermediate"),
-  rightSources = Seq("name_transforms_import"),
-  joiner = FeatureJoiners.featureEditsJoiner,
+class PostEditFeaturesMergeIntermediateJob(args: Args) extends BaseFeatureMergeIntermediateJob(
+  name = "post_edit_features_merge_intermediate",
+  sources = Seq(
+    "ignore_edits_join_intermediate",
+    "move_edits_join_intermediate",
+    "name_delete_edits_join_intermediate"),
+  merger = FeatureMergers.postEditFeaturesMerger,
   args = args)

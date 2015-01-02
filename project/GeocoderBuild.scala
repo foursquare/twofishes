@@ -218,7 +218,7 @@ object GeocoderBuild extends Build {
           "com.typesafe.akka" %% "akka-actor" % "2.3.1",
           // "backtype" % "cascading-thrift" % "0.3.0-SNAPSHOT",
           "org.apache.hadoop" % "hadoop-core" % "2.0.0-mr1-cdh4.4.0",
-          "com.twitter" %% "scalding-core" % "0.9.1"
+          "com.twitter" %% "scalding-core" % "0.12.0"
         ),
         mergeStrategy in assembly <<= (mergeStrategy in assembly) { mergeStrategy => {
           case entry => {

@@ -43,5 +43,7 @@ class BaseBoundingBoxImporterJob(
           None
       }
     }
-  }).write(TypedSink[(LongWritable, GeocodeBoundingBox)](SpindleSequenceFileSource[LongWritable, GeocodeBoundingBox](outputPath)))
+  }).group
+    .head
+    .write(TypedSink[(LongWritable, GeocodeBoundingBox)](SpindleSequenceFileSource[LongWritable, GeocodeBoundingBox](outputPath)))
 }

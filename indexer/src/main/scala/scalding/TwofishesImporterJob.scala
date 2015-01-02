@@ -2,7 +2,6 @@
 package com.foursquare.twofishes.scalding
 
 import com.twitter.scalding._
-import com.twitter.scalding.typed.EmptyTypedPipe
 
 class TwofishesImporterJob(
   name: String,
@@ -20,6 +19,6 @@ class TwofishesImporterJob(
   val lines: TypedPipe[String] = if (inputFiles.nonEmpty) {
     TypedPipe.from(MultipleTextLineFiles(inputFiles: _*))
   } else {
-    EmptyTypedPipe(flowDef, mode)
+    TypedPipe.empty
   }
 }
