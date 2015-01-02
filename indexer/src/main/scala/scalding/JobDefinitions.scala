@@ -167,61 +167,68 @@ object WorkflowConstants {
     "supplemental_features_import",
     "postcode_features_import")
 
+  val postUnionAllFeaturesSources = Seq("post_import_features_union_intermediate")
+
   val preEditsMergedFeaturesSources = Seq("pre_edit_features_merge_intermediate")
 }
 
+class PostImportFeatureUnionIntermediateJob(args: Args) extends BaseFeatureUnionIntermediateJob(
+  name = "post_import_features_union_intermediate",
+  sources = WorkflowConstants.postImportAllFeaturesSources,
+  args = args)
+
 class BoundingBoxJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
   name = "bbox_join_intermediate",
-  leftSources = WorkflowConstants.postImportAllFeaturesSources,
+  leftSources = WorkflowConstants.postUnionAllFeaturesSources,
   rightSources = Seq("bbox_import"),
   joiner = FeatureJoiners.boundingBoxJoiner,
   args = args)
 
 class DisplayBoundingBoxJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
   name = "display_bbox_join_intermediate",
-  leftSources = WorkflowConstants.postImportAllFeaturesSources,
+  leftSources = WorkflowConstants.postUnionAllFeaturesSources,
   rightSources = Seq("display_bbox_import"),
   joiner = FeatureJoiners.displayBoundingBoxJoiner,
   args = args)
 
 class ExtraRelationsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
   name = "extra_relations_join_intermediate",
-  leftSources = WorkflowConstants.postImportAllFeaturesSources,
+  leftSources = WorkflowConstants.postUnionAllFeaturesSources,
   rightSources = Seq("extra_relations_import"),
   joiner = FeatureJoiners.extraRelationsJoiner,
   args = args)
 
 class BoostsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
   name = "boosts_join_intermediate",
-  leftSources = WorkflowConstants.postImportAllFeaturesSources,
+  leftSources = WorkflowConstants.postUnionAllFeaturesSources,
   rightSources = Seq("boosts_import"),
   joiner = FeatureJoiners.boostsJoiner,
   args = args)
 
 class ParentsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
   name = "parents_join_intermediate",
-  leftSources = WorkflowConstants.postImportAllFeaturesSources,
+  leftSources = WorkflowConstants.postUnionAllFeaturesSources,
   rightSources = Seq("hierarchy_import"),
   joiner = FeatureJoiners.parentsJoiner,
   args = args)
 
 class ConcordancesJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
   name = "concordances_join_intermediate",
-  leftSources = WorkflowConstants.postImportAllFeaturesSources,
+  leftSources = WorkflowConstants.postUnionAllFeaturesSources,
   rightSources = Seq("concordances_import"),
   joiner = FeatureJoiners.concordancesJoiner,
   args = args)
 
 class SlugsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
   name = "slugs_join_intermediate",
-  leftSources = WorkflowConstants.postImportAllFeaturesSources,
+  leftSources = WorkflowConstants.postUnionAllFeaturesSources,
   rightSources = Seq("slugs_import"),
   joiner = FeatureJoiners.slugsJoiner,
   args = args)
 
 class AlternateNamesJoinIntermediateJob(args: Args) extends BaseAlternateNamesJoinIntermediateJob(
   name = "altnames_join_intermediate",
-  featureSources = WorkflowConstants.postImportAllFeaturesSources,
+  featureSources = WorkflowConstants.postUnionAllFeaturesSources,
   altNameSources = Seq("altnames_import"),
   args = args)
 
