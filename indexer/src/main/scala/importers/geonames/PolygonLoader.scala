@@ -4,7 +4,7 @@ package com.foursquare.twofishes.importers.geonames
 import com.foursquare.geo.shapes.{FsqSimpleFeature, GeoJsonIterator, ShapeIterator, ShapefileIterator}
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes._
-import com.foursquare.twofishes.country.CountryInfo
+import com.foursquare.geo.country.CountryInfo
 import com.foursquare.twofishes.mongo.{GeocodeStorageWriteService, PolygonIndex, PolygonIndexDAO, MongoGeocodeDAO, RevGeoIndexDAO}
 import com.foursquare.twofishes.util.{AdHocId, DurationUtils, FeatureNamespace, GeonamesNamespace, Helpers, NameNormalizer, StoredFeatureId}
 import com.foursquare.twofishes.util.Helpers._

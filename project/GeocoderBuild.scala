@@ -232,6 +232,7 @@ object GeocoderBuild extends Build {
   lazy val quadtree = Project(id = "quadtree",
       base = file("quadtree"),
       settings = defaultSettings ++ assemblySettings ++ specsSettings ++ Seq(
+        organization := "com.foursquare.geo",
         publishArtifact := true,
         libraryDependencies ++= Seq(
           "org.geotools" % "gt-shapefile" % geoToolsVersion,
@@ -246,6 +247,7 @@ object GeocoderBuild extends Build {
    lazy val country = Project(id = "country",
       base = file("country"),
       settings = defaultSettings ++ assemblySettings ++ specsSettings ++ Seq(
+        organization := "com.foursquare.geo",
         publishArtifact := true
       )
     )

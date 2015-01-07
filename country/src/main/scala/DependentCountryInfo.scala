@@ -1,6 +1,6 @@
 // Copyright 2011 Foursquare Labs Inc. All Rights Reserved.
 
-package com.foursquare.twofishes.country
+package com.foursquare.geo.country
 
 import scala.io.Source
 import scala.io.BufferedSource

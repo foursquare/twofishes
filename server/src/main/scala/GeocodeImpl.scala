@@ -1,7 +1,7 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
-import com.foursquare.twofishes.country.DependentCountryInfo
+import com.foursquare.geo.country.DependentCountryInfo
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.YahooWoeType._
 import com.foursquare.twofishes.util.{NameNormalizer, GeoTools}

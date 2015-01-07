@@ -1,4 +1,4 @@
-package com.foursquare.twofishes.country
+package com.foursquare.geo.country
 
 import org.specs2.mutable.Specification
 
