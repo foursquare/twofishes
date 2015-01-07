@@ -68,7 +68,7 @@ object GeocodeParseOrdering {
           primaryMatchLangs.has("icao") ||
           primaryMatchLangs.has("") || // a lot of aliases tend to be names without a language
           args.req.langOption.exists(lang => primaryMatchLangs.has(lang)) ||
-          primaryMatchLangs.exists(lang => CountryInfo.getCountryInfo(args.primaryFeature.feature.cc).isLocalLanguage(lang))) {
+          primaryMatchLangs.exists(lang => CountryInfo.getCountryInfo(args.primaryFeature.feature.cc).exists(_.isLocalLanguage(lang)))) {
         ScorerResponse.Empty
       } else {
         ScorerResponseWithScoreAndMessage(-100000000, "penalizing name match in irrelevant language")
@@ -325,7 +325,7 @@ object GeocodeParseOrdering {
     ScoringTerm(distanceToBoundsOrLatLngHintClampedPenalty, 0.0001),
     ScoringTerm(manualBoost)
   )
-  
+
   val scorersForAutocompleteStrictLocal: List[ScoringTerm] = commonScorersForAutocomplete ++ List(
     ScoringTerm(populationBoost, 0.0),
     ScoringTerm(promoteCountryHintMatch, 0.0),

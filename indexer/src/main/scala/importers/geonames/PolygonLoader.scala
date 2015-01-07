@@ -4,8 +4,9 @@ package com.foursquare.twofishes.importers.geonames
 import com.foursquare.geo.shapes.{FsqSimpleFeature, GeoJsonIterator, ShapeIterator, ShapefileIterator}
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes._
+import com.foursquare.twofishes.country.CountryInfo
 import com.foursquare.twofishes.mongo.{GeocodeStorageWriteService, PolygonIndex, PolygonIndexDAO, MongoGeocodeDAO, RevGeoIndexDAO}
-import com.foursquare.twofishes.util.{AdHocId, CountryCodes, DurationUtils, FeatureNamespace, GeonamesNamespace, Helpers, NameNormalizer, StoredFeatureId}
+import com.foursquare.twofishes.util.{AdHocId, DurationUtils, FeatureNamespace, GeonamesNamespace, Helpers, NameNormalizer, StoredFeatureId}
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.ibm.icu.text.Transliterator
@@ -43,7 +44,7 @@ object LanguageDetector {
     detector.append(s)
     try {
       val lang = detector.detect
-      if (!CountryCodes.getLangs(cc).has(lang)) {
+      if (!CountryInfo.getCountryInfo(cc).exists(_.isLocalLanguage(lang))) {
         if (isPureAscii(s)) {
           "en"
         } else {
