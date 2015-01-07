@@ -1,8 +1,9 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
+import com.foursquare.twofishes.country.DependentCountryInfo
 import com.foursquare.twofishes.Identity._
-import com.foursquare.twofishes.util.{CountryUtils, GeoTools, GeonamesId, NameNormalizer, NameUtils, StoredFeatureId}
+import com.foursquare.twofishes.util.{GeoTools, GeonamesId, NameNormalizer, NameUtils, StoredFeatureId}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.foursquare.twofishes.util.NameUtils.BestNameMatch
 import scala.collection.mutable.HashMap
@@ -142,7 +143,7 @@ class AutocompleteGeocoderImpl(
           val featureHasDependentCountryRelation =
             featureMatch.fmatch.feature.woeType == YahooWoeType.COUNTRY &&
             parse.exists(p =>
-                CountryUtils.isCountryDependentOnCountry(p.fmatch.feature.cc, fcc))
+              DependentCountryInfo.isCountryDependentOnCountry(p.fmatch.feature.cc, fcc))
 
           val featureIsNotRepeat = !parse.exists(_.fmatch.longId.toString == fid)
           val featureNameHitsInAllowedLanguage =
@@ -234,7 +235,7 @@ class AutocompleteGeocoderImpl(
               parents.map(_._2.feature.cc)
               .toList
               .distinct
-              .flatMap(dcc => CountryUtils.getCountryIdOnWhichCountryIsDependent(dcc).map(id => GeonamesId(id)))
+              .flatMap(dcc => DependentCountryInfo.getCountryIdOnWhichCountryIsDependent(dcc).map(id => GeonamesId(id)))
 
             val augmentedParents = parents ++ store.getByFeatureIds(countriesOnWhichParentsAreDependent).toSeq
             logger.ifDebug("looking for %s in parents: %s", query, parents)

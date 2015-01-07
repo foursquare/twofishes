@@ -97,7 +97,7 @@ object GeocoderBuild extends Build {
     settings = defaultSettings ++ assemblySettings ++ Seq(
       publishArtifact := true
     ),
-    base = file(".")) aggregate(util, core, interface, server, indexer, quadtree)
+    base = file(".")) aggregate(country, util, core, interface, server, indexer, quadtree)
 
   lazy val core = Project(id = "core",
       base = file("core"),
@@ -130,7 +130,7 @@ object GeocoderBuild extends Build {
           </dependencies>
         )
       )
-    ) dependsOn(interface, util)
+    ) dependsOn(interface, util, country)
 
   lazy val interface = Project(id = "interface",
       settings = defaultSettings ++ thriftSettings ++ Seq(
@@ -147,7 +147,7 @@ object GeocoderBuild extends Build {
         initialCommands := """
         import com.foursquare.twofishes._
         import com.foursquare.twofishes.util._
-        
+
         val config: GeocodeServerConfig = GeocodeServerConfigSingleton.init(args)
         val store = ServerStore.getStore(config)
         val server = new GeocodeServerImpl(store, false)
@@ -175,7 +175,7 @@ object GeocoderBuild extends Build {
           }
         }}
       ),
-      base = file("server")) dependsOn(core, interface, util, quadtree)
+      base = file("server")) dependsOn(core, interface, util, quadtree, country)
 
   lazy val indexer = Project(id = "indexer",
       base = file("indexer"),
@@ -225,7 +225,7 @@ object GeocoderBuild extends Build {
           }
         }}
       )
-  ) dependsOn(core, util, quadtree)
+  ) dependsOn(core, util, quadtree, country)
 
   val geoToolsVersion = "9.2"
 
@@ -240,6 +240,13 @@ object GeocoderBuild extends Build {
           "org.geotools" % "gt-referencing" % geoToolsVersion,
           "org.scalaj" %% "scalaj-collection" % "1.5"
         )
+      )
+    )
+
+   lazy val country = Project(id = "country",
+      base = file("country"),
+      settings = defaultSettings ++ assemblySettings ++ specsSettings ++ Seq(
+        publishArtifact := true
       )
     )
 
