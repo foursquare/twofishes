@@ -1,18 +1,19 @@
 // Copyright 2014 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.importers.geonames
 
-import java.io.{Writer, FileWriter, File}
-
-import com.foursquare.geo.shapes.{FsqSimpleFeature, ShapeIterator, ShapefileIterator, GeoJsonIterator}
+import com.foursquare.geo.shapes.{FsqSimpleFeature, GeoJsonIterator, ShapeIterator, ShapefileIterator}
 import com.foursquare.twofishes.DisplayName
-import com.foursquare.twofishes.util.{Helpers, StoredFeatureId, FeatureNamespace, GeonamesNamespace}
+import com.foursquare.twofishes.util.{FeatureNamespace, GeonamesNamespace, Helpers, StoredFeatureId}
 import com.vividsolutions.jts.io.WKBWriter
 import com.weiglewilczek.slf4s.Logging
+import java.io.{File, FileWriter, Writer}
 import org.apache.commons.net.util.Base64
-import com.foursquare.twofishes.util.Lists.Implicits._
 
 // Tool to flatten all polygons and matching metadata to a single text file
 // to simplify scalding index build
+// run from twofishes root directory using the following command:
+// ./sbt "indexer/run-main com.foursquare.twofishes.importers.geonames.PolygonDataFlattener"
+//
 // NOTE(rahul): This is a temporary workaround until I find/write an implementation
 // of FileInputFormat and RecordReader for shapefiles/geojson that can split
 // geojson is easy
@@ -186,7 +187,7 @@ object PolygonDataFlattener extends Logging {
       new File("data/private/polygons"))
     val polygonFiles = polygonDirs.flatMap(recursiveListFiles).sorted
 
-    val fileWriter = new FileWriter("data/private/flattenedPolygons.txt", true)
+    val fileWriter = new FileWriter("data/private/flattenedPolygons.txt", false)
 
     polygonFiles.foreach(f => load(defaultNameSpace, f, fileWriter))
 
