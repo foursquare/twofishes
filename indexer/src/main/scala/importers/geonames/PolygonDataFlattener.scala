@@ -4,6 +4,7 @@ package com.foursquare.twofishes.importers.geonames
 import com.foursquare.geo.shapes.{FsqSimpleFeature, GeoJsonIterator, ShapeIterator, ShapefileIterator}
 import com.foursquare.twofishes.DisplayName
 import com.foursquare.twofishes.util.{FeatureNamespace, GeonamesNamespace, Helpers, StoredFeatureId}
+import com.foursquare.twofishes.util.Lists.Implicits._
 import com.vividsolutions.jts.io.WKBWriter
 import com.weiglewilczek.slf4s.Logging
 import java.io.{File, FileWriter, Writer}
