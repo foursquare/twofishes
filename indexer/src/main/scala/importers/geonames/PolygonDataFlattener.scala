@@ -148,10 +148,10 @@ object PolygonDataFlattener extends Logging {
       outputWriter.write("%s\t%s\t%s\t%s\t%s\t%s\n".format(
         polygonId.toString,
         source,
-        geomBase64String,
         fids.map(_.longId.toString).mkString(","),
         names.map(dn => "%s:%s".format(dn.lang, dn.name)).mkString("|"),
-        woeTypes.map(list => list.map(_.name).mkString(",")).mkString("|")
+        woeTypes.map(list => list.map(_.name).mkString(",")).mkString("|"),
+        geomBase64String
       ))
     }
   }
