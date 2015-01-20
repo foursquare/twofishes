@@ -102,7 +102,7 @@ object PolygonDataFlattener extends Logging {
 
       val source = polygonMappingConfig.flatMap(_.source).getOrElse(features.file.getName())
       
-      val geomBase64String = Base64.encodeBase64String(wkbWriter.write(geom))
+      val geomBase64String = Base64.encodeBase64URLSafeString(wkbWriter.write(geom))
 
       val fidsFromFileName = fparts.lift(0).flatMap(p => Helpers.TryO(p.toInt.toString))
         .flatMap(i => StoredFeatureId.fromHumanReadableString(i, Some(defaultNamespace))).toList
@@ -143,7 +143,7 @@ object PolygonDataFlattener extends Logging {
         (Nil, Nil)
       }
       
-      outputWriter.write("%s\t%s\t%s\t%s\t%s\t%s".format(
+      outputWriter.write("%s\t%s\t%s\t%s\t%s\t%s\n".format(
         polygonId.toString,
         source,
         geomBase64String,
