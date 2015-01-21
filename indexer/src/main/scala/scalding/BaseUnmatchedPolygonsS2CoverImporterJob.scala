@@ -63,7 +63,7 @@ class BaseUnmatchedPolygonsS2CoverImporterJob(
   }).group
     .toList
     .mapValues({matchingValues: List[PolygonMatchingValue] => {
-    PolygonMatchingValues(matchingValues)
+      PolygonMatchingValues(matchingValues)
     }})
     .write(TypedSink[(BytesWritable, PolygonMatchingValues)](SpindleSequenceFileSource[BytesWritable, PolygonMatchingValues](outputPath)))
 }
