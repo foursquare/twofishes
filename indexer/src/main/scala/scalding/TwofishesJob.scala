@@ -3,6 +3,7 @@ package com.foursquare.twofishes.scalding
 
 import com.twitter.scalding._
 import org.apache.hadoop.fs.{Path, FileSystem}
+import org.apache.hadoop.io.BytesWritable
 import scala.collection.mutable.ListBuffer
 import org.apache.hadoop.conf.Configuration
 import scala.util.matching.Regex
@@ -14,6 +15,10 @@ class TwofishesJob(name: String, args: Args) extends Job(args) {
   val outputBaseDir = args("output")
 
   val outputPath = concatenatePaths(outputBaseDir, name)
+
+  implicit object BytesWritableOrdering extends Ordering[BytesWritable] {
+    def compare(x: BytesWritable, y: BytesWritable) = x.compareTo(y)
+  }
 
   protected def concatenatePaths(base: String, relative: String): String = {
     // TODO: strip trailing and leading slashes

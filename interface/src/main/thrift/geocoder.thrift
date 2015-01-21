@@ -183,7 +183,7 @@ struct ScoringFeatures {
   3: optional list<string> DEPRECATED_parents = []
 }
 
-// index-only data structure to hold transient data produced by scalding pipeline jobs
+// index-only data structures to hold transient data produced by scalding pipeline jobs
 struct IntermediateDataContainer {
   1: optional i64 longValue
   2: optional list<i64> longList
@@ -193,6 +193,24 @@ struct IntermediateDataContainer {
   6: optional list<i32> intList
   7: optional bool boolValue
   8: optional list<bool> boolList
+}
+
+struct PolygonMatchingKey {
+  1: optional i64 s2CellId
+  2: optional YahooWoeType woeType
+}
+
+struct PolygonMatchingValue {
+  1: optional i64 featureId
+  2: optional i64 polygonId
+  3: optional list<FeatureName> names
+  4: optional i32 polygonWoeTypePreferenceLevel
+  5: optional string wkbGeometryBase64String
+  6: optional string source
+}
+
+struct PolygonMatchingValues {
+  1: optional list<PolygonMatchingValue> values
 }
 
 struct GeocodeFeature {

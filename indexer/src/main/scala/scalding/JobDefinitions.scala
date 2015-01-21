@@ -161,6 +161,30 @@ class NameTransformsImporterJob(args: Args) extends BaseFeatureEditsImporterJob(
     )),
   args = args)
 
+class MatchedPolygonsImporterJob(args: Args) extends BaseMatchedPolygonsImporterJob(
+  name = "matched_polygons_import",
+  inputSpec = TwofishesImporterInputSpec(
+    relativeFilePaths = Seq(
+      "private/flattenedPolygons.txt"),
+    directories = Nil),
+  args = args)
+
+class UnmatchedPolygonsImporterJob(args: Args) extends BaseUnmatchedPolygonsImporterJob(
+  name = "unmatched_polygons_import",
+  inputSpec = TwofishesImporterInputSpec(
+    relativeFilePaths = Seq(
+      "private/flattenedPolygons.txt"),
+    directories = Nil),
+  args = args)
+
+class UnmatchedPolygonsS2CoverImporterJob(args: Args) extends BaseUnmatchedPolygonsS2CoverImporterJob(
+  name = "unmatched_polygons_s2_cover_import",
+  inputSpec = TwofishesImporterInputSpec(
+    relativeFilePaths = Seq(
+      "private/flattenedPolygons.txt"),
+    directories = Nil),
+  args = args)
+
 object WorkflowConstants {
   val postImportAllFeaturesSources = Seq(
     "geonames_features_import",
@@ -284,4 +308,9 @@ class PostEditFeaturesMergeIntermediateJob(args: Args) extends BaseFeatureMergeI
     "move_edits_join_intermediate",
     "name_delete_edits_join_intermediate"),
   merger = FeatureMergers.postEditFeaturesMerger,
+  args = args)
+
+class FeatureCenterS2CellIntermediateJob(args: Args) extends BaseFeatureCenterS2CellIntermediateJob(
+  name = "feature_center_s2_cell_intermediate",
+  sources = Seq("post_edit_features_merge_intermediate"),
   args = args)
