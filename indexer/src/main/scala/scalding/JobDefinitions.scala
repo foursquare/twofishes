@@ -314,3 +314,9 @@ class FeatureCenterS2CellIntermediateJob(args: Args) extends BaseFeatureCenterS2
   name = "feature_center_s2_cell_intermediate",
   sources = Seq("post_edit_features_merge_intermediate"),
   args = args)
+
+class PolygonMatchingJoinIntermediateJob(args: Args) extends BasePolygonMatchingJoinIntermediateJob(
+  name = "polygon_matching_join_intermediate",
+  polygonSources = Seq("unmatched_polygons_s2_cover_import"),
+  featureSources = Seq("feature_center_s2_cell_intermediate"),
+  args = args)
