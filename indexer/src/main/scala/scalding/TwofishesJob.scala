@@ -1,6 +1,8 @@
 // Copyright 2014 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.scalding
 
+import cascading.tap.hadoop.HfsProps
+import cascading.util.Update
 import com.twitter.scalding._
 import org.apache.hadoop.fs.{Path, FileSystem}
 import org.apache.hadoop.io.BytesWritable
@@ -67,7 +69,6 @@ class TwofishesJob(name: String, args: Args) extends Job(args) {
   // meant for small info files typically used to populate lookup tables
   // do not use for large files
   protected def getCachedFileByRelativePath(relativePath: String): CachedFile = {
-
     // will throw if the file doesn't exist
     val filePath = getFilesByRelativePaths(Seq(relativePath)).head
     DistributedCacheFile(filePath)
@@ -79,5 +80,11 @@ class TwofishesJob(name: String, args: Args) extends Job(args) {
     val result = super.run
     if (result) onSuccess()
     result
+  }
+
+  override def config: Map[AnyRef, AnyRef] = {
+    System.setProperty(Update.UPDATE_CHECK_SKIP, "true")
+    val userName = System.getProperty("user.name", "unknown")
+    super.config + (HfsProps.TEMPORARY_DIRECTORY -> s"/tmp/cascading-$userName")
   }
 }
