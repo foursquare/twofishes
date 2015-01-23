@@ -18,8 +18,8 @@ class TwofishesJob(name: String, args: Args) extends Job(args) {
 
   val outputPath = concatenatePaths(outputBaseDir, name)
 
-  implicit object BytesWritableOrdering extends Ordering[BytesWritable] {
-    def compare(x: BytesWritable, y: BytesWritable) = x.compareTo(y)
+  implicit object PolygonMatchingWritableOrdering extends Ordering[PolygonMatchingKeyWritable] {
+    def compare(x: PolygonMatchingKeyWritable, y: PolygonMatchingKeyWritable) = x.compareTo(y)
   }
 
   protected def concatenatePaths(base: String, relative: String): String = {

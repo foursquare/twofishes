@@ -6,7 +6,7 @@ import com.foursquare.twofishes.util.NameNormalizer
 import com.foursquare.hadoop.scalding.SpindleSequenceFileSource
 import com.twitter.scalding._
 import com.twitter.scalding.typed.TypedSink
-import org.apache.hadoop.io.{BytesWritable, LongWritable}
+import org.apache.hadoop.io.LongWritable
 import com.rockymadden.stringmetric.similarity.JaroWinklerMetric
 import com.rockymadden.stringmetric.transform._
 
@@ -17,8 +17,8 @@ class BasePolygonMatchingJoinIntermediateJob(
   args: Args
 ) extends TwofishesIntermediateJob(name, args) {
 
-  val polygons = getJobOutputsAsTypedPipe[BytesWritable, PolygonMatchingValues](polygonSources).group
-  val features = getJobOutputsAsTypedPipe[BytesWritable, PolygonMatchingValues](featureSources).group
+  val polygons = getJobOutputsAsTypedPipe[PolygonMatchingKeyWritable, PolygonMatchingValues](polygonSources).group
+  val features = getJobOutputsAsTypedPipe[PolygonMatchingKeyWritable, PolygonMatchingValues](featureSources).group
 
   val customRewritesCachedFile = getCachedFileByRelativePath("custom/rewrites.txt")
   @transient lazy val nameRewritesMap = InMemoryLookupTableHelper.buildNameRewritesMap(Seq(customRewritesCachedFile))

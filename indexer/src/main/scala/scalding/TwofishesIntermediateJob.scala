@@ -11,7 +11,7 @@ class TwofishesIntermediateJob(
   args: Args
 ) extends TwofishesJob(name, args) {
 
-  def getJobOutputsAsTypedPipe[K <: Writable with Comparable[_]: Manifest, T <: ThriftConverter.TType: Manifest: TupleConverter](names: Seq[String]): TypedPipe[(K, T)] = {
+  def getJobOutputsAsTypedPipe[K <: Writable with Comparable[K]: Manifest, T <: ThriftConverter.TType: Manifest: TupleConverter](names: Seq[String]): TypedPipe[(K, T)] = {
     var pipe: TypedPipe[(K, T)] = TypedPipe.empty
     names.foreach(name => {
       val path = concatenatePaths(outputBaseDir, name)

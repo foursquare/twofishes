@@ -4,11 +4,8 @@ package com.foursquare.twofishes.scalding
 import com.foursquare.common.thrift.ThriftConverter
 import com.foursquare.twofishes._
 import com.ibm.icu.text.Transliterator
-import org.apache.hadoop.io.BytesWritable
 
 object PolygonMatchingHelper {
-
-  val thriftConverter = new ThriftConverter[PolygonMatchingKey]()
 
   val transliterator = Transliterator.getInstance("Any-Latin; NFD;")
 
@@ -22,9 +19,5 @@ object PolygonMatchingHelper {
       case YahooWoeType.SUBURB => 10
       case _ => 10
     }
-  }
-
-  def getKeyAsBytesWritable(key: PolygonMatchingKey): BytesWritable = {
-    new BytesWritable(thriftConverter.serialize(key))
   }
 }

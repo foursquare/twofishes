@@ -8,7 +8,6 @@ import com.twitter.scalding._
 import com.twitter.scalding.typed.TypedSink
 import com.vividsolutions.jts.io.WKBReader
 import org.apache.commons.net.util.Base64
-import org.apache.hadoop.io.BytesWritable
 
 class BaseUnmatchedPolygonsS2CoverImporterJob(
   name: String,
@@ -59,11 +58,11 @@ class BaseUnmatchedPolygonsS2CoverImporterJob(
       .polygonWoeTypePreferenceLevel(preferenceLevel)
       .result
     val matchingKey = PolygonMatchingKey(s2CellId, woeType)
-    (PolygonMatchingHelper.getKeyAsBytesWritable(matchingKey) -> matchingValue)
+    (new PolygonMatchingKeyWritable(matchingKey) -> matchingValue)
   }).group
     .toList
     .mapValues({matchingValues: List[PolygonMatchingValue] => {
       PolygonMatchingValues(matchingValues)
     }})
-    .write(TypedSink[(BytesWritable, PolygonMatchingValues)](SpindleSequenceFileSource[BytesWritable, PolygonMatchingValues](outputPath)))
+    .write(TypedSink[(PolygonMatchingKeyWritable, PolygonMatchingValues)](SpindleSequenceFileSource[PolygonMatchingKeyWritable, PolygonMatchingValues](outputPath)))
 }

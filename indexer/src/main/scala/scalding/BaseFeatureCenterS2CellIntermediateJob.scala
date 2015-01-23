@@ -6,7 +6,7 @@ import com.foursquare.twofishes.util.GeometryUtils
 import com.foursquare.hadoop.scalding.SpindleSequenceFileSource
 import com.twitter.scalding._
 import com.twitter.scalding.typed.TypedSink
-import org.apache.hadoop.io.{BytesWritable, LongWritable}
+import org.apache.hadoop.io.LongWritable
 
 class BaseFeatureCenterS2CellIntermediateJob(
   name: String,
@@ -26,11 +26,11 @@ class BaseFeatureCenterS2CellIntermediateJob(
       .names(f.feature.names)
       .result
     val matchingKey = PolygonMatchingKey(centerS2CellId, woeType)
-    (PolygonMatchingHelper.getKeyAsBytesWritable(matchingKey) -> matchingValue)
+    (new PolygonMatchingKeyWritable(matchingKey) -> matchingValue)
   }}).group
     .toList
     .mapValues({matchingValues: List[PolygonMatchingValue] => {
       PolygonMatchingValues(matchingValues)
     }})
-    .write(TypedSink[(BytesWritable, PolygonMatchingValues)](SpindleSequenceFileSource[BytesWritable, PolygonMatchingValues](outputPath)))
+    .write(TypedSink[(PolygonMatchingKeyWritable, PolygonMatchingValues)](SpindleSequenceFileSource[PolygonMatchingKeyWritable, PolygonMatchingValues](outputPath)))
 }
