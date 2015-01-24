@@ -30,9 +30,17 @@ class PolygonMatchingKeyWritable(value: PolygonMatchingKey) extends WritableComp
   }
 
   override def compareTo(o: PolygonMatchingKeyWritable): Int = {
-    getKey().compare(o.getKey())
+    toString().compare(o.toString())
   }
 
-  override def hashCode: Int = getKey().hashCode
+  override def equals(that: Any): Boolean = {
+    that match {
+      case null => false
+      case o: PolygonMatchingKeyWritable => toString().equals(o.toString())
+      case _ => false
+    }
+  }
+
+  override def hashCode: Int = toString().hashCode
   override def toString: String = getKey().toString
 }

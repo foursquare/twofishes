@@ -100,7 +100,7 @@ class BasePolygonMatchingJoinIntermediateJob(
   def getBestMatchIds(polygon: PolygonMatchingValue, candidates: Seq[PolygonMatchingValue]): Seq[Long] = {
     val scores: Seq[(Int, Long)] = candidates.map(candidate => {
       (scoreMatch(polygon.names, candidate.names) -> candidate.featureIdOption.getOrElse(0L))
-    }).filter({case (score: Int, featureId: Long) => score > 95}).toList
+    }).filter({case (score: Int, featureId: Long) => score > 95}).toSeq
 
     val scoresMap = scores.groupBy({case (score: Int, featureId: Long) => score})
 
@@ -115,11 +115,39 @@ class BasePolygonMatchingJoinIntermediateJob(
   (for {
     (k, (pValues, fValues)) <- joined
     polygon <- pValues.values
+    polygonId <- polygon.polygonIdOption.toList
+    preferenceLevel <- polygon.polygonWoeTypePreferenceLevelOption.toList
     candidates = fValues.values
-    bestMatch <- getBestMatchIds(polygon, candidates)
+    bestMatchId <- getBestMatchIds(polygon, candidates)
   } yield {
-    (new LongWritable(bestMatch) -> PolygonMatchingValue.newBuilder.polygonId(polygon.polygonIdOption).result)
+    // 1. first emit polygonId -> featureId + preferenceLevel
+    val matchingValue = PolygonMatchingValue.newBuilder
+      .featureId(bestMatchId)
+      .polygonWoeTypePreferenceLevel(preferenceLevel)
+      .result
+    (polygonId -> matchingValue)
   }).group
+    // 2. then filter down to features which match at best preferenceLevel
+    .toList
+    .mapValues({featureMatches: List[PolygonMatchingValue] => {
+      val preferenceMap = featureMatches.groupBy(_.polygonWoeTypePreferenceLevelOption.getOrElse(0))
+      val matchesAtBestLevel = preferenceMap(preferenceMap.keys.min)
+      PolygonMatchingValues(matchesAtBestLevel)
+    }})
+    // 3. flip feature and polygonIds
+    .flatMap({case (polygonId: Long, featureMatches: PolygonMatchingValues) => {
+      for {
+        featureMatch <- featureMatches.values
+        featureId <- featureMatch.featureIdOption
+      } yield {
+        val matchingValue = PolygonMatchingValue.newBuilder
+          .polygonId(polygonId)
+          .result
+        (new LongWritable(featureId) -> matchingValue)
+      }
+    }})
+    // 4. finally group by featureId and pick highest valued polygonId
+    .group
     .maxBy(_.polygonIdOption.getOrElse(0L))
     .write(TypedSink[(LongWritable, PolygonMatchingValue)](SpindleSequenceFileSource[LongWritable, PolygonMatchingValue](outputPath)))
 }

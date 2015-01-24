@@ -30,7 +30,11 @@ class BaseUnmatchedPolygonsS2CoverImporterJob(
   }
 
   def unflattenWoeTypes(woeTypesString: String): Seq[Seq[YahooWoeType]] = {
-    woeTypesString.split("\\|").toSeq.map(_.split(",").toSeq.map(YahooWoeType.findByNameOrNull(_)))
+    if (woeTypesString.nonEmpty) {
+      woeTypesString.split("\\|").toSeq.map(_.split(",").toSeq.map(YahooWoeType.findByNameOrNull(_)))
+    } else {
+      Nil
+    }
   }
 
   (for {
@@ -42,7 +46,8 @@ class BaseUnmatchedPolygonsS2CoverImporterJob(
     featureIdsString = parts(2)
     // no features matched
     if featureIdsString.isEmpty
-    names = unflattenNames(parts(3))
+    names = unflattenNames(parts(3)).filter(_.name.nonEmpty)
+    if names.nonEmpty
     preferredWoeTypes = unflattenWoeTypes(parts(4))
     geometryBase64String = parts(5)
     geometry = new WKBReader().read(Base64.decodeBase64(geometryBase64String))
