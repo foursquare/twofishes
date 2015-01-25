@@ -6,8 +6,6 @@ import com.foursquare.twofishes._
 import com.foursquare.twofishes.util._
 import com.twitter.scalding._
 import com.twitter.scalding.typed.TypedSink
-import com.vividsolutions.jts.io.WKBReader
-import org.apache.commons.net.util.Base64
 
 class BaseUnmatchedPolygonsS2CoverImporterJob(
   name: String,
@@ -50,7 +48,7 @@ class BaseUnmatchedPolygonsS2CoverImporterJob(
     if names.nonEmpty
     preferredWoeTypes = unflattenWoeTypes(parts(4))
     geometryBase64String = parts(5)
-    geometry = new WKBReader().read(Base64.decodeBase64(geometryBase64String))
+    geometry = PolygonMatchingHelper.getGeometryFromBase64String(geometryBase64String)
     (woeTypesAtLevel, preferenceLevel) <- preferredWoeTypes.zipWithIndex
     woeType <- woeTypesAtLevel
     s2Level = PolygonMatchingHelper.getS2LevelForWoeType(woeType)

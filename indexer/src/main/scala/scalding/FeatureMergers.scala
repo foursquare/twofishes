@@ -6,7 +6,6 @@ import com.foursquare.twofishes._
 object FeatureMergers {
 
   def preEditFeaturesMerger(features: Seq[GeocodeServingFeature]): GeocodeServingFeature = {
-    // TODO(rahul): merge in polygon source
     // if there aren't 8 features, throw
     if (features.size != 8) {
       throw new Exception("Incorrect number of features to merge")

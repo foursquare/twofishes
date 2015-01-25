@@ -1,7 +1,10 @@
 // Copyright 2014 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.scalding
 
+import java.nio.ByteBuffer
+
 import com.foursquare.twofishes._
+import com.vividsolutions.jts.geom.{GeometryFactory, Coordinate}
 import org.apache.hadoop.io.LongWritable
 import com.twitter.scalding._
 import com.foursquare.twofishes.util.StoredFeatureId
@@ -146,5 +149,36 @@ object FeatureJoiners {
             Some(k -> f)
         }
       }})
+  }
+
+  def polygonsJoiner(
+    features: Grouped[LongWritable, GeocodeServingFeature],
+    polygons: Grouped[LongWritable, PolygonMatchingValue]
+  ): TypedPipe[(LongWritable, GeocodeServingFeature)] = {
+    features.leftJoin(polygons)
+      .flatMap({case (k: LongWritable, (f: GeocodeServingFeature, polygonOpt: Option[PolygonMatchingValue])) => {
+        polygonOpt match {
+          case Some(polygon) => {
+            val center = f.feature.geometry.center
+            val centerPoint = new GeometryFactory().createPoint(new Coordinate(center.lng, center.lat))
+            for {
+              source <- polygon.sourceOption
+              geometryBase64String <- polygon.wkbGeometryBase64StringOption
+              geometry = PolygonMatchingHelper.getGeometryFromBase64String(geometryBase64String)
+              if (geometry.contains(centerPoint) || geometry.distance(centerPoint) <= 0.03)
+              wkbGeometry = PolygonMatchingHelper.getWKBFromGeometry(geometry)
+            } yield {
+              (k -> f.copy(
+                scoringFeatures = f.scoringFeatures.copy(hasPoly = true),
+                feature = f.feature.copy(
+                  geometry = f.feature.geometry.copy(
+                    wkbGeometry = ByteBuffer.wrap(wkbGeometry),
+                    source = source))))
+            }
+          }
+          case None =>
+            Some(k -> f)
+      }
+    }})
   }
 }

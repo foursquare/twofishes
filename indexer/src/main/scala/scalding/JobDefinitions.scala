@@ -321,9 +321,16 @@ class UnmatchedPolygonFeatureMatchingIntermediateJob(args: Args) extends BaseUnm
   featureSources = Seq("feature_center_s2_cell_intermediate"),
   args = args)
 
-class MatchedPolygonsJoinIntermediateJob(args: Args) extends BaseMatchedPolygonsJoinIntermediateJob(
-  name = "matched_polygons_join_intermediate",
+class MatchedPolygonsGeometryJoinIntermediateJob(args: Args) extends BaseMatchedPolygonsGeometryJoinIntermediateJob(
+  name = "matched_polygons_geometry_join_intermediate",
   prematchedPolygonSources = Seq("prematched_polygons_import"),
   matchedPolygonSources = Seq("unmatched_polygon_feature_matching_intermediate"),
   geometrySources = Seq("polygon_geometries_import"),
+  args = args)
+
+class PolygonsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
+  name = "polygons_join_intermediate",
+  leftSources = Seq("post_edit_features_merge_intermediate"),
+  rightSources = Seq("matched_polygons_geometry_join_intermediate"),
+  joiner = FeatureJoiners.polygonsJoiner,
   args = args)
