@@ -161,16 +161,16 @@ class NameTransformsImporterJob(args: Args) extends BaseFeatureEditsImporterJob(
     )),
   args = args)
 
-class MatchedPolygonsImporterJob(args: Args) extends BaseMatchedPolygonsImporterJob(
-  name = "matched_polygons_import",
+class PrematchedPolygonsImporterJob(args: Args) extends BasePrematchedPolygonsImporterJob(
+  name = "prematched_polygons_import",
   inputSpec = TwofishesImporterInputSpec(
     relativeFilePaths = Seq(
       "private/flattenedPolygons.txt"),
     directories = Nil),
   args = args)
 
-class UnmatchedPolygonsImporterJob(args: Args) extends BaseUnmatchedPolygonsImporterJob(
-  name = "unmatched_polygons_import",
+class PolygonGeometriesImporterJob(args: Args) extends BasePolygonGeometriesImporterJob(
+  name = "polygon_geometries_import",
   inputSpec = TwofishesImporterInputSpec(
     relativeFilePaths = Seq(
       "private/flattenedPolygons.txt"),
@@ -315,8 +315,15 @@ class FeatureCenterS2CellIntermediateJob(args: Args) extends BaseFeatureCenterS2
   sources = Seq("post_edit_features_merge_intermediate"),
   args = args)
 
-class PolygonMatchingJoinIntermediateJob(args: Args) extends BasePolygonMatchingJoinIntermediateJob(
-  name = "polygon_matching_join_intermediate",
+class UnmatchedPolygonFeatureMatchingIntermediateJob(args: Args) extends BaseUnmatchedPolygonFeatureMatchingIntermediateJob(
+  name = "unmatched_polygon_feature_matching_intermediate",
   polygonSources = Seq("unmatched_polygons_s2_cover_import"),
   featureSources = Seq("feature_center_s2_cell_intermediate"),
+  args = args)
+
+class MatchedPolygonsJoinIntermediateJob(args: Args) extends BaseMatchedPolygonsJoinIntermediateJob(
+  name = "matched_polygons_join_intermediate",
+  prematchedPolygonSources = Seq("prematched_polygons_import"),
+  matchedPolygonSources = Seq("unmatched_polygon_feature_matching_intermediate"),
+  geometrySources = Seq("polygon_geometries_import"),
   args = args)

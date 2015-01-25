@@ -8,7 +8,7 @@ import com.twitter.scalding._
 import com.twitter.scalding.typed.TypedSink
 import org.apache.hadoop.io.LongWritable
 
-class BaseUnmatchedPolygonsImporterJob(
+class BasePolygonGeometriesImporterJob(
   name: String,
   inputSpec: TwofishesImporterInputSpec,
   args: Args
@@ -21,9 +21,6 @@ class BaseUnmatchedPolygonsImporterJob(
     if parts.size == 6
     polygonId <- Helpers.TryO({ parts(0).toLong }).toList
     source = parts(1)
-    featureIdsString = parts(2)
-    // no features matched
-    if featureIdsString.isEmpty
     geometryBase64String = parts(5)
   } yield {
     val matchingValue = PolygonMatchingValue.newBuilder

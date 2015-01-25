@@ -10,7 +10,7 @@ import org.apache.hadoop.io.LongWritable
 import com.rockymadden.stringmetric.similarity.JaroWinklerMetric
 import com.rockymadden.stringmetric.transform._
 
-class BasePolygonMatchingJoinIntermediateJob(
+class BaseUnmatchedPolygonFeatureMatchingIntermediateJob(
   name: String,
   polygonSources: Seq[String],
   featureSources: Seq[String],
