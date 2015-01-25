@@ -118,14 +118,13 @@ Also US-centric are zillow neighborhood polygons, also CC-by-SA. I might add an 
 
 Contributors
 ============
-David Blackman <blackmad@twitter.com>
-Rahul Maddimsetty <rahul@foursquare.com>
-Neil Sanchala
+* David Blackman <blackmad@twitter.com>
+* Rahul Maddimsetty <rahul@foursquare.com>
+* Neil Sanchala
 
 Many thanks for assistance:
-
-Jorge Ortiz
-John Gallagher
+* Jorge Ortiz
+* John Gallagher
 
 Unrelated
 =========
