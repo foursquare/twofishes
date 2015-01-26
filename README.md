@@ -59,7 +59,6 @@ First time setup
 Data import
 ===========
 *   mongod --dbpath /local/directory/for/output/
-*   ./init-database.sh # drops existing table and creates indexes
 *   If you want to import countries: ./parse.py -c US /output/dir (Note that you can specify list of countries separating them by comma: US,GB,RU)
 *   If you want to import world: ./parse.py -w /output/dir
 
@@ -117,15 +116,15 @@ I'd like to integrate more data from OSM and possibly an entire build solely fro
 
 Also US-centric are zillow neighborhood polygons, also CC-by-SA. I might add an "attribution" field to the response for certain datasources. I'm not looking forward to writing a conflater with precedence for overlapping features from different data sets.
 
-Me
-==
-David Blackman <blackmad@foursquare.com>
-
 Contributors
 ============
-Many thanks to @nsanch for cleaning up lots of this code and working out lots of performance issues
-@jorgeo has been helping me tune the java performance of this since day 1, and worked out lots of issues with [spindle](https://github.com/foursquare/spindle) in the process
-@slackhappy has yet to make a contribution to the codebase, but has spent a lot of time reasoning about our internal deployments of twofishes
+* David Blackman <blackmad@twitter.com>
+* Rahul Maddimsetty <rahul@foursquare.com>
+* Neil Sanchala
+
+Many thanks for assistance:
+* Jorge Ortiz
+* John Gallagher
 
 Unrelated
 =========

@@ -1,6 +1,3 @@
-git submodule init
-git submodule update
-
 FILE=data/downloaded/alternateNames.txt
 if [ -f $FILE ];
 then
@@ -46,6 +43,7 @@ then
 else
    curl -o $file http://download.geonames.org/export/dump/countryInfo.txt
 fi
+cp $file country/src/main/resources/
 
 file=data/downloaded/ne_10m_populated_places_simple.dbf
 if [ -f $file ];
@@ -53,7 +51,7 @@ then
    echo "file $file exists."
 else
    curl -L -o data/downloaded/ne_10m_populated_places_simple.zip http://www.naturalearthdata.com/http//www.naturalearthdata.com/download/10m/cultural/ne_10m_populated_places_simple.zip
-   unzip -d data/downloaded/ data/downloaded/ne_10m_populated_places_simple.zip 
+   unzip -d data/downloaded/ data/downloaded/ne_10m_populated_places_simple.zip
    rm data/downloaded/ne_10m_populated_places_simple.zip
 fi
 

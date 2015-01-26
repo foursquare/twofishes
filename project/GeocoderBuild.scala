@@ -9,7 +9,7 @@ object GeocoderBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.foursquare.twofishes",
     name := "twofishes",
-    version      := "0.84.4",
+    version      := "0.84.5-SNAPSHOT",
     scalaVersion := "2.10.2",
     javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
     javacOptions in doc := Seq("-source", "1.6")
@@ -44,15 +44,14 @@ object GeocoderBuild extends Build {
     resolvers += "codahale" at "http://repo.codahale.com",
     resolvers += "springsource" at "http://repo.springsource.org/libs-release-remote",
     resolvers += "Concurrent Maven Repo" at "http://conjars.org/repo",
-    resolvers ++= Seq("snapshots" at "http://oss.sonatype.org/content/repositories/snapshots",
-                      "releases"  at "http://oss.sonatype.org/content/repositories/releases"),
+    resolvers += "sonatype maven repo" at "http://oss.sonatype.org/content/repositories/releases/",
 
     fork in run := true,
     publishMavenStyle := true,
     publishArtifact in Test := false,
+    publishArtifact := false,
     pomIncludeRepository := { _ => false },
     publishTo := Some("foursquare Nexus" at "http://nexus.prod.foursquare.com/nexus/content/repositories/releases/"),
-    Keys.publishArtifact in (Compile, Keys.packageDoc) := false,
 
     pomExtra := (
       <url>http://github.com/foursquare/twofishes</url>
@@ -75,13 +74,17 @@ object GeocoderBuild extends Build {
         </developer>
       </developers>),
 
+    credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
+
     credentials ++= {
-      val sonatype = ("Sonatype Nexus Repository Manager", "nexus.prod.foursquare.com")
+      val sonatype = ("Foursquare Nexus Repository Manager", "nexus.prod.foursquare.com")
       def loadMavenCredentials(file: java.io.File) : Seq[Credentials] = {
         xml.XML.loadFile(file) \ "servers" \ "server" map (s => {
           val host = (s \ "id").text
           val realm = if (host == sonatype._2) sonatype._1 else "Unknown"
-          Credentials(realm, host, (s \ "username").text, (s \ "password").text)
+          val c = Credentials(realm, host, (s \ "username").text, (s \ "password").text)
+          println(c)
+          c
         })
       }
       val ivyCredentials   = Path.userHome / ".ivy2" / ".credentials"
@@ -98,7 +101,7 @@ object GeocoderBuild extends Build {
     settings = defaultSettings ++ assemblySettings ++ Seq(
       publishArtifact := true
     ),
-    base = file(".")) aggregate(util, core, interface, server, indexer, quadtree)
+    base = file(".")) aggregate(country, util, core, interface, server, indexer)
 
   lazy val core = Project(id = "core",
       base = file("core"),
@@ -131,7 +134,7 @@ object GeocoderBuild extends Build {
           </dependencies>
         )
       )
-    ) dependsOn(interface, util)
+    ) dependsOn(interface, util, country)
 
   lazy val interface = Project(id = "interface",
       settings = defaultSettings ++ thriftSettings ++ Seq(
@@ -148,7 +151,7 @@ object GeocoderBuild extends Build {
         initialCommands := """
         import com.foursquare.twofishes._
         import com.foursquare.twofishes.util._
-        
+
         val config: GeocodeServerConfig = GeocodeServerConfigSingleton.init(args)
         val store = ServerStore.getStore(config)
         val server = new GeocodeServerImpl(store, false)
@@ -156,6 +159,7 @@ object GeocoderBuild extends Build {
         baseDirectory in run := file("."),
         publishArtifact := true,
         libraryDependencies ++= Seq(
+          "com.foursquare" %% "country_revgeo" % "0.1a",
           "com.twitter" %% "ostrich" % "9.1.0",
           "com.twitter" %% "finagle-http" % "6.3.0",
           "com.vividsolutions" % "jts" % "1.13"
@@ -176,7 +180,7 @@ object GeocoderBuild extends Build {
           }
         }}
       ),
-      base = file("server")) dependsOn(core, interface, util, quadtree)
+      base = file("server")) dependsOn(core, interface, util, country)
 
   lazy val indexer = Project(id = "indexer",
       base = file("indexer"),
@@ -211,6 +215,7 @@ object GeocoderBuild extends Build {
 
         publishArtifact := false,
         libraryDependencies ++= Seq(
+          "com.foursquare" %% "country_revgeo" % "0.1a",
           "com.novus" %% "salat" % "1.9.6",
           "com.rockymadden.stringmetric" %% "stringmetric-core" % "0.27.3",
           "org.json4s" %% "json4s-native" % "3.2.8",
@@ -228,23 +233,24 @@ object GeocoderBuild extends Build {
           }
         }}
       )
-  ) dependsOn(core, util, quadtree)
+  ) dependsOn(core, util, country)
 
-  val geoToolsVersion = "9.2"
-
-  lazy val quadtree = Project(id = "quadtree",
-      base = file("quadtree"),
+   lazy val country = Project(id = "country",
+      base = file("country"),
       settings = defaultSettings ++ assemblySettings ++ specsSettings ++ Seq(
+        organization := "com.foursquare",
         publishArtifact := true,
-        libraryDependencies ++= Seq(
-          "org.geotools" % "gt-shapefile" % geoToolsVersion,
-          "org.geotools" % "gt-epsg-hsql" % geoToolsVersion,
-          "org.geotools" % "gt-epsg-extension" % geoToolsVersion,
-          "org.geotools" % "gt-referencing" % geoToolsVersion,
-          "org.scalaj" %% "scalaj-collection" % "1.5"
-        )
+        publishTo <<= (version) { v =>
+          val nexus = "https://oss.sonatype.org/"
+          if (v.endsWith("-SNAPSHOT"))
+            Some("snapshots" at nexus + "content/repositories/snapshots")
+          else
+            Some("releases" at nexus + "service/local/staging/deploy/maven2")
+        }
       )
     )
+
+  val geoToolsVersion = "9.2"
 
   lazy val util = Project(id = "util",
       base = file("util"),

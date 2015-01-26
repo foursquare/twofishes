@@ -1,9 +1,10 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
+import com.foursquare.geo.country.DependentCountryInfo
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.YahooWoeType._
-import com.foursquare.twofishes.util.{NameNormalizer, CountryUtils, GeoTools}
+import com.foursquare.twofishes.util.{NameNormalizer, GeoTools}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._
@@ -118,7 +119,7 @@ class GeocoderImpl(
          */
         val augmentedSubParsesByCountry = logger.logDuration("augmentedSubParsesByCountry", "augmentedSubParsesByCountry") (for {
             (cc, parses) <- subParsesByCountry
-            dcc <- CountryUtils.getDependentCountryCodesForCountry(cc)
+            dcc <- DependentCountryInfo.getDependentCountryCodesForCountry(cc)
             if (featuresByCountry.contains(dcc) && !subParsesByCountry.contains(dcc))
           } yield {
             (dcc -> parses)
@@ -211,7 +212,7 @@ class GeocoderImpl(
         most_specific.fmatch.scoringFeatures.parentIds.has(f.fmatch.longId) ||
         most_specific.fmatch.scoringFeatures.extraRelationIds.has(f.fmatch.longId) ||
         (f.fmatch.feature.woeType =? YahooWoeType.COUNTRY &&
-          CountryUtils.isCountryDependentOnCountry(most_specific.fmatch.feature.cc, f.fmatch.feature.cc))
+          DependentCountryInfo.isCountryDependentOnCountry(most_specific.fmatch.feature.cc, f.fmatch.feature.cc))
       })
     }
   }

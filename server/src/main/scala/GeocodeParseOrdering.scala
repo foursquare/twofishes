@@ -1,8 +1,9 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
+import com.foursquare.geo.country.CountryInfo
 import com.foursquare.twofishes.Identity._
-import com.foursquare.twofishes.util.{CountryUtils, GeoTools, StoredFeatureId, TwofishesLogger}
+import com.foursquare.twofishes.util.{GeoTools, StoredFeatureId, TwofishesLogger}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import scala.collection.mutable.HashMap
 import scalaj.collection.Implicits._
@@ -67,7 +68,7 @@ object GeocodeParseOrdering {
           primaryMatchLangs.has("icao") ||
           primaryMatchLangs.has("") || // a lot of aliases tend to be names without a language
           args.req.langOption.exists(lang => primaryMatchLangs.has(lang)) ||
-          primaryMatchLangs.exists(lang => CountryUtils.isLocalLanguageForCountry(args.primaryFeature.feature.cc, lang))) {
+          primaryMatchLangs.exists(lang => CountryInfo.getCountryInfo(args.primaryFeature.feature.cc).exists(_.isLocalLanguage(lang)))) {
         ScorerResponse.Empty
       } else {
         ScorerResponseWithScoreAndMessage(-100000000, "penalizing name match in irrelevant language")
@@ -324,7 +325,7 @@ object GeocodeParseOrdering {
     ScoringTerm(distanceToBoundsOrLatLngHintClampedPenalty, 0.0001),
     ScoringTerm(manualBoost)
   )
-  
+
   val scorersForAutocompleteStrictLocal: List[ScoringTerm] = commonScorersForAutocomplete ++ List(
     ScoringTerm(populationBoost, 0.0),
     ScoringTerm(promoteCountryHintMatch, 0.0),

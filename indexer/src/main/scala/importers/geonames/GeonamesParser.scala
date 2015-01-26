@@ -88,8 +88,8 @@ object GeonamesParser extends DurationUtils {
      try {
       CountryRevGeo.getNearestCountryCode(40.74, -74)
     } catch {
-      case e: Exception => {
-        println("caught exception in country revgeo, might need to run \ngit submodule init\n git submodule update;")
+       case e: Exception => {
+        println("caught exception in country revgeo warmup, no idea what's wrong")
         System.exit(1)
       }
     }
