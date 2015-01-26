@@ -181,4 +181,40 @@ object FeatureJoiners {
       }
     }})
   }
+
+  def attributesJoiner(
+    features: Grouped[LongWritable, GeocodeServingFeature],
+    attributes: Grouped[LongWritable, GeocodeFeatureAttributes]
+  ): TypedPipe[(LongWritable, GeocodeServingFeature)] = {
+
+    def getUrlsFromFeatureNames(servingFeature: GeocodeServingFeature): Seq[String] = {
+      for {
+        name <- servingFeature.feature.names
+        if (name.lang == "link")
+      } yield {
+        name.name
+      }
+    }
+
+    features.leftJoin(attributes)
+      .map({case (k: LongWritable, (f: GeocodeServingFeature, attrOpt: Option[GeocodeFeatureAttributes])) => {
+        val attributesToUse = attrOpt match {
+          case Some(attr) => {
+            if (f.feature.attributesIsSet) {
+              f.feature.attributesOrNull.mergeCopy(attr)
+            } else {
+              attr
+            }
+          }
+          case None => {
+            if (f.feature.attributesIsSet) {
+              f.feature.attributesOrNull
+            } else {
+              GeocodeFeatureAttributes.newBuilder.result
+            }
+          }
+        }
+      (k -> f.copy(feature = f.feature.copy(attributes = attributesToUse.copy(urls = getUrlsFromFeatureNames(f)))))
+    }})
+  }
 }

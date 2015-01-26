@@ -31,7 +31,7 @@ object NaturalEarthAttributesFlattener extends Logging {
       if geonameId != -1
       adm0cap = f.propMap.getOrElse("adm0cap", "0").toDouble.toInt
       worldcity = f.propMap.getOrElse("worldcity", "0").toDouble.toInt
-      scalerank = f.propMap.getOrElse("scalerank", "0").toInt
+      scalerank = f.propMap.getOrElse("scalerank", "20").toInt
       natscale = f.propMap.getOrElse("natscale", "0").toInt
       labelrank = f.propMap.getOrElse("labelrank", "0").toInt
     } {

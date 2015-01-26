@@ -185,6 +185,14 @@ class UnmatchedPolygonsS2CoverImporterJob(args: Args) extends BaseUnmatchedPolyg
     directories = Nil),
   args = args)
 
+class AttributesImporterJob(args: Args) extends BaseAttributesImporterJob(
+  name = "attributes_import",
+  inputSpec = TwofishesImporterInputSpec(
+    relativeFilePaths = Seq(
+      "downloaded/flattenedAttributes.txt"),
+    directories = Nil),
+  args = args)
+
 object WorkflowConstants {
   val postImportAllFeaturesSources = Seq(
     "geonames_features_import",
@@ -333,4 +341,11 @@ class PolygonsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediat
   leftSources = Seq("post_edit_features_merge_intermediate"),
   rightSources = Seq("matched_polygons_geometry_join_intermediate"),
   joiner = FeatureJoiners.polygonsJoiner,
+  args = args)
+
+class AttributesJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
+  name = "attributes_join_intermediate",
+  leftSources = Seq("polygons_join_intermediate"),
+  rightSources = Seq("attributes_import"),
+  joiner = FeatureJoiners.attributesJoiner,
   args = args)
