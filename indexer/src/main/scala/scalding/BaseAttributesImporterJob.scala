@@ -15,7 +15,7 @@ class BaseAttributesImporterJob(
 ) extends TwofishesImporterJob(name, inputSpec, args) {
 
   lines.filterNot(_.startsWith("#")).flatMap(line => {
-    val parts = line.split("\\|")
+    val parts = line.split("\t")
     if (parts.size == 6) {
       val fidOpt = StoredFeatureId.fromHumanReadableString(parts(0), Some(GeonamesNamespace))
       val adm0capOpt = Helpers.TryO { parts(1).toInt }
