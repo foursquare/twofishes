@@ -28,6 +28,7 @@ object NaturalEarthAttributesFlattener extends Logging {
       geonameidString <- f.propMap.get("geonameid").toList
       // remove .000
       geonameId = geonameidString.toDouble.toInt
+      if geonameId != -1
       adm0cap = f.propMap.getOrElse("adm0cap", "0").toDouble.toInt
       worldcity = f.propMap.getOrElse("worldcity", "0").toDouble.toInt
       scalerank = f.propMap.getOrElse("scalerank", "0").toInt
