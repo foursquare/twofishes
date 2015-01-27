@@ -210,8 +210,8 @@ class ConcreteHotfixStorageService(
           // scoringFeaturesCreateOrMerge
           if (edit.scoringFeaturesCreateOrMergeIsSet) {
             servingFeatureMutable.scoringFeatures_=({
-              val copy = servingFeatureMutable.scoringFeatures.mutableCopy
-              copy.merge(edit.scoringFeaturesCreateOrMergeOrThrow)
+              val copy = edit.scoringFeaturesCreateOrMergeOrThrow.mutableCopy
+              copy.merge(servingFeatureMutable.scoringFeatures)
               copy
             })
           }
@@ -247,8 +247,8 @@ class ConcreteHotfixStorageService(
           // attributesCreateOrMerge
           if (edit.attributesCreateOrMergeIsSet) {
             featureMutable.attributes_=(if (featureMutable.attributesIsSet) {
-              val copy = featureMutable.attributesOrThrow.mutableCopy
-              copy.merge(edit.attributesCreateOrMergeOrThrow)
+              val copy = edit.attributesCreateOrMergeOrThrow.mutableCopy
+              copy.merge(featureMutable.attributesOrThrow)
               copy
             } else {
               edit.attributesCreateOrMergeOrThrow
