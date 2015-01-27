@@ -9,7 +9,7 @@ object GeocoderBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.foursquare.twofishes",
     name := "twofishes",
-    version      := "0.84.5-SNAPSHOT",
+    version      := "0.84.5",
     scalaVersion := "2.10.2",
     javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
     javacOptions in doc := Seq("-source", "1.6")
@@ -100,7 +100,7 @@ object GeocoderBuild extends Build {
     settings = defaultSettings ++ assemblySettings ++ Seq(
       publishArtifact := true
     ),
-    base = file(".")) aggregate(country, util, core, interface, server, indexer)
+    base = file(".")) aggregate(countryinfo, util, core, interface, server, indexer)
 
   lazy val core = Project(id = "core",
       base = file("core"),
@@ -133,7 +133,7 @@ object GeocoderBuild extends Build {
           </dependencies>
         )
       )
-    ) dependsOn(interface, util, country)
+    ) dependsOn(interface, util, countryinfo)
 
   lazy val interface = Project(id = "interface",
       settings = defaultSettings ++ thriftSettings ++ Seq(
@@ -179,7 +179,7 @@ object GeocoderBuild extends Build {
           }
         }}
       ),
-      base = file("server")) dependsOn(core, interface, util, country)
+      base = file("server")) dependsOn(core, interface, util, countryinfo)
 
   lazy val indexer = Project(id = "indexer",
       base = file("indexer"),
@@ -230,10 +230,10 @@ object GeocoderBuild extends Build {
           }
         }}
       )
-  ) dependsOn(core, util, country)
+  ) dependsOn(core, util, countryinfo)
 
-   lazy val country = Project(id = "country",
-      base = file("country"),
+   lazy val countryinfo = Project(id = "countryinfo",
+      base = file("countryinfo"),
       settings = defaultSettings ++ assemblySettings ++ specsSettings ++ Seq(
         organization := "com.foursquare",
         publishArtifact := true,
