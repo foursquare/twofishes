@@ -371,3 +371,8 @@ class PrefixIndexBuildIntermediateJob(args: Args) extends BasePrefixIndexBuildIn
   name = "prefix_index_build_intermediate",
   sources = WorkflowConstants.preIndexBuildFeaturesSources,
   args = args)
+
+class IdIndexBuildIntermediateJob(args: Args) extends BaseIdIndexBuildIntermediateJob(
+  name = "id_index_build_intermediate",
+  sources = WorkflowConstants.preIndexBuildFeaturesSources,
+  args = args)
