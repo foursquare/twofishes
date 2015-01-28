@@ -204,6 +204,8 @@ object WorkflowConstants {
   val preEditsMergedFeaturesSources = Seq("pre_edit_features_merge_intermediate")
 
   val postEditsMergedFeaturesSources = Seq("post_edit_features_merge_intermediate")
+
+  val preIndexBuildFeaturesSources = Seq("pre_index_build_features_merge_intermediate")
 }
 
 class PostImportFeatureUnionIntermediateJob(args: Args) extends BaseFeatureUnionIntermediateJob(
@@ -358,4 +360,9 @@ class PreIndexBuildFeaturesMergeIntermediateJob(args: Args) extends BaseFeatureM
     "polygons_join_intermediate",
     "attributes_join_intermediate"),
   merger = FeatureMergers.preIndexBuildFeaturesMerger,
+  args = args)
+
+class NameIndexBuildIntermediateJob(args: Args) extends BaseNameIndexBuildIntermediateJob(
+  name = "name_index_build_intermediate",
+  sources = WorkflowConstants.preIndexBuildFeaturesSources,
   args = args)

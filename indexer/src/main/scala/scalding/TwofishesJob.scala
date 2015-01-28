@@ -5,7 +5,7 @@ import cascading.tap.hadoop.HfsProps
 import cascading.util.Update
 import com.twitter.scalding._
 import org.apache.hadoop.fs.{Path, FileSystem}
-import org.apache.hadoop.io.BytesWritable
+import org.apache.hadoop.io.{Text, BytesWritable}
 import scala.collection.mutable.ListBuffer
 import org.apache.hadoop.conf.Configuration
 import scala.util.matching.Regex
@@ -20,6 +20,10 @@ class TwofishesJob(name: String, args: Args) extends Job(args) {
 
   implicit object PolygonMatchingWritableOrdering extends Ordering[PolygonMatchingKeyWritable] {
     def compare(x: PolygonMatchingKeyWritable, y: PolygonMatchingKeyWritable) = x.compareTo(y)
+  }
+
+  implicit object TextOrdering extends Ordering[Text] {
+    def compare(x: Text, y: Text) = x.compareTo(y)
   }
 
   protected def concatenatePaths(base: String, relative: String): String = {
