@@ -376,3 +376,8 @@ class IdIndexBuildIntermediateJob(args: Args) extends BaseIdIndexBuildIntermedia
   name = "id_index_build_intermediate",
   sources = WorkflowConstants.preIndexBuildFeaturesSources,
   args = args)
+
+class S2CoveringIndexBuildIntermediateJob(args: Args) extends BaseS2CoveringIndexBuildIntermediateJob(
+  name = "s2_covering_index_build_intermediate",
+  sources = WorkflowConstants.preIndexBuildFeaturesSources,
+  args = args)

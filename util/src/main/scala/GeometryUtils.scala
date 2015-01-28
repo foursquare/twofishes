@@ -22,6 +22,7 @@ trait S2CoveringConstants {
 }
 
 object RevGeoConstants extends RevGeoConstants
+object S2CoveringConstants extends S2CoveringConstants
 
 object GeometryUtils extends RevGeoConstants {
   def getBytes(l: S2CellId): Array[Byte] = getBytes(l.id())

@@ -24,11 +24,8 @@ class BaseIdIndexBuildIntermediateJob(
     longIds = humanReadableIds.flatMap(id => StoredFeatureId.fromHumanReadableString(id)).map(_.longId.toString)
     key <- slugs ++ humanReadableIds ++ longIds
   } yield {
-    (new Text(key) -> featureId.get)
+    (new Text(key) -> IntermediateDataContainer.newBuilder.longValue(featureId.get).result)
   }).group
     .head
-    .map({case (key: Text, value: Long) => {
-      (key -> IntermediateDataContainer.newBuilder.longValue(value).result)
-    }})
     .write(TypedSink[(Text, IntermediateDataContainer)](SpindleSequenceFileSource[Text, IntermediateDataContainer](outputPath)))
 }
