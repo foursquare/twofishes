@@ -52,4 +52,19 @@ object FeatureMergers {
       )
     }
   }
+
+  def preIndexBuildFeaturesMerger(features: Seq[GeocodeServingFeature]): GeocodeServingFeature = {
+    // if there aren't 2 features, throw
+    if (features.size != 2) {
+      throw new Exception("Incorrect number of features to merge")
+    } else {
+      val polygons = features(0)
+      val attributes = features(1)
+
+      polygons.copy(
+        feature = polygons.feature.copy(
+          attributes = attributes.feature.attributesOrNull)
+      )
+    }
+  }
 }

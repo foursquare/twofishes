@@ -202,6 +202,8 @@ object WorkflowConstants {
   val postUnionAllFeaturesSources = Seq("post_import_features_union_intermediate")
 
   val preEditsMergedFeaturesSources = Seq("pre_edit_features_merge_intermediate")
+
+  val postEditsMergedFeaturesSources = Seq("post_edit_features_merge_intermediate")
 }
 
 class PostImportFeatureUnionIntermediateJob(args: Args) extends BaseFeatureUnionIntermediateJob(
@@ -320,7 +322,7 @@ class PostEditFeaturesMergeIntermediateJob(args: Args) extends BaseFeatureMergeI
 
 class FeatureCenterS2CellIntermediateJob(args: Args) extends BaseFeatureCenterS2CellIntermediateJob(
   name = "feature_center_s2_cell_intermediate",
-  sources = Seq("post_edit_features_merge_intermediate"),
+  sources = WorkflowConstants.postEditsMergedFeaturesSources,
   args = args)
 
 class UnmatchedPolygonFeatureMatchingIntermediateJob(args: Args) extends BaseUnmatchedPolygonFeatureMatchingIntermediateJob(
@@ -338,14 +340,22 @@ class MatchedPolygonsGeometryJoinIntermediateJob(args: Args) extends BaseMatched
 
 class PolygonsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
   name = "polygons_join_intermediate",
-  leftSources = Seq("post_edit_features_merge_intermediate"),
+  leftSources = WorkflowConstants.postEditsMergedFeaturesSources,
   rightSources = Seq("matched_polygons_geometry_join_intermediate"),
   joiner = FeatureJoiners.polygonsJoiner,
   args = args)
 
 class AttributesJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
   name = "attributes_join_intermediate",
-  leftSources = Seq("polygons_join_intermediate"),
+  leftSources = WorkflowConstants.postEditsMergedFeaturesSources,
   rightSources = Seq("attributes_import"),
   joiner = FeatureJoiners.attributesJoiner,
+  args = args)
+
+class PreIndexBuildFeaturesMergeIntermediateJob(args: Args) extends BaseFeatureMergeIntermediateJob(
+  name = "pre_index_build_features_merge_intermediate",
+  sources = Seq(
+    "polygons_join_intermediate",
+    "attributes_join_intermediate"),
+  merger = FeatureMergers.preIndexBuildFeaturesMerger,
   args = args)
