@@ -27,8 +27,8 @@ class BaseNameIndexBuildIntermediateJob(
     (new Text(normalizedName) -> (score * -1, featureId.get))
   }).group
     .toList
-    .mapValues({scoresAndIds: List[(Int, Long)] => {
-      val ids = scoresAndIds
+    .mapValues({values: List[(Int, Long)] => {
+      val ids = values
         .sorted
         .map({case (s: Int, id: Long) => id})
       IntermediateDataContainer.newBuilder.longList(ids).result

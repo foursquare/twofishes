@@ -17,7 +17,7 @@ import scalaj.collection.Implicits._
 
 object PrefixIndexer {
   val MaxPrefixLength = 5
-  val MaxNameRecordsToFetchFromMongo = 1000
+  val MaxNamesToConsider = 1000
   val MaxFidsToStorePerPrefix = 50
   val MaxFidsWithPreferredNamesBeforeConsideringNonPreferred = 3
   val index = Indexes.PrefixIndex
@@ -53,11 +53,6 @@ class PrefixIndexer(
   }
 
   def sortRecordsByNames(records: List[NameIndex]) = {
-    // val (pureNames, unpureNames) = records.partition(r => {
-    //   !hasFlag(r, FeatureNameFlags.ALIAS)
-    //   !hasFlag(r, FeatureNameFlags.DEACCENT)
-    // })
-
     val (prefPureNames, nonPrefPureNames) =
       records.partition(r =>
         (hasFlag(r, FeatureNameFlags.PREFERRED) || hasFlag(r, FeatureNameFlags.ALT_NAME)) &&
@@ -116,7 +111,7 @@ class PrefixIndexer(
       if (index % 1000 == 0) {
         logger.info("done with %d of %d prefixes".format(index, numPrefixes))
       }
-      val records = getRecordsByPrefix(prefix, PrefixIndexer.MaxNameRecordsToFetchFromMongo)
+      val records = getRecordsByPrefix(prefix, PrefixIndexer.MaxNamesToConsider)
 
       val (woeMatches, woeMismatches) = records.partition(r =>
         bestWoeTypes.contains(r.woeType))
