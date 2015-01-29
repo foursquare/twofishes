@@ -12,7 +12,7 @@ import com.twitter.scalding.typed.TypedSink
 import com.vividsolutions.jts.geom.Point
 import com.vividsolutions.jts.geom.prep.PreparedGeometryFactory
 import com.vividsolutions.jts.io.{WKBWriter, WKBReader}
-import org.apache.hadoop.io.LongWritable
+import org.apache.hadoop.io.{Text, LongWritable}
 
 class BaseRevGeoIndexBuildIntermediateJob(
   name: String,
@@ -71,11 +71,12 @@ class BaseRevGeoIndexBuildIntermediateJob(
       }
     }
 
-    (new LongWritable(cellId) -> cellGeometry)
+    // HACK: cellIds seem to hash terribly and all go to the same reducer so use Text for now
+    (new Text(cellId.toString) -> cellGeometry)
   }).group
     .toList
-    .mapValues({cells: List[CellGeometry] => {
-      CellGeometries(cells)
+    .map({case (idText: Text, cells: List[CellGeometry]) => {
+      (new LongWritable(idText.toString.toLong) -> CellGeometries(cells))
     }})
     .write(TypedSink[(LongWritable, CellGeometries)](SpindleSequenceFileSource[LongWritable, CellGeometries](outputPath)))
 }
