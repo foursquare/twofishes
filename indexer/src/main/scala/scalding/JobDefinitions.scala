@@ -377,7 +377,17 @@ class IdIndexBuildIntermediateJob(args: Args) extends BaseIdIndexBuildIntermedia
   sources = WorkflowConstants.preIndexBuildFeaturesSources,
   args = args)
 
+class PolygonIndexBuildIntermediateJob(args: Args) extends BasePolygonIndexBuildIntermediateJob(
+  name = "polygon_index_build_intermediate",
+  sources = WorkflowConstants.preIndexBuildFeaturesSources,
+  args = args)
+
 class S2CoveringIndexBuildIntermediateJob(args: Args) extends BaseS2CoveringIndexBuildIntermediateJob(
   name = "s2_covering_index_build_intermediate",
+  sources = WorkflowConstants.preIndexBuildFeaturesSources,
+  args = args)
+
+class RevGeoIndexBuildIntermediateJob(args: Args) extends BaseRevGeoIndexBuildIntermediateJob(
+  name = "rev_geo_index_build_intermediate",
   sources = WorkflowConstants.preIndexBuildFeaturesSources,
   args = args)
