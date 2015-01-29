@@ -22,19 +22,32 @@ class BaseRevGeoIndexBuildIntermediateJob(
 
   val features = getJobOutputsAsTypedPipe[LongWritable, GeocodeServingFeature](sources).group
 
+  def profile[T](f: => T, stat: Stat): T = {
+    val (rv, duration) = com.twitter.util.Duration.inMilliseconds(f)
+    stat.incBy(duration.inMilliseconds)
+    rv
+  }
+
+  val bufferStat = Stat("bufferTimeInMs")
+  val prepareStat = Stat("prepareTimeInMs")
+  val coverStat = Stat("coverTimeInMs")
+  val s2GeomStat = Stat("s2GeomTimeInMs")
+  val containsStat = Stat("containsTimeInMs")
+  val intersectionStat = Stat("intersectionTimeInMs")
+  val cleanupStat = Stat("cleanupTimeInMs")
   (for {
     (featureId, servingFeature) <- features
     if servingFeature.feature.geometry.wkbGeometryIsSet
     geometry = new WKBReader().read(servingFeature.feature.geometry.wkbGeometryByteArray)
-    bufferedShape = geometry.buffer(0)
-    preparedShape = PreparedGeometryFactory.prepare(bufferedShape)
+    bufferedShape = profile({geometry.buffer(0)}, bufferStat)
+    preparedShape = profile({PreparedGeometryFactory.prepare(bufferedShape)}, prepareStat)
     woeType = servingFeature.feature.woeTypeOrDefault
-    cells = GeometryUtils.s2PolygonCovering(
+    cells = profile({GeometryUtils.s2PolygonCovering(
       geometry,
       RevGeoConstants.minS2LevelForRevGeo,
       RevGeoConstants.maxS2LevelForRevGeo,
       levelMod = Some(RevGeoConstants.defaultLevelModForRevGeo),
-      maxCellsHintWhichMightBeIgnored = Some(RevGeoConstants.defaultMaxCellsHintForRevGeo))
+      maxCellsHintWhichMightBeIgnored = Some(RevGeoConstants.defaultMaxCellsHintForRevGeo))}, coverStat)
     cell <- cells
     cellId = cell.id
   } yield {
@@ -47,17 +60,17 @@ class BaseRevGeoIndexBuildIntermediateJob(
         .longId(featureId.get)
         .result
     } else {
-      val s2Shape = ShapefileS2Util.fullGeometryForCell(cell)
-      if (preparedShape.contains(s2Shape)) {
+      val s2Shape = profile({ShapefileS2Util.fullGeometryForCell(cell)}, s2GeomStat)
+      if (profile({preparedShape.contains(s2Shape)}, containsStat)) {
         CellGeometry.newBuilder
           .woeType(woeType)
           .full(true)
           .longId(featureId.get)
           .result
       } else {
-        val intersection = s2Shape.intersection(bufferedShape)
+        val intersection = profile({s2Shape.intersection(bufferedShape)}, intersectionStat)
         val geomToIndex = if (intersection.getGeometryType == "GeometryCollection") {
-          GeometryCleanupUtils.cleanupGeometryCollection(intersection)
+          profile({GeometryCleanupUtils.cleanupGeometryCollection(intersection)}, cleanupStat)
         } else {
           intersection
         }
