@@ -102,6 +102,12 @@ class S2CoveringWorker extends Actor with DurationUtils with RevGeoConstants wit
               val s2shape = ShapefileS2Util.fullGeometryForCell(cellid)
               if (preparedRecordShape.contains(s2shape)) {
                 RevGeoIndex(cellid.id(), polyId, full = true, geom = None)
+              } else if (preparedRecordShape.within(s2shape)) {
+                RevGeoIndex(
+                  cellid.id(), polyId,
+                  full = false,
+                  geom = Some(wkbWriter.write(geom))
+                )
               } else {
                 val intersection = s2shape.intersection(recordShape)
                 val geomToIndex = if (intersection.getGeometryType == "GeometryCollection") {
