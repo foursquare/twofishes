@@ -33,3 +33,13 @@ struct PolygonMatchingValue {
 struct PolygonMatchingValues {
   1: optional list<PolygonMatchingValue> values
 }
+
+struct ParentMatchingValue {
+  1: optional i64 featureId
+  2: optional geocoder.GeocodePoint center
+  3: optional geocoder.YahooWoeType woeType
+}
+
+struct ParentMatchingValues {
+  1: optional list<ParentMatchingValue> values
+}

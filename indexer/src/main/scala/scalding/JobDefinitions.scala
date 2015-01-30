@@ -206,6 +206,8 @@ object WorkflowConstants {
   val postEditsMergedFeaturesSources = Seq("post_edit_features_merge_intermediate")
 
   val preIndexBuildFeaturesSources = Seq("pre_index_build_features_merge_intermediate")
+
+  val preFeaturesIndexBuildFeaturesSources = Seq("matched_parents_join_intermediate")
 }
 
 class PostImportFeatureUnionIntermediateJob(args: Args) extends BaseFeatureUnionIntermediateJob(
@@ -327,6 +329,11 @@ class FeatureCenterS2CellIntermediateJob(args: Args) extends BaseFeatureCenterS2
   sources = WorkflowConstants.postEditsMergedFeaturesSources,
   args = args)
 
+class ParentlessFeatureCenterS2CellIntermediateJob(args: Args) extends BaseParentlessFeatureCenterS2CellIntermediateJob(
+  name = "parentless_feature_center_s2_cell_intermediate",
+  sources = WorkflowConstants.postEditsMergedFeaturesSources,
+  args = args)
+
 class UnmatchedPolygonFeatureMatchingIntermediateJob(args: Args) extends BaseUnmatchedPolygonFeatureMatchingIntermediateJob(
   name = "unmatched_polygon_feature_matching_intermediate",
   polygonSources = Seq("unmatched_polygons_s2_cover_import"),
@@ -390,4 +397,22 @@ class S2CoveringIndexBuildIntermediateJob(args: Args) extends BaseS2CoveringInde
 class RevGeoIndexBuildIntermediateJob(args: Args) extends BaseRevGeoIndexBuildIntermediateJob(
   name = "rev_geo_index_build_intermediate",
   sources = WorkflowConstants.preIndexBuildFeaturesSources,
+  args = args)
+
+class ParentlessFeatureParentMatchingIntermediateJob(args: Args) extends BaseParentlessFeatureParentMatchingIntermediateJob(
+  name = "parentless_feature_parent_matching_intermediate",
+  featureSources = Seq("parentless_feature_center_s2_cell_intermediate"),
+  revgeoIndexSources = Seq("rev_geo_index_build_intermediate"),
+  args = args)
+
+class MatchedParentsJoinIntermediateJob(args: Args) extends BaseFeatureJoinIntermediateJob(
+  name = "matched_parents_join_intermediate",
+  leftSources = WorkflowConstants.preIndexBuildFeaturesSources,
+  rightSources = Seq("parentless_feature_parent_matching_intermediate"),
+  joiner = FeatureJoiners.parentsJoiner,
+  args = args)
+
+class FeatureIndexBuildIntermediateJob(args: Args) extends BaseFeatureIndexBuildIntermediateJob(
+  name = "feature_index_build_intermediate",
+  sources = WorkflowConstants.preFeaturesIndexBuildFeaturesSources,
   args = args)
