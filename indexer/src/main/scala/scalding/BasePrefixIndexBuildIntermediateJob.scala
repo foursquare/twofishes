@@ -98,6 +98,7 @@ class BasePrefixIndexBuildIntermediateJob(
     toLength = math.min(PrefixIndexer.MaxPrefixLength, normalizedName.length)
     length <- fromLength to toLength
     prefix = normalizedName.substring(0, length)
+    if prefix.nonEmpty
     isFull = (length == normalizedName.length)
     // to prevent too many results for short prefixes, use score threshold
     if (isFull || (length > 2) || (length <= 2 && score > 0))

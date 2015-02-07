@@ -23,6 +23,7 @@ class BaseNameIndexBuildIntermediateJob(
     score = population + boost
     normalizedNames = servingFeature.feature.names.map(name => NameNormalizer.normalize(name.name)).distinct
     normalizedName <- normalizedNames
+    if normalizedName.nonEmpty
   } yield {
     (new Text(normalizedName) -> (score * -1, featureId.get))
   }).group
