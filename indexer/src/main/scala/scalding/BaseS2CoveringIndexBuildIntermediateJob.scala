@@ -31,6 +31,7 @@ class BaseS2CoveringIndexBuildIntermediateJob(
   } yield {
     (featureId -> IntermediateDataContainer.newBuilder.longList(cellIds).result)
   }).group
+    .withReducers(1)
     .head
     .write(TypedSink[(LongWritable, IntermediateDataContainer)](SpindleSequenceFileSource[LongWritable, IntermediateDataContainer](outputPath)))
 }

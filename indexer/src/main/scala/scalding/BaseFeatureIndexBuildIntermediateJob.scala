@@ -25,6 +25,7 @@ class BaseFeatureIndexBuildIntermediateJob(
 
     (featureId -> partialFeature)
   }}).group
+    .withReducers(1)
     .head
     .write(TypedSink[(LongWritable, GeocodeServingFeature)](SpindleSequenceFileSource[LongWritable, GeocodeServingFeature](outputPath)))
 }

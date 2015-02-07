@@ -104,6 +104,7 @@ class BasePrefixIndexBuildIntermediateJob(
   } yield {
     (new Text(prefix) -> PrefixEntry(isFull, score * -1, featureId.get, woeType, cc, name))
   }).group
+    .withReducers(1)
     .toList
     .mapValues({values: List[PrefixEntry] => {
       val filtered = values

@@ -26,6 +26,7 @@ class BaseIdIndexBuildIntermediateJob(
   } yield {
     (new Text(key) -> IntermediateDataContainer.newBuilder.longValue(featureId.get).result)
   }).group
+    .withReducers(1)
     .head
     .write(TypedSink[(Text, IntermediateDataContainer)](SpindleSequenceFileSource[Text, IntermediateDataContainer](outputPath)))
 }

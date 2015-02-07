@@ -26,6 +26,7 @@ class BaseNameIndexBuildIntermediateJob(
   } yield {
     (new Text(normalizedName) -> (score * -1, featureId.get))
   }).group
+    .withReducers(1)
     .toList
     .mapValues({values: List[(Int, Long)] => {
       val ids = values
