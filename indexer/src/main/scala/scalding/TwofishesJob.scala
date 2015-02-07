@@ -5,7 +5,7 @@ import cascading.tap.hadoop.HfsProps
 import cascading.util.Update
 import com.twitter.scalding._
 import org.apache.hadoop.fs.{Path, FileSystem}
-import org.apache.hadoop.io.{Text, BytesWritable}
+import org.apache.hadoop.io.{LongWritable, Text, BytesWritable}
 import scala.collection.mutable.ListBuffer
 import org.apache.hadoop.conf.Configuration
 import scala.util.matching.Regex

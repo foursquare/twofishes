@@ -20,6 +20,20 @@ class BaseRevGeoIndexBuildIntermediateJob(
   args: Args
 ) extends TwofishesIntermediateJob(name, args) {
 
+  // byte ordering for LongWritable for RevGeoIndex
+  // puts negative values after non-negative
+  implicit object S2CellIdOrdering extends Ordering[LongWritable] {
+    def compare(x: LongWritable, y: LongWritable) = {
+      // if same sign, use default compare
+      // if opposite sign, flip
+      if ((x.get >= 0) == (y.get >= 0)) {
+        x.compareTo(y)
+      } else {
+        y.compareTo(x)
+      }
+    }
+  }
+
   val features = getJobOutputsAsTypedPipe[LongWritable, GeocodeServingFeature](sources).group
 
   (for {
@@ -78,12 +92,12 @@ class BaseRevGeoIndexBuildIntermediateJob(
       }
     }
 
-    // HACK: cellIds seem to hash terribly and all go to the same reducer so use Text for now
-    (new Text(cellId.toString) -> cellGeometry)
-  }).group
+    (new LongWritable(cellId) -> cellGeometry)
+  }).groupBy({case (k: LongWritable, c: CellGeometry) => k})(S2CellIdOrdering)
+    .withReducers(1)
     .toList
-    .map({case (idText: Text, cells: List[CellGeometry]) => {
-      (new LongWritable(idText.toString.toLong) -> CellGeometries(cells))
+    .mapValues({keyValuePairs: List[(LongWritable, CellGeometry)] => {
+      CellGeometries(keyValuePairs.map(_._2))
     }})
     .write(TypedSink[(LongWritable, CellGeometries)](SpindleSequenceFileSource[LongWritable, CellGeometries](outputPath)))
 }
