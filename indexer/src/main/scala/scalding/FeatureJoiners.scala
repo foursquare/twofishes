@@ -165,14 +165,20 @@ object FeatureJoiners {
               source <- polygon.sourceOption
               geometryBase64String <- polygon.wkbGeometryBase64StringOption
               geometry = PolygonMatchingHelper.getGeometryFromBase64String(geometryBase64String)
-              if (geometry.contains(centerPoint) || geometry.distance(centerPoint) <= 0.03)
+              if geometry.contains(centerPoint) || geometry.distance(centerPoint) <= 0.03
               wkbGeometry = PolygonMatchingHelper.getWKBFromGeometry(geometry)
+              // recompute bounds from polygon
+              envelope = geometry.getEnvelopeInternal
+              bounds = GeocodeBoundingBox(
+                GeocodePoint(envelope.getMaxY, envelope.getMaxX),
+                GeocodePoint(envelope.getMinY, envelope.getMinX))
             } yield {
               (k -> f.copy(
                 scoringFeatures = f.scoringFeatures.copy(hasPoly = true),
                 feature = f.feature.copy(
                   geometry = f.feature.geometry.copy(
                     wkbGeometry = ByteBuffer.wrap(wkbGeometry),
+                    bounds = bounds,
                     source = source))))
             }
           }
