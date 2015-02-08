@@ -100,7 +100,8 @@ class PrefixIndexer(
 
     val prefixWriter = buildMapFileWriter(index,
       Map(
-        ("MAX_PREFIX_LENGTH", PrefixIndexer.MaxPrefixLength.toString)
+        "MAX_PREFIX_LENGTH" -> PrefixIndexer.MaxPrefixLength.toString,
+        "MAX_FIDS_PER_PREFIX" -> PrefixIndexer.MaxFidsToStorePerPrefix.toString
       )
     )
 
