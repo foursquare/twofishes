@@ -36,7 +36,7 @@ object PrefixIndexer {
     new BaseIndexer(
       inputBaseDir = args(0),
       outputBaseDir = args(1),
-      index = Indexes.NameIndex,
+      index = Indexes.PrefixIndex,
       scaldingIntermediateJobName = "prefix_index_build_intermediate",
       options = IndexerOptions(
         IndexOutputType.MAPFILE_OUTPUT,
