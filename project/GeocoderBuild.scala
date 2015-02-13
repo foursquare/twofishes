@@ -50,7 +50,17 @@ object GeocoderBuild extends Build {
     publishArtifact in Test := false,
     publishArtifact := false,
     pomIncludeRepository := { _ => false },
-    publishTo := Some("foursquare Nexus" at "http://nexus.prod.foursquare.com/nexus/content/repositories/releases/"),
+    publishTo <<= (version) { v =>
+      if (System.getenv("publishTo").contains("sona")) {
+       val nexus = "https://oss.sonatype.org/"
+        if (v.endsWith("-SNAPSHOT"))
+          Some("snapshots" at nexus + "content/repositories/snapshots")
+        else
+          Some("releases" at nexus + "service/local/staging/deploy/maven2")
+      } else {
+        Some("foursquare Nexus" at "http://nexus.prod.foursquare.com/nexus/content/repositories/releases/")
+      }
+    },
 
     pomExtra := (
       <url>http://github.com/foursquare/twofishes</url>
