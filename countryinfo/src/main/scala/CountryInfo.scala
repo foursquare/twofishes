@@ -57,6 +57,8 @@ case class CountryInfo(
   capital: String,
   areaSqKm: Int
 ) {
+  def tzIDs: Seq[String] = TimeZoneInfo.ccToTZIDs(iso2)
+
   lazy val postalCodeRegex = postalCodeRegexString.r
 
   def getEnglishName: String = 
