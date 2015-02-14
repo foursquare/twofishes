@@ -6,6 +6,7 @@ import com.foursquare.twofishes._
 import org.apache.hadoop.io.LongWritable
 import com.twitter.scalding.typed.TypedSink
 import com.foursquare.hadoop.scalding.SpindleSequenceFileSource
+import com.foursquare.twofishes.util.Lists.Implicits._
 import com.foursquare.twofishes.util.NameNormalizer
 
 class BaseAlternateNamesJoinIntermediateJob(
@@ -159,7 +160,68 @@ class BaseAlternateNamesJoinIntermediateJob(
     woeType: YahooWoeType,
     featureName: FeatureName
   ): Seq[FeatureName] = {
-    processFeatureName(cc, woeType, featureName.lang, featureName.name, featureName.flags)
+    val fixedFlags = if (featureName.lang == "abbr") {
+      Seq(FeatureNameFlags.ABBREVIATION) ++ featureName.flags.filterNot(_ == FeatureNameFlags.ABBREVIATION)
+    } else {
+      featureName.flags
+    }
+
+    processFeatureName(cc, woeType, featureName.lang, featureName.name, fixedFlags)
+  }
+
+  def applyOneOffFixes(featureNames: Seq[FeatureName], cc: String): Seq[FeatureName] = {
+    def fixRomanianName(s: String) = {
+      val romanianTranslationTable = List(
+        // cedilla -> comma
+        "Ţ" -> "Ț",
+        "Ş" -> "Ș",
+        // tilde and caron to breve
+        "Ã" -> "Ă",
+        "Ǎ" -> "Ă"
+      ).flatMap({case (from, to) => {
+        List(
+          from.toLowerCase -> to.toLowerCase,
+          from.toUpperCase -> to.toUpperCase
+        )
+      }})
+
+      var newS = s
+      romanianTranslationTable.foreach({case (from, to) => {
+        newS = newS.replace(from, to)
+      }})
+      newS
+    }
+
+    var fixedNames = featureNames.map(n => {
+      if (n.lang == "ro") {
+        n.copy(name = fixRomanianName(n.name))
+      } else {
+        n
+      }
+    })
+
+    // Lately geonames has these stupid JP aliases, like "Katsuura Gun" for "Katsuura-gun"
+    if (cc == "JP" || cc == "TH") {
+      def isPossiblyBad(s: String): Boolean = {
+        s.contains(" ") && s.split(" ").forall(_.headOption.exists(Character.isUpperCase))
+      }
+
+      def makeBetterName(s: String): String = {
+        val parts = s.split(" ")
+        val head = parts.headOption
+        val rest = parts.drop(1)
+        (head.toList ++ rest.map(_.toLowerCase)).mkString("-")
+      }
+
+      val enNames = fixedNames.filter(_.lang == "en")
+      enNames.foreach(n => {
+        if (isPossiblyBad(n.name)) {
+          fixedNames = fixedNames.filterNot(_.name == makeBetterName(n.name))
+        }
+      })
+    }
+
+    fixedNames
   }
 
   val joined = features.leftJoin(altNames)
@@ -229,14 +291,29 @@ class BaseAlternateNamesJoinIntermediateJob(
           finalNames ++= nonDeaccentedFeatureNames
           finalNames ++= deaccentedFeatureNames.filterNot(n => nonDeaccentedNames.contains(n.name))
 
+          // apply all one-off language/country specific fixes
+          finalNames = applyOneOffFixes(finalNames, cc)
+
           // merge flags of dupes in same language
           finalNames  = finalNames.groupBy(n => (n.lang, n.name)).toSeq
-            .map({case ((lang, name), featureNames) => FeatureName.newBuilder
-              .lang(lang)
-              .name(name)
-              .flags(featureNames.foldLeft(Seq.empty[FeatureNameFlags])((f, fn) => f ++ fn.flags).distinct)
-              .result
-            })
+            .map({case ((lang, name), featureNames) => {
+              val combinedFlags = featureNames.foldLeft(Seq.empty[FeatureNameFlags])((f, fn) => f ++ fn.flags).distinct
+              // If we collapsed multiple names, and not all of them had ALIAS,
+              // then we should strip off that flag because some other entry told
+              // us it didn't deserve to be ranked down
+              val finalFlags =
+                if (featureNames.size > 1 &&
+                    featureNames.exists(n => !n.flags.has(FeatureNameFlags.ALIAS))) {
+                  combinedFlags.filterNot(_ == FeatureNameFlags.ALIAS)
+                } else {
+                  combinedFlags
+                }
+              FeatureName.newBuilder
+                .lang(lang)
+                .name(name)
+                .flags(finalFlags)
+                .result
+            }})
 
           (k -> f.copy(feature = f.feature.copy(names = finalNames)))
         }

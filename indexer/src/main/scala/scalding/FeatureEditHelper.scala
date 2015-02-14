@@ -3,6 +3,7 @@ package com.foursquare.twofishes.scalding
 
 import com.foursquare.twofishes._
 import java.nio.ByteBuffer
+import com.foursquare.twofishes.util.NameNormalizer
 import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
 import org.geotools.geojson.geom.GeometryJSON
 
@@ -96,7 +97,15 @@ object FeatureEditHelper {
         }
         case EditType.Remove => {
           // support the * wildcard for deleting a name in all languages
-          listCopy = listCopy.filterNot(n => (n.name == edit.name && (n.lang == edit.lang || edit.lang == "*")))
+          def removeNameFromList(nameToRemove: String, nameList: Seq[FeatureName]): Seq[FeatureName] = {
+            nameList.filterNot(n => (n.name == nameToRemove && (n.lang == edit.lang || edit.lang == "*")))
+          }
+          listCopy = removeNameFromList(edit.name, listCopy)
+          // remove deaccented name if different
+          val deaccentedName = NameNormalizer.deaccent(edit.name)
+          if (deaccentedName != edit.name) {
+            listCopy = removeNameFromList(deaccentedName, listCopy)
+          }
         }
         case EditType.Modify => {
           val existingNameOpt = listCopy.find(n => (n.name == edit.name && n.lang == edit.lang))

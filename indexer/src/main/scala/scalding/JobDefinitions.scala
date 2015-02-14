@@ -41,7 +41,7 @@ class BoundingBoxImporterJob(args: Args) extends BaseBoundingBoxImporterJob(
   inputSpec = TwofishesImporterInputSpec(
     relativeFilePaths = Nil,
     directories = Seq(
-      DirectoryEnumerationSpec("custom/bboxes"),
+      DirectoryEnumerationSpec("computed/bboxes"),
       DirectoryEnumerationSpec("private/bboxes"))),
   args: Args
 )
@@ -51,7 +51,7 @@ class DisplayBoundingBoxImporterJob(args: Args) extends BaseBoundingBoxImporterJ
   inputSpec = TwofishesImporterInputSpec(
     relativeFilePaths = Nil,
     directories = Seq(
-      DirectoryEnumerationSpec("custom/display_bboxes"),
+      DirectoryEnumerationSpec("computed/display_bboxes"),
       DirectoryEnumerationSpec("private/display_bboxes"))),
   args = args
 )

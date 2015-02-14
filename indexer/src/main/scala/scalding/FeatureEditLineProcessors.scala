@@ -88,7 +88,7 @@ object FeatureEditLineProcessors {
     val flagsList: Seq[FeatureNameFlags] = if (flagsOpt.isEmpty) {
       Seq(FeatureNameFlags.PREFERRED)
     } else {
-      flagsOpt.getOrElse("").split(",").flatMap(f => FeatureNameFlags.unapply(f)).toSeq
+      flagsOpt.getOrElse("").split(",").flatMap(f => FeatureNameFlags.unapply(f)).toList
     }
 
     (longIdOpt, langOpt, nameOpt, flagsList) match {
