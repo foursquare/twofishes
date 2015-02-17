@@ -127,8 +127,8 @@ class SpindleSequenceFile[K <: Writable: Manifest, T <: ThriftConverter.TType](
         throw new IllegalArgumentException("Tuples to sequence files must contain only the record to output if NullWritable is the keytype.")
       }
 
-      println("SIZE: " + tupleEntry.size)
-      println("ENTRY: " + tupleEntry)
+      //println("SIZE: " + tupleEntry.size)
+      //println("ENTRY: " + tupleEntry)
       if (!isNullKey && tupleEntry.size() != 2) {
         throw new IllegalArgumentException("Tuples to sequence files must contain a key and a record.")
       }
