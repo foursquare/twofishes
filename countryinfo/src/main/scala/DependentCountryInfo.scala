@@ -14,7 +14,7 @@ object DependentCountryInfo {
           (parts(0) -> parts(1).split(",").toList)
         })
       .toMap
-  def getDependentCountryCodesForCountry(cc: String): List[String] = 
+  def getDependentCountryCodesForCountry(cc: String): List[String] =
     dependentCountryRelationships.getOrElse(cc, Nil)
 
   private val inverseDependentCountryRelationships = (for {
@@ -27,8 +27,8 @@ object DependentCountryInfo {
   // dependent country -> parent country relationships are meant to be one to one
   // this means we cannot support queries of the form "X, Y" where X is in Antarctica
   // and Y is a country with territories in Antarctica, which is probably all right
-  def getCountryIdOnWhichCountryIsDependent(cc: String): Option[Long] = 
-    CountryInfo.getCountryInfo(inverseDependentCountryRelationships.getOrElse(cc, "")).map(_.geonameid)
+  def getCountryIdOnWhichCountryIsDependent(cc: String): Option[Int] =
+    CountryInfo.getCountryInfo(inverseDependentCountryRelationships.getOrElse(cc, "")).flatMap(_.geonameid)
 
   def isCountryDependentOnCountry(dcc: String, cc: String) =
     getDependentCountryCodesForCountry(cc).exists(_ == dcc)
