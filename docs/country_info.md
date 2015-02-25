@@ -23,7 +23,7 @@ You can also pull the full set of metadata directly with
 
     CountryInfo.getCountryInfo(code)
 
-which returns a case class that has many fields as documented in http://download.geonames.org/export/dump/countryInfo.txt 
+which returns a case class that has many fields as documented in http://download.geonames.org/export/dump/countryInfo.txt
 
 	case class CountryInfo(
 	  iso2: String,
@@ -31,7 +31,7 @@ which returns a case class that has many fields as documented in http://download
 	  fips: String,
 	  englishName: String,
 	  languages: List[String],
-	  geonameid: Int,
+	  geonameid: Option[Int],
 	  tld: String,
 	  population: Int,
 	  continent: String,
@@ -41,31 +41,31 @@ which returns a case class that has many fields as documented in http://download
 	  postalCodeRegexString: String,
 	  phonePrefix: String,
 	  capital: String,
-	  areaSqKm: Int
-	) 
-	
+	  areaSqKm: Option[Int]
+	)
+
 CountryInfo.tzIDs returns a String list of all Olson timezones in that country as well
 
 ### Usage Example
 
 	scala> com.foursquare.geo.country.CountryUtils.getNameByCode("US")
 	res0: Option[String] = Some(United States)
-	
+
 	scala> com.foursquare.geo.country.CountryUtils.getNameByCode("KR")
 	res1: Option[String] = Some(South Korea)
-	
+
 	scala> com.foursquare.geo.country.CountryUtils.getLangs("DE")
 	res2: List[String] = List(de)
-	
+
 	scala> com.foursquare.geo.country.CountryInfo.getCountryInfo("DE")
 	res3: Option[com.foursquare.geo.country.CountryInfo] = Some(CountryInfo(DE,DEU,GM,Germany,List(de),2921044,.de,81802257,EU,EUR,Euro,List(CH, PL, NL, DK, BE, CZ, LU, FR, AT),^(\d{5})$,49,Berlin,357021))
-	
+
 	scala> com.foursquare.geo.country.CountryInfo.getCountryInfo("DE").map(_.currencyName)
 	res4: Option[String] = Some(Euro)
-	
+
 	scala> com.foursquare.geo.country.CountryInfo.getCountryInfo("DE").map(_.population)
 	res5: Option[Int] = Some(81802257)
-	
+
 	scala> com.foursquare.geo.country.CountryInfo.getCountryInfo("DE").map(_.tzIDs)
 	res6: Option[Seq[String]] = Some(List(Europe/Berlin, Europe/Busingen))
 
