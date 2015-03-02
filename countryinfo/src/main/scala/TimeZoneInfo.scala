@@ -22,21 +22,35 @@ case class TimeZoneInfo(
 object TimeZoneInfo {
   import TimeZoneInfoFields._
 
-  val tzLines = new BufferedSource(getClass.getResourceAsStream("/timeZones.txt")).getLines.drop(1)
-  val tzInfos: Seq[TimeZoneInfo] = tzLines.filterNot(l => l.startsWith("#") || l.isEmpty).toList.map(l => {
+  private val tzLines = new BufferedSource(getClass.getResourceAsStream("/timeZones.txt")).getLines.drop(1)
+  private val timeZoneInfos: Seq[TimeZoneInfo] = tzLines.filterNot(l => l.startsWith("#") || l.isEmpty).toList.map(l => {
     val parts = l.split("\t")
     TimeZoneInfo(
-      cc = parts(COUNTRY_CODE.id), 
-      tzid = parts(TZID.id), 
+      cc = parts(COUNTRY_CODE.id),
+      tzid = parts(TZID.id),
       gmtOffset = parts(GMT_OFFSET.id).toDouble,
       dstOffset = parts(DST_OFFSET.id).toDouble,
       rawOffset = parts(RAW_OFFSET.id).toDouble
     )
   })
 
-  val ccToTZIDs: Map[String, Seq[String]] = 
-    tzInfos
-      .groupBy(_.cc)
-      .map({case (cc, infos) => (cc -> infos.map(_.tzid))})
-      .toMap
+  private val ccToTimeZoneInfos: Map[String, Seq[TimeZoneInfo]] =
+    timeZoneInfos.groupBy(_.cc).toMap
+
+  private val tzIdToTimeZoneInfo: Map[String, TimeZoneInfo] =
+    timeZoneInfos.map(tz => (tz.tzid, tz)).toMap
+
+  def lookupTzID(tzid: String): Option[TimeZoneInfo] =
+    tzIdToTimeZoneInfo.get(tzid)
+
+  def tzIdsFromIso2(cc: String): Seq[String] =
+    timeZoneInfosFromIso2(cc).map(_.tzid)
+
+  def timeZoneInfosFromIso2(cc: String): Seq[TimeZoneInfo] = {
+    if (cc.length != 2) {
+      throw new Exception("two letter country code required")
+    } else {
+      ccToTimeZoneInfos.getOrElse(cc, Seq.empty)
+    }
+  }
 }
