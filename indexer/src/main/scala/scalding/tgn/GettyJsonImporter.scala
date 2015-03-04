@@ -10,6 +10,7 @@ import com.foursquare.twofishes.util.{GettyId, StoredFeatureId}
 import com.twitter.scalding._
 import com.twitter.scalding.typed.TypedSink
 import com.vividsolutions.jts.geom.Geometry
+import com.foursquare.twofishes.scalding.DirectoryEnumerationSpec
 import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
 import org.apache.hadoop.io.LongWritable
 import org.geotools.geojson.GeoJSONUtil
@@ -17,6 +18,16 @@ import org.geotools.geojson.feature.FeatureJSON
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
+
+class GettyFeaturesImporterJob(args: Args) extends GettyJsonImporter(
+  name = "getty_features_import",
+  inputSpec = TwofishesImporterInputSpec(
+    relativeFilePaths = Nil,
+    directories = Seq(
+      DirectoryEnumerationSpec("tgn", recursive=true))
+    ),
+  args = args
+)
 
 class GettyJsonImporter(
   name: String,
