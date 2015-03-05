@@ -1,6 +1,7 @@
 // Copyright 2014 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.scalding
 
+import com.foursquare.twofishes.scalding.tgn._
 import com.twitter.scalding.Args
 import com.foursquare.twofishes.importers.geonames.GeonamesFeature
 
@@ -11,6 +12,14 @@ class GeonamesFeaturesImporterJob(args: Args) extends BaseFeaturesImporterJob(
   inputSpec = TwofishesImporterInputSpec(
     relativeFilePaths = Seq("downloaded/allCountries.txt"),
     directories = Nil),
+  args = args
+)
+
+class GettyFeaturesImporterJob(args: Args) extends BaseGettyFeaturesImporterJob(
+  name = "getty_features_import",
+  inputSpec = TwofishesImporterInputSpec(
+    relativeFilePaths = Nil,
+    directories = Seq(DirectoryEnumerationSpec("tgn", recursive=true))),
   args = args
 )
 
@@ -196,6 +205,7 @@ class AttributesImporterJob(args: Args) extends BaseAttributesImporterJob(
 object WorkflowConstants {
   val postImportAllFeaturesSources = Seq(
     "geonames_features_import",
+    "getty_features_import",
     "supplemental_features_import",
     "postcode_features_import")
 
