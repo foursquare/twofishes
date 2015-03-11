@@ -42,6 +42,7 @@ object CountryNames {
 case class CountryInfo(
   iso2: String,
   iso3: String,
+  isoNumeric: Int,
   fips: String,
   englishName: String,
   languages: List[String],
@@ -91,6 +92,7 @@ object CountryInfo {
       Some(CountryInfo(
         iso2=parts(ISO2.id),
         iso3=parts(ISO3.id),
+        isoNumeric=parts(ISO_NUMERIC.id).toInt,
         fips=parts(FIPS.id),
         englishName=englishNameOverrides.get(parts(ISO2.id)).getOrElse(parts(ENGLISH_NAME.id)),
         languages=parts(LANGUAGES.id).split(",").toList,
