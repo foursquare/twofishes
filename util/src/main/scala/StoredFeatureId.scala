@@ -12,11 +12,13 @@ case object AdHocNamespace extends FeatureNamespace("adhoc", 3.toByte)
 case object WoeIdNamespace extends FeatureNamespace("woeid", 4.toByte)
 case object OsmNamespace extends FeatureNamespace("osm", 5.toByte)
 
+case object TwitterNamespace extends FeatureNamespace("twitter", 1000.toByte)
+
 object FeatureNamespace {
   // higher is better
-  val NamespaceOrdering = List(OsmNamespace, WoeIdNamespace, AdHocNamespace, GeonamesNamespace, MaponicsNamespace)
+  val NamespaceOrdering = List(OsmNamespace, WoeIdNamespace, AdHocNamespace, GeonamesNamespace, MaponicsNamespace, TwitterNamespace)
 
-  val values = List(WoeIdNamespace, AdHocNamespace, GeonamesNamespace, MaponicsNamespace, GeonamesZipNamespace, OsmNamespace)
+  val values = List(WoeIdNamespace, AdHocNamespace, GeonamesNamespace, MaponicsNamespace, GeonamesZipNamespace, OsmNamespace, TwitterNamespace)
 
   def fromId(id: Byte): FeatureNamespace = fromIdOpt(id).getOrElse(
     throw new RuntimeException("unrecognized feature namespace id '%d'".format(id))
@@ -53,6 +55,17 @@ sealed abstract class StoredFeatureId(val namespace: FeatureNamespace) {
   }
 
   def thriftFeatureId: FeatureId = FeatureId(namespace.name, namespaceSpecificId.toString)
+}
+
+case class TwitterId(override val namespaceSpecificId: Long) extends StoredFeatureId(TwitterIdNamespace) {
+  def legacyObjectId: ObjectId = {
+    val n = namespaceSpecificId
+    val bytes = BigInt(n).toByteArray
+    val arr = bytes.reverse.padTo(12, 0: Byte).reverse
+    new ObjectId(arr)
+  }
+
+  override def longId = namespaceSpecificId
 }
 
 case class WoeId(override val namespaceSpecificId: Long) extends StoredFeatureId(WoeIdNamespace)
