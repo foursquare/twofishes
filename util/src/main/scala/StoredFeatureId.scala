@@ -5,7 +5,7 @@ import org.bson.types.ObjectId
 
 sealed abstract class FeatureNamespace(val name: String, val id: Byte)
 case object MaponicsNamespace extends FeatureNamespace("maponics", 0.toByte)
-case object GeonamesNamespace extends FeatureNamespace("geonameid", 
+case object GeonamesNamespace extends FeatureNamespace("geonameid",
   Option(System.getProperty("geonameidNamespace")).map(_.toInt).getOrElse(1).toByte)
 case object GeonamesZipNamespace extends FeatureNamespace("geonamezip", 2.toByte)
 case object AdHocNamespace extends FeatureNamespace("adhoc", 3.toByte)
@@ -57,8 +57,8 @@ sealed abstract class StoredFeatureId(val namespace: FeatureNamespace) {
   def thriftFeatureId: FeatureId = FeatureId(namespace.name, namespaceSpecificId.toString)
 }
 
-case class TwitterId(override val namespaceSpecificId: Long) extends StoredFeatureId(TwitterIdNamespace) {
-  def legacyObjectId: ObjectId = {
+case class TwitterId(override val namespaceSpecificId: Long) extends StoredFeatureId(TwitterNamespace) {
+  override def legacyObjectId: ObjectId = {
     val n = namespaceSpecificId
     val bytes = BigInt(n).toByteArray
     val arr = bytes.reverse.padTo(12, 0: Byte).reverse
@@ -196,6 +196,7 @@ object StoredFeatureId {
 
   def apply(ns: FeatureNamespace, id: Long): StoredFeatureId = ns match {
     case GeonamesNamespace => GeonamesId(id)
+    case TwitterNamespace => TwitterId(id)
     case GeonamesZipNamespace => new GeonamesZip(id)
     case MaponicsNamespace => MaponicsId(id)
     case AdHocNamespace => AdHocId(id)
@@ -238,11 +239,7 @@ object StoredFeatureId {
   }
 
   def fromLong(fullId: Long): Option[StoredFeatureId] = {
-    // top 8 bits
-    val idOfNamespace = fullId >> 56
-    // lower 56 bits
-    val idFromNamespace = (fullId << 8) >> 8
-    FeatureNamespace.fromIdOpt(idOfNamespace.toByte).map(ns => StoredFeatureId(ns, idFromNamespace))
+    Some(TwitterId(fullId))
   }
 
   def fromThriftFeatureId(t: FeatureId) = fromNamespaceAndId(t.source, t.id)
