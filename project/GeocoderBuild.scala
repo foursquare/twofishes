@@ -51,7 +51,8 @@ object GeocoderBuild extends Build {
     publishArtifact := false,
     pomIncludeRepository := { _ => false },
     publishTo <<= (version) { v =>
-      if (System.getenv("publishTo").contains("sona")) {
+      val publishTo = System.getenv("publishTo")
+      if (publishTo != null && publishTo.contains("sona")) {
        val nexus = "https://oss.sonatype.org/"
         if (v.endsWith("-SNAPSHOT"))
           Some("snapshots" at nexus + "content/repositories/snapshots")
