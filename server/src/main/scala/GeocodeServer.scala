@@ -154,7 +154,7 @@ class GeocodeServerImpl(
           logger.info("finished %d queries".format(index))
         }
         queryFuturePool {
-          new GeocodeRequestDispatcher(store).geocode(GeocodeRequest.newBuilder.query(line).result)
+          new GeocodeRequestDispatcher(store).geocode(GeocodeRequest.newBuilder.responseIncludes(Vector(ResponseIncludes.S2_COVERING, ResponseIncludes.WKB_GEOMETRY)).query(line).result)
           new GeocodeRequestDispatcher(store).geocode(GeocodeRequest.newBuilder.query(line).autocomplete(true).result)
         }
       }}).toSeq))
