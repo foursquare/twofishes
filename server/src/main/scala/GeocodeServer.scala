@@ -172,6 +172,20 @@ class GeocodeServerImpl(
           new ReverseGeocoderImpl(store, GeocodeRequest.newBuilder.ll(GeocodePoint(parts(0).toDouble, parts(1).toDouble)).radius(300).result).doGeocode()
         }
       }}).toSeq))
+      logger.info("done")
+
+      val slugLines = 1.to(10000).map(id => "geonameid:%d".format(id))
+      logger.info("Warming up by geocoding %d slugs".format(slugLines.size))
+      Await.result(
+        Future.collect(slugLines.zipWithIndex.map({ case (line, index) => {
+          if (index % 1000 == 0) {
+            logger.info("finished %d queries".format(index))
+          }
+          queryFuturePool {
+            new GeocodeRequestDispatcher(store).geocode(GeocodeRequest.newBuilder.slug(line).result)
+          }
+        }}).toSeq))
+      logger.info("done")
     }
     logger.info("done")
     val labels = Stats.getLabels()
