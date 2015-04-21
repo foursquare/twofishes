@@ -138,10 +138,9 @@ class QueryLoggingGeocodeServerImpl(service: Geocoder.ServiceIface) extends Geoc
 class GeocodeServerImpl(
   store: GeocodeStorageReadService,
   doWarmup: Boolean,
-  enablePrivateEndpoints: Boolean = false
+  enablePrivateEndpoints: Boolean = false,
+  queryFuturePool: FuturePool = FuturePool(StatsWrappedExecutors.create(24, 100, "geocoder"))
 ) extends Geocoder.ServiceIface with Logging {
-  val queryFuturePool = FuturePool(StatsWrappedExecutors.create(24, 100, "geocoder"))
-
   if (doWarmup) {
     for {
       time <- 0.to(2)
