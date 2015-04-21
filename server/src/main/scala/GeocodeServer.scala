@@ -145,45 +145,50 @@ class GeocodeServerImpl(
     for {
       time <- 0.to(2)
     } {
-      var lines = new BufferedSource(getClass.getResourceAsStream("/warmup/geocodes.txt")).getLines.take(10000).toList
+      val batchSize = 50 // FIXME: magic
 
-      logger.info("Warming up by geocoding %d queries".format(lines.size))
-      Await.result(Future.collect(lines.zipWithIndex.map({ case (line, index) => {
-        if (index % 1000 == 0) {
-          logger.info("finished %d queries".format(index))
+      var lines = new BufferedSource(getClass.getResourceAsStream("/warmup/geocodes.txt")).getLines.take(10000).grouped(batchSize).toVector
+
+      logger.info("Warming up by geocoding %d queries".format(lines.size * batchSize))
+      lines.zipWithIndex.foreach { case (batch, index) =>
+        if (index % 20 == 0) {
+          logger.info("finished %d queries".format(index * batchSize))
         }
-        queryFuturePool {
+        val work = Future.collect(batch.map { line => queryFuturePool {
           new GeocodeRequestDispatcher(store).geocode(GeocodeRequest.newBuilder.responseIncludes(Vector(ResponseIncludes.S2_COVERING, ResponseIncludes.WKB_GEOMETRY)).query(line).result)
           new GeocodeRequestDispatcher(store).geocode(GeocodeRequest.newBuilder.query(line).autocomplete(true).result)
-        }
-      }}).toSeq))
+        }})
+        Await.result(work)
+      }
       logger.info("done")
 
-      val revgeoLines = new BufferedSource(getClass.getResourceAsStream("/warmup/revgeo.txt")).getLines.take(10000).toList
-      logger.info("Warming up by reverse geocoding %d queries".format(lines.size))
-      Await.result(Future.collect(revgeoLines.zipWithIndex.map({ case (line, index) => {
-        if (index % 1000 == 0) {
-          logger.info("finished %d queries".format(index))
+      val revgeoLines = new BufferedSource(getClass.getResourceAsStream("/warmup/revgeo.txt")).getLines.take(10000).grouped(batchSize).toVector
+
+      logger.info("Warming up by reverse geocoding %d queries".format(revgeoLines.size * batchSize))
+      revgeoLines.zipWithIndex.foreach { case (batch, index) =>
+        if (index % 20 == 0) {
+          logger.info("finished %d queries".format(index * batchSize))
         }
-        val parts = line.split(",")
-        queryFuturePool {
+        val work = Future.collect(batch.map { line => queryFuturePool {
+          val parts = line.split(",")
           new ReverseGeocoderImpl(store, GeocodeRequest.newBuilder.ll(GeocodePoint(parts(0).toDouble, parts(1).toDouble)).result).doGeocode()
           new ReverseGeocoderImpl(store, GeocodeRequest.newBuilder.ll(GeocodePoint(parts(0).toDouble, parts(1).toDouble)).radius(300).result).doGeocode()
-        }
-      }}).toSeq))
+        }})
+        Await.result(work)
+      }
       logger.info("done")
 
-      val slugLines = 1.to(10000).map(id => "geonameid:%d".format(id))
-      logger.info("Warming up by geocoding %d slugs".format(slugLines.size))
-      Await.result(
-        Future.collect(slugLines.zipWithIndex.map({ case (line, index) => {
-          if (index % 1000 == 0) {
-            logger.info("finished %d queries".format(index))
-          }
-          queryFuturePool {
-            new GeocodeRequestDispatcher(store).geocode(GeocodeRequest.newBuilder.slug(line).result)
-          }
-        }}).toSeq))
+      val slugLines = 1.to(10000).map(id => "geonameid:%d".format(id)).grouped(batchSize)
+      logger.info("Warming up by geocoding %d slugs".format(slugLines.size * batchSize))
+      slugLines.zipWithIndex.foreach { case (batch, index) =>
+        if (index % 20 == 0) {
+          logger.info("finished %d queries".format(index * batchSize))
+        }
+        val work = Future.collect(batch.map { line => queryFuturePool {
+          new GeocodeRequestDispatcher(store).geocode(GeocodeRequest.newBuilder.slug(line).result)
+        }})
+        Await.result(work)
+      }
       logger.info("done")
     }
     logger.info("done")
