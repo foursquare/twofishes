@@ -9,7 +9,7 @@ object GeocoderBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.foursquare.twofishes",
     name := "twofishes",
-    version      := "0.84.6",
+    version      := "0.84.11",
     scalaVersion := "2.10.2",
     javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
     javacOptions in doc := Seq("-source", "1.6")
@@ -51,7 +51,18 @@ object GeocoderBuild extends Build {
     publishArtifact in Test := false,
     publishArtifact := false,
     pomIncludeRepository := { _ => false },
-    publishTo := Some("foursquare Nexus" at "http://nexus.prod.foursquare.com/nexus/content/repositories/releases/"),
+    publishTo <<= (version) { v =>
+      val publishTo = System.getenv("publishTo")
+      if (publishTo != null && publishTo.contains("sona")) {
+       val nexus = "https://oss.sonatype.org/"
+        if (v.endsWith("-SNAPSHOT"))
+          Some("snapshots" at nexus + "content/repositories/snapshots")
+        else
+          Some("releases" at nexus + "service/local/staging/deploy/maven2")
+      } else {
+        Some("foursquare Nexus" at "http://nexus.prod.foursquare.com/nexus/content/repositories/releases/")
+      }
+    },
 
     pomExtra := (
       <url>http://github.com/foursquare/twofishes</url>

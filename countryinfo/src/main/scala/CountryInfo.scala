@@ -42,10 +42,12 @@ object CountryNames {
 case class CountryInfo(
   iso2: String,
   iso3: String,
+  isoNumeric: Int,
   fips: String,
   englishName: String,
   languages: List[String],
-  geonameid: Int,
+  // can be null for countries that don't exist anymore like Serbia and Montenegro
+  geonameid: Option[Int],
   tld: String,
   population: Int,
   continent: String,
@@ -55,11 +57,13 @@ case class CountryInfo(
   postalCodeRegexString: String,
   phonePrefix: String,
   capital: String,
-  areaSqKm: Int
+  areaSqKm: Option[Int]
 ) {
+  def tzIDs: Seq[String] = TimeZoneInfo.tzIdsFromIso2(iso2)
+
   lazy val postalCodeRegex = postalCodeRegexString.r
 
-  def getEnglishName: String = 
+  def getEnglishName: String =
     CountryNames.englishNameOverrides.get(iso2).getOrElse(englishName)
 
   def bestLang: Option[String] = getLangs.headOption
@@ -71,6 +75,10 @@ case class CountryInfo(
 
 object CountryInfo {
   import CountryInfoFields._
+
+  def tryToInt(s: String): Option[Int] = {
+    try { Some(s.toInt) } catch { case e: java.lang.NumberFormatException => None }
+  }
 
   val englishNameOverrides = Map(
     "NL" -> "The Netherlands",
@@ -84,23 +92,24 @@ object CountryInfo {
       Some(CountryInfo(
         iso2=parts(ISO2.id),
         iso3=parts(ISO3.id),
+        isoNumeric=parts(ISO_NUMERIC.id).toInt,
         fips=parts(FIPS.id),
         englishName=englishNameOverrides.get(parts(ISO2.id)).getOrElse(parts(ENGLISH_NAME.id)),
         languages=parts(LANGUAGES.id).split(",").toList,
-        geonameid=parts(GEONAMEID.id).toInt,
+        geonameid=tryToInt(parts(GEONAMEID.id)),
         tld=parts(TLD.id),
         population=parts(POPULATION.id).toInt,
         continent=parts(CONTINENT.id),
         currencyCode=parts(CURRENCY_CODE.id),
         currencyName=parts(CURRENCY_NAME.id),
-        neighbors=parts(NEIGHBOURS.id).split(",").toList,
+        neighbors=parts.lift(NEIGHBOURS.id).getOrElse("").split(",").toList,
         postalCodeRegexString=parts(POSTAL_CODE_REGEX.id),
         phonePrefix=parts(PHONE.id),
         capital=parts(CAPITAL.id),
-        areaSqKm=parts(AREA_SQ_KM.id).toInt
+        areaSqKm=tryToInt(parts(AREA_SQ_KM.id))
       ))
     } catch {
-      case e: Exception => None
+      case e: Exception => throw new Exception(s"failed to parse line $l", e)
     }
   })
 
