@@ -4,6 +4,7 @@ package com.foursquare.geo.country
 
 import scala.io.Source
 import scala.io.BufferedSource
+import scala.util.matching.Regex
 
 object CountryInfoFields extends Enumeration {
   val ISO2,
@@ -44,8 +45,20 @@ case class CountryInfo(
   fips: String,
   englishName: String,
   languages: List[String],
-  geonameid: Int
+  geonameid: Int,
+  tld: String,
+  population: Int,
+  continent: String,
+  currencyCode: String,
+  currencyName: String,
+  neighbors: List[String],
+  postalCodeRegexString: String,
+  phonePrefix: String,
+  capital: String,
+  areaSqKm: Int
 ) {
+  lazy val postalCodeRegex = postalCodeRegexString.r
+
   def getEnglishName: String = 
     CountryNames.englishNameOverrides.get(iso2).getOrElse(englishName)
 
@@ -74,7 +87,17 @@ object CountryInfo {
         fips=parts(FIPS.id),
         englishName=englishNameOverrides.get(parts(ISO2.id)).getOrElse(parts(ENGLISH_NAME.id)),
         languages=parts(LANGUAGES.id).split(",").toList,
-        geonameid=parts(GEONAMEID.id).toInt
+        geonameid=parts(GEONAMEID.id).toInt,
+        tld=parts(TLD.id),
+        population=parts(POPULATION.id).toInt,
+        continent=parts(CONTINENT.id),
+        currencyCode=parts(CURRENCY_CODE.id),
+        currencyName=parts(CURRENCY_NAME.id),
+        neighbors=parts(NEIGHBOURS.id).split(",").toList,
+        postalCodeRegexString=parts(POSTAL_CODE_REGEX.id),
+        phonePrefix=parts(PHONE.id),
+        capital=parts(CAPITAL.id),
+        areaSqKm=parts(AREA_SQ_KM.id).toInt
       ))
     } catch {
       case e: Exception => None

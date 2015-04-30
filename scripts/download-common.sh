@@ -43,7 +43,7 @@ then
 else
    curl -o $file http://download.geonames.org/export/dump/countryInfo.txt
 fi
-cp $file country/src/main/resources/
+cp $file countryinfo/src/main/resources/
 
 file=data/downloaded/ne_10m_populated_places_simple.dbf
 if [ -f $file ];

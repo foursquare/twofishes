@@ -74,34 +74,14 @@ object GeocoderBuild extends Build {
         </developer>
       </developers>),
 
-    credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
-
-    credentials ++= {
-      val sonatype = ("Foursquare Nexus Repository Manager", "nexus.prod.foursquare.com")
-      def loadMavenCredentials(file: java.io.File) : Seq[Credentials] = {
-        xml.XML.loadFile(file) \ "servers" \ "server" map (s => {
-          val host = (s \ "id").text
-          val realm = if (host == sonatype._2) sonatype._1 else "Unknown"
-          val c = Credentials(realm, host, (s \ "username").text, (s \ "password").text)
-          println(c)
-          c
-        })
-      }
-      val ivyCredentials   = Path.userHome / ".ivy2" / ".credentials"
-      val mavenCredentials = Path.userHome / ".m2"   / "settings.xml"
-      (ivyCredentials.asFile, mavenCredentials.asFile) match {
-        case (ivy, _) if ivy.canRead => Credentials(ivy) :: Nil
-        case (_, mvn) if mvn.canRead => loadMavenCredentials(mvn)
-        case _ => Nil
-      }
-    }
+    credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
   )
 
   lazy val all = Project(id = "all",
     settings = defaultSettings ++ assemblySettings ++ Seq(
       publishArtifact := true
     ),
-    base = file(".")) aggregate(country, util, core, interface, server, indexer)
+    base = file(".")) aggregate(countryinfo, util, core, interface, server, indexer)
 
   lazy val core = Project(id = "core",
       base = file("core"),
@@ -134,7 +114,7 @@ object GeocoderBuild extends Build {
           </dependencies>
         )
       )
-    ) dependsOn(interface, util, country)
+    ) dependsOn(interface, util, countryinfo)
 
   lazy val interface = Project(id = "interface",
       settings = defaultSettings ++ thriftSettings ++ Seq(
@@ -180,7 +160,7 @@ object GeocoderBuild extends Build {
           }
         }}
       ),
-      base = file("server")) dependsOn(core, interface, util, country)
+      base = file("server")) dependsOn(core, interface, util, countryinfo)
 
   lazy val indexer = Project(id = "indexer",
       base = file("indexer"),
@@ -233,20 +213,13 @@ object GeocoderBuild extends Build {
           }
         }}
       )
-  ) dependsOn(core, util, country)
+  ) dependsOn(core, util, countryinfo)
 
-   lazy val country = Project(id = "country",
-      base = file("country"),
+   lazy val countryinfo = Project(id = "countryinfo",
+      base = file("countryinfo"),
       settings = defaultSettings ++ assemblySettings ++ specsSettings ++ Seq(
         organization := "com.foursquare",
-        publishArtifact := true,
-        publishTo <<= (version) { v =>
-          val nexus = "https://oss.sonatype.org/"
-          if (v.endsWith("-SNAPSHOT"))
-            Some("snapshots" at nexus + "content/repositories/snapshots")
-          else
-            Some("releases" at nexus + "service/local/staging/deploy/maven2")
-        }
+        publishArtifact := true
       )
     )
 
