@@ -5,7 +5,6 @@ import com.foursquare.twofishes.Indexes
 import com.foursquare.twofishes.mongo.{MongoGeocodeDAO, S2CoveringIndex, S2CoveringIndexDAO}
 import com.mongodb.Bytes
 import com.mongodb.casbah.Imports._
-import com.vividsolutions.jts.io.WKBReader
 
 class S2CoveringIndexer(override val basepath: String, override val fidMap: FidMap) extends Indexer {
   val index = Indexes.S2CoveringIndex

@@ -2,9 +2,7 @@
 
 package com.foursquare.geo.country
 
-import scala.io.Source
 import scala.io.BufferedSource
-import scala.util.matching.Regex
 
 object CountryInfoFields extends Enumeration {
   val ISO2,

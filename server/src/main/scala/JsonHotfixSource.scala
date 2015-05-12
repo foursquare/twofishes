@@ -2,8 +2,8 @@
 package com.foursquare.twofishes
 
 import com.foursquare.common.thrift.json.TReadableJSONProtocol
-import java.io.File
 import com.weiglewilczek.slf4s.Logging
+import java.io.File
 import org.apache.thrift.TDeserializer
 
 class JsonHotfixSource(originalPath: String) extends HotfixSource with Logging {

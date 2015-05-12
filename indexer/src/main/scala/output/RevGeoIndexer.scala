@@ -1,7 +1,7 @@
 package com.foursquare.twofishes.output
 
 import com.foursquare.twofishes.{CellGeometries, CellGeometry, Indexes, YahooWoeType}
-import com.foursquare.twofishes.mongo.{MongoGeocodeDAO, RevGeoIndexDAO}
+import com.foursquare.twofishes.mongo.RevGeoIndexDAO
 import com.foursquare.twofishes.util.RevGeoConstants
 import com.mongodb.Bytes
 import com.mongodb.casbah.Imports._

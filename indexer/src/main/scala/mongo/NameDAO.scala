@@ -2,7 +2,6 @@
 package com.foursquare.twofishes.mongo
 
 import com.foursquare.twofishes.util.StoredFeatureId
-import com.mongodb.Bytes
 import com.mongodb.casbah.Imports._
 import com.mongodb.casbah.MongoConnection
 import com.novus.salat._

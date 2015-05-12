@@ -1,13 +1,13 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
+import com.foursquare.geo.quadtree.CountryRevGeo
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.GeoTools
 import com.foursquare.twofishes.util.Lists.Implicits._
+import com.twitter.ostrich.stats.Stats
 import com.vividsolutions.jts.geom.Geometry
 import scalaj.collection.Implicits._
-import com.twitter.ostrich.stats.Stats
-import com.foursquare.geo.quadtree.CountryRevGeo
 
 object GeocodeRequestUtils {
   val maxRadius = 5000 // 5 km

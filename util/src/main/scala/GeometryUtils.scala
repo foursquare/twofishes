@@ -3,8 +3,7 @@
 package com.foursquare.twofishes.util
 
 import com.google.common.geometry.{S2CellId, S2LatLng, S2LatLngRect, S2Polygon, S2PolygonBuilder, S2RegionCoverer}
-import com.vividsolutions.jts.geom.{Coordinate, Geometry, Polygon, Point}
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, DataInputStream, DataOutputStream}
+import com.vividsolutions.jts.geom.{Geometry, Point, Polygon}
 import scalaj.collection.Implicits._
 
 trait RevGeoConstants {

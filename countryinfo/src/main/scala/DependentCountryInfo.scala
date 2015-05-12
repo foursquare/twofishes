@@ -2,7 +2,6 @@
 
 package com.foursquare.geo.country
 
-import scala.io.Source
 import scala.io.BufferedSource
 
 object DependentCountryInfo {

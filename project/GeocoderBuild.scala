@@ -182,16 +182,15 @@ object GeocoderBuild extends Build {
         import com.foursquare.twofishes._
         import com.foursquare.twofishes.importers.geonames._
         import com.foursquare.twofishes.mongo._
+        import com.foursquare.twofishes.output._
         import com.foursquare.twofishes.util.Helpers._
         import com.foursquare.twofishes.util._
-        import com.foursquare.twofishes.output._
         import com.mongodb.casbah.Imports._
         import com.novus.salat._
         import com.novus.salat.annotations._
         import com.novus.salat.dao._
         import com.novus.salat.global._
         import com.vividsolutions.jts.io._
-        import java.io.File
 
         val store = new MongoGeocodeStorageService()
         val slugIndexer = new SlugIndexer()

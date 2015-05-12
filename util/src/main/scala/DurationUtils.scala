@@ -1,8 +1,8 @@
 package com.foursquare.twofishes.util
 
+import com.twitter.ostrich.stats.Stats
 import com.twitter.util.Duration
 import com.weiglewilczek.slf4s.Logging
-import com.twitter.ostrich.stats.Stats
 
 trait DurationUtils extends Logging {
   def logDuration[T](ostrichKey: String, extraInfo: String = "")(f: => T): T = {

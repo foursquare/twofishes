@@ -2,33 +2,33 @@
 package com.foursquare.twofishes.importers.geonames
 
 import akka.actor.{ActorSystem, Props}
+import com.foursquare.geo.quadtree.CountryRevGeo
 import com.foursquare.geo.shapes.FsqSimpleFeatureImplicits._
 import com.foursquare.geo.shapes.ShapefileIterator
-import com.foursquare.geo.quadtree.CountryRevGeo
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes._
-import com.foursquare.twofishes.output._
 import com.foursquare.twofishes.mongo._
-import com.foursquare.twofishes.util.{DurationUtils, GeonamesId, GeonamesNamespace, GeoTools, Helpers, NameNormalizer, StoredFeatureId}
+import com.foursquare.twofishes.output._
+import com.foursquare.twofishes.util.{DurationUtils, GeoTools, GeonamesId, GeonamesNamespace, Helpers, NameNormalizer,
+    StoredFeatureId}
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
+import com.twitter.ostrich.admin.RuntimeEnvironment
+import com.twitter.ostrich.admin.config.AdminServiceConfig
+import com.twitter.ostrich.stats.Stats
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
 import com.weiglewilczek.slf4s.Logging
 import java.io.File
-import scala.util.matching.Regex
 import java.util.concurrent.CountDownLatch
 import org.bson.types.ObjectId
+import org.json4s.NoTypeHints
+import org.json4s.jackson.{JsonMethods, Serialization}
 import org.opengis.feature.simple.SimpleFeature
 import scala.collection.mutable.{HashMap, HashSet}
 import scala.io.Source
+import scala.util.matching.Regex
 import scalaj.collection.Implicits._
-import com.twitter.ostrich.stats.Stats
-import com.twitter.ostrich.admin.{RuntimeEnvironment, ServiceTracker}
-import com.twitter.ostrich.admin.config.AdminServiceConfig
-import org.json4s.NoTypeHints
-import org.json4s.jackson.JsonMethods
-import org.json4s.jackson.Serialization
 
 object GeonamesParser extends DurationUtils {
   var config: GeonamesImporterConfig = null

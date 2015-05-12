@@ -1,9 +1,9 @@
 package com.foursquare.twofishes.output
 
 import com.foursquare.twofishes.{GeocodeRecord, GeocodeServingFeature, Indexes, YahooWoeType}
-import com.foursquare.twofishes.mongo.{PolygonIndexDAO, PolygonIndex, MongoGeocodeDAO, RevGeoIndexDAO}
-import com.foursquare.twofishes.util.{GeoTools, GeometryUtils, StoredFeatureId}
 import com.foursquare.twofishes.Identity._
+import com.foursquare.twofishes.mongo.{MongoGeocodeDAO, PolygonIndex, PolygonIndexDAO, RevGeoIndexDAO}
+import com.foursquare.twofishes.util.{GeoTools, GeometryUtils, StoredFeatureId}
 import com.mongodb.Bytes
 import com.mongodb.casbah.Imports._
 import com.novus.salat._

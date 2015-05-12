@@ -3,7 +3,7 @@ package com.foursquare.twofishes
 
 import com.foursquare.geo.country.CountryInfo
 import com.foursquare.twofishes.Identity._
-import com.foursquare.twofishes.util.{GeoTools, StoredFeatureId, TwofishesLogger}
+import com.foursquare.twofishes.util.{GeoTools, TwofishesLogger}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import scala.collection.mutable.HashMap
 import scalaj.collection.Implicits._

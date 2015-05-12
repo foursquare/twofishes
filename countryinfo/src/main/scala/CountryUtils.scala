@@ -1,7 +1,5 @@
 package com.foursquare.geo.country
 
-import scala.io.Source
-import scala.io.BufferedSource
 
 object CountryUtils {
   val englishNameOverrides = Map(

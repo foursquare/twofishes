@@ -3,7 +3,6 @@ package com.foursquare.twofishes.output
 
 import com.foursquare.twofishes.Indexes
 import com.foursquare.twofishes.mongo.{MongoGeocodeDAO, PolygonIndex, PolygonIndexDAO}
-import com.foursquare.twofishes.util.StoredFeatureId
 import com.mongodb.Bytes
 import com.mongodb.casbah.Imports._
 import com.novus.salat._

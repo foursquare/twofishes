@@ -1,8 +1,8 @@
 //  Copyright 2012 Foursquare Labs Inc. All Rights Reserved
 package com.foursquare.twofishes
 
-import java.util.concurrent.ConcurrentHashMap
 import com.twitter.ostrich.stats.{Stats => OstrichStats}
+import java.util.concurrent.ConcurrentHashMap
 
 trait GeocoderTypes {
   case class SortedParseWithPosition(parse: Parse[Sorted], position: Int)

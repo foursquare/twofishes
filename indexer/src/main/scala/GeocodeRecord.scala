@@ -4,13 +4,12 @@ package com.foursquare.twofishes
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.foursquare.twofishes.util.StoredFeatureId
-import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory}
+import com.vividsolutions.jts.geom.{Coordinate, GeometryFactory}
 import com.vividsolutions.jts.io.WKBReader
 import java.nio.ByteBuffer
 import org.apache.thrift.{TDeserializer, TSerializer}
 import org.apache.thrift.protocol.TCompactProtocol
 import org.bson.types.ObjectId
-import scala.collection.mutable.HashMap
 import scalaj.collection.Implicits._
 
 case class DisplayName(

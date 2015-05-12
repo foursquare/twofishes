@@ -5,7 +5,6 @@ import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.{GeoTools, StoredFeatureId}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.foursquare.twofishes.util.NameUtils
-import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._
 

@@ -2,6 +2,7 @@
 package com.foursquare.twofishes
 
 import com.foursquare.common.thrift.json.TReadableJSONProtocol
+import com.foursquare.geo.shapes.ShapefileS2Util
 import com.foursquare.spindle.{MetaRecord, Record}
 import com.foursquare.twofishes.util.Helpers
 import com.foursquare.twofishes.util.Lists.Implicits._
@@ -15,6 +16,7 @@ import com.twitter.ostrich.admin._
 import com.twitter.ostrich.admin.config._
 import com.twitter.ostrich.stats.Stats
 import com.twitter.util.{Await, Future, FuturePool, RingBuffer}
+import com.vividsolutions.jts.io.WKTWriter
 import com.weiglewilczek.slf4s.Logging
 import java.io.InputStream
 import java.net.InetSocketAddress
@@ -30,8 +32,6 @@ import org.jboss.netty.util.CharsetUtil
 import scala.collection.mutable.ListBuffer
 import scala.io.BufferedSource
 import scalaj.collection.Implicits._
-import com.foursquare.geo.shapes.ShapefileS2Util
-import com.vividsolutions.jts.io.WKTWriter
 
 class QueryLogHttpHandler(
   queryMap: ConcurrentHashMap[ObjectId, (TBase[_, _], Long)],

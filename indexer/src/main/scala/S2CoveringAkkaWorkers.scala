@@ -2,21 +2,23 @@ package com.foursquare.twofishes
 
 import akka.actor.{Actor, ActorSystem, PoisonPill, Props}
 import akka.routing.{Broadcast, RoundRobinRouter}
-import com.mongodb.Bytes
 import com.foursquare.geo.shapes.ShapefileS2Util
-import com.foursquare.twofishes.util.{DurationUtils, GeometryCleanupUtils, GeometryUtils, RevGeoConstants, S2CoveringConstants}
-import com.foursquare.twofishes.mongo.{PolygonIndexDAO, RevGeoIndexDAO, RevGeoIndex, S2CoveringIndexDAO, S2CoveringIndex}
+import com.foursquare.twofishes.mongo.{PolygonIndexDAO, RevGeoIndex, RevGeoIndexDAO, S2CoveringIndex,
+    S2CoveringIndexDAO}
+import com.foursquare.twofishes.util.{DurationUtils, GeometryCleanupUtils, GeometryUtils, RevGeoConstants,
+    S2CoveringConstants}
 import com.google.common.geometry.S2CellId
+import com.mongodb.Bytes
 import com.mongodb.casbah.Imports._
 import com.twitter.ostrich.stats.Stats
-import com.vividsolutions.jts.geom.{Point => JTSPoint, Geometry}
+import com.vividsolutions.jts.geom.{Point => JTSPoint}
 import com.vividsolutions.jts.geom.prep.PreparedGeometryFactory
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter}
 import com.weiglewilczek.slf4s.Logging
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicInteger
 import org.bson.types.ObjectId
 import scalaj.collection.Implicits._
-import java.util.concurrent.atomic.AtomicInteger
 
 // ====================
 // ===== Messages =====

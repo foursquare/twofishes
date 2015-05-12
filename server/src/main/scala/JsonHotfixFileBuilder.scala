@@ -1,9 +1,9 @@
 // Copyright 2014 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes
 
-import java.io.{FileOutputStream, File}
-import org.apache.thrift.TSerializer
 import com.foursquare.common.thrift.json.TReadableJSONProtocol
+import java.io.{File, FileOutputStream}
+import org.apache.thrift.TSerializer
 
 // TODO(rahul): come up with better tooling for building hotfix files
 object JsonHotfixFileBuilder {

@@ -1,10 +1,10 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.importers.geonames
 
-import com.foursquare.twofishes.YahooWoeType
 import com.foursquare.twofishes.Identity._
-import com.foursquare.twofishes.util.Helpers._
+import com.foursquare.twofishes.YahooWoeType
 import com.foursquare.twofishes.util.{GeonamesNamespace, GeonamesZip, StoredFeatureId}
+import com.foursquare.twofishes.util.Helpers._
 import com.weiglewilczek.slf4s.Logging
 
 

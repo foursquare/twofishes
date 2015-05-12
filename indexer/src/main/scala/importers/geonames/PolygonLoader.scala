@@ -1,35 +1,34 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.importers.geonames
 
+import com.cybozu.labs.langdetect.DetectorFactory
+import com.foursquare.geo.country.CountryInfo
+import com.foursquare.geo.quadtree.CountryRevGeo
 import com.foursquare.geo.shapes.{FsqSimpleFeature, GeoJsonIterator, ShapeIterator, ShapefileIterator}
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes._
-import com.foursquare.geo.country.CountryInfo
-import com.foursquare.twofishes.mongo.{GeocodeStorageWriteService, PolygonIndex, PolygonIndexDAO, MongoGeocodeDAO, RevGeoIndexDAO}
-import com.foursquare.twofishes.util.{AdHocId, DurationUtils, FeatureNamespace, GeonamesNamespace, Helpers, NameNormalizer, StoredFeatureId}
+import com.foursquare.twofishes.mongo.{GeocodeStorageWriteService, MongoGeocodeDAO, PolygonIndex, PolygonIndexDAO,
+    RevGeoIndexDAO}
+import com.foursquare.twofishes.util.{AdHocId, DurationUtils, FeatureNamespace, GeonamesNamespace, Helpers,
+    NameNormalizer, StoredFeatureId}
 import com.foursquare.twofishes.util.Helpers._
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.ibm.icu.text.Transliterator
-import com.mongodb.Bytes
+import com.mongodb.{Bytes, MongoException}
 import com.mongodb.casbah.Imports._
-import com.mongodb.MongoException
-import com.rockymadden.stringmetric.phonetic.MetaphoneMetric
+import com.novus.salat.global._
 import com.rockymadden.stringmetric.similarity.JaroWinklerMetric
 import com.rockymadden.stringmetric.transform._
 import com.twitter.ostrich.stats.Stats
 import com.vividsolutions.jts.geom.Geometry
-import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTReader}
-import com.weiglewilczek.slf4s.Logging
-import java.nio.charset.{Charset, CharsetEncoder}
-import java.io.{File, FileWriter, OutputStreamWriter, Writer}
+import com.vividsolutions.jts.io.{WKBReader, WKBWriter}
+import java.io.{File, FileWriter, Writer}
+import java.nio.charset.Charset
 import org.bson.types.ObjectId
 import org.geotools.geojson.geom.GeometryJSON
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import scalaj.collection.Implicits._
-import com.foursquare.geo.quadtree.CountryRevGeo
-import com.cybozu.labs.langdetect.{Detector, DetectorFactory, Language}
-import com.novus.salat.global._
 
 
 object LanguageDetector {

@@ -1,11 +1,10 @@
 // Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
 package com.foursquare.twofishes.mongo
 
-import com.foursquare.twofishes.{GeocodeRecord, BoundingBox, DisplayName}
+import com.foursquare.twofishes.{BoundingBox, DisplayName, GeocodeRecord}
 import com.foursquare.twofishes.util.StoredFeatureId
 import com.mongodb.Bytes
 import com.mongodb.casbah.Imports._
-import com.mongodb.casbah.MongoConnection
 import com.novus.salat._
 import com.novus.salat.annotations._
 import com.novus.salat.dao._

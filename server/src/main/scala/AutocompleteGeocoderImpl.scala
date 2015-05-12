@@ -2,13 +2,13 @@
 package com.foursquare.twofishes
 
 import com.foursquare.geo.country.DependentCountryInfo
+import com.foursquare.twofishes.AutocompleteBias.UnknownWireValue
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.util.{GeoTools, GeonamesId, NameNormalizer, NameUtils, StoredFeatureId}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import com.foursquare.twofishes.util.NameUtils.BestNameMatch
 import scala.collection.mutable.HashMap
 import scalaj.collection.Implicits._
-import com.foursquare.twofishes.AutocompleteBias.UnknownWireValue
 
 trait GeocoderUtils {
   def req: GeocodeRequest

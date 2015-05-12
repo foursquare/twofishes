@@ -2,8 +2,8 @@
 package com.foursquare.twofishes.batch
 
 import com.foursquare.twofishes._
-import com.foursquare.twofishes.mongo.MongoGeocodeStorageService
 import com.foursquare.twofishes.importers.geonames._
+import com.foursquare.twofishes.mongo.MongoGeocodeStorageService
 import com.foursquare.twofishes.util.GeonamesNamespace
 import com.mongodb.casbah.Imports._
 import com.novus.salat._

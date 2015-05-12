@@ -4,8 +4,8 @@ package com.foursquare.twofishes
 import collection.JavaConverters._
 import com.foursquare.twofishes.importers.geonames._
 import com.foursquare.twofishes.mongo.{GeocodeStorageWriteService, NameIndex}
-import com.foursquare.twofishes.util.{GeonamesId, GeonamesNamespace, StoredFeatureId}
 import com.foursquare.twofishes.output.{FidMap, RevGeoIndexer}
+import com.foursquare.twofishes.util.{GeonamesId, GeonamesNamespace, StoredFeatureId}
 import com.vividsolutions.jts.geom.Geometry
 import com.vividsolutions.jts.io.{WKBReader, WKBWriter, WKTReader, WKTWriter}
 import org.bson.types.ObjectId

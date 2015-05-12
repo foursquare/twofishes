@@ -1,6 +1,6 @@
 package com.foursquare.twofishes.output
 
-import com.foursquare.twofishes.{SlugEntry, SlugEntryMap}
+import com.foursquare.twofishes.SlugEntryMap
 import com.foursquare.twofishes.mongo.MongoGeocodeDAO
 import com.foursquare.twofishes.util.DurationUtils
 import com.mongodb.Bytes
@@ -9,13 +9,12 @@ import com.novus.salat._
 import com.novus.salat.annotations._
 import com.novus.salat.dao._
 import com.novus.salat.global._
+import com.twitter.util.{Future, FuturePool}
 import java.io._
-import java.util.concurrent.CountDownLatch
+import java.util.concurrent.{CountDownLatch, Executors}
 import org.apache.hadoop.hbase.util.Bytes._
 import scala.collection.mutable.HashMap
 import scalaj.collection.Implicits._
-import com.twitter.util.{Future, FuturePool}
-import java.util.concurrent.Executors
 
 class OutputIndexes(
   basepath: String,

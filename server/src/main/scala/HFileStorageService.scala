@@ -14,7 +14,6 @@ import org.apache.hadoop.hbase.io.hfile.{HFile, HFileScanner, TwofishesFoursquar
 import org.apache.hadoop.hbase.util.Bytes._
 import org.apache.hadoop.io.BytesWritable
 import org.apache.thrift.TBaseHelper
-import org.bson.types.ObjectId
 import scalaj.collection.Implicits._
 
 class HFileStorageService(originalBasepath: String, shouldPreload: Boolean) extends GeocodeStorageReadService with Logging {

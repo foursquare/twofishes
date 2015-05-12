@@ -4,7 +4,7 @@ package com.foursquare.twofishes
 import com.foursquare.geo.shapes.ShapefileS2Util
 import com.foursquare.twofishes.util._
 import com.google.common.geometry.S2CellId
-import com.vividsolutions.jts.geom.{Point, Geometry}
+import com.vividsolutions.jts.geom.{Geometry, Point}
 import com.vividsolutions.jts.geom.prep.PreparedGeometryFactory
 import com.vividsolutions.jts.io.{WKBWriter, WKTReader}
 import com.weiglewilczek.slf4s.Logging

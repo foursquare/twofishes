@@ -4,7 +4,7 @@ package com.foursquare.twofishes
 import com.foursquare.geo.country.DependentCountryInfo
 import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.YahooWoeType._
-import com.foursquare.twofishes.util.{NameNormalizer, GeoTools}
+import com.foursquare.twofishes.util.{GeoTools, NameNormalizer}
 import com.foursquare.twofishes.util.Lists.Implicits._
 import scala.collection.mutable.ListBuffer
 import scalaj.collection.Implicits._

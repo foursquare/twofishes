@@ -1,6 +1,6 @@
 package com.foursquare.twofishes.mongo
 
-import com.foursquare.twofishes.{GeocodeRecord, DisplayName, BoundingBox}
+import com.foursquare.twofishes.{BoundingBox, DisplayName, GeocodeRecord}
 import com.foursquare.twofishes.util.StoredFeatureId
 import org.bson.types.ObjectId
 
