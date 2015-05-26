@@ -38,7 +38,7 @@ object NameNormalizer {
     n = spaceRegexp.replaceAllIn(n, " ")
     n = n.replace("\t", " ")
 
-    // remove and trailing spaces
+    // remove any trailing spaces
     n.trim
   }
 
