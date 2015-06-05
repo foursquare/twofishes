@@ -125,14 +125,16 @@ class PrefixIndexer(
         sortRecordsByNames(woeMatches.toList)
 
       val fids = new HashSet[StoredFeatureId]
-      roundRobinByCountryCode(prefSortedRecords).foreach(f => {
+      //roundRobinByCountryCode(prefSortedRecords).foreach(f => {
+      prefSortedRecords.foreach(f => {
         if (fids.size < PrefixIndexer.MaxFidsToStorePerPrefix) {
           fids.add(f.fidAsFeatureId)
         }
       })
 
       if (fids.size < PrefixIndexer.MaxFidsWithPreferredNamesBeforeConsideringNonPreferred) {
-        roundRobinByCountryCode(unprefSortedRecords).foreach(f => {
+        //roundRobinByCountryCode(unprefSortedRecords).foreach(f => {
+        unprefSortedRecords.foreach(f => {
           if (fids.size < PrefixIndexer.MaxFidsToStorePerPrefix) {
             fids.add(f.fidAsFeatureId)
           }
