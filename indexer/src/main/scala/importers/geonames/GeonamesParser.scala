@@ -361,7 +361,7 @@ class GeonamesParser(
   }
 
   def createNameIndexRecord(dn: DisplayName, fid: StoredFeatureId, record: Option[GeocodeRecord]) = {
-    val name = NameNormalizer.normalize(dn.name)
+    val name = NameNormalizer.normalize(dn.name).trim
     val cc: String = record.map(_.cc).getOrElse("")
     val pop: Int =
       record.flatMap(_.population).getOrElse(0) + record.flatMap(_.boost).getOrElse(0)
