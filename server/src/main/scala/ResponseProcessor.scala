@@ -75,7 +75,6 @@ class ResponseProcessor(
           }
         }
 
-
         // negative if a < b
         val isAliasA = isAliasName(a._2)
         val isAliasB = isAliasName(b._2)

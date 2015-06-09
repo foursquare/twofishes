@@ -889,7 +889,7 @@ class GeonamesParser(
 
           // repeat merge for names in name index
           if (merged) {
-            val normalizedName = NameNormalizer.normalize(name)
+            val normalizedName = NameNormalizer.normalize(name).trim
             val nameRecords = store.getNameIndexByIdLangAndName(featureId, lang, normalizedName).toList
             nameRecords match {
               case Nil => logger.error("display names and name index out of sync for id %s, lang %s, name %s".format(idString, lang, name))
