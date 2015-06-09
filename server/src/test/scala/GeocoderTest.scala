@@ -200,6 +200,15 @@ class GeocoderSpec extends Specification {
     store
   }
 
+  def addBrooklyns(store: MockGeocodeStorageReadService) = {
+    val usRecord = store.addGeocode("US", Nil, 1, 2, YahooWoeType.COUNTRY)
+    val brooklynTigerAdm2 = store.addGeocode("Brooklyn", List(usRecord),
+      40.63439, -73.95027, YahooWoeType.ADMIN2, population = Some(2504700))
+    val brooklynGeonamesTown = store.addGeocode("Brooklyn", List(usRecord),
+     40.6501, -73.94958, YahooWoeType.TOWN, population = Some(2300664))
+    store
+  }
+
   def addRegoPark(store: MockGeocodeStorageReadService) = {
     val usRecord = store.addGeocode("US", Nil, 1, 2, YahooWoeType.COUNTRY)
     val nyRecord = store.addGeocode("New York", List(usRecord), 3, 4, YahooWoeType.ADMIN1)
@@ -646,6 +655,20 @@ class GeocoderSpec extends Specification {
     val interp1 = r.interpretations()(0)
     interp1.feature.displayNameOrNull must_== "Soho, New York, US"
     interp1.feature.highlightedNameOrNull must_== "<b>Soho</b>, New York, US"
+  }
+
+  "duplicate features, different woetype" in {
+    val store = getStore
+    addBrooklyns(store)
+
+    val req = GeocodeRequest.newBuilder.query("Brooklyn")
+      .maxInterpretations(2)
+      .debug(1)
+      .result
+    val r = new GeocodeRequestDispatcher(store).geocode(req)
+    r.interpretations.size aka r.toString must_== 1
+    val interp1 = r.interpretations()(0)
+    interp1.feature.woeTypeOrNull must_== YahooWoeType.TOWN
   }
 
   "name highlighting handles length-altering normalization" in {
