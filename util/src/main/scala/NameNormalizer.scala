@@ -37,9 +37,8 @@ object NameNormalizer {
     // replace multiple spaces with one
     n = spaceRegexp.replaceAllIn(n, " ")
     n = n.replace("\t", " ")
-
-    // remove any trailing spaces
-    n.trim
+    
+    n
   }
 
   def deaccent(s: String): String = {
