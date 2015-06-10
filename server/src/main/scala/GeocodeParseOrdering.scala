@@ -250,6 +250,13 @@ object GeocodeParseOrdering {
     }
   }
 
+  val penalizeUnknowns: ScoringFunc = {
+    case args if (args.primaryFeature.feature.woeType == YahooWoeType.UNKNOWN) => {
+      // this will catch things like http://www.geonames.org/6269134/indian-subcontinent.html
+      ScorerResponseWithScoreAndMessage(-1000000000, "unknown features")
+    }
+  }
+
   val woeTypeOrderForFeature: ScoringFunc = {
     case args =>
       ScorerResponseWithScoreAndMessage(-1 * YahooWoeTypes.getOrdering(args.primaryFeature.feature.woeType), "prefer smaller interpretation")
@@ -284,6 +291,7 @@ object GeocodeParseOrdering {
     ScoringTerm(penalizeLongParses),
     ScoringTerm(usTieBreak),
     ScoringTerm(penalizeCounties),
+    ScoringTerm(penalizeUnknowns),
     ScoringTerm(woeTypeOrderForFeature),
     ScoringTerm(woeTypeOrderForParents)
   )
