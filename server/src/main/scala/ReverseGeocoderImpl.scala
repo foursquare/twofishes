@@ -18,10 +18,12 @@ object ReverseGeocodeParseOrdering {
       val servingFeature = featureMatch.fmatch
       val woeTypeInt = YahooWoeTypes.getOrdering(
         servingFeature.feature.woeTypeOption.getOrElse(YahooWoeType.UNKNOWN))
+      val featureIdOpt = StoredFeatureId.fromLong(servingFeature.feature.longId)
+      val namespaceInt = featureIdOpt.map(_.getOrdering).getOrElse(-1)
       val boost = servingFeature.scoringFeatures.boost
       val distance = p.scoringFeaturesOption.flatMap(s => Some(s.featureToRequestCenterDistance.toInt)).getOrElse(0)
       val coverage = p.scoringFeaturesOption.flatMap(s => Some(s.percentOfRequestCovered.toInt)).getOrElse(0)
-      (woeTypeInt, distance, -1*boost, -1*coverage)
+      (woeTypeInt, -1*namespaceInt, distance, -1*boost, -1*coverage)
     }
   }
 
