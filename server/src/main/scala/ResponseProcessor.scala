@@ -54,52 +54,53 @@ class ResponseProcessor(
       }})
     }
 
+    type ParsePair = (Parse[Sorted], Int)
     def isAliasName(index: Int): Boolean = {
       parseIndexToNameMatch(index).exists(_._1.flags.contains(
         FeatureNameFlags.ALIAS))
     }
 
-    type ParsePair = (Parse[Sorted], Int)
-    object DuplicateGeocodeParseOrdering extends Ordering[ParsePair] {
+    object MatchesWoeHint extends Ordering[ParsePair] {
       def compare(a: ParsePair, b: ParsePair): Int = {
-        val A_BETTER = 1
-        val B_BETTER = -1
-        if (req.woeHint.size > 0) {
+        if(req.woeHint.nonEmpty){
+          // false sorts before true so we flip
           val woeTypeOptA = a._1.headOption.flatMap(_.fmatch.feature.woeTypeOption)
           val woeTypeOptB = b._1.headOption.flatMap(_.fmatch.feature.woeTypeOption)
-          val matchesWoeHintA = woeTypeOptA.exists(req.woeHint.has)
-          val matchesWoeHintB = woeTypeOptB.exists(req.woeHint.has)
-          if (matchesWoeHintA != matchesWoeHintB) {
-            if (matchesWoeHintA) { return A_BETTER }
-            else { return B_BETTER }
-          }
-        }
+          -1 * woeTypeOptA.exists(req.woeHint.has).compare(woeTypeOptB.exists(req.woeHint.has))
+          } else 0
+      }
+    }
 
-        // negative if a < b
-        val isAliasA = isAliasName(a._2)
-        val isAliasB = isAliasName(b._2)
-        if (isAliasA != isAliasB) {
-          if (isAliasA) { return B_BETTER }
-          else { return A_BETTER }
-        }
+    object IsNotAlias extends Ordering[ParsePair] {        
+      def compare(a: ParsePair, b: ParsePair): Int =
+          // false sorts before true
+          isAliasName(a._2).compare(isAliasName(b._2))
+    }
 
-        val hasPolyA = a._1.headOption.exists(_.fmatch.scoringFeatures.hasPoly)
-        val hasPolyB = b._1.headOption.exists(_.fmatch.scoringFeatures.hasPoly)
+    object HasPoly extends Ordering[ParsePair] {        
+      def compare(a: ParsePair, b: ParsePair): Int =
+          // false sorts before true, so we flip
+          -1 * a._1.headOption.exists(_.fmatch.scoringFeatures.hasPoly).compare(
+            b._1.headOption.exists(_.fmatch.scoringFeatures.hasPoly)
+          )
+    }
 
-        if (hasPolyA != hasPolyB) {
-          if (hasPolyA) { return A_BETTER }
-          else { return B_BETTER }
-        }
+    object MoreSpecificWoeType extends Ordering[ParsePair] {
+      def compare(a: ParsePair, b: ParsePair): Int = {
+        val woeTypeOptA = a._1.headOption.flatMap(_.fmatch.feature.woeTypeOption).getOrElse(YahooWoeType.UNKNOWN)
+        val woeTypeOptB = b._1.headOption.flatMap(_.fmatch.feature.woeTypeOption).getOrElse(YahooWoeType.UNKNOWN)
+        YahooWoeTypes.compare(woeTypeOptA,woeTypeOptB)
+      }
+    }
 
-        // val namespaceQualityA = a._1.featureId.getOrdering
-        // val namespaceQualityB = b._1.featureId.getOrdering
-        // if (namespaceQualityA != namespaceQualityB) {
-        //   return namespaceQualityA - namespaceQualityB
-        // }
+    object DuplicateGeocodeParseOrdering extends Ordering[ParsePair] {
+      def compare(a: ParsePair, b: ParsePair): Int = {
+        val comparators = Vector(MatchesWoeHint, IsNotAlias, HasPoly, MoreSpecificWoeType)
 
-        // if a came before b, it was better
-        // a = 2, b = 3 ... b - a ... 3 - 2 ... 1
-        return b._2 - a._2
+        -1 * comparators
+            .map(_.compare(a,b))
+            .find(_ !=? 0) // find first non-tie
+            .getOrElse(b._2.compare(a._2)) // if all ties, just sort on original order
       }
     }
 
