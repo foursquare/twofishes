@@ -17,20 +17,25 @@ import org.apache.hadoop.io.{BytesWritable, MapFile}
 import org.apache.thrift.protocol.TCompactProtocol
 import scalaj.collection.Implicits._
 
-class WrappedByteMapWriter[K, V](writer: MapFile.Writer, index: Index[K, V]) {
-  def append(k: K, v: V) {
+trait WrappedWriter[K, V] {
+  def append(k: K, v: V)
+  def close()
+}
+
+class WrappedByteMapWriter[K, V](writer: MapFile.Writer, index: Index[K, V]) extends WrappedWriter[K, V] {
+  override def append(k: K, v: V) {
     writer.append(new BytesWritable(index.keySerde.toBytes(k)), new BytesWritable(index.valueSerde.toBytes(v)))
   }
 
-  def close() { writer.close() }
+  override def close() { writer.close() }
 }
 
-class WrappedHFileWriter[K, V](writer: HFile.Writer, index: Index[K, V]) {
-  def append(k: K, v: V) {
+class WrappedHFileWriter[K, V](writer: HFile.Writer, index: Index[K, V]) extends WrappedWriter[K, V] {
+  override def append(k: K, v: V) {
     writer.append(index.keySerde.toBytes(k), index.valueSerde.toBytes(v))
   }
 
-  def close() { writer.close() }
+  override def close() { writer.close() }
 }
 
 abstract class Indexer extends DurationUtils {

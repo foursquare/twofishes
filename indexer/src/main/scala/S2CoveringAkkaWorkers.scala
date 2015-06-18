@@ -91,6 +91,8 @@ class S2CoveringWorker extends Actor with DurationUtils with RevGeoConstants wit
         }
 
         logDuration("coverClippingForRevGeoIndex", "clipped and outputted cover for %d cells (%s) for revgeo index".format(cells.size, polyId)) {
+          val recordShape = geom.buffer(0)
+          val preparedRecordShape = PreparedGeometryFactory.prepare(recordShape)
           val records = cells.map((cellid: S2CellId) => {
             if (geom.isInstanceOf[JTSPoint]) {
               RevGeoIndex(
@@ -99,11 +101,15 @@ class S2CoveringWorker extends Actor with DurationUtils with RevGeoConstants wit
                 geom = Some(wkbWriter.write(geom))
               )
             } else {
-              val recordShape = geom.buffer(0)
-              val preparedRecordShape = PreparedGeometryFactory.prepare(recordShape)
               val s2shape = ShapefileS2Util.fullGeometryForCell(cellid)
               if (preparedRecordShape.contains(s2shape)) {
                 RevGeoIndex(cellid.id(), polyId, full = true, geom = None)
+              } else if (preparedRecordShape.within(s2shape)) {
+                RevGeoIndex(
+                  cellid.id(), polyId,
+                  full = false,
+                  geom = Some(wkbWriter.write(geom))
+                )
               } else {
                 val intersection = s2shape.intersection(recordShape)
                 val geomToIndex = if (intersection.getGeometryType == "GeometryCollection") {

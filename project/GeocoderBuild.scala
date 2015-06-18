@@ -43,6 +43,7 @@ object GeocoderBuild extends Build {
     resolvers += "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos/",
     resolvers += "codahale" at "http://repo.codahale.com",
     resolvers += "springsource" at "http://repo.springsource.org/libs-release-remote",
+    resolvers += "Concurrent Maven Repo" at "http://conjars.org/repo",
     resolvers += "sonatype maven repo" at "http://oss.sonatype.org/content/repositories/releases/",
 
     fork in run := true,
@@ -103,7 +104,7 @@ object GeocoderBuild extends Build {
           "org.slf4j" % "slf4j-api" % "1.6.1",
           "org.apache.avro" % "avro" % "1.7.1.cloudera.2",
           //"org.apache.hadoop" % "hadoop-client" % "2.0.0-cdh4.4.0" intransitive(),
-          "org.apache.hadoop" % "hadoop-common" % "2.0.0-cdh4.4.0" ,
+          "org.apache.hadoop" % "hadoop-common" % "2.0.0-cdh4.4.0",
           "org.apache.hbase" % "hbase" % "0.94.6-cdh4.4.0" intransitive(),
           "com.google.guava" % "guava" % "r09",
           "commons-cli" % "commons-cli" % "1.2",
@@ -177,7 +178,6 @@ object GeocoderBuild extends Build {
       settings = defaultSettings ++ assemblySettings ++ scoptSettings ++ specsSettings ++
         net.virtualvoid.sbt.graph.Plugin.graphSettings ++ Seq(
         baseDirectory in run := file("."),
-        mainClass in assembly := Some("com.foursquare.twofishes.importers.geonames.GeonamesParser"),
         initialCommands := """
         import com.foursquare.twofishes._
         import com.foursquare.twofishes.importers.geonames._
@@ -210,7 +210,10 @@ object GeocoderBuild extends Build {
           "com.rockymadden.stringmetric" %% "stringmetric-core" % "0.27.3",
           "org.json4s" %% "json4s-native" % "3.2.8",
           "org.json4s" %% "json4s-jackson" % "3.2.8",
-          "com.typesafe.akka" %% "akka-actor" % "2.3.1"
+          "com.typesafe.akka" %% "akka-actor" % "2.3.1",
+          // "backtype" % "cascading-thrift" % "0.3.0-SNAPSHOT",
+          "org.apache.hadoop" % "hadoop-core" % "2.0.0-mr1-cdh4.4.0",
+          "com.twitter" %% "scalding-core" % "0.12.0"
         ),
         mergeStrategy in assembly <<= (mergeStrategy in assembly) { mergeStrategy => {
           case entry => {

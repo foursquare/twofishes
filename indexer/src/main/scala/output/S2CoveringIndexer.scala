@@ -3,10 +3,14 @@ package com.foursquare.twofishes.output
 
 import com.foursquare.twofishes.Indexes
 import com.foursquare.twofishes.mongo.{MongoGeocodeDAO, S2CoveringIndex, S2CoveringIndexDAO}
+import com.foursquare.twofishes.util.S2CoveringConstants
 import com.mongodb.Bytes
 import com.mongodb.casbah.Imports._
 
-class S2CoveringIndexer(override val basepath: String, override val fidMap: FidMap) extends Indexer {
+class S2CoveringIndexer(
+  override val basepath: String,
+  override val fidMap: FidMap
+) extends Indexer with S2CoveringConstants {
   val index = Indexes.S2CoveringIndex
   override val outputs = Seq(index)
 
@@ -19,7 +23,14 @@ class S2CoveringIndexer(override val basepath: String, override val fidMap: FidM
         .sort(orderBy = MongoDBObject("_id" -> 1)) // sort by _id asc
     hasPolyCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
 
-    val writer = buildMapFileWriter(index)
+    val writer = buildMapFileWriter(
+      index,
+      Map(
+        "minS2Level" -> minS2LevelForS2Covering.toString,
+        "maxS2Level" -> maxS2LevelForS2Covering.toString,
+        "levelMod" -> defaultLevelModForS2Covering.toString
+      )
+    )
 
     var numUsedPolygon = 0
     val groupSize = 1000

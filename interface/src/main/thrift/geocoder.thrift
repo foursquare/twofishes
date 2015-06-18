@@ -116,6 +116,10 @@ struct FeatureName {
   4: optional string highlightedName
 }
 
+struct FeatureNames {
+  1: optional list<FeatureName> names
+}
+
 struct FeatureGeometry {
   1: GeocodePoint center
   2: optional GeocodeBoundingBox bounds
@@ -218,6 +222,7 @@ struct GeocodeServingFeature {
   2: ScoringFeatures scoringFeatures
   3: GeocodeFeature feature
   4: optional list<GeocodeFeature> parents
+  6: optional list<string> slugs
 
   1: optional string DEPRECATED_id
 }

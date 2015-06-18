@@ -60,13 +60,10 @@ case class GeocodeRecord(
   hasPoly: Boolean = false,
   var attributes: Option[Array[Byte]] = None,
   extraRelations: List[Long] = Nil,
-  var loc: GeoJsonPoint = GeoJsonPoint.NilPoint,
   polyId: ObjectId = GeocodeRecord.dummyOid,
   ids: List[Long] = Nil,
   polygonSource: Option[String] = None
 ) extends Ordered[GeocodeRecord] {
-  // gross that we overwrite this
-  loc = GeoJsonPoint(lat, lng)
 
   val factory = new TCompactProtocol.Factory()
   val serializer = new TSerializer(factory)
