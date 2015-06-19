@@ -97,9 +97,12 @@ class ResponseProcessor(
         //   return namespaceQualityA - namespaceQualityB
         // }
 
-        // if a came before b, it was better
-        // a = 2, b = 3 ... b - a ... 3 - 2 ... 1
-        return b._2 - a._2
+        val woeTypeOptA = a._1.headOption.flatMap(_.fmatch.feature.woeTypeOption).getOrElse(YahooWoeType.UNKNOWN)
+        val woeTypeOptB = b._1.headOption.flatMap(_.fmatch.feature.woeTypeOption).getOrElse(YahooWoeType.UNKNOWN)
+        YahooWoeTypes.compare(woeTypeOptA,woeTypeOptB) match {
+          case 0 => b._2.compare(a._2)
+          case i => -1 * i
+        }
       }
     }
 
