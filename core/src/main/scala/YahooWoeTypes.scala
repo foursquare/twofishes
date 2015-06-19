@@ -15,4 +15,11 @@ object YahooWoeTypes {
   val isAdminWoeTypes = Set(ADMIN3, ADMIN2, ADMIN1, COUNTRY)
   def isAdminWoeType(woeType: YahooWoeType): Boolean =
     isAdminWoeTypes.contains(woeType)
+
+  def compare(woeTypeA: YahooWoeType, woeTypeB: YahooWoeType): Int = {
+    val A = orderMap.get(woeTypeA).getOrElse(Int.MaxValue)
+    val B = orderMap.get(woeTypeB).getOrElse(Int.MaxValue)
+    (A.compare(B))
+  }
+
 }
