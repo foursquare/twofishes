@@ -80,6 +80,7 @@ case class GeonamesId(override val namespaceSpecificId: Long) extends StoredFeat
 case class MaponicsId(override val namespaceSpecificId: Long) extends StoredFeatureId(MaponicsNamespace)
 case class OsmId(override val namespaceSpecificId: Long) extends StoredFeatureId(OsmNamespace)
 case class GettyId(override val namespaceSpecificId: Long) extends StoredFeatureId(GettyNamespace)
+case class FoursquareNamespaceId(override val namespaceSpecificId: Long) extends StoredFeatureId(FoursquareNamespace)
 
 case class GeonamesZip(override val namespaceSpecificId: Long) extends StoredFeatureId(GeonamesZipNamespace) {
   def this(country: String, postalcode: String) = this(GeonamesZip.convertToLong(country, postalcode))
@@ -209,6 +210,7 @@ object StoredFeatureId {
     case WoeIdNamespace => WoeId(id)
     case OsmNamespace => OsmId(id)
     case GettyNamespace => GettyId(id)
+    case FoursquareNamespace => FoursquareNamespaceId(id)
   }
 
   private def fromNamespaceAndId(n: String, id: String): Option[StoredFeatureId] = {
