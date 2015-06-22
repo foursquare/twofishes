@@ -10,6 +10,9 @@ object JsonHotfixFileBuilder {
   // build individual objects here and run build-hotfix-file.py to produce json file
   // DO NOT push commits with changes to this list back to twofishes
   val edits: List[GeocodeServingFeatureEdit] = List(
+    GeocodeServingFeatureEdit.newBuilder
+      .editType(EditType.Add)
+      .longId()
   )
 
   val editsWrapper = GeocodeServingFeatureEdits(edits)
