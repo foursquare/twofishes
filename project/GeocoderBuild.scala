@@ -1,4 +1,3 @@
-import com.foursquare.spindle.codegen.plugin.ThriftCodegenPlugin.thriftSettings
 import net.virtualvoid.sbt.graph.Plugin.graphSettings
 import sbt.Keys._
 import sbt._
@@ -10,7 +9,8 @@ object GeocoderBuild extends Build {
     organization := "com.foursquare.twofishes",
     name := "twofishes",
     version      := "0.90.0",
-    scalaVersion := "2.10.2",
+    scalaVersion := "2.11.4",
+    crossScalaVersions := Seq("2.10.2", "2.11.4"),
     javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
     javacOptions in doc := Seq("-source", "1.6")
   )
@@ -23,11 +23,13 @@ object GeocoderBuild extends Build {
       libraryDependencies <<= (scalaVersion, libraryDependencies) {(version, dependencies) =>
         val specs2 =
           if (version.startsWith("2.10"))
-          "org.specs2" %% "specs2" % "1.14" % "test"
-        else if (version == "2.9.3")
-          "org.specs2" %% "specs2" % "1.12.4.1" % "test"
-        else
-          "org.specs2" %% "specs2" % "1.12.3" % "test"
+            "org.specs2" %% "specs2" % "1.14" % "test"
+          else if (version == "2.9.3")
+            "org.specs2" %% "specs2" % "1.12.4.1" % "test"
+          else if (version.startsWith("2.11"))
+            "org.specs2" %% "specs2-core" % "2.4.17" % "test"
+          else
+            "org.specs2" %% "specs2" % "1.12.3" % "test"
         dependencies :+ specs2
       }
   )
@@ -128,7 +130,7 @@ object GeocoderBuild extends Build {
     ) dependsOn(interface, util, countryinfo)
 
   lazy val interface = Project(id = "interface",
-      settings = defaultSettings ++ thriftSettings ++ Seq(
+      settings = defaultSettings ++ Seq(
         publishArtifact := true,
         libraryDependencies ++= Seq(
           "org.slf4j" % "slf4j-api" % "1.6.1"
