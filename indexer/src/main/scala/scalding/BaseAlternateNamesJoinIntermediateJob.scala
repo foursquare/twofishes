@@ -297,7 +297,7 @@ class BaseAlternateNamesJoinIntermediateJob(
           // merge flags of dupes in same language
           finalNames  = finalNames.groupBy(n => (n.lang, n.name)).toSeq
             .map({case ((lang, name), featureNames) => {
-              val combinedFlags = featureNames.foldLeft(Seq.empty[FeatureNameFlags])((f, fn) => f ++ fn.flags).distinct
+              val combinedFlags = featureNames.map(_.flags).flatten.distinct
               // If we collapsed multiple names, and not all of them had ALIAS,
               // then we should strip off that flag because some other entry told
               // us it didn't deserve to be ranked down

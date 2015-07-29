@@ -116,9 +116,11 @@ class BasePrefixIndexBuildIntermediateJob(
 
       val (prefSortedRecords, unprefSortedRecords) = sortRecordsByNames(woeMatches)
 
-      val preferredIds = roundRobinByCountryCode(prefSortedRecords).map(_.id).distinct.take(PrefixIndexer.MaxFidsToStorePerPrefix)
+      //val preferredIds = roundRobinByCountryCode(prefSortedRecords).map(_.id).distinct.take(PrefixIndexer.MaxFidsToStorePerPrefix)
+      val preferredIds = prefSortedRecords.map(_.id).distinct.take(PrefixIndexer.MaxFidsToStorePerPrefix)
       val nonPreferredIds = if (preferredIds.size < PrefixIndexer.MaxFidsWithPreferredNamesBeforeConsideringNonPreferred) {
-        roundRobinByCountryCode(unprefSortedRecords).map(_.id).distinct.take(PrefixIndexer.MaxFidsToStorePerPrefix - preferredIds.size)
+        //roundRobinByCountryCode(unprefSortedRecords).map(_.id).distinct.take(PrefixIndexer.MaxFidsToStorePerPrefix - preferredIds.size)
+        unprefSortedRecords.map(_.id).distinct.take(PrefixIndexer.MaxFidsToStorePerPrefix - preferredIds.size)
       } else {
         Nil
       }

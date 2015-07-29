@@ -50,7 +50,7 @@ class TwofishesJob(name: String, args: Args) extends Job(args) {
       (for {
         fileName <- listFilesWrapper(fs, path, spec.recursive)
         // either there is no filter or the filename matches it
-        if !filterRegex.exists(r => r.findFirstIn(fileName).isEmpty)
+        if filterRegex.forall(r => r.findFirstIn(fileName).nonEmpty)
       } yield fileName).toSeq
     } else {
       Nil

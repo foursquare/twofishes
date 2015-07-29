@@ -121,7 +121,7 @@ object PolygonDataFlattener extends Logging {
         if value.nonEmpty
       } yield {
         // if value already contains ':' it was human-readable to begin with
-        if (value.indexOf(':') != -1) {
+        if (value.contains(":")) {
           value
         } else {
           "%s:%s".format(namespace.name, value)
@@ -139,16 +139,15 @@ object PolygonDataFlattener extends Logging {
         Nil
       }
       
-      val (names, woeTypes) = if (fids.isEmpty && polygonMappingConfig.isDefined) {
-        (getFixedNames(polygonMappingConfig.get, feature), polygonMappingConfig.get.getWoeTypes)
-      } else {
-        (Nil, Nil)
+      val (names, woeTypes) = (fids, polygonMappingConfig) match {
+        case (Nil, Some(polygonMatchingConfig)) => (getFixedNames(polygonMatchingConfig, feature), polygonMatchingConfig.getWoeTypes)
+        case _ => (Nil, Nil)
       }
       
       outputWriter.write("%s\t%s\t%s\t%s\t%s\t%s\n".format(
         polygonId.toString,
         source,
-        fids.map(_.longId.toString).mkString(","),
+        fids.map(_.longId).mkString(","),
         names.map(dn => "%s:%s".format(dn.lang, dn.name)).mkString("|"),
         woeTypes.map(list => list.map(_.name).mkString(",")).mkString("|"),
         geomBase64String
