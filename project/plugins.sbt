@@ -4,7 +4,7 @@ addSbtPlugin("com.foursquare" % "spindle-codegen-plugin" % "3.0.0-M4")
 
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.7.4")
 
-resolvers += Resolver.url("sbt-plugin-releases",
-  new URL("http://scalasbt.artifactoryonline.com/scalasbt/sbt-plugin-releases/"))(Resolver.ivyStylePatterns)
+resolvers += Resolver.url("bintray-sbt-plugins",
+  new URL("http://dl.bintray.com/sbt/sbt-plugin-releases"))(Resolver.ivyStylePatterns)
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-pgp" % "0.8.3")
