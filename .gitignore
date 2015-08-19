@@ -7,6 +7,7 @@ project*/plugins/project/*
 project*/plugins/lib_managed/*
 project*/plugins/src_managed/*
 project*/plugins/target/*
+project/sbt-launch*.jar
 target
 log/*
 *~
