@@ -25,6 +25,7 @@ parser.add_option("--hotfix_basepath", dest="hotfix", default="", type='string',
   help="path to hotfixes")
 parser.add_option("--enable_private_endpoints", dest="enablePrivate", default=False, action='store_true',
   help="enable private endpoints on server")
+parser.add_option("--vm_map_count", dest="vm_map_count", type='int', help="port")
 
 
 (options, args) = parser.parse_args()
@@ -48,6 +49,9 @@ if options.rebel:
 args = ' --preload %s --warmup %s --enable_private_endpoints %s ' % (options.preload, options.warmup, options.enablePrivate)
 if (len(options.hotfix) > 0):
   args += '--hotfix_basepath %s ' % options.hotfix
+
+if options.vm_map_count:
+  args += '--vm_map_count ' + str(options.vm_map_count)
 
 if options.console:
   target = 'console'

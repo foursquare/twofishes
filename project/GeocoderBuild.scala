@@ -16,7 +16,7 @@ object GeocoderBuild extends Build {
   )
 
   lazy val scoptSettings = Seq(
-    libraryDependencies += "com.github.scopt" %% "scopt" % "3.1.0"
+    libraryDependencies += "com.github.scopt" %% "scopt" % "3.2.0"
   )
 
   lazy val specsSettings = Seq(
