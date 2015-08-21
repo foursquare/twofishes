@@ -12,7 +12,7 @@ There are two json interfaces:
     2. /search/reverseGeocode
     3. /search/bulkReverseGeocode
     4. /search/bulkSlugLookup
-    
+
 And there are two debug interfaces
 
 1. /search/geocoder.html - implements geocoding, reverse geocoding and id/slug lookup
@@ -20,7 +20,16 @@ And there are two debug interfaces
 (I keep meaning to add a clickable reverse geocode debugger, but have yet to do so.)
 
 And, there is the thrift interface. Almost all of the descriptions below apply to the thrift requests as well.
-    
+
+When booting up the Geocoder server, note that the JSON API is accessed
+from `$HOSTNAME:$API_PORT` where `$API_PORT` tends to be `1 + $PORT` from
+running: `./serve.py $HFILE_DIR -p $PORT`. For example, if your command
+was `./serve.py $HFILE_DIR -p 6000`, it'll probably be on port 6001.
+Verify this by looking for where http/json gets initialized in the log
+file. For example, in the case of $PORT = 6000 above:
+
+`[info] 18:20:40.103 [main] INFO  c.f.twofishes.GeocodeFinagleServer$ - serving http/json on port 6001`
+
 ## The Combined & Debug Interfaces
 Almost every parameter in [GeocodeRequest](https://github.com/foursquare/twofishes/blob/master/interface/src/main/thrift/geocoder.thrift#L243) is implemented as a GET parameter.
 
@@ -54,7 +63,7 @@ These queries also work as parameters to the debug interface either after the ? 
     - REVGEO_COVERAGE - for ll+radius revgeo queries, turns on computing the percentage overlap between the circle query and the feature polygon. slow-ish
     - DISPLAY_NAME -  controls if we should fetch parents to construct a string like "New York, New York, US" for legacy reasons, this is automatically turned on for geocode queries for now. It's mainly here because reverse geocode clients often don't need it
 - radius=[radius in meters as an integer] -- defaults to 0 (point reverse geocode). If specified along with ll, will return all polygons touched by the circle defined by ll+radius. In strict geocoding mode, used for determining containment.
-    
+
 ### Geocoder Only Paramters
 - autocomplete=[true/false] -- Defaults to false, whether or not to return partial-  matches as if powering an autocompleter
 - autocompleteBias=[AutocompleteBias integer or enum name] - i.e. autocompleteBias=BALANCED - influences how locally (relative to ll hint, if specified) and globally relevant results are mixed in autocomplete geocoding mode. Defaults to BALANCED.
@@ -75,7 +84,7 @@ These queries also work as parameters to the debug interface either after the ? 
 
 
 ## The Thrift-JSON interface
-The endpoints rooted at /search take via GET or POST a json representation of the thrift request that they expect. 
+The endpoints rooted at /search take via GET or POST a json representation of the thrift request that they expect.
 
 To construct one of these, look at the thrift definition and make a json dict that looks roughly the same.
 
@@ -91,13 +100,9 @@ The only differences are that for BulkSlugLookup and BulkReverseGeocode, you hav
 
 For single reverse geocodes, you must use the reverseGeocode endpoint, even though it shares its request definition with the geocode endpoint.
 
-You can talk to the thrift interface via finagle-thrift or vanilla (apache) thrift. See [Finagle Docs](https://github.com/twitter/finagle#Simple%20Client%20and%20Server%20for%20Thrift) for accessing the finagle-thrift implementation via scala. 
+You can talk to the thrift interface via finagle-thrift or vanilla (apache) thrift. See [Finagle Docs](https://github.com/twitter/finagle#Simple%20Client%20and%20Server%20for%20Thrift) for accessing the finagle-thrift implementation via scala.
 
 See the [Apache Thrift Docs for Java](http://thrift.apache.org/tutorial/java/), or [tkang's python-thrift blogpost](http://tkang.blogspot.com/2010/07/thrift-server-client-in-python.html) or google around for how to write a thrift client in your langauge of choice.
 
 ## Next Time
 Documenting the twofishes response!
-
-
-
-    
