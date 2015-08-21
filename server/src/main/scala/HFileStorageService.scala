@@ -205,7 +205,9 @@ class MapFileInput[K, V](basepath: String, index: Index[K, V], shouldPreload: Bo
   }
 }
 
-class NameIndexHFileInput(basepath: String, shouldPreload: Boolean) extends Logging {
+class TooManyResultsException(query: String, number: Long, message: String) extends Exception(message)
+
+class NameIndexHFileInput(basepath: String, shouldPreload: Boolean) {
   val nameIndex = new HFileInput(basepath, Indexes.NameIndex, shouldPreload)
   val prefixMapOpt = PrefixIndexMapFileInput.readInput(basepath, shouldPreload)
 
@@ -225,14 +227,13 @@ class NameIndexHFileInput(basepath: String, shouldPreload: Boolean) extends Logg
     val resultSize = seq.size
     val limit = 2500
     if (resultSize > limit) {
-      logger.warn("Too many matches for %s: %s".format(name, resultSize))
-      seq.take(limit)
+      val message = "Too many matches for %s: %s".format(name, resultSize)
+      throw new TooManyResultsException(name, resultSize, message)
     } else {
       seq
     }
   }
 }
-
 
 object PrefixIndexMapFileInput {
   def readInput(basepath: String, shouldPreload: Boolean) = {
