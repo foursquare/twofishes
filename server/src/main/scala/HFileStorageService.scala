@@ -205,7 +205,7 @@ class MapFileInput[K, V](basepath: String, index: Index[K, V], shouldPreload: Bo
   }
 }
 
-class NameIndexHFileInput(basepath: String, shouldPreload: Boolean) {
+class NameIndexHFileInput(basepath: String, shouldPreload: Boolean) extends Logging {
   val nameIndex = new HFileInput(basepath, Indexes.NameIndex, shouldPreload)
   val prefixMapOpt = PrefixIndexMapFileInput.readInput(basepath, shouldPreload)
 
@@ -214,16 +214,22 @@ class NameIndexHFileInput(basepath: String, shouldPreload: Boolean) {
   }
 
   def getPrefix(name: String): Seq[StoredFeatureId] = {
-    val seq = prefixMapOpt match {
-      case Some(prefixMap) if (name.length <= prefixMap.maxPrefixLength) =>
-        prefixMap.get(name)
-      case _  =>
-        nameIndex.lookupPrefix(name).flatten
+    val seq =
+      prefixMapOpt match {
+        case Some(prefixMap) if (name.length <= prefixMap.maxPrefixLength) =>
+          prefixMap.get(name)
+        case _ =>
+          nameIndex.lookupPrefix(name).flatten
+      }
+
+    val resultSize = seq.size
+    val limit = 2500
+    if (resultSize > limit) {
+      logger.warn("Too many matches for %s: %s".format(name, resultSize))
+      seq.take(limit)
+    } else {
+      seq
     }
-    if (seq.size > 2500) {
-      throw new Exception("too many matches for %s: %s".format(name, seq.size))
-    }
-    seq
   }
 }
 
