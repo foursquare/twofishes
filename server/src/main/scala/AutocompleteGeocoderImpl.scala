@@ -269,7 +269,14 @@ class AutocompleteGeocoderImpl(
   def generateAutoParses(tokens: List[String], spaceAtEnd: Boolean): SortedParseSeq = {
     // The getSorted is redundant here because the isValid function for autocomplete
     // parses enforces smallest-to-largest ordering, but we can't prove that to the compiler
-    generateAutoParsesHelper(tokens, 0, Nil, spaceAtEnd).map(_.getSorted)
+    try {
+      generateAutoParsesHelper(tokens, 0, Nil, spaceAtEnd).map(_.getSorted)
+    } catch {
+      case e: TooManyResultsException => {
+        logger.ifDebug(e.getMessage)
+        Vector.empty
+      }
+    }
   }
 
   val maxInterpretations = {
