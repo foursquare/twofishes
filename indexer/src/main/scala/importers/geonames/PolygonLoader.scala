@@ -111,7 +111,11 @@ class PolygonLoader(
 
   val matchExtension = ".match.tsv"
 
-  val coverOptions = CoverOptions(parserConfig.outputS2Covering, parserConfig.outputRevgeo)
+  val coverOptions = CoverOptions(
+    forS2CoveringIndex = parserConfig.outputS2Covering,
+    forS2InteriorIndex = parserConfig.outputS2Interior,
+    parserConfig.outputRevgeo
+  )
 
   def getMatchingForFile(
     f: File,

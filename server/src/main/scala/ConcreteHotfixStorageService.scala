@@ -32,6 +32,7 @@ class ConcreteHotfixStorageService(
   var featureIndex = Map.empty[Long, GeocodeServingFeature]
   var polygonIndex = Map.empty[Long, Geometry]
   var s2CoveringIndex = Map.empty[Long, Seq[Long]]
+  var s2InteriorIndex = Map.empty[Long, Seq[Long]]
   var s2Index = Map.empty[Long, Seq[CellGeometry]]
 
   var newSlugIndex = Map.empty[String, Long]
@@ -355,6 +356,14 @@ class ConcreteHotfixStorageService(
               ).toList.map(_.id())
               s2CoveringIndex = s2CoveringIndex + (edit.longId -> s2Covering)
 
+              val s2Interior = GeometryUtils.s2PolygonCovering(
+                geometry, minS2LevelForS2Covering, maxS2LevelForS2Covering,
+                levelMod = Some(defaultLevelModForS2Covering),
+                maxCellsHintWhichMightBeIgnored = Some(defaultMaxCellsHintForS2Covering),
+                interior = true
+              ).toList.map(_.id())
+              s2InteriorIndex = s2InteriorIndex + (edit.longId -> s2Interior)
+
               val s2CoveringForRevGeo = GeometryUtils.s2PolygonCovering(
                 geometry, minS2LevelForRevGeo, maxS2LevelForRevGeo,
                 levelMod = Some(defaultLevelModForRevGeo),
@@ -425,6 +434,7 @@ class ConcreteHotfixStorageService(
   def getCellGeometriesByS2CellId(id: Long): Seq[CellGeometry] = s2Index.getOrElse(id, Nil)
   def getPolygonByFeatureId(id: StoredFeatureId): Option[Geometry] = polygonIndex.get(id.longId)
   def getS2CoveringByFeatureId(id: StoredFeatureId): Option[Seq[Long]] = s2CoveringIndex.get(id.longId)
+  def getS2InteriorByFeatureId(id: StoredFeatureId): Option[Seq[Long]] = s2InteriorIndex.get(id.longId)
 
   def resolveNewSlugToLongId(slug: String): Option[Long] = newSlugIndex.get(slug)
 
@@ -443,6 +453,7 @@ class ConcreteHotfixStorageService(
     featureIndex = Map.empty[Long, GeocodeServingFeature]
     polygonIndex = Map.empty[Long, Geometry]
     s2CoveringIndex = Map.empty[Long, Seq[Long]]
+    s2InteriorIndex = Map.empty[Long, Seq[Long]]
     s2Index = Map.empty[Long, Seq[CellGeometry]]
 
     newSlugIndex = Map.empty[String, Long]

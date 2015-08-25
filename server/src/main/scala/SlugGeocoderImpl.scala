@@ -59,8 +59,18 @@ class BulkSlugLookupImpl(
       Map.empty
     }
 
-    val s2CoveringMap: Map[StoredFeatureId, Seq[Long]] = if (GeocodeRequestUtils.responseIncludes(params, ResponseIncludes.S2_COVERING)) {
+    val s2CoveringMap: Map[StoredFeatureId, Seq[Long]] = if (
+      GeocodeRequestUtils.responseIncludes(params, ResponseIncludes.S2_COVERING)
+    ) {
       store.getS2CoveringByFeatureIds(featureMap.values.flatMap(f => StoredFeatureId.fromLong(f.longId)).toSeq)
+    } else {
+      Map.empty
+    }
+
+    val s2InteriorMap: Map[StoredFeatureId, Seq[Long]] = if (
+      GeocodeRequestUtils.responseIncludes(params, ResponseIncludes.S2_INTERIOR)
+    ) {
+      store.getS2InteriorByFeatureIds(featureMap.values.flatMap(f => StoredFeatureId.fromLong(f.longId)).toSeq)
     } else {
       Map.empty
     }
@@ -69,7 +79,7 @@ class BulkSlugLookupImpl(
       Parse[Sorted](Seq(FeatureMatch(0, 0, "", servingFeature)))).toSeq
 
     val interps: Seq[GeocodeInterpretation] = responseProcessor.hydrateParses(parses,
-      parseParams, polygonMap, s2CoveringMap, fixAmbiguousNames = true, dedupByMatchedName = false)
+      parseParams, polygonMap, s2CoveringMap, s2InteriorMap, fixAmbiguousNames = true, dedupByMatchedName = false)
 
     val (interpIdxs, retInterps, parents) = makeBulkReply(
       req.slugs,

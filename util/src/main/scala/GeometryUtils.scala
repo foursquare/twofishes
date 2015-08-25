@@ -16,6 +16,8 @@ trait RevGeoConstants {
 trait S2CoveringConstants {
   val minS2LevelForS2Covering = 4
   val maxS2LevelForS2Covering = 20
+  val minS2LevelForS2Interior = minS2LevelForS2Covering
+  val maxS2LevelForS2Interior = 18
   val defaultLevelModForS2Covering = 1
   val defaultMaxCellsHintForS2Covering = 50
 }
@@ -108,11 +110,13 @@ object GeometryUtils extends RevGeoConstants {
     builder.assemblePolygon()
   }
 
-  def s2PolygonCovering(geomCollection: Geometry,
+  def s2PolygonCovering(
+    geomCollection: Geometry,
     minS2Level: Int = minS2LevelForRevGeo,
     maxS2Level: Int = maxS2LevelForRevGeo,
     maxCellsHintWhichMightBeIgnored: Option[Int] = None,
-    levelMod: Option[Int] = Some(defaultLevelModForRevGeo)
+    levelMod: Option[Int] = Some(defaultLevelModForRevGeo),
+    interior: Boolean = false
   ): Seq[S2CellId] = {
     if (geomCollection.isInstanceOf[Point]) {
       val point = geomCollection.asInstanceOf[Point]
@@ -129,7 +133,11 @@ object GeometryUtils extends RevGeoConstants {
       maxCellsHintWhichMightBeIgnored.foreach(coverer.setMaxCells)
       levelMod.foreach(m => coverer.setLevelMod(m))
       val coveringCells = new java.util.ArrayList[com.google.common.geometry.S2CellId]
-      coverer.getCovering(s2poly, coveringCells)
+      if (interior) {
+        coverer.getInteriorCovering(s2poly, coveringCells)
+      } else {
+        coverer.getCovering(s2poly, coveringCells)
+      }
       coveringCells.asScala.toSeq
     }
   }

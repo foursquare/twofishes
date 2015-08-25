@@ -100,6 +100,7 @@ object GeonamesParser extends DurationUtils {
       PolygonIndexDAO.collection.drop()
       RevGeoIndexDAO.collection.drop()
       S2CoveringIndexDAO.collection.drop()
+      S2InteriorIndexDAO.collection.drop()
       parser.loadIntoMongo()
       writeIndexes(parser.s2CoveringLatch)
     } else {
@@ -120,6 +121,7 @@ object GeonamesParser extends DurationUtils {
       PolygonIndexDAO.makeIndexes()
       RevGeoIndexDAO.makeIndexes()
       S2CoveringIndexDAO.makeIndexes()
+      S2InteriorIndexDAO.makeIndexes()
     }
   }
 
@@ -138,7 +140,8 @@ object GeonamesParser extends DurationUtils {
       config.outputPrefixIndex,
       GeonamesParser.slugIndexer.slugEntryMap,
       config.outputRevgeo,
-      config.outputS2Covering
+      config.outputS2Covering,
+      config.outputS2Interior
     )
     outputter.buildIndexes(s2CoveringLatch)
   }
@@ -225,7 +228,9 @@ class GeonamesParser(
 
   val system = ActorSystem("S2CoveringSystem")
 
-  val (s2CoveringMaster, s2CoveringLatch) = if (config != null && (config.outputRevgeo || config.outputS2Covering)) {
+  val (s2CoveringMaster, s2CoveringLatch) = if (
+    config != null && (config.outputRevgeo || config.outputS2Covering || config.outputS2Interior)
+  ) {
     val latch = new CountDownLatch(1)
     (Some(system.actorOf(Props(new S2CoveringMaster(latch)), name = "master")), Some(latch))
    } else {

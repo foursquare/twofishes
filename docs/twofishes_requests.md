@@ -60,6 +60,7 @@ These queries also work as parameters to the debug interface either after the ? 
     - WKB_GEOMETRY_SIMPLIFIED - include simplified polygon boundary geometry in WKB format if available
     - WKT_GEOMETRY_SIMPLIFIED - include simplified polygon boundary geometry in WKT format if available
     - S2_COVERING - include S2 covering of polygon boundary as a list of S2 cell ids if available
+    - S2_INTERIOR - include S2 interior covering of polygon boundary as a list of S2 cell ids if available
     - REVGEO_COVERAGE - for ll+radius revgeo queries, turns on computing the percentage overlap between the circle query and the feature polygon. slow-ish
     - DISPLAY_NAME -  controls if we should fetch parents to construct a string like "New York, New York, US" for legacy reasons, this is automatically turned on for geocode queries for now. It's mainly here because reverse geocode clients often don't need it
 - radius=[radius in meters as an integer] -- defaults to 0 (point reverse geocode). If specified along with ll, will return all polygons touched by the circle defined by ll+radius. In strict geocoding mode, used for determining containment.

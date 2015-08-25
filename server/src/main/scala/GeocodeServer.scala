@@ -155,7 +155,11 @@ class GeocodeServerImpl(
           logger.info("finished %d queries".format(index * batchSize))
         }
         val work = Future.collect(batch.map { line => queryFuturePool {
-          new GeocodeRequestDispatcher(store).geocode(GeocodeRequest.newBuilder.responseIncludes(Vector(ResponseIncludes.S2_COVERING, ResponseIncludes.WKB_GEOMETRY)).query(line).result)
+          new GeocodeRequestDispatcher(store).geocode(
+            GeocodeRequest.newBuilder.responseIncludes(
+              Vector(ResponseIncludes.S2_COVERING, ResponseIncludes.S2_INTERIOR, ResponseIncludes.WKB_GEOMETRY)
+            ).query(line).result
+          )
           new GeocodeRequestDispatcher(store).geocode(GeocodeRequest.newBuilder.query(line).autocomplete(true).result)
         }})
         Await.result(work)
@@ -319,6 +323,7 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
         fixedJson = fixLongArray("parentIds", fixedJson)
         fixedJson = fixLongArray("longIds", fixedJson)
         fixedJson = fixLongArray("s2Covering", fixedJson)
+        fixedJson = fixLongArray("s2Interior", fixedJson)
 
         callback.map(cb => {
           val sb = new StringBuilder(fixedJson.size + cb.size + 10)

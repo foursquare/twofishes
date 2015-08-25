@@ -24,6 +24,7 @@ class HFileStorageService(originalBasepath: String, shouldPreload: Boolean) exte
   val oidMap = new GeocodeRecordMapFileInput(basepath, shouldPreload)
   val geomMapOpt = GeometryMapFileInput.readInput(basepath, shouldPreload)
   val s2CoveringMapOpt = S2CoveringMapFileInput.readInput(basepath, shouldPreload)
+  val s2InteriorMapOpt = S2InteriorMapFileInput.readInput(basepath, shouldPreload)
   val s2mapOpt = ReverseGeocodeMapFileInput.readInput(basepath, shouldPreload)
   val slugFidMap = SlugFidMapFileInput.readInput(basepath, shouldPreload)
 
@@ -99,6 +100,19 @@ class HFileStorageService(originalBasepath: String, shouldPreload: Boolean) exte
     (for {
       id <- ids
       covering <- getS2CoveringByFeatureId(id)
+    } yield {
+      (id -> covering)
+    }).toMap
+  }
+
+  def getS2InteriorByFeatureId(id: StoredFeatureId): Option[Seq[Long]] = {
+    s2InteriorMapOpt.flatMap(_.get(id))
+  }
+
+  def getS2InteriorByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, Seq[Long]] = {
+    (for {
+      id <- ids
+      covering <- getS2InteriorByFeatureId(id)
     } yield {
       (id -> covering)
     }).toMap
@@ -359,6 +373,24 @@ class S2CoveringMapFileInput(basepath: String, shouldPreload: Boolean) {
 
   def get(id: StoredFeatureId): Option[Seq[Long]] = {
     s2CoveringIndex.lookup(id)
+  }
+}
+
+object S2InteriorMapFileInput {
+  def readInput(basepath: String, shouldPreload: Boolean) = {
+    if (new File(basepath, "s2_interior").exists()) {
+      Some(new S2InteriorMapFileInput(basepath, shouldPreload))
+    } else {
+      None
+    }
+  }
+}
+
+class S2InteriorMapFileInput(basepath: String, shouldPreload: Boolean) {
+  val s2InteriorIndex = new MapFileInput(basepath, Indexes.S2InteriorIndex, shouldPreload)
+
+  def get(id: StoredFeatureId): Option[Seq[Long]] = {
+    s2InteriorIndex.lookup(id)
   }
 }
 

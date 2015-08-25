@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorSystem, PoisonPill, Props}
 import akka.routing.{Broadcast, RoundRobinRouter}
 import com.foursquare.geo.shapes.ShapefileS2Util
 import com.foursquare.twofishes.mongo.{PolygonIndexDAO, RevGeoIndex, RevGeoIndexDAO, S2CoveringIndex,
-    S2CoveringIndexDAO}
+    S2CoveringIndexDAO, S2InteriorIndex, S2InteriorIndexDAO}
 import com.foursquare.twofishes.util.{DurationUtils, GeometryCleanupUtils, GeometryUtils, RevGeoConstants,
     S2CoveringConstants}
 import com.google.common.geometry.S2CellId
@@ -23,7 +23,11 @@ import scalaj.collection.Implicits._
 // ====================
 // ===== Messages =====
 // ====================
-case class CoverOptions(forS2CoveringIndex: Boolean = true, forRevGeoIndex: Boolean = true)
+case class CoverOptions(
+  forS2CoveringIndex: Boolean = true,
+  forS2InteriorIndex: Boolean = true,
+  forRevGeoIndex: Boolean = true
+)
 sealed trait CoverMessage
 case class Done() extends CoverMessage
 case class CalculateCoverFromMongo(polyIds: List[ObjectId], options: CoverOptions) extends CoverMessage
@@ -78,6 +82,26 @@ class S2CoveringWorker extends Actor with DurationUtils with RevGeoConstants wit
 
         val record = S2CoveringIndex(polyId, cells.map(_.id()))
         S2CoveringIndexDAO.insert(record)
+      }
+
+      if (options.forS2InteriorIndex) {
+        // println("generating cover for %s for s2interior index".format(polyId))
+        val cells = logDuration(
+          "s2InteriorForS2InteriorIndex",
+          "generated cover for %s for s2interior index".format(polyId)
+        ) {
+          GeometryUtils.s2PolygonCovering(
+            geomCollection = geom,
+            minS2Level = minS2LevelForS2Interior,
+            maxS2Level = maxS2LevelForS2Interior,
+            levelMod = Some(defaultLevelModForS2Covering),
+            maxCellsHintWhichMightBeIgnored = Some(defaultMaxCellsHintForS2Covering),
+            interior = true
+          ).toList
+        }
+
+        val record = S2InteriorIndex(polyId, cells.map(_.id()))
+        S2InteriorIndexDAO.insert(record)
       }
 
       if (options.forRevGeoIndex) {

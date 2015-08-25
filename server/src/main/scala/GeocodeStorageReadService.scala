@@ -20,6 +20,8 @@ trait GeocodeStorageReadService {
   def getPolygonByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, Geometry]
   def getS2CoveringByFeatureId(id: StoredFeatureId): Option[Seq[Long]]
   def getS2CoveringByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, Seq[Long]]
+  def getS2InteriorByFeatureId(id: StoredFeatureId): Option[Seq[Long]]
+  def getS2InteriorByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, Seq[Long]]
 
   def refresh(): Unit
 }
