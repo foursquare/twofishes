@@ -71,15 +71,17 @@ object GeocodeServerConfigParser {
         .text("minimum required per-process virtual mem map count")
         .action { (x, c) => c.copy(minMapCount = x) }
       checkConfig { c =>
-        if (c.minMapCount > maxMapCountOpt.getOrElse(0)) {
-          failure (
-            "Insufficient per-process virtmem areas: %s required: %d\n".format(maxMapCountOpt, c.minMapCount) +
-            "Please increase the number of per-process VMA with sudo sysctl -w vm.max_map_count=X\n" +
-            "or reduce the number required by passing --vm_map_count MAP_COUNT, but expect OOMS!\n"
-          )
-        } else {
-          success
-        }
+        maxMapCountOpt.map(maxMapCount =>
+          if (c.minMapCount > maxMapCount) {
+            failure (
+              "Insufficient per-process virtmem areas: %d required: %d\n".format(maxMapCount, c.minMapCount) +
+              "Please increase the number of per-process VMA with sudo sysctl -w vm.max_map_count=X\n" +
+              "or reduce the number required by passing --vm_map_count MAP_COUNT, but expect OOMS!\n"
+            )
+          } else {
+            success
+          }
+        ).getOrElse(success)
       }
     }
 
