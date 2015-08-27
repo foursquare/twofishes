@@ -123,7 +123,7 @@ class HFileInput[V](basepath: String, index: Index[String, V], shouldPreload: Bo
 
   val reader = HFile.createReader(path.getFileSystem(conf), path, cache)
 
-  val fileInfo = reader.loadFileInfo()
+  val fileInfo = reader.loadFileInfo().asScala.map({ case (k, v) => new String(k, "UTF-8") -> new String(v, "UTF-8")})
 
   // prefetch the hfile
   if (shouldPreload) {
@@ -209,6 +209,10 @@ class TooManyResultsException(query: String, number: Long, message: String) exte
 
 class NameIndexHFileInput(basepath: String, shouldPreload: Boolean) {
   val nameIndex = new HFileInput(basepath, Indexes.NameIndex, shouldPreload)
+  val featuresSortedByStaticImportance = nameIndex.fileInfo.getOrElse(
+    "FEATURES_SORTED_BY_STATIC_IMPORTANCE",
+    "false"
+  ).toBoolean
   val prefixMapOpt = PrefixIndexMapFileInput.readInput(basepath, shouldPreload)
 
   def get(name: String): Seq[StoredFeatureId] = {
@@ -216,17 +220,52 @@ class NameIndexHFileInput(basepath: String, shouldPreload: Boolean) {
   }
 
   def getPrefix(name: String): Seq[StoredFeatureId] = {
+    val resultLimit = 2500
+    val keyLimit = 25000
     val seq =
       prefixMapOpt match {
         case Some(prefixMap) if (name.length <= prefixMap.maxPrefixLength) =>
           prefixMap.get(name)
         case _ =>
-          nameIndex.lookupPrefix(name).flatten
+          // hitting name index might result in too many matches
+          // since we gather up all features that have a name with the query
+          // as a prefix
+          // if the features for each key in the name index are sorted by
+          // static importance (population, boost), we can make a best effort
+          // to return at most resultLimit acceptable results otherwise
+          // allow TooManyResultsException to be thrown below
+          val allMatches = nameIndex.lookupPrefix(name)
+          val allFlattened = allMatches.flatten
+          val numKeys = allFlattened.size
+          // total number of results within limit or index wasn't built with
+          // features sorted by static importance, just return them all
+          val results = if (!featuresSortedByStaticImportance || allFlattened.size <= resultLimit) {
+            allFlattened
+          // total number of results too high but the number of unique names
+          // is small enough that we can take at least 1 feature off the top
+          // for each key so all names are represented and the total number
+          // of results will still be within the limit
+          } else if (numKeys <= resultLimit) {
+            val resultsPerKey = resultLimit / numKeys
+            allMatches.map(_.take(resultsPerKey)).flatten
+          // number of unique names greater than number of results allowed
+          // (so all names cannot be represented) but lower than limit on
+          // number of unique names so we can still pick one result off the top
+          // for each name and have resultLimit of them represented
+          } else if (numKeys <= keyLimit) {
+            allMatches.flatMap(_.headOption).take(resultLimit)
+          // too many unique names for us to risk representing only resultLimit
+          // of them and possibly looking stupid so we just return all and allow
+          // TooManyResultsException to be thrown
+          } else {
+            allFlattened
+          }
+
+          results
       }
 
     val resultSize = seq.size
-    val limit = 2500
-    if (resultSize > limit) {
+    if (resultSize > resultLimit) {
       val message = "Too many matches for %s: %s".format(name, resultSize)
       throw new TooManyResultsException(name, resultSize, message)
     } else {

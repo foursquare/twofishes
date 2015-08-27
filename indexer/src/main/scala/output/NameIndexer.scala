@@ -11,7 +11,7 @@ import com.novus.salat.dao._
 import com.novus.salat.global._
 import java.io._
 import org.apache.hadoop.hbase.util.Bytes._
-import scala.collection.mutable.HashSet
+import scala.collection.mutable.{HashSet, ListBuffer}
 import scalaj.collection.Implicits._
 
 
@@ -28,18 +28,24 @@ class NameIndexer(
     var nameCount = 0
     val nameSize = NameIndexDAO.collection.count()
     val nameCursor = NameIndexDAO.find(MongoDBObject())
-      .sort(orderBy = MongoDBObject("name" -> 1)) // sort by nameBytes asc
+      // sort by nameBytes asc
+      // then by eligibility for prefix matching
+      // finally static importance desc
+      .sort(orderBy = MongoDBObject("name" -> 1, "excludeFromPrefixIndex" -> 1, "pop" -> -1))
     nameCursor.option = Bytes.QUERYOPTION_NOTIMEOUT
 
     var prefixSet = new HashSet[String]
 
     var lastName = ""
-    val nameFids = new HashSet[StoredFeatureId]
+    val nameFids = new ListBuffer[StoredFeatureId]
 
-    val writer = buildHFileV1Writer(index)
+    val writer = buildHFileV1Writer(
+      index,
+      Map("FEATURES_SORTED_BY_STATIC_IMPORTANCE" -> "true")
+    )
 
     def writeFidsForLastName() {
-      writer.append(lastName, fidsToCanonicalFids(nameFids.toList))
+      writer.append(lastName, fidsToCanonicalFids(nameFids.toList.distinct))
       if (outputPrefixIndex) {
         for {
          length <- 1 to math.min(PrefixIndexer.MaxPrefixLength, lastName.size)
@@ -58,7 +64,7 @@ class NameIndexer(
         lastName = n.name
       }
 
-      nameFids.add(n.fidAsFeatureId)
+      nameFids.append(n.fidAsFeatureId)
 
       nameCount += 1
       if (nameCount % 100000 == 0) {
