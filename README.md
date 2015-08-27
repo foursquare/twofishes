@@ -122,12 +122,13 @@ Contributors
 ============
 * David Blackman <blackmad@twitter.com>
 * Rahul Maddimsetty <rahul@foursquare.com>
+* John Gallagher <john@foursquare.com>
+* Jeff Kao <jeffk@foursquare.com>
 * Arkadiy Kukarkin <parkan@gmail.com>
 * Neil Sanchala
 
 Many thanks for assistance:
 * Jorge Ortiz
-* John Gallagher
 
 Unrelated
 =========
