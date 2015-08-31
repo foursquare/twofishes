@@ -358,8 +358,9 @@ object GeocodeParseOrdering {
         // this and that match same tokens in query
         r.primaryFeature.tokenStart == p.primaryFeature.tokenStart &&
         r.primaryFeature.tokenEnd == p.primaryFeature.tokenEnd &&
-        // that is not a country
+        // that is not a country or an ADMIN1
         r.primaryFeature.fmatch.feature.woeType != YahooWoeType.COUNTRY &&
+        r.primaryFeature.fmatch.feature.woeType != YahooWoeType.ADMIN1 &&
         // this is a parent of that or the other way around
         (r.primaryFeature.fmatch.scoringFeatures.parentIds.has(p.primaryFeature.fmatch.longId) ||
          p.primaryFeature.fmatch.scoringFeatures.parentIds.has(r.primaryFeature.fmatch.longId))
