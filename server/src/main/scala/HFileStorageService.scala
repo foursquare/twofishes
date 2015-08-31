@@ -236,7 +236,7 @@ class NameIndexHFileInput(basepath: String, shouldPreload: Boolean) {
           // allow TooManyResultsException to be thrown below
           val allMatches = nameIndex.lookupPrefix(name)
           val allFlattened = allMatches.flatten
-          val numKeys = allFlattened.size
+          val numKeys = allMatches.size
           // total number of results within limit or index wasn't built with
           // features sorted by static importance, just return them all
           val results = if (!featuresSortedByStaticImportance || allFlattened.size <= resultLimit) {
