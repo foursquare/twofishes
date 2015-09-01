@@ -78,7 +78,7 @@ A better option is to run "./sbt server/assembly" and then use the resulting ser
 Hotfixes
 ========
 <a name="hotfixes"></a>
-Hotfixes are expressed as fine-grained edits on top of features in the index. Features can be quickly added, removed or modified on a live server without requiring a full index rebuild and redeploy. Most fields on a [GeocodeServingFeature](https://github.com/foursquare/twofishes/blob/master/interface/src/main/thrift/geocoder.thrift#L216) and fields on its nested structs can be edited via a [GeocodeServingFeatureEdit](https://github.com/foursquare/twofishes/blob/master/interface/src/main/thrift/hotfix_edits.thrift#L35) object.
+Hotfixes are expressed as fine-grained edits on top of features in the index. Features can be quickly added, removed or modified on a live server without requiring a full index rebuild and redeploy. Most fields on a [GeocodeServingFeature](https://github.com/foursquare/twofishes/blob/master/interface/src/main/thrift/geocoder.thrift#L216) and fields on its nested structs can be edited via a [GeocodeServingFeatureEdit](https://github.com/foursquare/twofishes/blob/master/interface/src/main/thrift/feature_edits.thrift#L35) object.
 
 To enable hotfix support, the server can be pointed to a hotfix directory at startup via the --hotfix\_basepath param. Any .json files found in this directory will be deserialized from JSON to Thrift.
 
