@@ -124,6 +124,25 @@ class HotfixableGeocodeStorageService(
     }).toMap
   }
 
+  def getS2InteriorByFeatureId(id: StoredFeatureId): Option[Seq[Long]] = {
+    if (hotfix.getDeletedPolygonFeatureLongIds.has(id.longId)) {
+      None
+    } else if (hotfix.getAddedOrModifiedPolygonFeatureLongIds.has(id.longId)) {
+      hotfix.getS2InteriorByFeatureId(id)
+    } else {
+      underlying.getS2InteriorByFeatureId(id)
+    }
+  }
+
+  def getS2InteriorByFeatureIds(ids: Seq[StoredFeatureId]): Map[StoredFeatureId, Seq[Long]] = {
+    (for {
+      id <- ids
+      covering <- getS2InteriorByFeatureId(id)
+    } yield {
+      (id -> covering)
+    }).toMap
+  }
+
   def refresh() {
     // refresh underlying first so hotfixes are applied on top of latest data
     underlying.refresh()

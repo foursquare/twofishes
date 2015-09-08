@@ -165,6 +165,7 @@ class ResponseProcessor(
       parse: Option[Parse[Sorted]],
       polygonMap: Map[StoredFeatureId, Geometry],
       s2CoveringMap: Map[StoredFeatureId, Seq[Long]],
+      s2InteriorMap: Map[StoredFeatureId, Seq[Long]],
       numExtraParentsRequired: Int = 0,
       fillHighlightedName: Boolean = false,
       includeAllNames: Boolean,
@@ -172,8 +173,10 @@ class ResponseProcessor(
     ): MutableGeocodeFeature = {
     // set name
     val mutableFeature = f.mutableCopy
-    fixFeatureMutable(mutableFeature, parents, parse, polygonMap, s2CoveringMap, numExtraParentsRequired,
-      fillHighlightedName, includeAllNames, parentIds)
+    fixFeatureMutable(
+      mutableFeature, parents, parse, polygonMap, s2CoveringMap, s2InteriorMap, numExtraParentsRequired,
+      fillHighlightedName, includeAllNames, parentIds
+    )
   }
 
   def fixFeatureMutable(
@@ -182,6 +185,7 @@ class ResponseProcessor(
     parse: Option[Parse[Sorted]],
     polygonMap: Map[StoredFeatureId, Geometry],
     s2CoveringMap: Map[StoredFeatureId, Seq[Long]],
+    s2InteriorMap: Map[StoredFeatureId, Seq[Long]],
     numExtraParentsRequired: Int = 0,
     fillHighlightedName: Boolean = false,
     includeAllNames: Boolean = false,
@@ -363,6 +367,18 @@ class ResponseProcessor(
       }
     }
 
+    if (responseIncludes(ResponseIncludes.S2_INTERIOR)) {
+      for {
+        longId <- mutableFeature.longIdOption
+        fid <- StoredFeatureId.fromLong(longId)
+        s2Interior <- s2InteriorMap.get(fid)
+      } {
+        val mutableGeometry = mutableFeature.geometry.mutableCopy
+        mutableGeometry.s2Interior_=(s2Interior.toList)
+        mutableFeature.geometry_=(mutableGeometry)
+      }
+    }
+
     mutableFeature
   }
 
@@ -374,6 +390,7 @@ class ResponseProcessor(
     parseParams: ParseParams,
     polygonMap: Map[StoredFeatureId, Geometry],
     s2CoveringMap: Map[StoredFeatureId, Seq[Long]],
+    s2InteriorMap: Map[StoredFeatureId, Seq[Long]],
     fixAmbiguousNames: Boolean,
     dedupByMatchedName: Boolean = false
   ): Seq[GeocodeInterpretation] = {
@@ -445,7 +462,8 @@ class ResponseProcessor(
         Nil
       }
 
-      val fixedFeature = fixFeature(feature, sortedParents, Some(p), polygonMap, s2CoveringMap,
+      val fixedFeature = fixFeature(feature, sortedParents, Some(p), polygonMap,
+        s2CoveringMap, s2InteriorMap,
         fillHighlightedName=parseParams.tokens.size > 0,
         includeAllNames=responseIncludes(ResponseIncludes.ALL_NAMES),
         parentIds=p(0).fmatch.scoringFeatures.parentIds)
@@ -467,7 +485,7 @@ class ResponseProcessor(
             .flatMap(StoredFeatureId.fromLong _)
             .flatMap(parentFid => parentMap.get(parentFid)).sorted
           // parents don't need polygons, what is wrong with me?
-          fixFeature(parentFeature.feature, sortedParentParents, None, Map.empty, Map.empty,
+          fixFeature(parentFeature.feature, sortedParentParents, None, Map.empty, Map.empty, Map.empty,
             fillHighlightedName=parseParams.tokens.size > 0,
             includeAllNames=responseIncludes(ResponseIncludes.PARENT_ALL_NAMES),
             parentIds=parentFeature.scoringFeatures.parentIds)
@@ -512,7 +530,7 @@ class ResponseProcessor(
               .flatMap(id => StoredFeatureId.fromLong(id).flatMap(parentMap.get))
               .sorted(GeocodeServingFeatureOrdering)
             fixFeatureMutable(interp.feature.mutable, sortedParents, Some(p), polygonMap, s2CoveringMap,
-              numExtraParentsRequired=1, fillHighlightedName=parseParams.tokens.size > 0,
+              s2InteriorMap, numExtraParentsRequired=1, fillHighlightedName=parseParams.tokens.size > 0,
               includeAllNames=responseIncludes(ResponseIncludes.PARENT_ALL_NAMES))
           })
         })
@@ -634,14 +652,24 @@ class ResponseProcessor(
     } else {
       Map.empty
     }
-    val s2CoveringMap: Map[StoredFeatureId, Seq[Long]] = if (GeocodeRequestUtils.responseIncludes(req, ResponseIncludes.S2_COVERING)) {
+    val s2CoveringMap: Map[StoredFeatureId, Seq[Long]] = if (
+      GeocodeRequestUtils.responseIncludes(req, ResponseIncludes.S2_COVERING)
+    ) {
       store.getS2CoveringByFeatureIds(sortedDedupedParses.flatMap(p =>
         StoredFeatureId.fromLong(p(0).fmatch.longId)))
     } else {
       Map.empty
     }
+    val s2InteriorMap: Map[StoredFeatureId, Seq[Long]] = if (
+      GeocodeRequestUtils.responseIncludes(req, ResponseIncludes.S2_INTERIOR)
+    ) {
+      store.getS2InteriorByFeatureIds(sortedDedupedParses.flatMap(p =>
+        StoredFeatureId.fromLong(p(0).fmatch.longId)))
+    } else {
+      Map.empty
+    }
     generateResponse(hydrateParses(
-      sortedDedupedParses, parseParams, polygonMap, s2CoveringMap, fixAmbiguousNames = true,
+      sortedDedupedParses, parseParams, polygonMap, s2CoveringMap, s2InteriorMap, fixAmbiguousNames = true,
       dedupByMatchedName = dedupByMatchedName),
       requestGeom
     )

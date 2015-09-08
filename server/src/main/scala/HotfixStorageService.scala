@@ -21,6 +21,7 @@ trait HotfixStorageService {
   def getCellGeometriesByS2CellId(id: Long): Seq[CellGeometry]
   def getPolygonByFeatureId(id: StoredFeatureId): Option[Geometry]
   def getS2CoveringByFeatureId(id: StoredFeatureId): Option[Seq[Long]]
+  def getS2InteriorByFeatureId(id: StoredFeatureId): Option[Seq[Long]]
 
   def resolveNewSlugToLongId(slug: String): Option[Long]
 

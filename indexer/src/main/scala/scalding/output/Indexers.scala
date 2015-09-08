@@ -122,6 +122,33 @@ object S2CoveringIndexer {
   }
 }
 
+object S2InteriorIndexer {
+  def processor(key: LongWritable, value: IntermediateDataContainer): Option[(StoredFeatureId, Seq[Long])] = {
+    val featureIdOpt = StoredFeatureId.fromLong(key.get)
+    featureIdOpt.map(featureId => {
+      val cellIds = value.longList
+      (featureId, cellIds)
+    })
+  }
+
+  def main(args: Array[String]): Unit = {
+    new BaseIndexer(
+      inputBaseDir = args(0),
+      outputBaseDir = args(1),
+      index = Indexes.S2InteriorIndex,
+      scaldingIntermediateJobName = "s2_interior_index_build_intermediate",
+      options = IndexerOptions(
+        IndexOutputType.MAPFILE_OUTPUT,
+        Map(
+          "minS2Level" -> S2CoveringConstants.minS2LevelForS2Covering.toString,
+          "maxS2Level" -> S2CoveringConstants.maxS2LevelForS2Covering.toString,
+          "levelMod" -> S2CoveringConstants.defaultLevelModForS2Covering.toString
+        )),
+      processor = processor
+    ).writeIndex()
+  }
+}
+
 object RevGeoIndexer {
   def processor(key: LongWritable, value: CellGeometries): Option[(Long, CellGeometries)] = {
     val cellId = key.get

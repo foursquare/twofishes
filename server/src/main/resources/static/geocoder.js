@@ -334,10 +334,22 @@ function success(data, bulkInputs) {
         var s2InfoUrl = 'http://' + window.location.host + '/private/getS2CellInfos?json=' + JSON.stringify(req);
         $.getJSON(s2InfoUrl,
             function(data) {
-              return successS2Info(data, map)
+              return successS2Info(data, map, 'red')
             }
           );
       }
+
+      var s2Interior = feature.geometry.s2Interior;
+      if (s2Interior) {
+        var req = { "cellIdsAsStrings": s2Interior };
+        var s2InfoUrl = 'http://' + window.location.host + '/private/getS2CellInfos?json=' + JSON.stringify(req);
+        $.getJSON(s2InfoUrl,
+            function(data) {
+              return successS2Info(data, map, 'green')
+            }
+          );
+      }
+
 
       var myIcon = L.icon({
         iconAnchor: [8, 8],
@@ -359,12 +371,12 @@ function failure() {
   window.alert('something failed');
 }
 
-function successS2Info(data, map) {
+function successS2Info(data, map, color) {
   if (data.cellInfos) {
     _(data.cellInfos).each(function(cellInfo) {
       var wkt = new Wkt.Wkt();
       wkt.read(cellInfo.wktGeometry)
-      map.addLayer(wkt.toObject({color: 'red', weight: 1}).bindPopup('id: ' + cellInfo.id + '<br>level: ' + cellInfo.level));
+      map.addLayer(wkt.toObject({color: color, weight: 1}).bindPopup('id: ' + cellInfo.id + '<br>level: ' + cellInfo.level));
     });
   }
 }

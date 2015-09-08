@@ -26,6 +26,7 @@ case class GeonamesImporterConfig(
   outputPrefixIndex: Boolean = true,
   outputRevgeo: Boolean = false,
   outputS2Covering: Boolean = false,
+  outputS2Interior: Boolean = false,
   reloadData: Boolean = true,
   redoPolygonMatching: Boolean = false,
   skipPolygonMatching: Boolean = false,
@@ -65,6 +66,9 @@ object GeonamesImporterConfigParser {
         opt[Boolean]("output_s2_covering_index")
           .text("whether or not to output s2 covering index")
           .action{ (v, c) => c.copy(outputS2Covering = v) }
+        opt[Boolean]("output_s2_interior_index")
+          .text("whether or not to output s2 interior covering index")
+          .action{ (v, c) => c.copy(outputS2Interior = v) }
         opt[Boolean]("reload_data")
           .text("reload data into mongo")
           .action{ (v, c) => c.copy(reloadData = v) }

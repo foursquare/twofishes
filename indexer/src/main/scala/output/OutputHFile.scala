@@ -21,7 +21,8 @@ class OutputIndexes(
   outputPrefixIndex: Boolean = true,
   slugEntryMap: SlugEntryMap.SlugEntryMap = HashMap.empty,
   outputRevgeo: Boolean = true,
-  outputS2Covering: Boolean = true
+  outputS2Covering: Boolean = true,
+  outputS2Interior: Boolean = true
 ) extends DurationUtils {
   def buildIndexes(s2CoveringLatch: Option[CountDownLatch]) {
     val fidMap = logPhase("preload fid map") { new FidMap(preload = true) }
@@ -50,7 +51,10 @@ class OutputIndexes(
       List(new RevGeoIndexer(basepath, fidMap, polygonMap))
     } else { Nil }) ++ (if (outputS2Covering) {
       List(new S2CoveringIndexer(basepath, fidMap))
+    } else { Nil }) ++ (if (outputS2Interior) {
+      List(new S2InteriorIndexer(basepath, fidMap))
     } else { Nil })
+
 
     val diskIoFuturePool = FuturePool(Executors.newFixedThreadPool(4))
     val indexFutures = parallelizedIndexers.map(indexer =>

@@ -178,6 +178,15 @@ class ReverseGeocoderHelperImpl(
       }
     )
 
+    val s2InteriorMap: Map[StoredFeatureId, Seq[Long]] = (
+      if (GeocodeRequestUtils.responseIncludes(req, ResponseIncludes.S2_INTERIOR)) {
+        Stats.incr("s2_interiors_fetched")
+        store.getS2InteriorByFeatureIds(matchedIds)
+      } else {
+        Map.empty
+      }
+    )
+
     val parseParams = ParseParams()
     val responseProcessor = new ResponseProcessor(req, store, queryLogger)
     val parsesAndOtherGeomToFids: Seq[(SortedParseSeq, (Geometry, Seq[StoredFeatureId]))] = (for {
@@ -229,7 +238,7 @@ class ReverseGeocoderHelperImpl(
     val otherGeomToFids = parsesAndOtherGeomToFids.map(_._2).toMap
 
     val interpretations = responseProcessor.hydrateParses(sortedParses, parseParams, polygonMap, s2CoveringMap,
-      fixAmbiguousNames = false)
+      s2InteriorMap, fixAmbiguousNames = false)
 
     makeBulkReply[Geometry](otherGeoms, otherGeomToFids, interpretations)
   }
