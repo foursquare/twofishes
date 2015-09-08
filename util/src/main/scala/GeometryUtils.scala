@@ -20,6 +20,7 @@ trait S2CoveringConstants {
   val maxS2LevelForS2Interior = 18
   val defaultLevelModForS2Covering = 1
   val defaultMaxCellsHintForS2Covering = 50
+  val defaultMaxCellsHintForS2Interior = 100
 }
 
 object RevGeoConstants extends RevGeoConstants

@@ -95,7 +95,7 @@ class S2CoveringWorker extends Actor with DurationUtils with RevGeoConstants wit
             minS2Level = minS2LevelForS2Interior,
             maxS2Level = maxS2LevelForS2Interior,
             levelMod = Some(defaultLevelModForS2Covering),
-            maxCellsHintWhichMightBeIgnored = Some(defaultMaxCellsHintForS2Covering),
+            maxCellsHintWhichMightBeIgnored = Some(defaultMaxCellsHintForS2Interior),
             interior = true
           ).toList
         }
