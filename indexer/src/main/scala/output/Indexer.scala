@@ -133,6 +133,6 @@ abstract class Indexer extends DurationUtils {
   }
 
   def fidsToCanonicalFids(fids: List[StoredFeatureId]): Seq[StoredFeatureId] = {
-    fids.flatMap(fid => fidMap.get(fid)).toSet.toSeq
+    fids.flatMap(fid => fidMap.get(fid)).distinct
   }
 }
