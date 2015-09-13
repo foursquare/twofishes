@@ -43,6 +43,7 @@ class ConcreteHotfixStorageService(
 
   def processLongListEdits(list: Seq[Long], edits: Seq[LongListEdit]): Seq[Long] = {
     var listCopy = list
+
     edits.foreach(edit => {
       edit.editType match {
         case EditType.Add => listCopy = listCopy.filterNot(_ == edit.value) :+ edit.value
@@ -289,9 +290,11 @@ class ConcreteHotfixStorageService(
           // parentIdsEdits
           // edit both feature and servingFeature.scoringFeatures
           if (edit.parentIdsEditsIsSet) {
-            val parentIds = processLongListEdits(
-              featureMutable.parentIds,
-              edit.parentIdsEditsOrThrow)
+            val parentIds =
+              processLongListEdits(
+                servingFeatureMutable.scoringFeatures.parentIds,
+                edit.parentIdsEditsOrThrow
+              )
             featureMutable.parentIds_=(parentIds)
 
             servingFeatureMutable.scoringFeatures_=({
