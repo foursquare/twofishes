@@ -16,26 +16,28 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.io;
+package com.foursquare.twofishes.io;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.io.*;
+import java.io.EOFException;
+import java.io.IOException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.util.Options;
-import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
-import org.apache.hadoop.conf.*;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.Progressable;
 import org.apache.hadoop.util.ReflectionUtils;
-import org.apache.hadoop.io.SequenceFile.CompressionType;
-import org.apache.hadoop.io.SequenceFile.Reader;
-import org.apache.hadoop.io.SequenceFile.Writer;
-import org.apache.hadoop.io.compress.CompressionCodec;
-import org.apache.hadoop.io.compress.DefaultCodec;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.MapFile;
+import org.apache.hadoop.io.SequenceFile;
+import org.apache.hadoop.io.Writable;
+import org.apache.hadoop.io.WritableComparable;
+import org.apache.hadoop.io.WritableComparator;
 
 /** A file-based map from keys to values.
  *
@@ -79,10 +81,7 @@ public class MapFileConcurrentReader {
 
   public MapFileConcurrentReader(Path dir, Configuration conf,
                 SequenceFile.Reader.Option... opts) throws IOException {
-    MapFile.Reader.ComparatorOption comparatorOption =
-      Options.getOption(MapFile.Reader.ComparatorOption.class, opts);
-    WritableComparator comparator =
-      comparatorOption == null ? null : comparatorOption.getValue();
+
     INDEX_SKIP = conf.getInt("io.map.index.skip", 0);
     open(dir, comparator, conf, opts);
   }
@@ -112,12 +111,9 @@ public class MapFileConcurrentReader {
     };
     this.firstPosition = data.get().getPosition();
 
-    if (comparator == null)
-      this.comparator =
-        WritableComparator.get(data.get().getKeyClass().
-                                 asSubclass(WritableComparable.class));
-    else
-      this.comparator = comparator;
+    this.comparator =
+      WritableComparator.get(data.get().getKeyClass().
+                               asSubclass(WritableComparable.class));
 
     // open the index
     SequenceFile.Reader.Option[] indexOptions =

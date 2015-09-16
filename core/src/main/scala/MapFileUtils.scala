@@ -2,9 +2,10 @@ package com.foursquare.twofishes
 
 import java.io.File
 import java.net.URI
+import com.foursquare.twofishes.io.MapFileConcurrentReader
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FSDataInputStream, FileSystem, LocalFileSystem, Path}
-import org.apache.hadoop.io.{BytesWritable, MapFile, MapFileConcurrentReader, SequenceFile, Text, Writable,
+import org.apache.hadoop.io.{BytesWritable, MapFile, SequenceFile, Text, Writable,
     WritableComparator}
 import org.apache.hadoop.util.Options
 import scalaj.collection.Implicits._
