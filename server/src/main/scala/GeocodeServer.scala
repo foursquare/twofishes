@@ -67,7 +67,7 @@ class QueryLogHttpHandler(
 
     response.setHeader("Content-Type", "text/plain")
     response.setContent(ChannelBuffers.copiedBuffer(content, CharsetUtil.UTF_8))
-    response.addHeader("Content-Length", response.getContent().readableBytes().toString)
+    response.addHeader("Content-Length", response.getContent.readableBytes.toString)
     Future.value(response)
   }
 }
@@ -263,7 +263,7 @@ class HandleExceptions extends SimpleFilter[HttpRequest, HttpResponse] with Logg
           "exception" -> error.toString,
           "stacktrace" -> error.getStackTraceString)
         errorResponse.setContent(ChannelBuffers.copiedBuffer(Json.build(errorMap).toString, CharsetUtil.UTF_8))
-        errorResponse.addHeader("Content-Length", errorResponse.getContent().readableBytes().toString)
+        errorResponse.addHeader("Content-Length", errorResponse.getContent.readableBytes.toString)
         errorResponse
     }
   }
@@ -339,7 +339,7 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
 
       response.setHeader("Content-Type", "application/json; charset=utf-8")
       response.setContent(ChannelBuffers.copiedBuffer(json, CharsetUtil.UTF_8))
-      response.addHeader("Content-Length", response.getContent().readableBytes().toString)
+      response.addHeader("Content-Length", response.getContent.readableBytes.toString)
       response
     })
   }
@@ -446,7 +446,7 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
           response.setHeader("Content-Type", "image/png")
         }
         response.setContent(ChannelBuffers.copiedBuffer(data))
-        response.addHeader("Content-Length", response.getContent().readableBytes().toString)
+        response.addHeader("Content-Length", response.getContent.readableBytes.toString)
         response
       })
     } else if (path.startsWith("/search/geocode")) {
@@ -481,7 +481,7 @@ class GeocoderHttpService(geocoder: Geocoder.ServiceIface) extends Service[HttpR
       val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
       val msg = new BufferedSource(getClass.getResourceAsStream("/static/index.html")).getLines.mkString("\n")
       response.setContent(ChannelBuffers.copiedBuffer(msg, CharsetUtil.UTF_8))
-      response.addHeader("Content-Length", response.getContent().readableBytes().toString)
+      response.addHeader("Content-Length", response.getContent.readableBytes.toString)
       Future.value(response)
     }
   }
