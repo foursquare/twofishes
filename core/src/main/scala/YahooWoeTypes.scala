@@ -5,7 +5,7 @@ import com.foursquare.twofishes.Identity._
 import com.foursquare.twofishes.YahooWoeType._
 
 object YahooWoeTypes {
-  val order = List(POSTAL_CODE, AIRPORT, SUBURB, TOWN, ADMIN3, ADMIN2, ADMIN1, COUNTRY)
+  val order = List(POSTAL_CODE, AIRPORT, POI, SUBURB, TOWN, ADMIN3, ADMIN2, ADMIN1, COUNTRY)
   val orderMap = order.zipWithIndex.toList.toMap
 
   def getOrdering(woetype: YahooWoeType): Int = {
