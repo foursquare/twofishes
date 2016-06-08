@@ -1,4 +1,13 @@
-[![Build Status](https://travis-ci.org/foursquare/twofishes.svg?branch=master)](https://travis-ci.org/foursquare/twofishes)
+## NOTICE - This project has moved.
+
+It is now part of Foursquare's open source monorepo [Fsq.io](https://github.com/foursquare/fsqio) and all
+future work will be published there.
+
+The project very much lives on but this Github repo is deprecated.
+
+
+
+## Twofishes
 
 A coarse, splitting geocoder and reverse geocoder in scala -- Prebuilt indexes and binaries available at [twofishes.net](http://twofishes.net/). Discussion at [google groups](https://groups.google.com/forum/?fromgroups#!forum/twofishes).
 
