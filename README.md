@@ -37,7 +37,7 @@ Reverse Geocoding and Polygons
 To enable reverse geocoding in twofishes, you need to add polygon data to the inputs. geonames does not distribute polygons, nor does the twofishes distribution contain shapefiles. Shapefiles must be in epsg:4326 projection. The following script will write a copy of your shapefile with an extra property that is the geonameid of the matching feature.
 
 I will add automated scripts for this soon, but for now, if you have shapefiles that map to existing geonames features that you want to put into twofishes
-*   load geonames in postgis accoridng to https://github.com/colemanm/gazetteer/blob/master/docs/geonames_postgis_import.md
+*   load geonames in postgis according to https://github.com/colemanm/gazetteer/blob/master/docs/geonames_postgis_import.md
 *   run the shape-gn-matchr script from  https://github.com/blackmad/shputils (see instructions below)
 *   take the resulting shapefile (the shp, shx, cpg, dbf) and put them in data/private/polygons
 
